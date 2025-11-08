@@ -1,0 +1,91 @@
+import { BrowserRouter as Router, Routes, Route } from "react-router";
+import SignIn from "./pages/AuthPages/SignIn";
+import SignUp from "./pages/AuthPages/SignUp";
+import NotFound from "./pages/OtherPage/NotFound";
+import UserProfiles from "./pages/UserProfiles";
+import Videos from "./pages/UiElements/Videos";
+import Images from "./pages/UiElements/Images";
+import Alerts from "./pages/UiElements/Alerts";
+import Badges from "./pages/UiElements/Badges";
+import Avatars from "./pages/UiElements/Avatars";
+import Buttons from "./pages/UiElements/Buttons";
+import LineChart from "./pages/Charts/LineChart";
+import BarChart from "./pages/Charts/BarChart";
+import Calendar from "./pages/Calendar";
+import BasicTables from "./pages/Tables/BasicTables";
+import NewLead from "./pages/LeadManagement/NewLead";
+import ManageLeads from "./pages/LeadManagement/ManageLeads";
+import LeadBlank from "./pages/LeadManagement/LeadBlank";
+import Blank from "./pages/Blank";
+import AppLayout from "./layout/AppLayout";
+import { ScrollToTop } from "./components/common/ScrollToTop";
+import LeadsOverview from "./pages/Dashboard/LeadsOverview";
+import StudentsOverview from "./pages/Dashboard/StudentsOverview";
+import RevenueOverview from "./pages/Dashboard/RevenewOverview";
+import ManageProfiles from "./pages/ManageProfiles";
+import CampaignSettings from "./pages/Settings/CampaignSettings";
+import EmailInbox from "./pages/Email/EmailInbox";
+import ProtectedRoutes from "./routes/ProtectedRoutes";
+import { CalendarProvider } from "./context/calendarContext";
+import { NotificationProvider } from "./context/NotificationContext";
+
+export default function App() {
+  return (
+    <>
+      <NotificationProvider>
+        <CalendarProvider>
+          <Router>
+            <ScrollToTop />
+            <Routes>
+          {/* Dashboard Layout */}
+          <Route element={<AppLayout />}>
+            <Route index path="/" element={<ProtectedRoutes><LeadsOverview /></ProtectedRoutes>} />
+            <Route path="/students-overview" element={<ProtectedRoutes><StudentsOverview /></ProtectedRoutes>} />
+            <Route path="/revenue-overview" element={<ProtectedRoutes><RevenueOverview /></ProtectedRoutes>} />
+
+            {/* Others Page */}
+            <Route path="/profile" element={<ProtectedRoutes><UserProfiles /></ProtectedRoutes>} />
+            <Route path="/manage-profiles" element={<ProtectedRoutes requireAdmin={true}><ManageProfiles /></ProtectedRoutes>} />
+            <Route path="/calendar" element={<ProtectedRoutes><Calendar /></ProtectedRoutes>} />
+            <Route path="/email" element={<ProtectedRoutes><EmailInbox /></ProtectedRoutes>} />
+            <Route path="/blank" element={<ProtectedRoutes><Blank /></ProtectedRoutes>} />
+            
+            {/* Settings */}
+            <Route path="/settings/campaigns" element={<ProtectedRoutes><CampaignSettings /></ProtectedRoutes>} />
+
+            {/* Forms */}
+            <Route path="/new-lead" element={<ProtectedRoutes><NewLead /></ProtectedRoutes>} />
+            <Route path="/lead-management" element={<ProtectedRoutes><ManageLeads /></ProtectedRoutes>} />
+            <Route path="/lead-blank" element={<ProtectedRoutes><LeadBlank /></ProtectedRoutes>} />
+
+            {/* Tables */}
+            <Route path="/basic-tables" element={<ProtectedRoutes><BasicTables /></ProtectedRoutes>} />
+
+            {/* Ui Elements */}
+            <Route path="/alerts" element={<ProtectedRoutes><Alerts /></ProtectedRoutes>} />
+            <Route path="/avatars" element={<ProtectedRoutes><Avatars /></ProtectedRoutes>} />
+            <Route path="/badge" element={<ProtectedRoutes><Badges /></ProtectedRoutes>} />
+            <Route path="/buttons" element={<ProtectedRoutes><Buttons /></ProtectedRoutes>} />
+            <Route path="/images" element={<ProtectedRoutes><Images /></ProtectedRoutes>} />
+            <Route path="/videos" element={<ProtectedRoutes><Videos /></ProtectedRoutes>} />
+
+            {/* Charts */}
+            <Route path="/line-chart" element={<ProtectedRoutes><LineChart /></ProtectedRoutes>} />
+            <Route path="/bar-chart" element={<ProtectedRoutes><BarChart /></ProtectedRoutes>} />
+            <Route path="/marketing-materials" element={<ProtectedRoutes><Images /></ProtectedRoutes>} />
+            <Route path="/course-curriculum" element={<ProtectedRoutes><Images /></ProtectedRoutes>} />
+          </Route>
+
+          {/* Auth Layout */}
+          <Route path="/signin" element={<SignIn />} />
+          <Route path="/signup" element={<SignUp />} />
+
+          {/* Fallback Route */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Router>
+    </CalendarProvider>
+  </NotificationProvider>
+    </>
+  );
+}
