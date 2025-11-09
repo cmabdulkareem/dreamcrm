@@ -55,6 +55,7 @@ export default function FormElements() {
   const [followUpDate, setFollowUpDate] = useState("");
   const [error, setError] = useState(false);
   const [campaignOptions, setCampaignOptions] = useState([]);
+  const [contactPointOptions, setContactPointOptions] = useState([]);
   
   // Validation error states
   const [validationErrors, setValidationErrors] = useState({});
@@ -69,6 +70,7 @@ export default function FormElements() {
 
   useEffect(()=>{
     fetchCampaigns();
+    fetchContactPoints();
   }, [])
 
   const fetchCampaigns = async () => {
@@ -95,6 +97,30 @@ export default function FormElements() {
     }
   };
 
+  const fetchContactPoints = async () => {
+    try {
+      const response = await axios.get(
+        `${API}/contact-points/active`,
+        { withCredentials: true }
+      );
+      const formattedContactPoints = response.data.contactPoints.map(c => ({
+        value: c.value,
+        label: c.name
+      }));
+      // Add "Add New Contact Point" option at the end
+      formattedContactPoints.push({
+        value: "__add_new__",
+        label: "+ Add New Contact Point"
+      });
+      setContactPointOptions(formattedContactPoints);
+    } catch (error) {
+      console.error("Error fetching contact points:", error);
+      // Fallback to hardcoded contact points if API fails
+      const fallbackOptions = [...contactPoints, { value: "__add_new__", label: "+ Add New Contact Point" }];
+      setContactPointOptions(fallbackOptions);
+    }
+  };
+
   const validateEmail = (value) => {
     const isValidEmail =
       /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value);
@@ -113,6 +139,15 @@ export default function FormElements() {
       openCampaignModal();
     } else {
       setCampaign(value);
+    }
+  };
+
+  const handleContactPointChange = (value) => {
+    if (value === "__add_new__") {
+      // For now, we'll just show a toast message since we don't have a modal for contact points yet
+      toast.info("Please add contact points in Settings > Contact Points");
+    } else {
+      setContactPoint(value);
     }
   };
 
@@ -442,10 +477,10 @@ export default function FormElements() {
                   <div className="w-full">
                     <Label>Contact Point *</Label>
                     <Select
-                      options={contactPoints}
+                      options={contactPointOptions}
                       value={contactPoint}
-                      placeholder="Contacted Through"
-                      onChange={setContactPoint}
+                      placeholder="Contact Point"
+                      onChange={handleContactPointChange}
                       error={!!validationErrors.contactPoint}
                       hint={validationErrors.contactPoint}
                     />

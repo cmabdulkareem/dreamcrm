@@ -117,6 +117,10 @@ export default function RecentOrders() {
     }
   }, [data]);
 
+  // Check if user has Manager role
+  const isManager = user?.roles?.includes('Manager') || false;
+  const isCounsellor = user?.roles?.includes('Counsellor') || false;
+
   const fetchCustomers = async () => {
     try {
       const response = await axios.get(
@@ -392,6 +396,15 @@ export default function RecentOrders() {
   };
 
   const handleDelete = (row) => {
+    // Check if user has Manager role before allowing delete
+    if (!isManager) {
+      toast.error("Only managers can delete leads.", {
+        position: "top-center",
+        autoClose: 3000,
+      });
+      return;
+    }
+    
     setSelectedRow(row);
     openDeleteModal();
   };
@@ -486,6 +499,16 @@ export default function RecentOrders() {
   };
 
   const confirmDelete = async () => {
+    // Additional check to ensure only managers can delete
+    if (!isManager) {
+      toast.error("Only managers can delete leads.", {
+        position: "top-center",
+        autoClose: 3000,
+      });
+      closeDeleteModal();
+      return;
+    }
+    
     try {
       await axios.delete(
         `${API}/customers/delete/${selectedRow._id}`,
@@ -702,7 +725,9 @@ export default function RecentOrders() {
                   <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{formatDate(row.followUpDate)}</TableCell>
                   <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                     <Button size="sm" variant="outline" className="mr-2" endIcon={<PencilIcon className="size-5" />} onClick={() => handleEdit(row)} />
-                    <Button size="sm" variant="outline" className="text-red-500 mr-2" endIcon={<CloseIcon className="size-5" />} onClick={() => handleDelete(row)} />
+                    {isManager && (
+                      <Button size="sm" variant="outline" className="text-red-500 mr-2" endIcon={<CloseIcon className="size-5" />} onClick={() => handleDelete(row)} />
+                    )}
                     <Button size="sm" variant="outline" className="text-yellow-500" endIcon={<BellIcon className="size-5" />} onClick={() => handleAlarm(row)} />
                   </TableCell>
                 </TableRow>

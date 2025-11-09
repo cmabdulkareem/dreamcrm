@@ -22,8 +22,8 @@ export default function UserProfiles() {
         </h3>
         <div className="space-y-6">
           <UserMetaCard user={user} />
-          <UserInfoCard />
-          <UserAddressCard />
+          <UserInfoCard user={user} />
+          {/* <UserAddressCard /> */}
         </div>
       </div>
     </>

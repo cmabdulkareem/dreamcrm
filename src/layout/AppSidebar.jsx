@@ -93,8 +93,8 @@ const settingsItems = [
       // { name: "Sign In", path: "/signin", pro: false },
       // { name: "Sign Up", path: "/signup", pro: false },
       { name: "Edit Profile", path: "/profile", pro: false },
-      { name: "Manage Profiles", path: "/manage-profiles", pro: false },
       { name: "Campaigns", path: "/settings/campaigns", pro: false },
+      { name: "Contact Points", path: "/settings/contact-points", pro: false },
       { name: "Course Management", path: "/settings/courses", pro: false },
       { name: "User Management", path: "/settings/users", pro: false },
     ],
@@ -227,7 +227,7 @@ const AppSidebar = () => {
             >
               <ul className="mt-2 space-y-1 ml-9">
                 {nav.subItems.map((subItem) => (
-                  (subItem.name !== "Manage Profiles" && subItem.name !== "Course Management") || isAdminUser ? (
+                  (subItem.name !== "Manage Profiles" && subItem.name !== "Course Management" && subItem.name !== "User Management") || isAdminUser ? (
                     <li key={subItem.name}>
                       <Link
                         to={subItem.path}

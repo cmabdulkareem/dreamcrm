@@ -337,7 +337,7 @@ const UserManagement = () => {
                       <MultiSelect
                         label=""
                         options={roleOptions}
-                        defaultSelected={formData.roles}
+                        selectedValues={formData.roles}
                         onChange={handleRoleChange}
                       />
                     </div>

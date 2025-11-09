@@ -29,19 +29,11 @@ const AppHeader = () => {
     { title: "Calendar", path: "/calendar", category: "Tools", icon: "calendar" },
     { title: "Email Inbox", path: "/email", category: "Tools", icon: "mail" },
     { title: "Profile", path: "/profile", category: "User", icon: "user" },
-    { title: "Manage Profiles", path: "/manage-profiles", category: "Settings", icon: "settings" },
     { title: "Campaign Settings", path: "/settings/campaigns", category: "Settings", icon: "target" },
     { title: "Marketing Materials", path: "/marketing-materials", category: "Resources", icon: "file" },
     { title: "Course Curriculum", path: "/course-curriculum", category: "Resources", icon: "book" },
     { title: "Basic Tables", path: "/basic-tables", category: "Tables", icon: "table" },
     { title: "Alerts", path: "/alerts", category: "UI Elements", icon: "alert" },
-    { title: "Avatars", path: "/avatars", category: "UI Elements", icon: "user" },
-    { title: "Badges", path: "/badge", category: "UI Elements", icon: "tag" },
-    { title: "Buttons", path: "/buttons", category: "UI Elements", icon: "button" },
-    { title: "Images", path: "/images", category: "UI Elements", icon: "image" },
-    { title: "Videos", path: "/videos", category: "UI Elements", icon: "video" },
-    { title: "Line Chart", path: "/line-chart", category: "Charts", icon: "chart" },
-    { title: "Bar Chart", path: "/bar-chart", category: "Charts", icon: "chart" },
   ];
 
   const getIcon = (iconName) => {

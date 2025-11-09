@@ -62,8 +62,7 @@ const customerSchema = new mongoose.Schema({
     type: String
   }],
   contactPoint: {
-    type: String,
-    enum: ['walkIn', 'teleCall', 'other']
+    type: String
   },
   otherContactPoint: {
     type: String

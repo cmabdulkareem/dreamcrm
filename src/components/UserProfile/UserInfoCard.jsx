@@ -1,39 +1,80 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect } from "react";
 import { useModal } from "../../hooks/useModal";
 import { Modal } from "../ui/modal";
 import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
 import Label from "../form/Label";
+import Select from "../form/Select";
 import axios from "axios";
 import { AuthContext } from "../../context/authContext";
+import { bloodGroupOptions, countryOptions, stateOptions } from "../../data/DataSets";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
-export default function UserInfoCard() {
-  const { user, setUser } = useContext(AuthContext);
+export default function UserInfoCard({ user }) {
+  const { setUser } = useContext(AuthContext);
   const { isOpen, openModal, closeModal } = useModal();
-  
-  // Initialize state with user data
+
+  // Form state
   const [instagram, setInstagram] = useState(user?.instagram || "");
   const [location, setLocation] = useState(user?.location || "");
+  const [bloodGroup, setBloodGroup] = useState(user?.bloodGroup || "");
+  const [country, setCountry] = useState(user?.country || "");
+  const [state, setState] = useState(user?.state || "");
+  const [reportingHead, setReportingHead] = useState(user?.reportingHead?.id || user?.reportingHead || "");
+  const [designation, setDesignation] = useState(user?.designation || "");
+  const [users, setUsers] = useState([]);
+
+  // Reset form state when user changes or modal opens
+  useEffect(() => {
+    if (user && isOpen) {
+      setInstagram(user?.instagram || "");
+      setLocation(user?.location || "");
+      setBloodGroup(user?.bloodGroup || "");
+      setCountry(user?.country || "");
+      setState(user?.state || "");
+      setReportingHead(user?.reportingHead?.id || user?.reportingHead || "");
+      setDesignation(user?.designation || "");
+    }
+  }, [user, isOpen]);
+
+  // Fetch all users for reporting head dropdown
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await axios.get(`${API}/users/dropdown`, { withCredentials: true });
+        setUsers(response.data.users || []);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      }
+    };
+
+    if (isOpen) {
+      fetchUsers();
+    }
+  }, [isOpen]);
 
   const handleSave = async (e) => {
     e.preventDefault();
-    
-    // Check if user exists
-    if (!user || !user._id) {
+
+    if (!user || !user.id) {
       console.error("User data is not available");
       return;
     }
-    
+
     try {
       const payload = {
         instagram: instagram,
-        location: location
+        location: location,
+        bloodGroup: bloodGroup,
+        country: country,
+        state: state,
+        reportingHead: reportingHead || null,
+        designation: designation
       };
 
       const response = await axios.put(
-        `${API}/users/update/${user._id}`,
+        `${API}/users/update/${user.id}`,
         payload,
         { withCredentials: true }
       );
@@ -43,13 +84,29 @@ export default function UserInfoCard() {
         setUser(response.data.user);
       }
 
-      // Don't close the modal - keep it open for continued editing
-      // closeModal(); // Commented out to keep modal open
+      // Close the modal after successful save
+      closeModal();
     } catch (error) {
       console.error("Error updating user info:", error);
-      // Optionally show an error message to the user
     }
   };
+
+  // Reporting head options (other users)
+  const reportingHeadOptions = [
+    { value: "", label: "Select Reporting Head" },
+    ...users
+      .filter(u => u.id !== user?.id) // Exclude current user
+      .map(u => ({ value: u.id, label: u.fullName }))
+  ];
+
+  // Don't render the component if user data is not available
+  if (!user) {
+    return (
+      <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
+        <p>Loading user data...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
@@ -62,34 +119,7 @@ export default function UserInfoCard() {
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-7 2xl:gap-x-32">
             <div>
               <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                Full Name
-              </p>
-              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                {user?.fullName || "Not set"}
-              </p>
-            </div>
-
-            <div>
-              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                Email address
-              </p>
-              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                {user?.email || "Not set"}
-              </p>
-            </div>
-
-            <div>
-              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                Phone
-              </p>
-              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                {user?.phone || "Not set"}
-              </p>
-            </div>
-
-            <div>
-              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                Location
+                Designation
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90">
                 {user?.location || "Not set"}
@@ -102,6 +132,42 @@ export default function UserInfoCard() {
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90">
                 {user?.instagram || "Not set"}
+              </p>
+            </div>
+
+            <div>
+              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                Blood Group
+              </p>
+              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                {user?.bloodGroup || "Not set"}
+              </p>
+            </div>
+
+            <div>
+              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                Country
+              </p>
+              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                {user?.country || "Not set"}
+              </p>
+            </div>
+
+            <div>
+              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                State
+              </p>
+              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                {user?.state || "Not set"}
+              </p>
+            </div>
+
+            <div>
+              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                Reporting Head
+              </p>
+              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                {user?.reportingHead?.fullName || "Not set"}
               </p>
             </div>
           </div>
@@ -140,15 +206,7 @@ export default function UserInfoCard() {
               Update your details to keep your profile up-to-date.
             </p>
           </div>
-          <form className="flex flex-col" onSubmit={(e) => {
-  // Prevent submission if user data is not available
-  if (!user || !user._id) {
-    e.preventDefault();
-    console.error("User data is not available");
-    return;
-  }
-  handleSave(e);
-}}>
+          <form className="flex flex-col" onSubmit={handleSave}>
             <div className="custom-scrollbar h-[450px] overflow-y-auto px-2 pb-3">
               <div>
                 <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
@@ -158,8 +216,8 @@ export default function UserInfoCard() {
                 <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
                   <div className="col-span-2 lg:col-span-1">
                     <Label>Full Name</Label>
-                    <Input 
-                      type="text" 
+                    <Input
+                      type="text"
                       value={user?.fullName || ""}
                       disabled
                     />
@@ -167,8 +225,8 @@ export default function UserInfoCard() {
 
                   <div className="col-span-2 lg:col-span-1">
                     <Label>Email Address</Label>
-                    <Input 
-                      type="email" 
+                    <Input
+                      type="email"
                       value={user?.email || ""}
                       disabled
                     />
@@ -176,30 +234,70 @@ export default function UserInfoCard() {
 
                   <div className="col-span-2 lg:col-span-1">
                     <Label>Phone</Label>
-                    <Input 
-                      type="text" 
+                    <Input
+                      type="text"
                       value={user?.phone || ""}
                       disabled
                     />
                   </div>
 
                   <div className="col-span-2 lg:col-span-1">
-                    <Label>Instagram</Label>
-                    <Input 
-                      type="text" 
-                      value={instagram} 
-                      onChange={(e) => setInstagram(e.target.value)}
-                      placeholder="Instagram username"
+                    <Label>Designation</Label>
+                    <Input
+                      type="text"
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                      placeholder="Your address"
+                    />
+                  </div>
+
+                  <div className="col-span-2 lg:col-span-1">
+                    <Label>Blood Group</Label>
+                    <Select
+                      options={bloodGroupOptions}
+                      value={bloodGroup}
+                      onChange={setBloodGroup}
+                      placeholder="Select Blood Group"
+                    />
+                  </div>
+
+                  <div className="col-span-2 lg:col-span-1">
+                    <Label>Country</Label>
+                    <Select
+                      options={countryOptions}
+                      value={country}
+                      onChange={setCountry}
+                      placeholder="Select Country"
+                    />
+                  </div>
+
+                  <div className="col-span-2 lg:col-span-1">
+                    <Label>State</Label>
+                    <Select
+                      options={stateOptions}
+                      value={state}
+                      onChange={setState}
+                      placeholder="Select State"
                     />
                   </div>
 
                   <div className="col-span-2">
-                    <Label>Location</Label>
-                    <Input 
-                      type="text" 
-                      value={location} 
-                      onChange={(e) => setLocation(e.target.value)}
-                      placeholder="Your address"
+                    <Label>Reporting Head</Label>
+                    <Select
+                      options={reportingHeadOptions}
+                      value={reportingHead}
+                      onChange={setReportingHead}
+                      placeholder="Select Reporting Head"
+                    />
+                  </div>
+
+                  <div className="col-span-2 lg:col-span-1">
+                    <Label>Instagram</Label>
+                    <Input
+                      type="text"
+                      value={instagram}
+                      onChange={(e) => setInstagram(e.target.value)}
+                      placeholder="Instagram username"
                     />
                   </div>
                 </div>

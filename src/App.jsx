@@ -24,8 +24,8 @@ import { ScrollToTop } from "./components/common/ScrollToTop";
 import LeadsOverview from "./pages/Dashboard/LeadsOverview";
 import StudentsOverview from "./pages/Dashboard/StudentsOverview";
 import RevenueOverview from "./pages/Dashboard/RevenewOverview";
-import ManageProfiles from "./pages/ManageProfiles";
 import CampaignSettings from "./pages/Settings/CampaignSettings";
+import ContactPointSettings from "./pages/Settings/ContactPointSettings";
 import CourseManagement from "./pages/Settings/CourseManagement";
 import UserManagement from "./pages/Settings/UserManagement";
 import EmailInbox from "./pages/Email/EmailInbox";
@@ -49,13 +49,13 @@ export default function App() {
 
             {/* Others Page */}
             <Route path="/profile" element={<ProtectedRoutes><UserProfiles /></ProtectedRoutes>} />
-            <Route path="/manage-profiles" element={<ProtectedRoutes requireAdmin={true}><ManageProfiles /></ProtectedRoutes>} />
             <Route path="/calendar" element={<ProtectedRoutes><Calendar /></ProtectedRoutes>} />
             <Route path="/email" element={<ProtectedRoutes><EmailInbox /></ProtectedRoutes>} />
             <Route path="/blank" element={<ProtectedRoutes><Blank /></ProtectedRoutes>} />
             
             {/* Settings */}
             <Route path="/settings/campaigns" element={<ProtectedRoutes><CampaignSettings /></ProtectedRoutes>} />
+            <Route path="/settings/contact-points" element={<ProtectedRoutes><ContactPointSettings /></ProtectedRoutes>} />
             <Route path="/settings/courses" element={<ProtectedRoutes requireAdmin={true}><CourseManagement /></ProtectedRoutes>} />
             <Route path="/settings/users" element={<ProtectedRoutes requireAdmin={true}><UserManagement /></ProtectedRoutes>} />
 

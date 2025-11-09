@@ -22,26 +22,34 @@ function AuthProvider({ children }) {
         setLoading(false);
       })
       .catch(err => {
-        setUser(null);
-        setIsLoggedIn(false);
-        setIsAdmin(false);
-        setLoading(false); // <--- add this
+        // If it's a 403 error (account not approved), still set the user but not logged in
+        if (err.response && err.response.status === 403) {
+          // Account not approved yet
+          setUser(null);
+          setIsLoggedIn(false);
+          setIsAdmin(false);
+        } else {
+          // Other errors (not authenticated)
+          setUser(null);
+          setIsLoggedIn(false);
+          setIsAdmin(false);
+        }
+        setLoading(false);
       });
   }, []);
-
 
   function updateUser(userData) {
     setUser(userData);
   }
 
-function login(userData, role) {
-  setUser(userData);
-  setIsLoggedIn(true);
-  // Check if user has admin role or isAdmin flag is true
-  const isAdminUser = userData.isAdmin || (Array.isArray(role) && role.includes('Admin')) || (typeof role === 'string' && role === 'Admin');
-  setIsAdmin(isAdminUser);
-  setLoading(false);
-}
+  function login(userData, role) {
+    setUser(userData);
+    setIsLoggedIn(true);
+    // Check if user has admin role or isAdmin flag is true
+    const isAdminUser = userData.isAdmin || (Array.isArray(role) && role.includes('Admin')) || (typeof role === 'string' && role === 'Admin');
+    setIsAdmin(isAdminUser);
+    setLoading(false);
+  }
 
   function logout() {
     setIsLoggedIn(false);

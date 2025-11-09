@@ -49,6 +49,12 @@ const userSchema = new mongoose.Schema(
     company: { type: String, default: "" },
     location: { type: String, default: "DreamZone, Kasaragod" },
     avatar: { type: String, default: null },
+    
+    // New profile fields
+    bloodGroup: { type: String, default: "" },
+    country: { type: String, default: "" },
+    state: { type: String, default: "" },
+    reportingHead: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }
   },
   {
     timestamps: true, // enable both createdAt and updatedAt
@@ -70,6 +76,17 @@ userSchema.pre('save', async function(next) {
     }
   }
   next();
+});
+
+// Ensure virtual fields are serialized
+userSchema.set('toJSON', {
+  virtuals: true,
+  transform: function (doc, ret) {
+    // Remove sensitive fields
+    delete ret.password;
+    delete ret.__v;
+    return ret;
+  }
 });
 
 const User = mongoose.model("User", userSchema);

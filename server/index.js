@@ -15,6 +15,7 @@ import emailRoutes from './routes/emailRoute.js'
 import profileRoutes from './routes/profileRoute.js'
 import studentRoutes from './routes/studentRoutes.js'
 import courseRoutes from './routes/courseRoutes.js'
+import contactPointRoutes from './routes/contactPointRoute.js'
 
 const app = express()
 
@@ -38,6 +39,7 @@ app.use('/api/email', emailRoutes)
 app.use('/api/profile', profileRoutes)
 app.use('/api/students', studentRoutes)
 app.use('/api/courses', courseRoutes)
+app.use('/api/contact-points', contactPointRoutes)
 
 const PORT = process.env.PORT || 5000
 app.listen(PORT, () => { console.log(`Server is running on port ${PORT}`)})

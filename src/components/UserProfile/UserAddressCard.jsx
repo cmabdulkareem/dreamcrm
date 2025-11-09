@@ -1,4 +1,4 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect } from "react";
 import { useModal } from "../../hooks/useModal";
 import { Modal } from "../ui/modal";
 import Button from "../ui/button/Button";
@@ -15,6 +15,13 @@ export default function UserAddressCard() {
   
   // Initialize state with user data
   const [location, setLocation] = useState(user?.location || "");
+
+  // Reset form state when user changes
+  useEffect(() => {
+    if (user) {
+      setLocation(user?.location || "");
+    }
+  }, [user]);
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -41,8 +48,7 @@ export default function UserAddressCard() {
         setUser(response.data.user);
       }
 
-      // Don't close the modal - keep it open for continued editing
-      // closeModal(); // Commented out to keep modal open
+      closeModal();
     } catch (error) {
       console.error("Error updating address:", error);
       // Optionally show an error message to the user

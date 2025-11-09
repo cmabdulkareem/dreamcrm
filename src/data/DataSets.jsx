@@ -7,6 +7,17 @@ const placeOptions = [
     { value: "Other", label: "Other" },
 ];
 
+const bloodGroupOptions = [
+  { value: "", label: "Select Blood Group" },
+  { value: "A+", label: "A+" },
+  { value: "A-", label: "A-" },
+  { value: "B+", label: "B+" },
+  { value: "B-", label: "B-" },
+  { value: "AB+", label: "AB+" },
+  { value: "AB-", label: "AB-" },
+  { value: "O+", label: "O+" },
+  { value: "O-", label: "O-" }
+];
 
 const countries = [
   { code: "IN", label: "+91" },   // India
@@ -65,6 +76,24 @@ const countries = [
   { code: "CL", label: "+56" },   // Chile
   { code: "CO", label: "+57" },   // Colombia
   { code: "PE", label: "+51" },   // Peru
+];
+
+const countryOptions = [
+  { value: "", label: "Select Country" },
+  { value: "India", label: "India" },
+  { value: "USA", label: "United States" },
+  { value: "UK", label: "United Kingdom" },
+  { value: "Canada", label: "Canada" },
+  { value: "Australia", label: "Australia" }
+];
+
+const stateOptions = [
+  { value: "", label: "Select State" },
+  { value: "Kerala", label: "Kerala" },
+  { value: "Karnataka", label: "Karnataka" },
+  { value: "Tamil Nadu", label: "Tamil Nadu" },
+  { value: "Maharashtra", label: "Maharashtra" },
+  { value: "Delhi", label: "Delhi" }
 ];
 
   const enquirerGender = [
@@ -225,7 +254,10 @@ const employmentType = [
 
 export { 
   placeOptions, 
+  bloodGroupOptions,
   countries, 
+  countryOptions,
+  stateOptions,
   enquirerGender, 
   enquirerStatus, 
   enquirerEducation, 

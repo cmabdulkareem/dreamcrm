@@ -42,7 +42,7 @@ export default function UserAddressCard() {
       };
 
       const response = await axios.put(
-        `${API}/users/update/${user._id}`,
+        `${API}/users/update/${user.id}`,
         payload,
         { withCredentials: true }
       );

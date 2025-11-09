@@ -36,12 +36,6 @@ export default function ProfileImageUpload({ user, updateAvatar }) {
       return;
     }
 
-    // Validate file size (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("File size exceeds 5MB limit");
-      return;
-    }
-
     setSelectedFile(file);
     
     // Create preview
@@ -74,7 +68,7 @@ export default function ProfileImageUpload({ user, updateAvatar }) {
       crop.height
     );
     
-    // As a blob
+    // As a blob with compression
     return new Promise((resolve, reject) => {
       canvas.toBlob(blob => {
         if (!blob) {
@@ -83,7 +77,7 @@ export default function ProfileImageUpload({ user, updateAvatar }) {
         }
         blob.name = fileName;
         resolve(blob);
-      }, 'image/jpeg');
+      }, 'image/jpeg', 0.8); // 80% quality compression
     });
   };
 
@@ -247,7 +241,7 @@ export default function ProfileImageUpload({ user, updateAvatar }) {
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
             {croppedImageUrl 
               ? "Preview of your cropped profile image" 
-              : "Select an area to crop your profile image. The image should be in JPG, PNG, or GIF format and less than 5MB."}
+              : "Select an area to crop your profile image. The image should be in JPG, PNG, or GIF format. Images will be automatically compressed after upload."}
           </p>
           
           <div className="flex justify-center gap-3">
