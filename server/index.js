@@ -24,7 +24,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Serve static files from public directory
+// Serve static files from dist directory (built React app)
+app.use(express.static(path.join(__dirname, '../dist')));
+
+// Serve static files from public directory (images, favicon, etc.)
 app.use(express.static(path.join(__dirname, '../public')));
 
 app.use(cookieParser())
@@ -40,6 +43,15 @@ app.use('/api/profile', profileRoutes)
 app.use('/api/students', studentRoutes)
 app.use('/api/courses', courseRoutes)
 app.use('/api/contact-points', contactPointRoutes)
+
+// Catch-all route to serve index.html for client-side routing
+app.get('/api/*', (req, res, next) => {
+  next();
+});
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../dist/index.html'));
+});
 
 const PORT = process.env.PORT || 5000
 app.listen(PORT, () => { console.log(`Server is running on port ${PORT}`)})
