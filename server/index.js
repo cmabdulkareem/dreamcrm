@@ -45,7 +45,7 @@ app.use('/api/courses', courseRoutes)
 app.use('/api/contact-points', contactPointRoutes)
 
 // Catch-all route to serve index.html for client-side routing
-app.get('*', (req, res) => {
+app.use((req, res) => {
   // Don't serve index.html for API routes
   if (req.path.startsWith('/api/')) {
     res.status(404).send('Not Found');
