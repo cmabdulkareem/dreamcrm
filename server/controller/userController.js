@@ -108,10 +108,13 @@ export const signInUser = async (req, res) => {
 // Auth check
 export const authCheck = async (req, res) => {
   try {
+    console.log('Auth check called with user ID:', req.user.id);
     const user = await userModel.findById(req.user.id).populate('reportingHead', 'fullName email');
+    console.log('User found:', user ? 'Yes' : 'No');
     if (!user) return res.status(404).json({ message: "User not found" });
 
     // Check if account is active
+    console.log('Account status:', user.accountStatus);
     if (user.accountStatus !== "Active") {
       return res.status(403).json({ message: "Account not approved yet" });
     }
