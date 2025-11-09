@@ -45,11 +45,12 @@ app.use('/api/courses', courseRoutes)
 app.use('/api/contact-points', contactPointRoutes)
 
 // Catch-all route to serve index.html for client-side routing
-app.get('/api/*', (req, res, next) => {
-  next();
-});
-
 app.get('*', (req, res) => {
+  // Don't serve index.html for API routes
+  if (req.path.startsWith('/api/')) {
+    res.status(404).send('Not Found');
+    return;
+  }
   res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
