@@ -1,11 +1,11 @@
 import { useState } from "react";
 import ComponentCard from "../../common/ComponentCard.jsx";
-import Label from "../Label.tsx";
-import Input from "../input/InputField.tsx";
-import PhoneInput from "../group-input/PhoneInput.tsx";
-import Select from "../Select.tsx";
-import { EyeCloseIcon, EyeIcon, TimeIcon } from "../../../icons/index.ts";
-import DatePicker from "../date-picker.tsx";
+import Label from "../Label.jsx";
+import Input from "../input/InputField.jsx";
+import PhoneInput from "../group-input/PhoneInput.jsx";
+import Select from "../Select.jsx";
+import { EyeCloseIcon, EyeIcon, TimeIcon } from "../../../icons/index.js";
+import DatePicker from "../date-picker.jsx";
 
 export default function DefaultInputs() {
 

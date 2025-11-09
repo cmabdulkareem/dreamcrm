@@ -2,12 +2,12 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb.jsx";
 import PageMeta from "../../components/common/PageMeta.jsx";
 import { useState, useContext, useEffect } from "react";
 import ComponentCard from "../../components/common/ComponentCard.jsx";
-import Label from "../../components/form/Label.tsx";
-import Input from "../../components/form/input/InputField.tsx";
-import PhoneInput from "../../components/form/group-input/PhoneInput.tsx";
-import Select from "../../components/form/Select.tsx";
-import DatePicker from "../../components/form/date-picker.tsx";
-import MultiSelect from "../../components/form/MultiSelect.tsx";
+import Label from "../../components/form/Label.jsx";
+import Input from "../../components/form/input/InputField.jsx";
+import PhoneInput from "../../components/form/group-input/PhoneInput.jsx";
+import Select from "../../components/form/Select.jsx";
+import DatePicker from "../../components/form/date-picker.jsx";
+import MultiSelect from "../../components/form/MultiSelect.jsx";
 import { Modal } from "../../components/ui/modal";
 import { useModal } from "../../hooks/useModal";
 import { AuthContext } from "../../context/authContext";
@@ -27,7 +27,7 @@ import {
   contactPoints,
   campaigns
 } from "../../data/DataSets.jsx";
-import Button from "../../components/ui/button/Button.tsx";
+import Button from "../../components/ui/button/Button.jsx";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 

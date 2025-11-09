@@ -2,11 +2,11 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb.jsx";
 import PageMeta from "../../components/common/PageMeta.jsx";
 import { useState, useContext, useEffect, useMemo, useCallback, useRef } from "react";
 import ComponentCard from "../../components/common/ComponentCard.jsx";
-import Label from "../../components/form/Label.tsx";
-import Input from "../../components/form/input/InputField.tsx";
-import PhoneInput from "../../components/form/group-input/PhoneInput.tsx";
-import Select from "../../components/form/Select.tsx";
-import DatePicker from "../../components/form/date-picker.tsx";
+import Label from "../../components/form/Label.jsx";
+import Input from "../../components/form/input/InputField.jsx";
+import PhoneInput from "../../components/form/group-input/PhoneInput.jsx";
+import Select from "../../components/form/Select.jsx";
+import DatePicker from "../../components/form/date-picker.jsx";
 import { AuthContext } from "../../context/authContext";
 import { useNotifications } from "../../context/NotificationContext";
 import axios from "axios";
@@ -21,7 +21,7 @@ import {
   enquirerEducation,
   courseOptions,
 } from "../../data/DataSets.jsx";
-import Button from "../../components/ui/button/Button.tsx";
+import Button from "../../components/ui/button/Button.jsx";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 

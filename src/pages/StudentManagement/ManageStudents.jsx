@@ -2,7 +2,7 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb.jsx";
 import PageMeta from "../../components/common/PageMeta.jsx";
 import { useState, useEffect } from "react";
 import ComponentCard from "../../components/common/ComponentCard.jsx";
-import Button from "../../components/ui/button/Button.tsx";
+import Button from "../../components/ui/button/Button.jsx";
 import { useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
