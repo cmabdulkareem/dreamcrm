@@ -15,14 +15,19 @@ export default function UserAddressCard() {
   
   // Initialize state with user data
   const [location, setLocation] = useState(user?.location || "");
-  const [aadharNumber, setAadharNumber] = useState("");
 
-  const handleSave = async () => {
+  const handleSave = async (e) => {
+    e.preventDefault();
+    
+    // Check if user exists
+    if (!user || !user._id) {
+      console.error("User data is not available");
+      return;
+    }
+    
     try {
       const payload = {
-        location: location,
-        // Note: Aadhar number is not part of the user model, so it won't be saved
-        // If you want to add it, you'll need to update the user model
+        location: location
       };
 
       const response = await axios.put(
@@ -36,9 +41,11 @@ export default function UserAddressCard() {
         setUser(response.data.user);
       }
 
-      closeModal();
+      // Don't close the modal - keep it open for continued editing
+      // closeModal(); // Commented out to keep modal open
     } catch (error) {
       console.error("Error updating address:", error);
+      // Optionally show an error message to the user
     }
   };
 
@@ -58,15 +65,6 @@ export default function UserAddressCard() {
                 </p>
                 <p className="text-sm font-medium text-gray-800 dark:text-white/90">
                   {user?.location || "Not set"}
-                </p>
-              </div>
-
-              <div>
-                <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                  ADHAR NUMBER
-                </p>
-                <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                  Not set
                 </p>
               </div>
             </div>
@@ -106,8 +104,13 @@ export default function UserAddressCard() {
             </p>
           </div>
           <form className="flex flex-col" onSubmit={(e) => {
-            e.preventDefault();
-            handleSave();
+            // Prevent submission if user data is not available
+            if (!user || !user._id) {
+              e.preventDefault();
+              console.error("User data is not available");
+              return;
+            }
+            handleSave(e);
           }}>
             <div className="px-2 overflow-y-auto custom-scrollbar">
               <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
@@ -118,16 +121,6 @@ export default function UserAddressCard() {
                     value={location} 
                     onChange={(e) => setLocation(e.target.value)}
                     placeholder="Enter your full address"
-                  />
-                </div>
-
-                <div>
-                  <Label>ADHAR NUMBER</Label>
-                  <Input 
-                    type="text" 
-                    value={aadharNumber} 
-                    onChange={(e) => setAadharNumber(e.target.value)}
-                    placeholder="Enter ADHAR number"
                   />
                 </div>
               </div>

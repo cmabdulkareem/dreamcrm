@@ -16,6 +16,8 @@ import BasicTables from "./pages/Tables/BasicTables";
 import NewLead from "./pages/LeadManagement/NewLead";
 import ManageLeads from "./pages/LeadManagement/ManageLeads";
 import LeadBlank from "./pages/LeadManagement/LeadBlank";
+import NewStudent from "./pages/StudentManagement/NewStudent";
+import ManageStudents from "./pages/StudentManagement/ManageStudents";
 import Blank from "./pages/Blank";
 import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
@@ -24,6 +26,8 @@ import StudentsOverview from "./pages/Dashboard/StudentsOverview";
 import RevenueOverview from "./pages/Dashboard/RevenewOverview";
 import ManageProfiles from "./pages/ManageProfiles";
 import CampaignSettings from "./pages/Settings/CampaignSettings";
+import CourseManagement from "./pages/Settings/CourseManagement";
+import UserManagement from "./pages/Settings/UserManagement";
 import EmailInbox from "./pages/Email/EmailInbox";
 import ProtectedRoutes from "./routes/ProtectedRoutes";
 import { CalendarProvider } from "./context/calendarContext";
@@ -52,11 +56,15 @@ export default function App() {
             
             {/* Settings */}
             <Route path="/settings/campaigns" element={<ProtectedRoutes><CampaignSettings /></ProtectedRoutes>} />
+            <Route path="/settings/courses" element={<ProtectedRoutes requireAdmin={true}><CourseManagement /></ProtectedRoutes>} />
+            <Route path="/settings/users" element={<ProtectedRoutes requireAdmin={true}><UserManagement /></ProtectedRoutes>} />
 
             {/* Forms */}
             <Route path="/new-lead" element={<ProtectedRoutes><NewLead /></ProtectedRoutes>} />
             <Route path="/lead-management" element={<ProtectedRoutes><ManageLeads /></ProtectedRoutes>} />
             <Route path="/lead-blank" element={<ProtectedRoutes><LeadBlank /></ProtectedRoutes>} />
+            <Route path="/new-student" element={<ProtectedRoutes><NewStudent /></ProtectedRoutes>} />
+            <Route path="/manage-students" element={<ProtectedRoutes><ManageStudents /></ProtectedRoutes>} />
 
             {/* Tables */}
             <Route path="/basic-tables" element={<ProtectedRoutes><BasicTables /></ProtectedRoutes>} />

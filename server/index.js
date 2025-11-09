@@ -13,6 +13,8 @@ import customerRoutes from './routes/customerRoutes.js'
 import campaignRoutes from './routes/campaignRoute.js'
 import emailRoutes from './routes/emailRoute.js'
 import profileRoutes from './routes/profileRoute.js'
+import studentRoutes from './routes/studentRoutes.js'
+import courseRoutes from './routes/courseRoutes.js'
 
 const app = express()
 
@@ -20,6 +22,9 @@ const app = express()
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Serve static files from public directory
+app.use(express.static(path.join(__dirname, '../public')));
 
 app.use(cookieParser())
 app.use(express.json())
@@ -31,6 +36,8 @@ app.use('/api/customers', customerRoutes)
 app.use('/api/campaigns', campaignRoutes)
 app.use('/api/email', emailRoutes)
 app.use('/api/profile', profileRoutes)
+app.use('/api/students', studentRoutes)
+app.use('/api/courses', courseRoutes)
 
 const PORT = process.env.PORT || 5000
 app.listen(PORT, () => { console.log(`Server is running on port ${PORT}`)})

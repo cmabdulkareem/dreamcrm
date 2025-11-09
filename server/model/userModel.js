@@ -34,10 +34,18 @@ const userSchema = new mongoose.Schema(
     accountStatus: { type: String, enum: ["Pending", "Active", "Suspended", "Deactivated"], default: "Pending" },
     isAdmin: { type: Boolean, default: false },
     
+    // Role-based access control
+    roles: { 
+      type: [{
+        type: String,
+        enum: ['Admin', 'Manager', 'Counsellor', 'Marketing', 'Finance', 'Placement', 'General']
+      }], 
+      default: ['General'] 
+    },
+    
     // Added missing fields
     dob: { type: Date, default: null },
     joiningDate: { type: Date, default: null }, // new field added
-    roles: { type: [String], default: ["General"] },
     company: { type: String, default: "" },
     location: { type: String, default: "DreamZone, Kasaragod" },
     avatar: { type: String, default: null },
@@ -46,6 +54,23 @@ const userSchema = new mongoose.Schema(
     timestamps: true, // enable both createdAt and updatedAt
   }
 );
+
+// Pre-save middleware to handle first user as admin
+userSchema.pre('save', async function(next) {
+  // Check if this is a new user
+  if (this.isNew) {
+    // Count existing users
+    const userCount = await mongoose.model('User').countDocuments();
+    
+    // If this is the first user, make them admin
+    if (userCount === 0) {
+      this.isAdmin = true;
+      this.roles = ['Admin'];
+      this.accountStatus = 'Active';
+    }
+  }
+  next();
+});
 
 const User = mongoose.model("User", userSchema);
 export default User;

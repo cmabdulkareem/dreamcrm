@@ -48,7 +48,16 @@ export const signInUser = async (req, res) => {
       return res.status(403).json({ message: "Account not approved yet" });
     }
 
-    const token = jwt.sign({ id: user._id, roles: user.roles }, process.env.JWT_SECRET, { expiresIn: "1d" });
+    // Create token with user roles and admin status
+    const token = jwt.sign(
+      { 
+        id: user._id, 
+        roles: user.roles,
+        isAdmin: user.isAdmin
+      }, 
+      process.env.JWT_SECRET, 
+      { expiresIn: "1d" }
+    );
 
     res.cookie("token", token, {
       httpOnly: true,
@@ -59,7 +68,15 @@ export const signInUser = async (req, res) => {
 
     return res.status(200).json({
       message: "Login successful",
-      user: { id: user._id, fullName: user.fullName, email: user.email, phone: user.phone, roles: user.roles, avatar: user.avatar ? `${req.protocol}://${req.get('host')}${user.avatar}` : null },
+      user: { 
+        id: user._id, 
+        fullName: user.fullName, 
+        email: user.email, 
+        phone: user.phone, 
+        roles: user.roles, 
+        isAdmin: user.isAdmin,
+        avatar: user.avatar ? `${req.protocol}://${req.get('host')}${user.avatar}` : null 
+      },
       role: user.roles
     });
   } catch (error) {
@@ -75,7 +92,15 @@ export const authCheck = async (req, res) => {
     if (!user) return res.status(404).json({ message: "User not found" });
 
     return res.status(200).json({
-      user: { id: user._id, fullName: user.fullName, email: user.email, phone: user.phone, roles: user.roles, avatar: user.avatar ? `${req.protocol}://${req.get('host')}${user.avatar}` : null, isAdmin: user.isAdmin },
+      user: { 
+        id: user._id, 
+        fullName: user.fullName, 
+        email: user.email, 
+        phone: user.phone, 
+        roles: user.roles, 
+        isAdmin: user.isAdmin,
+        avatar: user.avatar ? `${req.protocol}://${req.get('host')}${user.avatar}` : null 
+      },
       role: user.roles
     });
   } catch (error) {
@@ -84,16 +109,30 @@ export const authCheck = async (req, res) => {
   }
 };
 
+// Get all users (admin only)
 export const getAllUsers = async (req, res) => {
   try {
+    // Check if user is admin
+    if (!req.user.isAdmin) {
+      return res.status(403).json({ message: "Access denied. Admin privileges required." });
+    }
+    
     const users = await userModel.find();
-    return res.status(200).json({ users });
+    
+    // Format users with absolute avatar URLs
+    const formattedUsers = users.map(user => ({
+      ...user.toObject(),
+      avatar: user.avatar ? `${req.protocol}://${req.get('host')}${user.avatar}` : null
+    }));
+    
+    return res.status(200).json({ users: formattedUsers });
   } catch (error) {
     console.error("Error fetching users:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
 
+// Update user (admin or own profile)
 export const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
@@ -112,19 +151,9 @@ export const updateUser = async (req, res) => {
       roles,
       company,
       instagram,
-      location
+      location,
+      isAdmin
     } = req.body;
-
-    // Basic required fields validation
-    if (!fullName || !email || !phone) {
-      return res.status(400).json({ message: "Full name, email, and phone are required." });
-    }
-
-    // Email validation
-    const emailError = validateEmail(email);
-    if (emailError) {
-      return res.status(400).json({ message: emailError });
-    }
 
     // Find user by ID
     const user = await userModel.findById(id);
@@ -133,59 +162,161 @@ export const updateUser = async (req, res) => {
     }
 
     // Check if the requesting user is an admin or updating their own profile
-    const isAdmin = req.user.isAdmin || (Array.isArray(req.user.roles) && req.user.roles.includes('Admin')) || (typeof req.user.roles === 'string' && req.user.roles === 'Admin');
+    const isAdminUser = req.user.isAdmin;
     const isOwnProfile = req.user.id === id;
 
-    // If user is updating their own profile, only allow Instagram and location updates
-    if (isOwnProfile && !isAdmin) {
+    // Regular users can only update their own instagram and location
+    if (isOwnProfile && !isAdminUser) {
       // Only update Instagram and location for non-admin users editing their own profile
-      user.instagram = instagram ?? user.instagram;
-      user.location = location ?? user.location;
-    } else {
+      if (instagram !== undefined) user.instagram = instagram;
+      if (location !== undefined) user.location = location;
+    } else if (isAdminUser) {
       // Admins can update all fields
-      user.employeeCode = employeeCode ?? user.employeeCode;
-      user.fullName = fullName ?? user.fullName;
-      user.email = email ?? user.email;
-      user.phone = phone ?? user.phone;
-      user.gender = gender ?? user.gender;
+      // Basic required fields validation
+      if (fullName !== undefined && (!fullName || !email || !phone)) {
+        return res.status(400).json({ message: "Full name, email, and phone are required." });
+      }
+
+      // Email validation
+      if (email !== undefined) {
+        const emailError = validateEmail(email);
+        if (emailError) {
+          return res.status(400).json({ message: emailError });
+        }
+        user.email = email;
+      }
+
+      // Update fields only if they are provided
+      if (employeeCode !== undefined) user.employeeCode = employeeCode;
+      if (fullName !== undefined) user.fullName = fullName;
+      if (phone !== undefined) user.phone = phone;
+      if (gender !== undefined) user.gender = gender;
 
       // Handle dates
-      if (dob) {
-        const dobDate = new Date(dob);
-        if (isNaN(dobDate)) {
-          return res.status(400).json({ message: "Invalid date of birth." });
+      if (dob !== undefined) {
+        if (dob === null) {
+          user.dob = null;
+        } else {
+          const dobDate = new Date(dob);
+          if (isNaN(dobDate)) {
+            return res.status(400).json({ message: "Invalid date of birth." });
+          }
+          user.dob = dobDate;
         }
-        user.dob = dobDate;
       }
 
-      if (joiningDate) {
-        const joiningDateObj = new Date(joiningDate);
-        if (isNaN(joiningDateObj)) {
-          return res.status(400).json({ message: "Invalid joining date." });
+      if (joiningDate !== undefined) {
+        if (joiningDate === null) {
+          user.joiningDate = null;
+        } else {
+          const joiningDateObj = new Date(joiningDate);
+          if (isNaN(joiningDateObj)) {
+            return res.status(400).json({ message: "Invalid joining date." });
+          }
+          user.joiningDate = joiningDateObj;
         }
-        user.joiningDate = joiningDateObj;
       }
 
-      user.department = department ?? user.department;
-      user.designation = designation ?? user.designation;
-      user.employmentType = employmentType ?? user.employmentType;
-      user.accountStatus = accountStatus ?? user.accountStatus;
-      user.roles = roles ?? user.roles;
-      user.company = company ?? user.company;
-      user.instagram = instagram ?? user.instagram;
-      user.location = location ?? user.location;
+      if (department !== undefined) user.department = department;
+      if (designation !== undefined) user.designation = designation;
+      if (employmentType !== undefined) user.employmentType = employmentType;
+      if (accountStatus !== undefined) user.accountStatus = accountStatus;
+      
+      // Only admins can update roles and admin status
+      if (roles !== undefined) user.roles = roles;
+      if (isAdmin !== undefined) user.isAdmin = isAdmin;
+      
+      if (company !== undefined) user.company = company;
+      if (instagram !== undefined) user.instagram = instagram;
+      if (location !== undefined) user.location = location;
+    } else {
+      return res.status(403).json({ message: "Access denied. You can only update your own Instagram and location." });
+    }
+
+    // Save updated user
+    await user.save();
+
+    // Return updated user data
+    const updatedUser = {
+      id: user._id,
+      fullName: user.fullName,
+      email: user.email,
+      phone: user.phone,
+      roles: user.roles,
+      isAdmin: user.isAdmin,
+      department: user.department,
+      designation: user.designation,
+      accountStatus: user.accountStatus,
+      instagram: user.instagram,
+      location: user.location,
+      gender: user.gender,
+      dob: user.dob,
+      joiningDate: user.joiningDate,
+      employmentType: user.employmentType,
+      company: user.company,
+      employeeCode: user.employeeCode,
+      avatar: user.avatar ? `${req.protocol}://${req.get('host')}${user.avatar}` : null
+    };
+
+    return res.status(200).json({
+      message: "User updated successfully.",
+      user: updatedUser
+    });
+
+  } catch (error) {
+    console.error("Update user error:", error);
+    return res.status(500).json({ message: "Server error. Please try again." });
+  }
+};
+
+// Assign roles to user (admin only)
+export const assignRoles = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { roles, isAdmin, accountStatus } = req.body;
+
+    // Check if requesting user is admin
+    if (!req.user.isAdmin) {
+      return res.status(403).json({ message: "Access denied. Admin privileges required." });
+    }
+
+    // Find user by ID
+    const user = await userModel.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    // Update roles and admin status
+    if (roles) {
+      user.roles = roles;
+    }
+    
+    if (isAdmin !== undefined) {
+      user.isAdmin = isAdmin;
+    }
+    
+    // Update account status if provided
+    if (accountStatus) {
+      user.accountStatus = accountStatus;
     }
 
     // Save updated user
     await user.save();
 
     return res.status(200).json({
-      message: "User updated successfully.",
-      user
+      message: "User roles updated successfully.",
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        roles: user.roles,
+        isAdmin: user.isAdmin,
+        accountStatus: user.accountStatus
+      }
     });
 
   } catch (error) {
-    console.error("Update user error:", error);
+    console.error("Assign roles error:", error);
     return res.status(500).json({ message: "Server error. Please try again." });
   }
 };

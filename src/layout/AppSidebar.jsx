@@ -95,6 +95,8 @@ const settingsItems = [
       { name: "Edit Profile", path: "/profile", pro: false },
       { name: "Manage Profiles", path: "/manage-profiles", pro: false },
       { name: "Campaigns", path: "/settings/campaigns", pro: false },
+      { name: "Course Management", path: "/settings/courses", pro: false },
+      { name: "User Management", path: "/settings/users", pro: false },
     ],
   }
 ];
@@ -225,7 +227,7 @@ const AppSidebar = () => {
             >
               <ul className="mt-2 space-y-1 ml-9">
                 {nav.subItems.map((subItem) => (
-                  (subItem.name !== "Manage Profiles" || isAdminUser) && (
+                  (subItem.name !== "Manage Profiles" && subItem.name !== "Course Management") || isAdminUser ? (
                     <li key={subItem.name}>
                       <Link
                         to={subItem.path}
@@ -259,7 +261,7 @@ const AppSidebar = () => {
                         </span>
                       </Link>
                     </li>
-                  )
+                  ) : null
                 ))}
               </ul>
             </div>

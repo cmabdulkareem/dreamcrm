@@ -47,7 +47,6 @@ export default function FormElements() {
   const [otherPlace, setOtherPlace] = useState("");
   const [status, setStatus] = useState("");
   const [education, setEducation] = useState("");
-  const [remarks, setRemarks] = useState("");
   const [selectedValues, setSelectedValues] = useState([]);
   const [contactPoint, setContactPoint] = useState("");
   const [otherContactPoint, setOtherContactPoint] = useState("");
@@ -57,6 +56,9 @@ export default function FormElements() {
   const [error, setError] = useState(false);
   const [campaignOptions, setCampaignOptions] = useState([]);
   
+  // Validation error states
+  const [validationErrors, setValidationErrors] = useState({});
+
   // Campaign modal states
   const { isOpen: isCampaignModalOpen, openModal: openCampaignModal, closeModal: closeCampaignModal } = useModal();
   const [newCampaignName, setNewCampaignName] = useState("");
@@ -154,6 +156,54 @@ export default function FormElements() {
     }
   };
 
+  // Validate mandatory fields
+  const validateForm = () => {
+    const errors = {};
+    
+    if (!fullName.trim()) {
+      errors.fullName = "Full Name is required";
+    }
+    
+    if (!email.trim()) {
+      errors.email = "Email is required";
+    } else if (!validateEmail(email)) {
+      errors.email = "Please enter a valid email address";
+    }
+    
+    if (!phone1.trim()) {
+      errors.phone1 = "Phone is required";
+    }
+    
+    if (!place) {
+      errors.place = "Place is required";
+    } else if (place === "Other" && !otherPlace.trim()) {
+      errors.otherPlace = "Please specify the place";
+    }
+    
+    if (selectedValues.length === 0) {
+      errors.coursePreference = "Course preference is required";
+    }
+    
+    if (!contactPoint) {
+      errors.contactPoint = "Contact point is required";
+    }
+    
+    if (!campaign) {
+      errors.campaign = "Campaign is required";
+    }
+    
+    if (!followUpDate) {
+      errors.followUpDate = "Next follow up date is required";
+    }
+    
+    if (!leadRemarks.trim()) {
+      errors.leadRemarks = "Remarks are required";
+    }
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   // Reset the whole form
   const handleClear = () => {
     setFullName("");
@@ -166,7 +216,6 @@ export default function FormElements() {
     setOtherPlace("");
     setStatus("");
     setEducation("");
-    setRemarks("");
     setSelectedValues([]);
     setContactPoint("");
     setOtherContactPoint("");
@@ -174,11 +223,18 @@ export default function FormElements() {
     setLeadRemarks("");
     setFollowUpDate("");
     setError(false);
+    setValidationErrors({});
   };
 
   // Handle submit
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate form before submission
+    if (!validateForm()) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
     
     const formData = {
       fullName,
@@ -187,8 +243,8 @@ export default function FormElements() {
       phone2,
       gender,
       dob,
-      place,
-      otherPlace,
+      place: place === "Other" ? otherPlace : place,
+      otherPlace: place === "Other" ? otherPlace : "",
       status,
       education,
       coursePreference: selectedValues.map(item => item.value),
@@ -242,30 +298,30 @@ export default function FormElements() {
 
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-          {/* Left column */}
           <div className="space-y-6">
             <ComponentCard title="Basic Details">
               <div className="space-y-6">
-                {/* Name + Email */}
                 <div className="flex flex-col md:flex-row gap-4">
                   <div className="w-full md:w-1/2">
-                    <Label htmlFor="firstName">Full Name</Label>
+                    <Label htmlFor="firstName">Full Name *</Label>
                     <Input
                       type="text"
                       id="firstName"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
+                      error={!!validationErrors.fullName}
+                      hint={validationErrors.fullName}
                     />
                   </div>
                   <div className="w-full md:w-1/2">
-                    <Label>Email</Label>
+                    <Label>Email *</Label>
                     <Input
                       type="email"
                       value={email}
-                      error={error}
+                      error={error || !!validationErrors.email}
                       onChange={handleEmailChange}
                       placeholder="Enter your email"
-                      hint={error ? "This is an invalid email address." : ""}
+                      hint={validationErrors.email || (error ? "This is an invalid email address." : "")}
                     />
                   </div>
                 </div>
@@ -273,13 +329,15 @@ export default function FormElements() {
                 {/* Phones */}
                 <div className="flex flex-col md:flex-row gap-4">
                   <div className="w-full md:w-1/2">
-                    <Label>Phone</Label>
+                    <Label>Phone *</Label>
                     <PhoneInput
                       selectPosition="end"
                       countries={countries}
                       placeholder="+91 98765 43210"
                       value={phone1}
                       onChange={setPhone1}
+                      error={!!validationErrors.phone1}
+                      hint={validationErrors.phone1}
                     />
                   </div>
                   <div className="w-full md:w-1/2">
@@ -315,12 +373,14 @@ export default function FormElements() {
                     />
                   </div>
                   <div className="w-full md:w-1/4">
-                    <Label>Place</Label>
+                    <Label>Place *</Label>
                     <Select
                       options={placeOptions}
                       value={place}
                       placeholder="Select Place"
                       onChange={setPlace}
+                      error={!!validationErrors.place}
+                      hint={validationErrors.place}
                     />
                   </div>
                   <div className="w-full md:w-1/4">
@@ -331,11 +391,13 @@ export default function FormElements() {
                       value={otherPlace}
                       onChange={(e) => setOtherPlace(e.target.value)}
                       disabled={place !== "Other"}
+                      error={place === "Other" && !otherPlace.trim() && !!validationErrors.otherPlace}
+                      hint={place === "Other" && !otherPlace.trim() ? validationErrors.otherPlace : ""}
                     />
                   </div>
                 </div>
 
-                {/* Status, Education, Remarks */}
+                {/* Status, Education - removed Remarks */}
                 <div className="flex flex-col md:flex-row gap-4 items-stretch">
                   <div className="flex-[0.5] flex flex-col">
                     <Label>Current Status</Label>
@@ -355,15 +417,7 @@ export default function FormElements() {
                       onChange={setEducation}
                     />
                   </div>
-                  <div className="flex-1 flex flex-col">
-                    <Label htmlFor="remarks">Remarks</Label>
-                    <Input
-                      type="text"
-                      id="remarks"
-                      value={remarks}
-                      onChange={(e) => setRemarks(e.target.value)}
-                    />
-                  </div>
+                  {/* Removed the Remarks field here */}
                 </div>
               </div>
             </ComponentCard>
@@ -379,20 +433,24 @@ export default function FormElements() {
                     options={courseOptions}
                     defaultSelected={["General"]}
                     onChange={setSelectedValues}
+                    error={!!validationErrors.coursePreference}
+                    hint={validationErrors.coursePreference}
                   />
                 </div>
 
                 <div className="flex flex-col md:flex-row gap-4">
-                  <div className="w-full md:w-1/3">
-                    <Label>Contact Point</Label>
+                  <div className="w-full">
+                    <Label>Contact Point *</Label>
                     <Select
                       options={contactPoints}
                       value={contactPoint}
                       placeholder="Contacted Through"
                       onChange={setContactPoint}
+                      error={!!validationErrors.contactPoint}
+                      hint={validationErrors.contactPoint}
                     />
                   </div>
-                  <div className="w-full md:w-1/3">
+                  <div className="w-full">
                     <Label htmlFor="otherContactPoint">Specify other</Label>
                     <Input
                       type="text"
@@ -402,38 +460,44 @@ export default function FormElements() {
                       disabled={contactPoint !== "other"}
                     />
                   </div>
-                  <div className="w-full md:w-1/3">
-                    <Label>Campaign</Label>
+                  <div className="w-full">
+                    <Label>Campaign *</Label>
                     <Select
                       options={campaignOptions}
                       value={campaign}
                       placeholder="Campaigns"
                       onChange={handleCampaignChange}
+                      error={!!validationErrors.campaign}
+                      hint={validationErrors.campaign}
                     />
                   </div>
                 </div>
                 <div className="flex flex-col md:flex-row gap-4">
-                  <div className="w-full">
+                  {/* Changed to 1/2 width each */}
+                  <div className="w-full md:w-1/3">
                     <DatePicker
                       id="followupDate"
                       label="Next Follow Up Date"
                       placeholder="Select a date"
                       value={followUpDate}
                       onChange={(date, str) => setFollowUpDate(str)}
+                      error={!!validationErrors.followUpDate}
+                      hint={validationErrors.followUpDate}
                     />
                   </div>
-                </div>
-                <div className="flex flex-col md:flex-row gap-4">
-                  <div className="w-full">
-                    <Label htmlFor="leadRemarks">Remarks</Label>
+                  <div className="w-full md:w-2/3">
+                    <Label htmlFor="leadRemarks">Remarks *</Label>
                     <Input
                       type="text"
                       id="leadRemarks"
                       value={leadRemarks}
                       onChange={(e) => setLeadRemarks(e.target.value)}
+                      error={!!validationErrors.leadRemarks}
+                      hint={validationErrors.leadRemarks}
                     />
                   </div>
                 </div>
+
               </div>
             </ComponentCard>
           </div>

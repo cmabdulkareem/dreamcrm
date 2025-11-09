@@ -14,28 +14,22 @@ export default function UserInfoCard() {
   const { isOpen, openModal, closeModal } = useModal();
   
   // Initialize state with user data
-  const [firstName, setFirstName] = useState(user?.fullName?.split(' ')[0] || "");
-  const [lastName, setLastName] = useState(user?.fullName?.split(' ').slice(1).join(' ') || "");
-  const [email, setEmail] = useState(user?.email || "");
-  const [phone, setPhone] = useState(user?.phone || "");
-  const [bio, setBio] = useState("");
-  const [facebook, setFacebook] = useState("");
-  const [twitter, setTwitter] = useState("");
-  const [linkedin, setLinkedin] = useState("");
   const [instagram, setInstagram] = useState(user?.instagram || "");
+  const [location, setLocation] = useState(user?.location || "");
 
-  const handleSave = async () => {
+  const handleSave = async (e) => {
+    e.preventDefault();
+    
+    // Check if user exists
+    if (!user || !user._id) {
+      console.error("User data is not available");
+      return;
+    }
+    
     try {
-      // Combine first and last name
-      const fullName = `${firstName} ${lastName}`.trim();
-      
       const payload = {
-        fullName: fullName || user?.fullName,
-        email: email || user?.email,
-        phone: phone || user?.phone,
-        instagram: instagram || user?.instagram
-        // Note: Social links and bio are not part of the user model
-        // If you want to add them, you'll need to update the user model
+        instagram: instagram,
+        location: location
       };
 
       const response = await axios.put(
@@ -49,17 +43,13 @@ export default function UserInfoCard() {
         setUser(response.data.user);
       }
 
-      closeModal();
+      // Don't close the modal - keep it open for continued editing
+      // closeModal(); // Commented out to keep modal open
     } catch (error) {
       console.error("Error updating user info:", error);
+      // Optionally show an error message to the user
     }
   };
-
-  // Split full name for display
-  const displayName = user?.fullName || "Not set";
-  const nameParts = displayName.split(' ');
-  const displayFirstName = nameParts[0];
-  const displayLastName = nameParts.slice(1).join(' ');
 
   return (
     <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-6">
@@ -72,19 +62,10 @@ export default function UserInfoCard() {
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-7 2xl:gap-x-32">
             <div>
               <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                First Name
+                Full Name
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                {displayFirstName}
-              </p>
-            </div>
-
-            <div>
-              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                Last Name
-              </p>
-              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                {displayLastName || "Not set"}
+                {user?.fullName || "Not set"}
               </p>
             </div>
 
@@ -108,10 +89,19 @@ export default function UserInfoCard() {
 
             <div>
               <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
-                Bio
+                Location
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                Team Manager
+                {user?.location || "Not set"}
+              </p>
+            </div>
+
+            <div>
+              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                Instagram
+              </p>
+              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                {user?.instagram || "Not set"}
               </p>
             </div>
           </div>
@@ -151,80 +141,27 @@ export default function UserInfoCard() {
             </p>
           </div>
           <form className="flex flex-col" onSubmit={(e) => {
-            e.preventDefault();
-            handleSave();
-          }}>
+  // Prevent submission if user data is not available
+  if (!user || !user._id) {
+    e.preventDefault();
+    console.error("User data is not available");
+    return;
+  }
+  handleSave(e);
+}}>
             <div className="custom-scrollbar h-[450px] overflow-y-auto px-2 pb-3">
               <div>
-                <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
-                  Social Links
-                </h5>
-
-                <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
-                  <div>
-                    <Label>Facebook</Label>
-                    <Input
-                      type="text"
-                      value={facebook}
-                      onChange={(e) => setFacebook(e.target.value)}
-                      placeholder="https://www.facebook.com/username"
-                    />
-                  </div>
-
-                  <div>
-                    <Label>X.com</Label>
-                    <Input 
-                      type="text" 
-                      value={twitter} 
-                      onChange={(e) => setTwitter(e.target.value)}
-                      placeholder="https://x.com/username"
-                    />
-                  </div>
-
-                  <div>
-                    <Label>Linkedin</Label>
-                    <Input
-                      type="text"
-                      value={linkedin}
-                      onChange={(e) => setLinkedin(e.target.value)}
-                      placeholder="https://www.linkedin.com/company/"
-                    />
-                  </div>
-
-                  <div>
-                    <Label>Instagram</Label>
-                    <Input 
-                      type="text" 
-                      value={instagram} 
-                      onChange={(e) => setInstagram(e.target.value)}
-                      placeholder="https://instagram.com/username"
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className="mt-7">
                 <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
                   Personal Information
                 </h5>
 
                 <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
                   <div className="col-span-2 lg:col-span-1">
-                    <Label>First Name</Label>
+                    <Label>Full Name</Label>
                     <Input 
                       type="text" 
-                      value={firstName} 
-                      onChange={(e) => setFirstName(e.target.value)}
-                      placeholder="First Name"
-                    />
-                  </div>
-
-                  <div className="col-span-2 lg:col-span-1">
-                    <Label>Last Name</Label>
-                    <Input 
-                      type="text" 
-                      value={lastName} 
-                      onChange={(e) => setLastName(e.target.value)}
-                      placeholder="Last Name"
+                      value={user?.fullName || ""}
+                      disabled
                     />
                   </div>
 
@@ -232,9 +169,8 @@ export default function UserInfoCard() {
                     <Label>Email Address</Label>
                     <Input 
                       type="email" 
-                      value={email} 
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Email Address"
+                      value={user?.email || ""}
+                      disabled
                     />
                   </div>
 
@@ -242,19 +178,28 @@ export default function UserInfoCard() {
                     <Label>Phone</Label>
                     <Input 
                       type="text" 
-                      value={phone} 
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="Phone Number"
+                      value={user?.phone || ""}
+                      disabled
+                    />
+                  </div>
+
+                  <div className="col-span-2 lg:col-span-1">
+                    <Label>Instagram</Label>
+                    <Input 
+                      type="text" 
+                      value={instagram} 
+                      onChange={(e) => setInstagram(e.target.value)}
+                      placeholder="Instagram username"
                     />
                   </div>
 
                   <div className="col-span-2">
-                    <Label>Bio</Label>
+                    <Label>Location</Label>
                     <Input 
                       type="text" 
-                      value={bio} 
-                      onChange={(e) => setBio(e.target.value)}
-                      placeholder="Bio"
+                      value={location} 
+                      onChange={(e) => setLocation(e.target.value)}
+                      placeholder="Your address"
                     />
                   </div>
                 </div>

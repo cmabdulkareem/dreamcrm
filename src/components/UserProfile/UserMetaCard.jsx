@@ -1,15 +1,10 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect } from "react";
 import { useModal } from "../../hooks/useModal";
 import { Modal } from "../ui/modal";
 import { useNavigate } from "react-router";
 import Button from "../ui/button/Button";
 import Input from "../form/input/InputField";
 import Label from "../form/Label";
-import MultiSelect from "../form/MultiSelect";
-import PhoneInput from "../form/group-input/PhoneInput";
-import DatePicker from "../form/date-picker";
-import Select from "../form/Select";
-import { courseOptions, countries, accountStatus, accountGender, departments, employmentType, rolesOptions } from "../../data/DataSets";
 import axios from "axios";
 import ProfileImageUpload from "./ProfileImageUpload";
 import { AuthContext } from "../../context/authContext";
@@ -20,68 +15,69 @@ export default function UserMetaCard({ user, setUsers }) {
   const { user: currentUser, setUser, isAdmin } = useContext(AuthContext);
   const navigate = useNavigate();
 
+  // Debugging: Log user data
+  useEffect(() => {
+    console.log("UserMetaCard - user prop:", user);
+    console.log("UserMetaCard - currentUser:", currentUser);
+  }, [user, currentUser]);
+
+  // Don't render the component if user data is not available
+  if (!user) {
+    return (
+      <div className="p-5 border border-gray-200 rounded-2xl dark:border-gray-800 lg:p-3">
+        <p>Loading user data...</p>
+      </div>
+    );
+  }
+
   const { isOpen, openModal, closeModal } = useModal();
-  const [employeeCode, setEmployeeCode] = useState(user?.employeeCode || "");
-  const [fullName, setFullName] = useState(user?.fullName || "");
-  const [email, setEmail] = useState(user?.email || "");
-  const [phone1, setPhone1] = useState(user?.phone || "");
-  const [gender, setGender] = useState(user?.gender || "");
-  const [dob, setDob] = useState(
-    user?.dob ? new Date(user.dob.split("T")[0]) : null
-  );
-  const [department, setDepartment] = useState(user?.department || "");
-  const [designation, setDesignation] = useState(user?.designation || "");
-  const [employmentTypeVal, setEmploymentTypeVal] = useState(user?.employmentType || "");
-  const [joiningDate, setJoiningDate] = useState(
-    user?.joiningDate ? new Date(user.joiningDate.split("T")[0]) : null
-  );
-  const [accountStatusVal, setAccountStatusVal] = useState(user?.accountStatus || "");
-  const [roles, setRoles] = useState(user?.roles || ["General"]);
-  const [company, setCompany] = useState(user?.company || "");
+  
+  // Initialize state with user data and reset when user changes
   const [instagram, setInstagram] = useState(user?.instagram || "");
-  const [location, setLocation] = useState(user?.location || ""); // Add location state
+  const [location, setLocation] = useState(user?.location || "");
   const [error, setError] = useState(false);
+
+  // Reset form state when user changes
+  useEffect(() => {
+    if (user) {
+      setInstagram(user?.instagram || "");
+      setLocation(user?.location || "");
+    }
+  }, [user]);
 
   // Check if the current user is editing their own profile
   const isOwnProfile = currentUser?._id === user?._id;
 
-  const handleEmailChange = (e) => {
+  const handleInstagramChange = (e) => {
     const value = e.target.value;
-    setEmail(value);
-    validateEmail(value);
+    setInstagram(value);
   };
 
-  const formatDate = (date) => {
-    if (!date) return null;
-    const d = new Date(date);
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, "0"); // months are 0-based
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
+  const handleLocationChange = (e) => {
+    const value = e.target.value;
+    setLocation(value);
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Debugging: Log user data in handleSubmit
+    console.log("handleSubmit - user:", user);
+    console.log("handleSubmit - user._id:", user?._id);
+    
+    // Check if user exists
+    if (!user || !user._id) {
+      console.error("User data is not available");
+      return;
+    }
+    
     const payload = {
-      employeeCode,
-      fullName,
-      email,
-      phone: phone1,
-      gender,
-      dob: formatDate(dob),
-      department,
-      designation,
-      employmentType: employmentTypeVal,
-      joiningDate: formatDate(joiningDate),
-      accountStatus: accountStatusVal,
-      roles,
-      company,
       instagram,
-      location // Add location to payload
+      location
     };
 
     axios
-      .put(`${API}/users/update/${user._id}`, payload)
+      .put(`${API}/users/update/${user._id}`, payload, { withCredentials: true })
       .then((response) => {
         const updatedUser = response.data.user || response.data;
         // Update user context if this is the current user
@@ -94,16 +90,12 @@ export default function UserMetaCard({ user, setUsers }) {
             prevUsers.map((u) => (u._id === updatedUser._id ? updatedUser : u))
           );
         }
-        closeModal();
+        // Don't close the modal - keep it open for continued editing
+        // closeModal(); // Commented out to keep modal open
       })
       .catch((err) => {
         console.error("Error updating user", err);
       });
-  };
-
-  const validateEmail = (value) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    setError(!emailRegex.test(value));
   };
 
   return (
@@ -202,162 +194,34 @@ export default function UserMetaCard({ user, setUsers }) {
         <div className="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
           <div className="px-2 pr-14">
             <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
-              Edit Member
+              Edit Profile
             </h4>
             <p className="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">
-              This is where we manage our members and track their progress.
+              Update your profile information.
             </p>
           </div>
-          <form className="flex flex-col" onSubmit={handleSubmit}>
+          <form className="flex flex-col" onSubmit={(e) => {
+            // Debugging: Log user data before submission
+            console.log("Form submission - user:", user);
+            console.log("Form submission - user._id:", user?._id);
+            
+            // Prevent submission if user data is not available
+            if (!user || !user._id) {
+              e.preventDefault();
+              console.error("User data is not available");
+              return;
+            }
+            
+            // Additional check right before submission
+            if (!user || !user._id) {
+              e.preventDefault();
+              console.error("User data is not available at form submission");
+              return;
+            }
+            
+            handleSubmit(e);
+          }}>
             <div className="custom-scrollbar h-[450px] overflow-y-auto px-2 pb-3">
-              <div>
-                <div>
-                  <MultiSelect
-                    label="Modules"
-                    options={rolesOptions}
-                    defaultSelected={roles}
-                    onChange={setRoles}
-                    disabled={!isAdmin && isOwnProfile}
-                  />
-                </div>
-                <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
-                  Personal Information
-                </h5>
-                <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
-                  <div className="w-full">
-                    <Label htmlFor="employeeCode">Employee Code</Label>
-                    <Input 
-                      type="text" 
-                      id="employeeCode" 
-                      value={employeeCode} 
-                      onChange={(e) => setEmployeeCode(e.target.value)} 
-                      disabled={!isAdmin && isOwnProfile}
-                    />
-                  </div>
-                  <div className="w-full">
-                    <Label htmlFor="fullName">Full Name</Label>
-                    <Input 
-                      type="text" 
-                      id="fullName" 
-                      value={fullName} 
-                      onChange={(e) => setFullName(e.target.value)} 
-                      disabled={!isAdmin && isOwnProfile}
-                    />
-                  </div>
-                  <div className="w-full">
-                    <Label>Email</Label>
-                    <Input
-                      type="email"
-                      value={email}
-                      error={error}
-                      onChange={handleEmailChange}
-                      placeholder="Enter your email"
-                      hint={error ? "This is an invalid email address." : ""}
-                      disabled={!isAdmin && isOwnProfile}
-                    />
-                  </div>
-                  <div className="w-full">
-                    <Label>Phone</Label>
-                    <PhoneInput
-                      selectPosition="end"
-                      countries={countries}
-                      placeholder="+91 98765 43210"
-                      value={phone1}
-                      onChange={(e) => setPhone1(e)}
-                      disabled={!isAdmin && isOwnProfile}
-                    />
-                  </div>
-                  <div className="w-full">
-                    <Label>Gender</Label>
-                    <Select
-                      options={accountGender}
-                      defaultValue={gender}
-                      placeholder="Select Gender"
-                      onChange={setGender}
-                      disabled={!isAdmin && isOwnProfile}
-                    />
-                  </div>
-                  <div className="w-full">
-                    <DatePicker
-                      id="dob"
-                      label="DoB"
-                      placeholder="Select a date"
-                      defaultDate={dob}
-                      onChange={(date) => setDob(date)}
-                      disabled={!isAdmin && isOwnProfile}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-7">
-                <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
-                  Professional Information
-                </h5>
-
-                <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
-                  <div className="w-full">
-                    <Label>Department</Label>
-                    <Select
-                      options={departments}
-                      defaultValue={department}
-                      placeholder="Select Department"
-                      onChange={setDepartment}
-                      disabled={!isAdmin && isOwnProfile}
-                    />
-                  </div>
-                  <div className="w-full">
-                    <Label htmlFor="designation">Designation</Label>
-                    <Input 
-                      type="text" 
-                      id="designation" 
-                      value={designation} 
-                      onChange={(e) => setDesignation(e.target.value)} 
-                      disabled={!isAdmin && isOwnProfile}
-                    />
-                  </div>
-                  <div className="w-full">
-                    <Label>Employment Type</Label>
-                    <Select
-                      options={employmentType}
-                      defaultValue={employmentTypeVal || ""}
-                      placeholder="Select Employment Type"
-                      onChange={setEmploymentTypeVal}
-                      disabled={!isAdmin && isOwnProfile}
-                    />
-                  </div>
-                  <div className="w-full">
-                    <DatePicker
-                      id="joiningDate"
-                      label="Joining Date"
-                      placeholder="Joining Date"
-                      defaultDate={joiningDate}
-                      onChange={(date) => setJoiningDate(date)}
-                      disabled={!isAdmin && isOwnProfile}
-                    />
-                  </div>
-                  <div className="w-full">
-                    <Label>Employment Status</Label>
-                    <Select
-                      options={accountStatus}
-                      defaultValue={accountStatusVal || ""}
-                      placeholder="Select Status"
-                      onChange={setAccountStatusVal}
-                      disabled={!isAdmin && isOwnProfile}
-                    />
-                  </div>
-                  <div className="w-full">
-                    <Label htmlFor="company">Company</Label>
-                    <Input 
-                      type="text" 
-                      id="company" 
-                      value={company} 
-                      onChange={(e) => setCompany(e.target.value)} 
-                      disabled={!isAdmin && isOwnProfile}
-                    />
-                  </div>
-                </div>
-              </div>
               <div className="mt-7">
                 <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
                   Social Media
@@ -370,8 +234,8 @@ export default function UserMetaCard({ user, setUsers }) {
                       type="text" 
                       id="instagram" 
                       value={instagram} 
-                      onChange={(e) => setInstagram(e.target.value)} 
-                      // Users can edit their own Instagram
+                      onChange={handleInstagramChange} 
+                      placeholder="Instagram username"
                     />
                   </div>
                   <div className="w-full">
@@ -380,8 +244,8 @@ export default function UserMetaCard({ user, setUsers }) {
                       type="text" 
                       id="location" 
                       value={location} 
-                      onChange={(e) => setLocation(e.target.value)} 
-                      // Users can edit their own address
+                      onChange={handleLocationChange} 
+                      placeholder="Your address"
                     />
                   </div>
                 </div>
@@ -389,7 +253,7 @@ export default function UserMetaCard({ user, setUsers }) {
             </div>
 
             <div className="flex items-center gap-3 px-2 mt-6 lg:justify-end">
-              <Button size="sm" variant="outline" onClick={closeModal}>
+              <Button size="sm" variant="outline" onClick={closeModal} type="button">
                 Close
               </Button>
               <Button size="sm" type="submit">

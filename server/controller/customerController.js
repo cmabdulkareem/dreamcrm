@@ -80,6 +80,19 @@ export const getAllCustomers = async (req, res) => {
   }
 };
 
+// Get all converted customers/leads
+export const getConvertedCustomers = async (req, res) => {
+  try {
+    console.log("Fetching converted customers...");
+    const customers = await customerModel.find({ leadStatus: 'converted' }).sort({ createdAt: -1 });
+    console.log("Found converted customers:", customers.length);
+    return res.status(200).json({ customers });
+  } catch (error) {
+    console.error("Error fetching converted customers:", error);
+    return res.status(500).json({ message: "Internal server error", error: error.message });
+  }
+};
+
 // Get single customer by ID
 export const getCustomerById = async (req, res) => {
   try {
