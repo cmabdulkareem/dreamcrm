@@ -5,7 +5,7 @@ import { Modal } from "../ui/modal";
 import Button from "../ui/button/Button";
 import ReactCrop from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
-import { AuthContext } from "../../context/authContext";
+import { AuthContext } from "../../context/AuthContext";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 

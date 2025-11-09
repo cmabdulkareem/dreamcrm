@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, useContext } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { AuthContext } from "../context/authContext";
+import { AuthContext } from "../context/AuthContext";
 
 // Assume these icons are imported from an icon library
 import {

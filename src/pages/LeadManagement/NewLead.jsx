@@ -10,7 +10,7 @@ import DatePicker from "../../components/form/date-picker.jsx";
 import MultiSelect from "../../components/form/MultiSelect.jsx";
 import { Modal } from "../../components/ui/modal";
 import { useModal } from "../../hooks/useModal";
-import { AuthContext } from "../../context/authContext";
+import { AuthContext } from "../../context/AuthContext";
 import { useNotifications } from "../../context/NotificationContext";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";

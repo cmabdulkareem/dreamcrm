@@ -2,7 +2,7 @@ import { useState, useContext } from "react";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { Link, useNavigate } from "react-router-dom"; // corrected for web
-import { AuthContext } from "../../context/authContext";
+import { AuthContext } from "../../context/AuthContext";
 import axios from "axios";
 
 const API = import.meta.env.VITE_API_URL;

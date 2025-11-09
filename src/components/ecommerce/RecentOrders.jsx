@@ -20,7 +20,7 @@ import Select from "../form/Select";
 import { Modal } from "../ui/modal";
 import { useModal } from "../../hooks/useModal";
 import LeadCard from "../common/LeadCard";
-import { AuthContext } from "../../context/authContext";
+import { AuthContext } from "../../context/AuthContext";
 import { useCalendar } from "../../context/calendarContext";
 import { useNotifications } from "../../context/NotificationContext";
 import { toast, ToastContainer } from "react-toastify";

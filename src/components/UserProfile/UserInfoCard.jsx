@@ -6,7 +6,7 @@ import Input from "../form/input/InputField";
 import Label from "../form/Label";
 import Select from "../form/Select";
 import axios from "axios";
-import { AuthContext } from "../../context/authContext";
+import { AuthContext } from "../../context/AuthContext";
 import { bloodGroupOptions, countryOptions, stateOptions } from "../../data/DataSets";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";

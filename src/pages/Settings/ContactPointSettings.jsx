@@ -10,7 +10,7 @@ import Badge from "../../components/ui/badge/Badge";
 import { PencilIcon, CloseIcon, PlusIcon } from "../../icons";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { AuthContext } from "../../context/authContext";
+import { AuthContext } from "../../context/AuthContext";
 import { useNotifications } from "../../context/NotificationContext";
 import {
   Table,

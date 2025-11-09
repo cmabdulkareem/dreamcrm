@@ -7,7 +7,7 @@ import Input from "../../components/form/input/InputField.jsx";
 import PhoneInput from "../../components/form/group-input/PhoneInput.jsx";
 import Select from "../../components/form/Select.jsx";
 import DatePicker from "../../components/form/date-picker.jsx";
-import { AuthContext } from "../../context/authContext";
+import { AuthContext } from "../../context/AuthContext";
 import { useNotifications } from "../../context/NotificationContext";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
