@@ -15,4 +15,17 @@ export default defineConfig({
       },
     }),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        assetFileNames: (assetInfo) => {
+          if (assetInfo.name.endsWith('.svg')) {
+            return 'assets/[name].[hash][extname]';
+          }
+          return 'assets/[name].[hash][extname]';
+        },
+      },
+    },
+  },
+  publicDir: "public",
 });
