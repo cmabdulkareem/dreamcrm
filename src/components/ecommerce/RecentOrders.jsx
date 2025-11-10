@@ -46,7 +46,7 @@ const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
 export default function RecentOrders() {
   const { user } = useContext(AuthContext);
-  const { addEvent } = useCalendar();
+  const { addEvent, events, updateEvent } = useCalendar();
   const { addNotification } = useNotifications();
   const [search, setSearch] = useState("");
   const [sortOrder, setSortOrder] = useState("asc");
@@ -460,6 +460,41 @@ export default function RecentOrders() {
         { withCredentials: true }
       );
       
+      // Automatically update calendar event if followUpDate exists
+      if (followUpDate) {
+        try {
+          // Check if an event already exists for this lead
+          const existingEvent = events.find(event => 
+            event.extendedProps?.leadId === selectedRow._id
+          );
+          
+          const formattedDate = followUpDate; // Already in YYYY-MM-DD format
+          const eventPayload = {
+            title: `Follow-up: ${fullName}`,
+            start: formattedDate,
+            end: formattedDate,
+            allDay: true,
+            extendedProps: {
+              calendar: "Warning",
+              leadId: selectedRow._id,
+              phone: phone1,
+              email: email,
+              status: leadStatus || "new",
+            },
+          };
+          
+          if (existingEvent) {
+            // Update existing event
+            updateEvent(existingEvent.id, eventPayload);
+          } else {
+            // Create new event
+            addEvent(eventPayload);
+          }
+        } catch (calendarError) {
+          console.error("Error managing calendar event:", calendarError);
+        }
+      }
+      
       // Refresh data to show updates instantly in the table
       await fetchCustomers();
       
@@ -480,8 +515,8 @@ export default function RecentOrders() {
         module: 'Lead Management',
       });
       
-      // Show success toast notification
-      toast.success("Lead updated successfully!", {
+      // Show single success toast notification
+      toast.success("Updated lead status", {
         position: "top-center",
         autoClose: 3000,
         hideProgressBar: false,

@@ -166,6 +166,15 @@ export default function ManageStudents() {
                       Course
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Total Value
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Discount
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Final Amount
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Enrollment Date
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -249,7 +258,52 @@ export default function ManageStudents() {
                               className="w-full px-2 py-1 border rounded"
                             />
                           ) : (
-                            student.coursePreference
+                            <div>
+                              {student.courseDetails ? 
+                                `${student.courseDetails.courseCode} - ${student.courseDetails.courseName}` : 
+                                student.coursePreference}
+                              {student.additionalCourseDetails && student.additionalCourseDetails.length > 0 && (
+                                <div className="text-xs text-gray-400 mt-1">
+                                  +{student.additionalCourseDetails.length} additional course(s)
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                          {editingStudentId === student._id ? (
+                            <input
+                              type="number"
+                              value={editFormData.totalCourseValue || ''}
+                              onChange={(e) => handleInputChange(e, 'totalCourseValue')}
+                              className="w-full px-2 py-1 border rounded"
+                            />
+                          ) : (
+                            `₹${student.totalCourseValue || 0}`
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                          {editingStudentId === student._id ? (
+                            <input
+                              type="number"
+                              value={editFormData.discountPercentage || ''}
+                              onChange={(e) => handleInputChange(e, 'discountPercentage')}
+                              className="w-full px-2 py-1 border rounded"
+                            />
+                          ) : (
+                            `${student.discountPercentage || 0}%`
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                          {editingStudentId === student._id ? (
+                            <input
+                              type="number"
+                              value={editFormData.finalAmount || ''}
+                              onChange={(e) => handleInputChange(e, 'finalAmount')}
+                              className="w-full px-2 py-1 border rounded"
+                            />
+                          ) : (
+                            `₹${student.finalAmount || 0}`
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">

@@ -7,6 +7,8 @@ import Input from "../../components/form/input/InputField.jsx";
 import PhoneInput from "../../components/form/group-input/PhoneInput.jsx";
 import Select from "../../components/form/Select.jsx";
 import DatePicker from "../../components/form/date-picker.jsx";
+import SearchableCourseSelect from "../../components/form/SearchableCourseSelect.jsx";
+import Button from "../../components/ui/button/Button.jsx";
 import { AuthContext } from "../../context/AuthContext";
 import { useNotifications } from "../../context/NotificationContext";
 import axios from "axios";
@@ -19,9 +21,7 @@ import {
   enquirerGender,
   enquirerStatus,
   enquirerEducation,
-  courseOptions,
 } from "../../data/DataSets.jsx";
-import Button from "../../components/ui/button/Button.jsx";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
@@ -56,11 +56,14 @@ export default function NewStudent() {
   const [photoPreview, setPhotoPreview] = useState("");
   const [status, setStatus] = useState("");
   const [education, setEducation] = useState("");
-  const [coursePreference, setCoursePreference] = useState("");
+  const [coursePreference, setCoursePreference] = useState(""); // Primary course
+  const [additionalCourses, setAdditionalCourses] = useState([]); // Additional courses
+  const [discountPercentage, setDiscountPercentage] = useState(""); // Discount percentage
   const [enrollmentDate, setEnrollmentDate] = useState("");
   const [studentId, setStudentId] = useState("");
   const [emailError, setEmailError] = useState(false);
   const [convertedLeads, setConvertedLeads] = useState([]);
+  const [courses, setCourses] = useState([]); // Course data from API
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -70,25 +73,19 @@ export default function NewStudent() {
   // Refs for file input
   const fileInputRef = useRef(null);
 
-  // Memoized lead options
-  const leadOptions = useMemo(() => {
-    return convertedLeads.map(lead => ({
-      value: lead._id,
-      label: `${lead.fullName} (${lead.email})`
-    }));
-  }, [convertedLeads]);
-
-  // Memoized course options
-  const formattedCourseOptions = useMemo(() => {
-    return courseOptions.map(option => ({
-      value: option.value,
-      label: option.text
-    }));
-  }, []);
-
   // Fetch converted leads
   useEffect(() => {
     fetchConvertedLeads();
+    fetchCourses(); // Fetch courses for value calculation
+  }, []);
+
+  const fetchCourses = useCallback(async () => {
+    try {
+      const response = await axios.get(`${API}/courses/all`, { withCredentials: true });
+      setCourses(response.data.courses);
+    } catch (error) {
+      console.error("Error fetching courses:", error);
+    }
   }, []);
 
   const fetchConvertedLeads = useCallback(async () => {
@@ -136,6 +133,70 @@ export default function NewStudent() {
     }
   }, []);
 
+  // Memoized lead options
+  const leadOptions = useMemo(() => {
+    return convertedLeads.map(lead => ({
+      value: lead._id,
+      label: `${lead.fullName} (${lead.email})`
+    }));
+  }, [convertedLeads]);
+
+  // Calculate total course value
+  const calculateTotalValue = useCallback(() => {
+    let total = 0;
+    
+    // Add primary course value
+    if (coursePreference) {
+      const primaryCourse = courses.find(course => course._id === coursePreference);
+      if (primaryCourse) {
+        total += primaryCourse.normalFee || 0;
+      }
+    }
+    
+    // Add additional courses values
+    additionalCourses.forEach(courseId => {
+      const course = courses.find(course => course._id === courseId);
+      if (course) {
+        total += course.normalFee || 0;
+      }
+    });
+    
+    return total;
+  }, [coursePreference, additionalCourses, courses]);
+
+  // Calculate discount amount
+  const calculateDiscountAmount = useCallback(() => {
+    const total = calculateTotalValue();
+    const discount = parseFloat(discountPercentage) || 0;
+    return (total * discount / 100);
+  }, [calculateTotalValue, discountPercentage]);
+
+  // Calculate final amount after discount
+  const calculateFinalAmount = useCallback(() => {
+    const total = calculateTotalValue();
+    const discount = calculateDiscountAmount();
+    return total - discount;
+  }, [calculateTotalValue, calculateDiscountAmount]);
+
+  // Add additional course
+  const handleAddAdditionalCourse = () => {
+    setAdditionalCourses([...additionalCourses, ""]);
+  };
+
+  // Remove additional course
+  const handleRemoveAdditionalCourse = (index) => {
+    const newCourses = [...additionalCourses];
+    newCourses.splice(index, 1);
+    setAdditionalCourses(newCourses);
+  };
+
+  // Update additional course
+  const handleAdditionalCourseChange = (index, courseId) => {
+    const newCourses = [...additionalCourses];
+    newCourses[index] = courseId;
+    setAdditionalCourses(newCourses);
+  };
+
   const handleLeadChange = useCallback((leadId) => {
     setSelectedLead(leadId);
 
@@ -153,10 +214,11 @@ export default function NewStudent() {
         setOtherPlace(lead.otherPlace || "");
         setStatus(lead.status || "");
         setEducation(lead.education || "");
-        // Set first course preference if available
-        if (lead.coursePreference && lead.coursePreference.length > 0) {
-          setCoursePreference(lead.coursePreference[0]);
-        }
+        // NOTE: We're NOT setting coursePreference here because lead management uses hardcoded
+        // course data while new student uses database course IDs. User must select a course manually.
+        // However, we should clear any existing course preference
+        setCoursePreference("");
+        setAdditionalCourses([]);
       }
     } else {
       // Clear form if no lead selected
@@ -170,7 +232,8 @@ export default function NewStudent() {
       setOtherPlace("");
       setStatus("");
       setEducation("");
-      setCoursePreference("");
+      setCoursePreference(""); // Clear course preference when lead is deselected
+      setAdditionalCourses([]);
     }
   }, [convertedLeads]);
 
@@ -217,6 +280,32 @@ export default function NewStudent() {
     fileInputRef.current?.click();
   };
 
+  // Reset the whole form
+  const handleClear = useCallback(() => {
+    setSelectedLead("");
+    setFullName("");
+    setEmail("");
+    setPhone1("");
+    setPhone2("");
+    setGender("");
+    setDob("");
+    setPlace("");
+    setOtherPlace("");
+    setAddress("");
+    setAadharCardNumber("");
+    setPhoto(null);
+    setPhotoPreview("");
+    setStatus("");
+    setEducation("");
+    setCoursePreference("");
+    setAdditionalCourses([]);
+    setDiscountPercentage("");
+    setEnrollmentDate("");
+    setStudentId("");
+    setEmailError(false);
+    setValidationErrors({});
+  }, []);
+
   // Validate mandatory fields
   const validateForm = useCallback(() => {
     const errors = {};
@@ -262,8 +351,15 @@ export default function NewStudent() {
     }
 
     if (!coursePreference) {
-      errors.coursePreference = "Course preference is required";
+      errors.coursePreference = "Primary course is required. Please select a course from the course management database.";
     }
+
+    // Validate additional courses
+    additionalCourses.forEach((courseId, index) => {
+      if (!courseId) {
+        errors[`additionalCourse${index}`] = `Additional course ${index + 1} is required`;
+      }
+    });
 
     if (!enrollmentDate) {
       errors.enrollmentDate = "Enrollment date is required";
@@ -285,35 +381,12 @@ export default function NewStudent() {
     address,
     aadharCardNumber,
     coursePreference,
+    additionalCourses,
     enrollmentDate,
     studentId,
     convertedLeads,
     validateEmail
   ]);
-
-  // Reset the whole form
-  const handleClear = useCallback(() => {
-    setSelectedLead("");
-    setFullName("");
-    setEmail("");
-    setPhone1("");
-    setPhone2("");
-    setGender("");
-    setDob("");
-    setPlace("");
-    setOtherPlace("");
-    setAddress("");
-    setAadharCardNumber("");
-    setPhoto(null);
-    setPhotoPreview("");
-    setStatus("");
-    setEducation("");
-    setCoursePreference("");
-    setEnrollmentDate("");
-    setStudentId("");
-    setEmailError(false);
-    setValidationErrors({});
-  }, []);
 
   // Handle submit
   const handleSubmit = useCallback(async (e) => {
@@ -344,6 +417,11 @@ export default function NewStudent() {
       formData.append("status", status);
       formData.append("education", education);
       formData.append("coursePreference", coursePreference);
+      formData.append("additionalCourses", JSON.stringify(additionalCourses.filter(course => course))); // Filter out empty values
+      formData.append("totalCourseValue", calculateTotalValue());
+      formData.append("discountPercentage", discountPercentage || 0);
+      formData.append("discountAmount", calculateDiscountAmount());
+      formData.append("finalAmount", calculateFinalAmount());
       formData.append("enrollmentDate", enrollmentDate);
       formData.append("leadId", selectedLead);
       if (photo) {
@@ -392,6 +470,11 @@ export default function NewStudent() {
     status,
     education,
     coursePreference,
+    additionalCourses,
+    calculateTotalValue,
+    discountPercentage,
+    calculateDiscountAmount,
+    calculateFinalAmount,
     enrollmentDate,
     selectedLead,
     photo,
@@ -643,15 +726,91 @@ export default function NewStudent() {
                     />
                   </div>
                   <div className="w-full md:w-1/2">
-                    <Label>Course Preference *</Label>
-                    <Select
-                      options={formattedCourseOptions}
+                    <Label>Primary Course *</Label>
+                    <SearchableCourseSelect
                       value={coursePreference}
-                      placeholder="Select Course"
                       onChange={setCoursePreference}
+                      placeholder="Search and select a course..."
                       error={!!validationErrors.coursePreference}
-                      hint={validationErrors.coursePreference}
-                      disabled={!!selectedLead}
+                    />
+                  </div>
+                </div>
+
+                {/* Additional Courses */}
+                <div className="flex flex-col gap-4">
+                  <div className="flex justify-between items-center">
+                    <Label>Additional Courses *</Label>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={handleAddAdditionalCourse}
+                    >
+                      Add Course
+                    </Button>
+                  </div>
+                  
+                  {additionalCourses.map((courseId, index) => (
+                    <div key={index} className="flex gap-2">
+                      <div className="flex-grow">
+                        <SearchableCourseSelect
+                          value={courseId}
+                          onChange={(value) => handleAdditionalCourseChange(index, value)}
+                          placeholder="Search and select an additional course..."
+                          error={!!validationErrors[`additionalCourse${index}`]}
+                          hint={validationErrors[`additionalCourse${index}`]}
+                        />
+                      </div>
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => handleRemoveAdditionalCourse(index)}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Course Value Calculation */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <Label>Total Course Value (₹)</Label>
+                    <Input
+                      type="text"
+                      value={calculateTotalValue()}
+                      readOnly
+                      className="bg-gray-100 dark:bg-gray-800"
+                    />
+                  </div>
+                  <div>
+                    <Label>Discount Percentage (%)</Label>
+                    <Input
+                      type="number"
+                      value={discountPercentage}
+                      onChange={(e) => setDiscountPercentage(e.target.value)}
+                      placeholder="0"
+                      min="0"
+                      max="100"
+                    />
+                  </div>
+                  <div>
+                    <Label>Discount Amount (₹)</Label>
+                    <Input
+                      type="text"
+                      value={calculateDiscountAmount()}
+                      readOnly
+                      className="bg-gray-100 dark:bg-gray-800"
+                    />
+                  </div>
+                  <div>
+                    <Label>Final Amount (₹)</Label>
+                    <Input
+                      type="text"
+                      value={calculateFinalAmount()}
+                      readOnly
+                      className="bg-gray-100 dark:bg-gray-800"
                     />
                   </div>
                 </div>
@@ -715,3 +874,4 @@ export default function NewStudent() {
     </div >
   );
 }
+

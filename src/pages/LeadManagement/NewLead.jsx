@@ -12,6 +12,7 @@ import { Modal } from "../../components/ui/modal";
 import { useModal } from "../../hooks/useModal";
 import { AuthContext } from "../../context/AuthContext";
 import { useNotifications } from "../../context/NotificationContext";
+import { useCalendar } from "../../context/calendarContext"; // Added import
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
@@ -34,6 +35,7 @@ const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 export default function FormElements() {
 
   const { user } = useContext(AuthContext);
+  const { addEvent } = useCalendar(); // Added useCalendar hook
   const navigate = useNavigate();
   const { addNotification } = useNotifications();
   // Controlled states
@@ -299,6 +301,29 @@ export default function FormElements() {
       );
       
       if (response.status === 201) {
+        // Automatically create calendar event if followUpDate exists
+        if (followUpDate) {
+          try {
+            const formattedDate = followUpDate; // Already in YYYY-MM-DD format
+            
+            addEvent({
+              title: `Follow-up: ${fullName}`,
+              start: formattedDate,
+              end: formattedDate,
+              allDay: true,
+              extendedProps: {
+                calendar: "Warning",
+                leadId: response.data.customer._id,
+                phone: phone1,
+                email: email,
+                status: response.data.customer.leadStatus || "new",
+              },
+            });
+          } catch (calendarError) {
+            console.error("Error creating calendar event:", calendarError);
+          }
+        }
+        
         // Add notification
         addNotification({
           type: 'lead_created',
@@ -308,7 +333,16 @@ export default function FormElements() {
           module: 'Lead Management',
         });
         
-        toast.success("Lead created successfully!");
+        // Show single success toast notification
+        toast.success("Lead created successfully!", {
+          position: "top-center",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+        
         handleClear();
         navigate("/lead-management");
       }

@@ -117,5 +117,5 @@ export {
   AngleRightIcon,
   SettingsIcon,
   BellIcon,
-  RefreshIcon
+  RefreshIcon,
 };

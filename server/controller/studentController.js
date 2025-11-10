@@ -1,5 +1,6 @@
 import studentModel from "../model/studentModel.js";
 import customerModel from "../model/customerModel.js";
+import courseModel from "../model/courseModel.js";
 import multer from "multer";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -52,6 +53,11 @@ export const createStudent = async (req, res) => {
       status,
       education,
       coursePreference,
+      additionalCourses,
+      totalCourseValue,
+      discountPercentage,
+      discountAmount,
+      finalAmount,
       enrollmentDate,
       leadId
     } = req.body;
@@ -90,6 +96,19 @@ export const createStudent = async (req, res) => {
       photoPath = `/uploads/${req.file.filename}`;
     }
 
+    // Parse additional courses if provided as JSON string
+    let parsedAdditionalCourses = [];
+    if (additionalCourses) {
+      try {
+        parsedAdditionalCourses = typeof additionalCourses === 'string' 
+          ? JSON.parse(additionalCourses) 
+          : additionalCourses;
+      } catch (e) {
+        // If parsing fails, use as-is
+        parsedAdditionalCourses = additionalCourses;
+      }
+    }
+
     const newStudent = new studentModel({
       studentId,
       fullName,
@@ -106,6 +125,11 @@ export const createStudent = async (req, res) => {
       status,
       education,
       coursePreference,
+      additionalCourses: parsedAdditionalCourses,
+      totalCourseValue: parseFloat(totalCourseValue) || 0,
+      discountPercentage: parseFloat(discountPercentage) || 0,
+      discountAmount: parseFloat(discountAmount) || 0,
+      finalAmount: parseFloat(finalAmount) || 0,
       enrollmentDate: new Date(enrollmentDate),
       leadId,
       createdBy: req.user.fullName || req.user.email
@@ -127,7 +151,28 @@ export const createStudent = async (req, res) => {
 export const getAllStudents = async (req, res) => {
   try {
     const students = await studentModel.find().sort({ createdAt: -1 }).populate('leadId', 'fullName email');
-    return res.status(200).json({ students });
+    // Populate course details for each student
+    const studentsWithCourseDetails = await Promise.all(students.map(async (student) => {
+      const studentObj = student.toObject();
+      
+      // Populate primary course details
+      if (student.coursePreference) {
+        const course = await courseModel.findById(student.coursePreference);
+        studentObj.courseDetails = course;
+      }
+      
+      // Populate additional courses details
+      if (student.additionalCourses && student.additionalCourses.length > 0) {
+        studentObj.additionalCourseDetails = await Promise.all(
+          student.additionalCourses.map(async (courseId) => {
+            return await courseModel.findById(courseId);
+          })
+        );
+      }
+      
+      return studentObj;
+    }));
+    return res.status(200).json({ students: studentsWithCourseDetails });
   } catch (error) {
     console.error("Error fetching students:", error);
     return res.status(500).json({ message: "Internal server error" });
@@ -144,7 +189,24 @@ export const getStudentById = async (req, res) => {
       return res.status(404).json({ message: "Student not found." });
     }
 
-    return res.status(200).json({ student });
+    const studentObj = student.toObject();
+    
+    // Populate primary course details
+    if (student.coursePreference) {
+      const course = await courseModel.findById(student.coursePreference);
+      studentObj.courseDetails = course;
+    }
+    
+    // Populate additional courses details
+    if (student.additionalCourses && student.additionalCourses.length > 0) {
+      studentObj.additionalCourseDetails = await Promise.all(
+        student.additionalCourses.map(async (courseId) => {
+          return await courseModel.findById(courseId);
+        })
+      );
+    }
+
+    return res.status(200).json({ student: studentObj });
   } catch (error) {
     console.error("Error fetching student:", error);
     return res.status(500).json({ message: "Internal server error" });
