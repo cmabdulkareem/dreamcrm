@@ -36,6 +36,7 @@ export const NotificationProvider = ({ children }) => {
   }, [notifications]);
 
   const addNotification = (notification) => {
+    // All notifications are always enabled now
     const newNotification = {
       id: Date.now() + Math.random(),
       timestamp: new Date().toISOString(),
@@ -94,6 +95,16 @@ export const NotificationProvider = ({ children }) => {
     return then.toLocaleDateString('en-IN');
   };
 
+  // Toast notifications are always enabled now
+  const areToastsEnabled = () => {
+    return true; // Always enable toast notifications
+  };
+
+  // All notifications are always enabled
+  const isNotificationEnabled = () => {
+    return true; // Always enable notifications
+  };
+
   return (
     <NotificationContext.Provider
       value={{
@@ -105,6 +116,8 @@ export const NotificationProvider = ({ children }) => {
         clearNotifications,
         deleteNotification,
         getTimeAgo,
+        isNotificationEnabled,
+        areToastsEnabled,
       }}
     >
       {children}

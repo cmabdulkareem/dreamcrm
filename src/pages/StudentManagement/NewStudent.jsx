@@ -38,7 +38,7 @@ const placeOptions = [
 export default function NewStudent() {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
-  const { addNotification } = useNotifications();
+  const { addNotification, areToastsEnabled } = useNotifications();
 
   // Controlled states
   const [selectedLead, setSelectedLead] = useState("");
@@ -394,7 +394,9 @@ export default function NewStudent() {
 
     // Validate form before submission
     if (!validateForm()) {
-      toast.error("Please fill in all required fields");
+      if (areToastsEnabled()) {
+        toast.error("Please fill in all required fields");
+      }
       return;
     }
 
@@ -440,16 +442,30 @@ export default function NewStudent() {
       );
 
       if (response.status === 201) {
-        toast.success("Student created successfully!");
+        if (areToastsEnabled()) {
+          toast.success("Student created successfully!");
+        }
+        
+        // Add notification
+        addNotification({
+          type: 'student_created',
+          userName: user?.fullName || 'Someone',
+          action: 'created student',
+          entityName: fullName,
+          module: 'Student Management',
+        });
+        
         handleClear();
         navigate("/manage-students");
       }
     } catch (error) {
       console.error("Error creating student:", error);
-      if (error.response && error.response.data && error.response.data.message) {
-        toast.error(error.response.data.message);
-      } else {
-        toast.error("Failed to create student. Please try again.");
+      if (areToastsEnabled()) {
+        if (error.response && error.response.data && error.response.data.message) {
+          toast.error(error.response.data.message);
+        } else {
+          toast.error("Failed to create student. Please try again.");
+        }
       }
     } finally {
       setSubmitting(false);
@@ -479,7 +495,8 @@ export default function NewStudent() {
     selectedLead,
     photo,
     handleClear,
-    navigate
+    navigate,
+    areToastsEnabled
   ]);
 
   return (

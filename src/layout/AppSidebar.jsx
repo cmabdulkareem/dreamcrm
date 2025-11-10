@@ -8,7 +8,7 @@ import {
   CalenderIcon,
   ChevronDownIcon,
   GridIcon,
-  HorizontaLDots,
+  MoreDotIcon,
   ListIcon,
   PageIcon,
   PieChartIcon,
@@ -325,7 +325,7 @@ const AppSidebar = () => {
                 className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
                   }`}
               >
-                {isExpanded || isHovered || isMobileOpen ? "Menu" : <HorizontaLDots className="size-6" />}
+                {isExpanded || isHovered || isMobileOpen ? "Menu" : <MoreDotIcon className="size-6" />}
               </h2>
               {renderMenuItems(navItems, "main", isAdmin)}
             </div>
@@ -334,7 +334,7 @@ const AppSidebar = () => {
                 className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
                   }`}
               >
-                {isExpanded || isHovered || isMobileOpen ? "Downloads" : <HorizontaLDots />}
+                {isExpanded || isHovered || isMobileOpen ? "Downloads" : <MoreDotIcon />}
               </h2>
               {renderMenuItems(othersItems, "others", isAdmin)}
             </div>
@@ -343,7 +343,7 @@ const AppSidebar = () => {
                 className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
                   }`}
               >
-                {isExpanded || isHovered || isMobileOpen ? "Settings" : <HorizontaLDots />}
+                {isExpanded || isHovered || isMobileOpen ? "Settings" : <MoreDotIcon />}
               </h2>
               {renderMenuItems(settingsItems, "settings", isAdmin)}
             </div>

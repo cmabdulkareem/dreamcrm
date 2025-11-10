@@ -96,7 +96,9 @@ export default function ContactPointSettings() {
         { withCredentials: true }
       );
       
-      toast.success("Contact point created successfully!");
+      if (areToastsEnabled()) {
+        toast.success("Contact point created successfully!");
+      }
       
       // Add notification
       addNotification({
@@ -112,7 +114,9 @@ export default function ContactPointSettings() {
       fetchContactPoints();
     } catch (error) {
       console.error("Error creating contact point:", error);
-      toast.error(error.response?.data?.message || "Failed to create contact point");
+      if (areToastsEnabled()) {
+        toast.error(error.response?.data?.message || "Failed to create contact point");
+      }
     }
   };
 
@@ -133,7 +137,9 @@ export default function ContactPointSettings() {
         { withCredentials: true }
       );
       
-      toast.success("Contact point updated successfully!");
+      if (areToastsEnabled()) {
+        toast.success("Contact point updated successfully!");
+      }
       
       // Add notification
       addNotification({
@@ -149,7 +155,9 @@ export default function ContactPointSettings() {
       fetchContactPoints();
     } catch (error) {
       console.error("Error updating contact point:", error);
-      toast.error(error.response?.data?.message || "Failed to update contact point");
+      if (areToastsEnabled()) {
+        toast.error(error.response?.data?.message || "Failed to update contact point");
+      }
     }
   };
 
@@ -160,7 +168,9 @@ export default function ContactPointSettings() {
         { withCredentials: true }
       );
       
-      toast.success("Contact point deleted successfully!");
+      if (areToastsEnabled()) {
+        toast.success("Contact point deleted successfully!");
+      }
       
       // Add notification
       addNotification({
@@ -176,7 +186,9 @@ export default function ContactPointSettings() {
       fetchContactPoints();
     } catch (error) {
       console.error("Error deleting contact point:", error);
-      toast.error("Failed to delete contact point");
+      if (areToastsEnabled()) {
+        toast.error("Failed to delete contact point");
+      }
     }
   };
 

@@ -333,15 +333,17 @@ export default function FormElements() {
           module: 'Lead Management',
         });
         
-        // Show single success toast notification
-        toast.success("Lead created successfully!", {
-          position: "top-center",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-        });
+        // Show single success toast notification only if enabled
+        if (areToastsEnabled()) {
+          toast.success("Lead created successfully!", {
+            position: "top-center",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+          });
+        }
         
         handleClear();
         navigate("/lead-management");

@@ -104,7 +104,9 @@ export default function CampaignSettings() {
         { withCredentials: true }
       );
       
-      toast.success("Campaign created successfully!");
+      if (areToastsEnabled()) {
+        toast.success("Campaign created successfully!");
+      }
       
       // Add notification
       addNotification({
@@ -120,7 +122,9 @@ export default function CampaignSettings() {
       fetchCampaigns();
     } catch (error) {
       console.error("Error creating campaign:", error);
-      toast.error(error.response?.data?.message || "Failed to create campaign");
+      if (areToastsEnabled()) {
+        toast.error(error.response?.data?.message || "Failed to create campaign");
+      }
     }
   };
 
@@ -143,7 +147,9 @@ export default function CampaignSettings() {
         { withCredentials: true }
       );
       
-      toast.success("Campaign updated successfully!");
+      if (areToastsEnabled()) {
+        toast.success("Campaign updated successfully!");
+      }
       
       // Add notification
       addNotification({
@@ -159,7 +165,9 @@ export default function CampaignSettings() {
       fetchCampaigns();
     } catch (error) {
       console.error("Error updating campaign:", error);
-      toast.error(error.response?.data?.message || "Failed to update campaign");
+      if (areToastsEnabled()) {
+        toast.error(error.response?.data?.message || "Failed to update campaign");
+      }
     }
   };
 
@@ -170,7 +178,9 @@ export default function CampaignSettings() {
         { withCredentials: true }
       );
       
-      toast.success("Campaign deleted successfully!");
+      if (areToastsEnabled()) {
+        toast.success("Campaign deleted successfully!");
+      }
       
       // Add notification
       addNotification({
@@ -186,7 +196,9 @@ export default function CampaignSettings() {
       fetchCampaigns();
     } catch (error) {
       console.error("Error deleting campaign:", error);
-      toast.error("Failed to delete campaign");
+      if (areToastsEnabled()) {
+        toast.error("Failed to delete campaign");
+      }
     }
   };
 

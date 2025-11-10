@@ -515,21 +515,25 @@ export default function RecentOrders() {
         module: 'Lead Management',
       });
       
-      // Show single success toast notification
-      toast.success("Updated lead status", {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      });
+      // Show single success toast notification only if enabled
+      if (areToastsEnabled()) {
+        toast.success("Updated lead status", {
+          position: "top-center",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+      }
     } catch (error) {
       console.error("Error updating lead:", error);
-      toast.error("Failed to update lead. Please try again.", {
-        position: "top-center",
-        autoClose: 3000,
-      });
+      if (areToastsEnabled()) {
+        toast.error("Failed to update lead. Please try again.", {
+          position: "top-center",
+          autoClose: 3000,
+        });
+      }
     }
   };
 
@@ -563,16 +567,20 @@ export default function RecentOrders() {
         module: 'Lead Management',
       });
       
-      toast.success("Lead deleted successfully!", {
-        position: "top-center",
-        autoClose: 3000,
-      });
+      if (areToastsEnabled()) {
+        toast.success("Lead deleted successfully!", {
+          position: "top-center",
+          autoClose: 3000,
+        });
+      }
     } catch (error) {
       console.error("Error deleting lead:", error);
-      toast.error("Failed to delete lead. Please try again.", {
-        position: "top-center",
-        autoClose: 3000,
-      });
+      if (areToastsEnabled()) {
+        toast.error("Failed to delete lead. Please try again.", {
+          position: "top-center",
+          autoClose: 3000,
+        });
+      }
     }
   };
 

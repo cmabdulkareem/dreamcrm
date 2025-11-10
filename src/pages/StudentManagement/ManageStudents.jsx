@@ -1,17 +1,21 @@
 import PageBreadcrumb from "../../components/common/PageBreadCrumb.jsx";
 import PageMeta from "../../components/common/PageMeta.jsx";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import ComponentCard from "../../components/common/ComponentCard.jsx";
 import Button from "../../components/ui/button/Button.jsx";
 import { useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
+import { AuthContext } from "../../context/AuthContext";
+import { useNotifications } from "../../context/NotificationContext";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
 export default function ManageStudents() {
   const navigate = useNavigate();
+  const { user } = useContext(AuthContext);
+  const { addNotification, areToastsEnabled } = useNotifications();
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingStudentId, setEditingStudentId] = useState(null);
@@ -105,10 +109,24 @@ export default function ManageStudents() {
       
       setEditingStudentId(null);
       setEditFormData({});
-      toast.success("Student updated successfully!");
+      
+      if (areToastsEnabled()) {
+        toast.success("Student updated successfully!");
+      }
+      
+      // Add notification
+      addNotification({
+        type: 'student_updated',
+        userName: user?.fullName || 'Someone',
+        action: 'updated student',
+        entityName: response.data.student.fullName,
+        module: 'Student Management',
+      });
     } catch (error) {
       console.error("Error updating student:", error);
-      toast.error("Failed to update student. Please try again.");
+      if (areToastsEnabled()) {
+        toast.error("Failed to update student. Please try again.");
+      }
     }
   };
 
