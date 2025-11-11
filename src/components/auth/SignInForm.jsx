@@ -8,7 +8,9 @@ import Checkbox from "../form/input/Checkbox";
 import Button from "../ui/button/Button";
 import { AuthContext } from "../../context/AuthContext";
 
-const API = import.meta.env.VITE_API_URL;
+const API = import.meta.env.PROD 
+  ? import.meta.env.VITE_API_URL_PRODUCTION || "https://dreamcrm.onrender.com/api"
+  : import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
 export default function SignInForm() {
 
@@ -36,16 +38,24 @@ export default function SignInForm() {
     }
 
     try {
-      const { data } = await axios.post(`${API}/users/signin`, { email, password }, { withCredentials: true });
+      setLoading(true);
+      const { data } = await axios.post(`${API}/users/signin`, { email, password }, { 
+        withCredentials: true,
+        timeout: 10000
+      });
       console.log(data)
       login(data.user, data.role);
       navigate("/");
     } catch (err) {
       if (err.response && err.response.data && err.response.data.message) {
         setError(err.response.data.message);
+      } else if (err.code === 'ECONNABORTED') {
+        setError("Request timeout. Please try again.");
       } else {
         setError("Server error. Please try again.");
       }
+    } finally {
+      setLoading(false);
     }
   };
 

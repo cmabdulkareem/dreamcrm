@@ -3,14 +3,24 @@ import dotenv from "dotenv";
 dotenv.config();
 
 export default function verifyToken(req, res, next) {
-  // Safe access to token
+  // Check for token in cookies first
+  let token = req.cookies?.token;
+  
+  // If not in cookies, check Authorization header
+  if (!token && req.headers.authorization) {
+    const authHeader = req.headers.authorization;
+    if (authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    }
+  }
+  
   console.log('Cookies received:', req.cookies);
-  const token = req.cookies?.token;
+  console.log('Authorization header:', req.headers.authorization);
   console.log('Token:', token);
 
   if (!token) {
     console.log("Token is missing");
-    return res.status(401).json({ message: "Unauthorized" });
+    return res.status(401).json({ message: "Unauthorized - Token missing" });
   }
 
   try {
@@ -20,6 +30,9 @@ export default function verifyToken(req, res, next) {
     next();
   } catch (err) {
     console.log('Token verification error:', err);
+    if (err.name === 'TokenExpiredError') {
+      return res.status(401).json({ message: "Token expired" });
+    }
     return res.status(401).json({ message: "Invalid token" });
   }
 }

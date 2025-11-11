@@ -1,18 +1,20 @@
 import { useState, useContext } from "react";
-import { DropdownItem } from "../ui/dropdown/DropdownItem";
-import { Dropdown } from "../ui/dropdown/Dropdown";
-import { Link, useNavigate } from "react-router-dom"; // corrected for web
-import { AuthContext } from "../../context/AuthContext";
-import { useChat } from "../../context/ChatContext"; // Import useChat
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import Dropdown from "../ui/dropdown/Dropdown";
+import DropdownItem from "../ui/dropdown/DropdownItem";
+import { AuthContext } from "../../context/AuthContext";
+import { useChat } from "../../context/ChatContext";
 
-const API = import.meta.env.VITE_API_URL;
+const API = import.meta.env.PROD 
+  ? import.meta.env.VITE_API_URL_PRODUCTION || "https://dreamcrm.onrender.com/api"
+  : import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
 export default function UserDropdown() {
-  const { logout, user } = useContext(AuthContext);
-  const { setUserOffline } = useChat(); // Get setUserOffline function from chat context
-  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
+  const { user, logout } = useContext(AuthContext);
+  const { setUserOffline } = useChat();
+  const navigate = useNavigate();
 
   function toggleDropdown() {
     setIsOpen(!isOpen);
@@ -22,19 +24,25 @@ export default function UserDropdown() {
     setIsOpen(false);
   }
 
-  const handleLogout = () => {
-    // Mark user as offline in chat system before logging out
-    setUserOffline();
-    
-    axios.get(`${API}/users/logout`, { withCredentials: true })
-      .then((res) => {
-        logout();
-        setIsOpen(false);
-        navigate("/signin");
-      })
-      .catch((err) => {
-        console.log(err);
-      })
+  const handleLogout = async () => {
+    try {
+      // Mark user as offline in chat system before logging out
+      setUserOffline();
+      
+      // Call logout API
+      await axios.get(`${API}/users/logout`, { 
+        withCredentials: true,
+        timeout: 5000
+      });
+    } catch (err) {
+      console.log("Logout API error:", err);
+      // Even if the API call fails, we still want to log out the user locally
+    } finally {
+      // Always log out the user locally regardless of API response
+      logout();
+      setIsOpen(false);
+      navigate("/signin");
+    }
   };
 
   return (

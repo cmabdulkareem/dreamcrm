@@ -2,7 +2,9 @@ import { createContext, useEffect, useState } from "react";
 import axios from "axios";
 
 const AuthContext = createContext();
-const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+const BACKEND_URL = import.meta.env.PROD 
+  ? import.meta.env.VITE_API_URL_PRODUCTION || "https://dreamcrm.onrender.com/api"
+  : import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
 function AuthProvider({ children }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -11,17 +13,21 @@ function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    axios.get(`${BACKEND_URL}/users/auth`, { withCredentials: true })
-      .then(res => {
+    const checkAuth = async () => {
+      try {
+        const res = await axios.get(`${BACKEND_URL}/users/auth`, { 
+          withCredentials: true,
+          // Add timeout to prevent hanging requests
+          timeout: 10000
+        });
         const { user, role } = res.data;
         setUser(user);
         setIsLoggedIn(true);
         // Check if user has admin role or isAdmin flag is true
         const isAdminUser = user.isAdmin || (Array.isArray(role) && role.includes('Admin')) || (typeof role === 'string' && role === 'Admin');
         setIsAdmin(isAdminUser);
-        setLoading(false);
-      })
-      .catch(err => {
+      } catch (err) {
+        console.error("Auth check error:", err);
         // If it's a 403 error (account not approved), still set the user but not logged in
         if (err.response && err.response.status === 403) {
           // Account not approved yet
@@ -34,8 +40,12 @@ function AuthProvider({ children }) {
           setIsLoggedIn(false);
           setIsAdmin(false);
         }
+      } finally {
         setLoading(false);
-      });
+      }
+    };
+
+    checkAuth();
   }, []);
 
   function updateUser(userData) {

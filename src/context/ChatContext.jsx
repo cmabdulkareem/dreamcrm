@@ -2,7 +2,9 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import { AuthContext } from './AuthContext';
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+const API = import.meta.env.PROD 
+  ? import.meta.env.VITE_API_URL_PRODUCTION || "https://dreamcrm.onrender.com/api"
+  : import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
 const ChatContext = createContext();
 
@@ -94,7 +96,10 @@ export const ChatProvider = ({ children }) => {
     
     setLoading(true);
     try {
-      const response = await axios.get(`${API}/users/dropdown`, { withCredentials: true });
+      const response = await axios.get(`${API}/users/dropdown`, { 
+        withCredentials: true,
+        timeout: 10000
+      });
       const allUsers = response.data.users || [];
       
       // Filter out current user and format the data
