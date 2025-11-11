@@ -3,12 +3,14 @@ import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { Link, useNavigate } from "react-router-dom"; // corrected for web
 import { AuthContext } from "../../context/AuthContext";
+import { useChat } from "../../context/ChatContext"; // Import useChat
 import axios from "axios";
 
 const API = import.meta.env.VITE_API_URL;
 
 export default function UserDropdown() {
   const { logout, user } = useContext(AuthContext);
+  const { setUserOffline } = useChat(); // Get setUserOffline function from chat context
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -21,6 +23,9 @@ export default function UserDropdown() {
   }
 
   const handleLogout = () => {
+    // Mark user as offline in chat system before logging out
+    setUserOffline();
+    
     axios.get(`${API}/users/logout`, { withCredentials: true })
       .then((res) => {
         logout();

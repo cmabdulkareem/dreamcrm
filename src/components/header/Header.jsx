@@ -149,8 +149,6 @@ const Header = ({ onClick, onToggle }) => {
           <div className="flex items-center gap-2 2xsm:gap-3">
             {/* <!-- Dark Mode Toggler --> */}
             <ThemeToggleButton />
-            {/* <!-- Notification Menu Area --> */}
-            <NotificationDropdown />
           </div>
           {/* <!-- User Area --> */}
           <UserDropdown />
