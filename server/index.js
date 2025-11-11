@@ -1,4 +1,5 @@
 import express from 'express'
+import http from 'http'
 import { config } from 'dotenv'
 import cors from 'cors'
 import corsOptions from './config/corsOptions.js'
@@ -9,6 +10,7 @@ config({ quiet: true })
 
 import './config/db.js'
 import routes from './routes/userRoutes.js'
+import setupSocket from './realtime/socket.js'
 import customerRoutes from './routes/customerRoutes.js'
 import campaignRoutes from './routes/campaignRoute.js'
 import emailRoutes from './routes/emailRoute.js'
@@ -16,6 +18,7 @@ import profileRoutes from './routes/profileRoute.js'
 import studentRoutes from './routes/studentRoutes.js'
 import courseRoutes from './routes/courseRoutes.js'
 import contactPointRoutes from './routes/contactPointRoute.js'
+import chatRoutes from './routes/chatRoutes.js'
 
 const app = express()
 
@@ -43,6 +46,7 @@ app.use('/api/profile', profileRoutes)
 app.use('/api/students', studentRoutes)
 app.use('/api/courses', courseRoutes)
 app.use('/api/contact-points', contactPointRoutes)
+app.use('/api/chats', chatRoutes)
 
 // Catch-all route to serve index.html for client-side routing
 app.use((req, res) => {
@@ -55,4 +59,9 @@ app.use((req, res) => {
 });
 
 const PORT = process.env.PORT || 5000
-app.listen(PORT, () => { console.log(`Server is running on port ${PORT}`)})
+const server = http.createServer(app)
+
+// Initialize Socket.IO
+setupSocket(server)
+
+server.listen(PORT, () => { console.log(`Server is running on port ${PORT}`)})

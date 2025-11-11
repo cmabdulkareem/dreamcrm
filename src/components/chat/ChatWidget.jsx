@@ -4,6 +4,7 @@ import { AuthContext } from '../../context/AuthContext';
 import { useContext } from 'react';
 import DraggableParticipant from './DraggableParticipant';
 import GroupParticipants from './GroupParticipants';
+import Badge from '../ui/badge/Badge'; // Import Badge component
 
 const ChatWidget = () => {
   const { 
@@ -16,6 +17,8 @@ const ChatWidget = () => {
     onlineUsers, 
     contacts, 
     loading,
+    unreadCounts, // Import unread counts
+    hasUnreadMessages, // Import has unread messages flag
     toggleChat, 
     openChat, 
     closeChat, 
@@ -69,31 +72,41 @@ const ChatWidget = () => {
     }
   };
 
-  const handleStartChat = (contact) => {
+  const handleStartChat = async (contact) => {
+    // Normalize user IDs
+    const userId = user ? (user._id || user.id) : null;
+    const contactId = contact._id || contact.id;
+    
     // Check if chat already exists
     const existingChat = chats.find(chat => 
       chat.type === 'user' && 
       chat.participants.length === 2 && 
-      chat.participants.some(p => p._id === contact._id) &&
-      chat.participants.some(p => p._id === user._id)
+      chat.participants.some(p => (p._id || p.id) === contactId) &&
+      chat.participants.some(p => (p._id || p.id) === userId)
     );
     
     if (existingChat) {
       openChat(existingChat);
     } else {
-      // Create new chat
-      const newChat = createChat([contact]);
-      openChat(newChat);
+      // Create new chat (this will call the API)
+      const newChat = await createChat([contact]);
+      if (newChat) {
+        openChat(newChat);
+      }
     }
     
     setShowContacts(false);
   };
 
-  const handleCreateGroupChat = () => {
+  const handleCreateGroupChat = async () => {
     const groupName = prompt('Enter group name:');
     if (groupName) {
-      const newChat = createChat([], true, groupName);
-      openChat(newChat);
+      // For group chats, we need to select participants first
+      // For now, create an empty group and let user add participants
+      const newChat = await createChat([], true, groupName);
+      if (newChat) {
+        openChat(newChat);
+      }
     }
   };
 
@@ -116,7 +129,8 @@ const ChatWidget = () => {
     if (chat.type === 'group') {
       return chat.name;
     } else {
-      const otherParticipant = chat.participants.find(p => p._id !== user._id);
+      const userId = user ? (user._id || user.id) : null;
+      const otherParticipant = chat.participants.find(p => (p._id || p.id) !== userId);
       return otherParticipant ? otherParticipant.fullName : 'Unknown';
     }
   };
@@ -125,8 +139,10 @@ const ChatWidget = () => {
     if (chat.type === 'group') {
       return '/images/user/group-avatar.png';
     } else {
-      const otherParticipant = chat.participants.find(p => p._id !== user._id);
-      return otherParticipant ? otherParticipant.avatar : '/images/user/user-01.jpg';
+      const userId = user ? (user._id || user.id) : null;
+      const otherParticipant = chat.participants.find(p => (p._id || p.id) !== userId);
+      // Use the avatar from the participant object if available, otherwise generate default
+      return otherParticipant?.avatar || `/images/user/user-${((otherParticipant?._id || otherParticipant?.id || '0').charCodeAt(0) % 4) + 1}.jpg`;
     }
   };
 
@@ -151,10 +167,13 @@ const ChatWidget = () => {
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
           </svg>
-          <span className="absolute -top-1 -right-1 flex h-5 w-5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-5 w-5 bg-green-500"></span>
-          </span>
+          {/* Show notification badge if there are unread messages */}
+          {hasUnreadMessages && (
+            <span className="absolute -top-1 -right-1 flex h-5 w-5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-5 w-5 bg-green-500"></span>
+            </span>
+          )}
         </button>
       )}
 
@@ -224,10 +243,19 @@ const ChatWidget = () => {
                     <div className="flex justify-center items-center h-20">
                       <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
                     </div>
+                  ) : (() => {
+                    const userId = user ? (user._id || user.id) : null;
+                    return onlineUsers.filter(contact => (contact._id || contact.id) !== userId).length === 0;
+                  })() ? (
+                    <div className="px-2 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                      No other users online
+                    </div>
                   ) : (
-                    onlineUsers
-                      .filter(contact => contact._id !== user._id) // Exclude current user from online list
-                      .map((contact) => (
+                    (() => {
+                      const userId = user ? (user._id || user.id) : null;
+                      return onlineUsers
+                        .filter(contact => (contact._id || contact.id) !== userId) // Exclude current user from online list
+                        .map((contact) => (
                         <div
                           key={contact._id}
                           onClick={() => handleStartChat(contact)}
@@ -246,7 +274,8 @@ const ChatWidget = () => {
                             <p className="text-xs text-gray-500 dark:text-gray-400">Online</p>
                           </div>
                         </div>
-                      ))
+                      ));
+                    })()
                   )}
                 </div>
                 <div className="p-2 border-t border-gray-200 dark:border-gray-700">
@@ -254,6 +283,10 @@ const ChatWidget = () => {
                   {loading ? (
                     <div className="flex justify-center items-center h-20">
                       <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                    </div>
+                  ) : contacts.length === 0 ? (
+                    <div className="px-2 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                      No contacts available
                     </div>
                   ) : (
                     contacts.map((contact) => {
@@ -298,35 +331,41 @@ const ChatWidget = () => {
               // Active Chat
               <>
                 <div className="flex-1 overflow-y-auto p-4">
-                  {messages[activeChat.id]?.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex mb-4 ${message.sender._id === user._id ? 'justify-end' : 'justify-start'}`}
-                    >
-                      {message.sender._id !== user._id && (
-                        <img
-                          src={message.sender.avatar || '/images/user/user-01.jpg'}
-                          alt={message.sender.fullName}
-                          className="w-8 h-8 rounded-full mr-2"
-                        />
-                      )}
+                  {messages[activeChat.id]?.map((message) => {
+                    const userId = user ? (user._id || user.id) : null;
+                    const messageSenderId = message.sender._id || message.sender.id;
+                    const isOwnMessage = messageSenderId === userId;
+                    
+                    return (
                       <div
-                        className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                          message.sender._id === user._id
-                            ? 'bg-blue-500 text-white rounded-br-none'
-                            : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-bl-none'
-                        }`}
+                        key={message.id}
+                        className={`flex mb-4 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
                       >
-                        {message.sender._id !== user._id && (
-                          <p className="text-xs font-medium">{message.sender.fullName}</p>
+                        {!isOwnMessage && (
+                          <img
+                            src={message.sender.avatar || '/images/user/user-01.jpg'}
+                            alt={message.sender.fullName}
+                            className="w-8 h-8 rounded-full mr-2"
+                          />
                         )}
-                        <p>{message.text}</p>
-                        <p className={`text-xs mt-1 ${message.sender._id === user._id ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'}`}>
-                          {formatTime(message.timestamp)}
-                        </p>
+                        <div
+                          className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                            isOwnMessage
+                              ? 'bg-blue-500 text-white rounded-br-none'
+                              : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-bl-none'
+                          }`}
+                        >
+                          {!isOwnMessage && (
+                            <p className="text-xs font-medium">{message.sender.fullName}</p>
+                          )}
+                          <p>{message.text}</p>
+                          <p className={`text-xs mt-1 ${isOwnMessage ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'}`}>
+                            {formatTime(message.timestamp)}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   <div ref={messagesEndRef} />
                 </div>
                 <form onSubmit={handleSendMessage} className="border-t border-gray-200 dark:border-gray-700 p-2">
@@ -369,36 +408,64 @@ const ChatWidget = () => {
                     </button>
                   </div>
                 ) : (
-                  chats.map((chat) => (
-                    <div
-                      key={chat.id}
-                      onClick={() => openChat(chat)}
-                      className="flex items-center p-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700"
-                    >
-                      <img
-                        src={getChatDisplayAvatar(chat)}
-                        alt={getChatDisplayName(chat)}
-                        className="w-10 h-10 rounded-full"
-                      />
-                      <div className="ml-3 flex-1 min-w-0">
-                        <div className="flex justify-between">
-                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                            {getChatDisplayName(chat)}
-                          </p>
-                          {chat.lastMessage && (
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                              {formatTime(chat.lastMessage.timestamp)}
-                            </p>
+                  chats.map((chat) => {
+                    const unreadCount = unreadCounts[chat.id] || 0;
+                    return (
+                      <div
+                        key={chat.id}
+                        onClick={() => openChat(chat)}
+                        className="flex items-center p-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700"
+                      >
+                        <div className="relative">
+                          <img
+                            src={getChatDisplayAvatar(chat)}
+                            alt={getChatDisplayName(chat)}
+                            className="w-10 h-10 rounded-full"
+                          />
+                          {/* Show online status indicator for user chats */}
+                          {chat.type === 'user' && (
+                            <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-gray-300 ring-2 ring-white dark:ring-gray-800">
+                              {isUserOnline(chat.participants.find(p => (p._id || p.id) !== (user?._id || user?.id))?._id) && (
+                                <span className="absolute inset-0 h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
+                              )}
+                              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-gray-300">
+                                {isUserOnline(chat.participants.find(p => (p._id || p.id) !== (user?._id || user?.id))?._id) && (
+                                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+                                )}
+                              </span>
+                            </span>
                           )}
                         </div>
-                        {chat.lastMessage && (
-                          <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                            {chat.lastMessage.text}
-                          </p>
-                        )}
+                        <div className="ml-3 flex-1 min-w-0">
+                          <div className="flex justify-between">
+                            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                              {getChatDisplayName(chat)}
+                            </p>
+                            <div className="flex items-center gap-1">
+                              {chat.lastMessage && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                  {formatTime(chat.lastMessage.timestamp)}
+                                </p>
+                              )}
+                              {/* Show unread message badge */}
+                              {unreadCount > 0 && (
+                                <Badge variant="solid" color="primary" size="sm">
+                                  {unreadCount}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex justify-between">
+                            {chat.lastMessage && (
+                              <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                                {chat.lastMessage.text}
+                              </p>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             )}

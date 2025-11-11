@@ -1,0 +1,85 @@
+import { Server } from 'socket.io'
+
+// Map userId -> Set of socketIds
+const userIdToSocketIds = new Map()
+let ioInstance = null
+
+export default function setupSocket(server) {
+	const io = new Server(server, {
+		cors: {
+			origin: true, // reflect request origin
+			credentials: true
+		}
+	})
+	
+	ioInstance = io
+
+	io.on('connection', (socket) => {
+		let currentUserId = null
+
+		// Client should emit 'register' right after connect
+		socket.on('register', ({ userId, fullName }) => {
+			try {
+				currentUserId = String(userId)
+				const set = userIdToSocketIds.get(currentUserId) || new Set()
+				set.add(socket.id)
+				userIdToSocketIds.set(currentUserId, set)
+				// Join a personal room per user
+				socket.join(`user:${currentUserId}`)
+				// Optionally acknowledge
+				socket.emit('registered', { ok: true })
+			} catch (e) {
+				console.error('Error registering socket:', e)
+			}
+		})
+
+		socket.on('disconnect', () => {
+			if (!currentUserId) return
+			const set = userIdToSocketIds.get(currentUserId)
+			if (set) {
+				set.delete(socket.id)
+				if (set.size === 0) {
+					userIdToSocketIds.delete(currentUserId)
+				}
+			}
+		})
+	})
+
+	return io
+}
+
+// Export function to emit messages to users
+export function emitMessageToUsers(userIds, messageData) {
+	if (!ioInstance) {
+		console.error('Socket.IO not initialized')
+		return
+	}
+	
+	try {
+		const userIdsArray = Array.isArray(userIds) ? userIds : [userIds]
+		userIdsArray.forEach((userId) => {
+			const userIdStr = String(userId)
+			ioInstance.to(`user:${userIdStr}`).emit('newMessage', messageData)
+		})
+	} catch (error) {
+		console.error('Error emitting message:', error)
+	}
+}
+
+// Export function to emit chat update to users
+export function emitChatUpdateToUsers(userIds, chatData) {
+	if (!ioInstance) {
+		console.error('Socket.IO not initialized')
+		return
+	}
+	
+	try {
+		const userIdsArray = Array.isArray(userIds) ? userIds : [userIds]
+		userIdsArray.forEach((userId) => {
+			const userIdStr = String(userId)
+			ioInstance.to(`user:${userIdStr}`).emit('chatUpdated', chatData)
+		})
+	} catch (error) {
+		console.error('Error emitting chat update:', error)
+	}
+}

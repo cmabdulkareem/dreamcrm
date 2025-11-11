@@ -7,7 +7,11 @@ import {
     assignRoles,
     authCheck,
     logoutUser,
-    getUsersForDropdown
+    getUsersForDropdown,
+    markUserOnlineStatus,
+    markUserOfflineStatus,
+    handleOfflineBeacon,
+    getOnlineUsers
 } from '../controller/userController.js'
 import verifyToken from "../middleware/verifyToken.js";
 
@@ -20,6 +24,12 @@ router.get('/dropdown', verifyToken, getUsersForDropdown)
 router.put('/update/:id', verifyToken, updateUser)
 router.patch('/assign-roles/:id', verifyToken, assignRoles)
 router.get('/auth', verifyToken, authCheck)
-router.get('/logout', logoutUser)
+router.get('/logout', verifyToken, logoutUser)
+
+// Online status routes
+router.post('/online', verifyToken, markUserOnlineStatus)
+router.delete('/online', verifyToken, markUserOfflineStatus)
+router.post('/offline-beacon', express.json(), handleOfflineBeacon)
+router.get('/online', verifyToken, getOnlineUsers)
 
 export default router

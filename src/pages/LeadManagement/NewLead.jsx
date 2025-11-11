@@ -37,7 +37,7 @@ export default function FormElements() {
   const { user } = useContext(AuthContext);
   const { addEvent } = useCalendar(); // Added useCalendar hook
   const navigate = useNavigate();
-  const { addNotification } = useNotifications();
+  const { addNotification, areToastsEnabled } = useNotifications();
   // Controlled states
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -321,6 +321,7 @@ export default function FormElements() {
             });
           } catch (calendarError) {
             console.error("Error creating calendar event:", calendarError);
+            // Don't fail the lead creation if calendar event fails
           }
         }
         
@@ -351,9 +352,9 @@ export default function FormElements() {
     } catch (error) {
       console.error("Error creating lead:", error);
       if (error.response?.status === 401) {
-        alert("Please login to create a lead.");
+        toast.error("Please login to create a lead.");
       } else {
-        alert(error.response?.data?.message || "Failed to create lead. Please try again.");
+        toast.error(error.response?.data?.message || "Failed to create lead. Please try again.");
       }
     }
   };

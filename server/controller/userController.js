@@ -38,9 +38,17 @@ export const signUpUser = async (req, res) => {
 export const getUsersForDropdown = async (req, res) => {
   try {
     // Fetch only necessary user information for dropdown
-    const users = await userModel.find({}, { _id: 1, fullName: 1, email: 1 });
+    const users = await userModel.find({}, { _id: 1, fullName: 1, email: 1, avatar: 1 });
     
-    return res.status(200).json({ users });
+    // Format avatar URLs if they exist
+    const formattedUsers = users.map(user => ({
+      _id: user._id,
+      fullName: user.fullName,
+      email: user.email,
+      avatar: user.avatar ? `${req.protocol}://${req.get('host')}${user.avatar}` : null
+    }));
+    
+    return res.status(200).json({ users: formattedUsers });
   } catch (error) {
     console.error("Error fetching users for dropdown:", error);
     return res.status(500).json({ message: "Internal server error" });
@@ -110,13 +118,10 @@ export const signInUser = async (req, res) => {
 // Auth check
 export const authCheck = async (req, res) => {
   try {
-    console.log('Auth check called with user ID:', req.user.id);
     const user = await userModel.findById(req.user.id).populate('reportingHead', 'fullName email');
-    console.log('User found:', user ? 'Yes' : 'No');
     if (!user) return res.status(404).json({ message: "User not found" });
 
     // Check if account is active
-    console.log('Account status:', user.accountStatus);
     if (user.accountStatus !== "Active") {
       return res.status(403).json({ message: "Account not approved yet" });
     }
@@ -452,6 +457,12 @@ export const assignRoles = async (req, res) => {
 
 export const logoutUser = async (req, res) => {
   try {
+    // Mark user as offline before logout
+    if (req.user && req.user.id) {
+      const { markUserOffline } = await import('../utils/onlineStatusManager.js');
+      markUserOffline(req.user.id);
+    }
+    
     res.clearCookie("token", {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -462,5 +473,104 @@ export const logoutUser = async (req, res) => {
   } catch (error) {
     console.error("Logout error:", error);
     return res.status(500).json({ message: "Server error. Please try again." });
+  }
+};
+
+// Mark user as online
+export const markUserOnlineStatus = async (req, res) => {
+  try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    const { markUserOnline } = await import('../utils/onlineStatusManager.js');
+    const user = await userModel.findById(req.user.id);
+    
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    
+    // Mark user as online with user data
+    markUserOnline(req.user.id, {
+      fullName: user.fullName,
+      email: user.email,
+      avatar: user.avatar ? `${req.protocol}://${req.get('host')}${user.avatar}` : null
+    });
+    
+    return res.status(200).json({ message: "User marked as online" });
+  } catch (error) {
+    console.error("Error marking user as online:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Mark user as offline
+export const markUserOfflineStatus = async (req, res) => {
+  try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    const { markUserOffline } = await import('../utils/onlineStatusManager.js');
+    markUserOffline(req.user.id);
+    
+    return res.status(200).json({ message: "User marked as offline" });
+  } catch (error) {
+    console.error("Error marking user as offline:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Handle offline beacon (for page unload)
+export const handleOfflineBeacon = async (req, res) => {
+  try {
+    // This endpoint handles sendBeacon requests during page unload
+    // Try to get userId from token first (if available), then from request body
+    let userId = null;
+    
+    // Try to verify token if available
+    try {
+      const token = req.cookies?.token || (req.headers.authorization && req.headers.authorization.startsWith('Bearer ') ? req.headers.authorization.substring(7) : null);
+      if (token) {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        userId = decoded.id;
+      }
+    } catch (err) {
+      // Token not available or invalid, try request body
+    }
+    
+    // Fallback to request body if token not available
+    if (!userId && req.body && req.body.userId) {
+      userId = req.body.userId;
+    }
+    
+    if (userId) {
+      const { markUserOffline } = await import('../utils/onlineStatusManager.js');
+      markUserOffline(userId);
+    }
+    
+    // Always return 200 for beacon requests (they don't wait for response)
+    return res.status(200).json({ message: "Offline status updated" });
+  } catch (error) {
+    console.error("Error handling offline beacon:", error);
+    // Still return 200 to not break the beacon
+    return res.status(200).json({ message: "Offline status updated" });
+  }
+};
+
+// Get all online users
+export const getOnlineUsers = async (req, res) => {
+  try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    const { getOnlineUsers: getOnlineUsersList } = await import('../utils/onlineStatusManager.js');
+    const onlineUsersList = getOnlineUsersList();
+    
+    return res.status(200).json({ onlineUsers: onlineUsersList });
+  } catch (error) {
+    console.error("Error fetching online users:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
