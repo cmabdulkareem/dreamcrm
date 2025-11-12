@@ -33,7 +33,7 @@ export const createCustomer = async (req, res) => {
     const remarks = leadRemarks ? [{
       updatedOn: new Date(),
       nextFollowUpDate: followUpDate ? new Date(followUpDate) : null,
-      handledBy: handledBy,
+      handledBy: handledBy || "Unknown", // Ensure handledBy is always populated
       remark: leadRemarks,
       leadStatus: 'new' // Initial lead status
     }] : [];
@@ -55,14 +55,23 @@ export const createCustomer = async (req, res) => {
       campaign,
       handledBy,
       followUpDate: followUpDate ? new Date(followUpDate) : null,
-      remarks
+      remarks,
+      // Automatically assign the lead to the user who created it
+      assignedTo: req.user.id,
+      assignedBy: req.user.id,
+      assignedAt: new Date()
     });
 
     await newCustomer.save();
 
+    // Fetch the updated customer with populated user details
+    const updatedCustomer = await customerModel.findById(newCustomer._id)
+      .populate('assignedTo', 'fullName email')
+      .populate('assignedBy', 'fullName email');
+
     return res.status(201).json({ 
       message: "Lead created successfully.", 
-      customer: newCustomer 
+      customer: updatedCustomer 
     });
   } catch (error) {
     console.error("Create customer error:", error);
@@ -73,7 +82,28 @@ export const createCustomer = async (req, res) => {
 // Get all customers/leads
 export const getAllCustomers = async (req, res) => {
   try {
-    const customers = await customerModel.find().sort({ createdAt: -1 });
+    // Check user role
+    const isAdmin = req.user.isAdmin;
+    const isManager = req.user.roles && req.user.roles.includes('Manager');
+    
+    let query = {};
+    
+    // If user is not admin or manager, only show leads assigned to them
+    if (!isAdmin && !isManager) {
+      query = {
+        assignedTo: req.user.id // Only leads assigned to the user
+      };
+      console.log(`User ${req.user.id} is not admin/manager, filtering leads by assignedTo`);
+    } else {
+      console.log(`User ${req.user.id} is admin/manager, showing all leads`);
+    }
+    
+    console.log("Query:", query);
+    const customers = await customerModel.find(query)
+      .populate('assignedTo', 'fullName email')
+      .populate('assignedBy', 'fullName email')
+      .sort({ createdAt: -1 });
+    console.log(`Found ${customers.length} customers`);
     return res.status(200).json({ customers });
   } catch (error) {
     console.error("Error fetching customers:", error);
@@ -84,8 +114,26 @@ export const getAllCustomers = async (req, res) => {
 // Get all converted customers/leads
 export const getConvertedCustomers = async (req, res) => {
   try {
+    // Check user role
+    const isAdmin = req.user.isAdmin;
+    const isManager = req.user.roles && req.user.roles.includes('Manager');
+    
+    let query = { leadStatus: 'converted' };
+    
+    // If user is not admin or manager, only show leads assigned to them
+    if (!isAdmin && !isManager) {
+      query = {
+        leadStatus: 'converted',
+        assignedTo: req.user.id // Only leads assigned to the user
+      };
+      console.log(`User ${req.user.id} is not admin/manager, filtering converted leads by assignedTo`);
+    } else {
+      console.log(`User ${req.user.id} is admin/manager, showing all converted leads`);
+    }
+    
+    console.log("Converted query:", query);
     console.log("Fetching converted customers...");
-    const customers = await customerModel.find({ leadStatus: 'converted' }).sort({ createdAt: -1 });
+    const customers = await customerModel.find(query).sort({ createdAt: -1 });
     console.log("Found converted customers:", customers.length);
     return res.status(200).json({ customers });
   } catch (error) {
@@ -98,7 +146,9 @@ export const getConvertedCustomers = async (req, res) => {
 export const getCustomerById = async (req, res) => {
   try {
     const { id } = req.params;
-    const customer = await customerModel.findById(id);
+    const customer = await customerModel.findById(id)
+      .populate('assignedTo', 'fullName email')
+      .populate('assignedBy', 'fullName email');
     
     if (!customer) {
       return res.status(404).json({ message: "Customer not found." });
@@ -134,7 +184,9 @@ export const updateCustomer = async (req, res) => {
     await customer.save();
 
     // Fetch the updated customer with all fields
-    const updatedCustomer = await customerModel.findById(id);
+    const updatedCustomer = await customerModel.findById(id)
+      .populate('assignedTo', 'fullName email')
+      .populate('assignedBy', 'fullName email');
 
     return res.status(200).json({ 
       message: "Customer updated successfully.", 
@@ -151,34 +203,36 @@ export const addRemark = async (req, res) => {
   try {
     const { id } = req.params;
     const { nextFollowUpDate, handledBy, remark, leadStatus } = req.body;
-
+  
     const customer = await customerModel.findById(id);
     if (!customer) {
       return res.status(404).json({ message: "Customer not found." });
     }
-
+  
     customer.remarks.push({
       updatedOn: new Date(),
       nextFollowUpDate: nextFollowUpDate ? new Date(nextFollowUpDate) : null,
-      handledBy,
+      handledBy: handledBy || req.user.fullName || "Unknown", // Ensure handledBy is always populated
       remark,
       leadStatus: leadStatus || 'new'
     });
-
+  
     // Update customer's main leadStatus field if provided
     if (leadStatus) {
       customer.leadStatus = leadStatus;
     }
-
+  
     // Update followUpDate if provided
     if (nextFollowUpDate) {
       customer.followUpDate = new Date(nextFollowUpDate);
     }
-
+  
     await customer.save();
 
     // Fetch the updated customer with all fields
-    const updatedCustomer = await customerModel.findById(id);
+    const updatedCustomer = await customerModel.findById(id)
+      .populate('assignedTo', 'fullName email')
+      .populate('assignedBy', 'fullName email');
 
     return res.status(200).json({ 
       message: "Remark added successfully.", 
@@ -241,7 +295,7 @@ export const assignLead = async (req, res) => {
     // Add a remark about the assignment
     customer.remarks.push({
       updatedOn: new Date(),
-      handledBy: req.user.fullName,
+      handledBy: req.user.fullName || "Unknown", // Ensure handledBy is always populated
       remark: assignmentRemark ? `Lead assigned to ${assignedUser.fullName}. Remark: ${assignmentRemark}` : `Lead assigned to ${assignedUser.fullName}`,
       leadStatus: customer.leadStatus || 'new',
       isUnread: true // Mark as unread for the assigned user
@@ -283,9 +337,14 @@ export const markRemarkAsRead = async (req, res) => {
     customer.remarks[remarkIndex].isUnread = false;
     await customer.save();
 
+    // Fetch the updated customer with populated user details
+    const updatedCustomer = await customerModel.findById(id)
+      .populate('assignedTo', 'fullName email')
+      .populate('assignedBy', 'fullName email');
+
     return res.status(200).json({ 
       message: "Remark marked as read.", 
-      customer 
+      customer: updatedCustomer 
     });
   } catch (error) {
     console.error("Mark remark as read error:", error);

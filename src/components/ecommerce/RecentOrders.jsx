@@ -133,6 +133,8 @@ export default function RecentOrders() {
   const isManager = user?.roles?.includes('Manager') || false;
   const isCounsellor = user?.roles?.includes('Counsellor') || false;
   const canDeleteLeads = user?.isAdmin || user?.roles?.includes('Manager');
+  const isRegularUser = !user?.isAdmin && !isManager;
+  const canAssignLeads = user?.isAdmin || user?.roles?.includes('Manager');
 
   const validateEmail = (value) => {
     const isValidEmail =
@@ -147,18 +149,39 @@ export default function RecentOrders() {
     validateEmail(value);
   };
 
+  // Then your filteredData definition
   const filteredData = data
-    .filter(
-      (item) =>
-        (item.fullName?.toLowerCase().includes(search.toLowerCase()) ||
-          item.phone1?.includes(search)) &&
-        (statusFilter ? item.status === statusFilter : true)
-    )
+    .filter((item) => {
+      // --- Search match ---
+      const matchesSearch =
+        item.fullName?.toLowerCase().includes(search.toLowerCase()) ||
+        item.phone1?.includes(search);
+
+      // --- Status filter ---
+      const matchesStatus = statusFilter ? item.status === statusFilter : true;
+
+      // --- Role-based visibility ---
+      let isUserLead = true;
+      if (!canAssignLeads) {
+        // Only show leads explicitly assigned to logged-in user
+        // Handle both populated object (assignedTo._id) and string ObjectId
+        const assignedId = item.assignedTo?._id?.toString() || item.assignedTo?.toString();
+        const userId = user?.id?.toString() || user?._id?.toString();
+
+        // if no assignment OR assigned to someone else → hide it
+        if (!assignedId || assignedId !== userId) {
+          isUserLead = false;
+        }
+      }
+
+      return matchesSearch && matchesStatus && isUserLead;
+    })
     .sort((a, b) => {
       const dateA = new Date(a.createdAt);
       const dateB = new Date(b.createdAt);
       return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
     });
+
 
   const handlePrint = () => {
     window.print();
@@ -260,7 +283,7 @@ export default function RecentOrders() {
       });
       return;
     }
-    
+
     setSelectedRow(row);
     openDeleteModal();
   };
@@ -435,9 +458,6 @@ export default function RecentOrders() {
     }
   };
 
-  // Check if user can assign leads (Admin or Manager)
-  const canAssignLeads = user?.isAdmin || user?.roles?.includes('Manager');
-
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6">
       {loading ? (
@@ -450,6 +470,11 @@ export default function RecentOrders() {
           <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">Enquiries</h3>
+              {isRegularUser && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Showing only leads assigned to you
+                </p>
+              )}
               {selectedLeads.length > 0 && (
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   {selectedLeads.length} lead(s) selected
@@ -524,7 +549,7 @@ export default function RecentOrders() {
                 {filteredData.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={10} className="py-8 text-center text-gray-500">
-                      No leads found. Create your first lead!
+                      {isRegularUser ? "No leads assigned to you." : "No leads found. Create your first lead!"}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -580,24 +605,32 @@ export default function RecentOrders() {
                         </TableCell>
                         <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                           <p className="text-xs max-w-[200px] truncate">{latestRemark}</p>
+                          {row.assignmentRemark && (
+                            <p className="text-xs text-red-500 dark:text-red-400 mt-1 truncate animate-pulse duration-100">
+                              Suggestion: {row.assignmentRemark}
+                            </p>
+                          )}
                         </TableCell>
+
                         <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{formatDate(row.followUpDate)}</TableCell>
                         <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
-                          <Button size="sm" variant="outline" className="mr-2" endIcon={<PencilIcon className="size-5" />} onClick={() => handleEdit(row)} />
-                          {canDeleteLeads && (
-                            <Button size="sm" variant="outline" className="text-red-500 mr-2" endIcon={<CloseIcon className="size-5" />} onClick={() => handleDelete(row)} />
-                          )}
-                          {canAssignLeads && (
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              className="text-blue-500 mr-2" 
-                              onClick={() => openAssignModal(row)}
-                            >
-                              Assign
-                            </Button>
-                          )}
-                          <Button size="sm" variant="outline" className="text-yellow-500" endIcon={<BellIcon className="size-5" />} onClick={() => handleAlarm(row)} />
+                          <div className="flex items-center">
+                            <Button size="sm" variant="outline" className="mr-2" endIcon={<PencilIcon className="size-5" />} onClick={() => handleEdit(row)} />
+                            {canDeleteLeads && (
+                              <Button size="sm" variant="outline" className="text-red-500 mr-2" endIcon={<CloseIcon className="size-5" />} onClick={() => handleDelete(row)} />
+                            )}
+                            {canAssignLeads && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-blue-500 mr-2"
+                                onClick={() => openAssignModal(row)}
+                              >
+                                Assign
+                              </Button>
+                            )}
+                            <Button size="sm" variant="outline" className="text-yellow-500" endIcon={<BellIcon className="size-5" />} onClick={() => handleAlarm(row)} />
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -829,7 +862,7 @@ export default function RecentOrders() {
                       [...selectedRow.remarks].reverse().map((remark, index) => (
                         <LeadCard
                           key={index}
-                          name={remark.handledBy || "Unknown"}
+                          name={remark.handledBy || user?.fullName || "Unknown"}
                           datetime={remark.updatedOn ? new Date(remark.updatedOn).toLocaleString() : "N/A"}
                           callback={remark.nextFollowUpDate ? new Date(remark.nextFollowUpDate).toLocaleDateString() : ""}
                           note={remark.remark || "No remarks"}

@@ -50,7 +50,7 @@ export const saveLeadChanges = async (
         
       const remarkPayload = {
         remark: remarkText,
-        handledBy: user?.fullName || "Unknown",
+        handledBy: user?.fullName || "Unknown", // Ensure handledBy is always populated
         nextFollowUpDate: followUpDate || null,
         leadStatus: leadStatus || "new"
       };

@@ -55,7 +55,11 @@ export const canViewLead = (lead, user) => {
   if (lead.handledBy === user?.fullName) return true;
   
   // Check if user is assigned to this lead
-  if (lead.assignedTo && lead.assignedTo._id === user?.id) return true;
+  // Handle both populated object (assignedTo._id) and string ObjectId
+  const userId = user?.id?.toString() || user?._id?.toString();
+  const assignedId = lead.assignedTo?._id?.toString() || lead.assignedTo?.toString();
+  
+  if (assignedId && assignedId === userId) return true;
   
   return false;
 };
