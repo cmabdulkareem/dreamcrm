@@ -306,3 +306,19 @@ export const setLeadReminder = async (
     toast.error('Failed to create calendar event.');
   }
 };
+
+// Mark remark as read
+export const markRemarkAsRead = async (leadId, remarkIndex) => {
+  try {
+    const response = await axios.put(
+      `${API}/customers/mark-remark-read/${leadId}/${remarkIndex}`,
+      {},
+      { withCredentials: true }
+    );
+    
+    return response.data.customer;
+  } catch (error) {
+    console.error("Error marking remark as read:", error);
+    throw error;
+  }
+};

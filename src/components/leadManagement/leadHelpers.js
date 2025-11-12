@@ -34,3 +34,28 @@ export const getLatestRemark = (remarks) => {
   }
   return "No remarks yet";
 };
+
+// Check if lead has unread remarks
+export const hasUnreadRemarks = (remarks, userId) => {
+  if (!remarks || remarks.length === 0) return false;
+  
+  // Check if any remark is unread
+  return remarks.some(remark => remark.isUnread);
+};
+
+// Check if user can view this lead (created by user, assigned to user, or admin/manager)
+export const canViewLead = (lead, user) => {
+  // Admins can view all leads
+  if (user?.isAdmin) return true;
+  
+  // Managers can view all leads
+  if (user?.roles?.includes('Manager')) return true;
+  
+  // Check if user is the creator of the lead
+  if (lead.handledBy === user?.fullName) return true;
+  
+  // Check if user is assigned to this lead
+  if (lead.assignedTo && lead.assignedTo._id === user?.id) return true;
+  
+  return false;
+};

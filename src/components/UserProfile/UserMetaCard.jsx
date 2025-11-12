@@ -29,6 +29,12 @@ export default function UserMetaCard({ user, setUsers }) {
   // Initialize state with user data and reset when user changes
   const [instagram, setInstagram] = useState(user?.instagram || "");
   const [location, setLocation] = useState(user?.location || "");
+  const [bloodGroup, setBloodGroup] = useState(user?.bloodGroup || "");
+  const [country, setCountry] = useState(user?.country || "");
+  const [state, setState] = useState(user?.state || "");
+  const [gender, setGender] = useState(user?.gender || "notDisclosed");
+  const [dob, setDob] = useState(user?.dob || "");
+  const [designation, setDesignation] = useState(user?.designation || "");
   const [error, setError] = useState(false);
 
   // Reset form state when user changes
@@ -36,21 +42,17 @@ export default function UserMetaCard({ user, setUsers }) {
     if (user) {
       setInstagram(user?.instagram || "");
       setLocation(user?.location || "");
+      setBloodGroup(user?.bloodGroup || "");
+      setCountry(user?.country || "");
+      setState(user?.state || "");
+      setGender(user?.gender || "notDisclosed");
+      setDob(user?.dob || "");
+      setDesignation(user?.designation || "");
     }
   }, [user]);
 
   // Check if the current user is editing their own profile
   const isOwnProfile = currentUser?._id === user?._id;
-
-  const handleInstagramChange = (e) => {
-    const value = e.target.value;
-    setInstagram(value);
-  };
-
-  const handleLocationChange = (e) => {
-    const value = e.target.value;
-    setLocation(value);
-  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -67,7 +69,13 @@ export default function UserMetaCard({ user, setUsers }) {
     
     const payload = {
       instagram,
-      location
+      location,
+      bloodGroup,
+      country,
+      state,
+      gender,
+      dob: dob || null,
+      designation
     };
 
     axios
@@ -115,6 +123,10 @@ export default function UserMetaCard({ user, setUsers }) {
                 <div className="hidden h-3.5 w-px bg-gray-300 dark:bg-gray-700 xl:block"></div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
                   {user?.email || "DreamZone"}
+                </p>
+                <div className="hidden h-3.5 w-px bg-gray-300 dark:bg-gray-700 xl:block"></div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {user?.designation || "General"}
                 </p>
               </div>
             </div>
@@ -180,6 +192,123 @@ export default function UserMetaCard({ user, setUsers }) {
             <div className="custom-scrollbar h-[450px] overflow-y-auto px-2 pb-3">
               <div className="mt-7">
                 <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
+                  Personal Information
+                </h5>
+
+                <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
+                  <div className="w-full">
+                    <Label htmlFor="fullName">Full Name</Label>
+                    <Input 
+                      type="text" 
+                      id="fullName" 
+                      value={user?.fullName || ""} 
+                      disabled
+                    />
+                  </div>
+                  <div className="w-full">
+                    <Label htmlFor="email">Email</Label>
+                    <Input 
+                      type="email" 
+                      id="email" 
+                      value={user?.email || ""} 
+                      disabled
+                    />
+                  </div>
+                  <div className="w-full">
+                    <Label htmlFor="phone">Phone</Label>
+                    <Input 
+                      type="text" 
+                      id="phone" 
+                      value={user?.phone || ""} 
+                      disabled
+                    />
+                  </div>
+                  <div className="w-full">
+                    <Label htmlFor="gender">Gender</Label>
+                    <select
+                      id="gender"
+                      value={gender}
+                      onChange={(e) => setGender(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 bg-white py-2 px-3 text-sm text-gray-700 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                    >
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="notDisclosed">Not Disclosed</option>
+                    </select>
+                  </div>
+                  <div className="w-full">
+                    <Label htmlFor="dob">Date of Birth</Label>
+                    <Input 
+                      type="date" 
+                      id="dob" 
+                      value={dob} 
+                      onChange={(e) => setDob(e.target.value)}
+                    />
+                  </div>
+                  <div className="w-full">
+                    <Label htmlFor="designation">Designation</Label>
+                    <Input 
+                      type="text" 
+                      id="designation" 
+                      value={designation} 
+                      onChange={(e) => setDesignation(e.target.value)}
+                      placeholder="Your designation"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-7">
+                <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
+                  Address Information
+                </h5>
+
+                <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
+                  <div className="w-full">
+                    <Label htmlFor="location">Address</Label>
+                    <Input 
+                      type="text" 
+                      id="location" 
+                      value={location} 
+                      onChange={(e) => setLocation(e.target.value)} 
+                      placeholder="Your address"
+                    />
+                  </div>
+                  <div className="w-full">
+                    <Label htmlFor="bloodGroup">Blood Group</Label>
+                    <Input 
+                      type="text" 
+                      id="bloodGroup" 
+                      value={bloodGroup} 
+                      onChange={(e) => setBloodGroup(e.target.value)} 
+                      placeholder="Your blood group"
+                    />
+                  </div>
+                  <div className="w-full">
+                    <Label htmlFor="country">Country</Label>
+                    <Input 
+                      type="text" 
+                      id="country" 
+                      value={country} 
+                      onChange={(e) => setCountry(e.target.value)} 
+                      placeholder="Your country"
+                    />
+                  </div>
+                  <div className="w-full">
+                    <Label htmlFor="state">State</Label>
+                    <Input 
+                      type="text" 
+                      id="state" 
+                      value={state} 
+                      onChange={(e) => setState(e.target.value)} 
+                      placeholder="Your state"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-7">
+                <h5 className="mb-5 text-lg font-medium text-gray-800 dark:text-white/90 lg:mb-6">
                   Social Media
                 </h5>
 
@@ -190,18 +319,8 @@ export default function UserMetaCard({ user, setUsers }) {
                       type="text" 
                       id="instagram" 
                       value={instagram} 
-                      onChange={handleInstagramChange} 
+                      onChange={(e) => setInstagram(e.target.value)} 
                       placeholder="Instagram username"
-                    />
-                  </div>
-                  <div className="w-full">
-                    <Label htmlFor="location">Address</Label>
-                    <Input 
-                      type="text" 
-                      id="location" 
-                      value={location} 
-                      onChange={handleLocationChange} 
-                      placeholder="Your address"
                     />
                   </div>
                 </div>

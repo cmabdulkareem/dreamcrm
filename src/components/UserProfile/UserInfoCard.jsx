@@ -23,6 +23,8 @@ export default function UserInfoCard({ user }) {
   const [state, setState] = useState(user?.state || "");
   const [reportingHead, setReportingHead] = useState(user?.reportingHead?.id || user?.reportingHead || "");
   const [designation, setDesignation] = useState(user?.designation || "");
+  const [gender, setGender] = useState(user?.gender || "notDisclosed");
+  const [dob, setDob] = useState(user?.dob || "");
   const [users, setUsers] = useState([]);
 
   // Reset form state when user changes or modal opens
@@ -35,6 +37,8 @@ export default function UserInfoCard({ user }) {
       setState(user?.state || "");
       setReportingHead(user?.reportingHead?.id || user?.reportingHead || "");
       setDesignation(user?.designation || "");
+      setGender(user?.gender || "notDisclosed");
+      setDob(user?.dob || "");
     }
   }, [user, isOpen]);
 
@@ -70,7 +74,9 @@ export default function UserInfoCard({ user }) {
         country: country,
         state: state,
         reportingHead: reportingHead || null,
-        designation: designation
+        designation: designation,
+        gender: gender,
+        dob: dob || null
       };
 
       const response = await axios.put(
@@ -119,10 +125,55 @@ export default function UserInfoCard({ user }) {
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-7 2xl:gap-x-32">
             <div>
               <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                Full Name
+              </p>
+              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                {user?.fullName || "Not set"}
+              </p>
+            </div>
+
+            <div>
+              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                Email
+              </p>
+              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                {user?.email || "Not set"}
+              </p>
+            </div>
+
+            <div>
+              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                Phone
+              </p>
+              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                {user?.phone || "Not set"}
+              </p>
+            </div>
+
+            <div>
+              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                Gender
+              </p>
+              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                {user?.gender === "male" ? "Male" : user?.gender === "female" ? "Female" : "Not Disclosed"}
+              </p>
+            </div>
+
+            <div>
+              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                Date of Birth
+              </p>
+              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                {user?.dob ? new Date(user.dob).toLocaleDateString() : "Not set"}
+              </p>
+            </div>
+
+            <div>
+              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
                 Designation
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                {user?.location || "Not set"}
+                {user?.designation || "Not set"}
               </p>
             </div>
 
@@ -132,6 +183,15 @@ export default function UserInfoCard({ user }) {
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90">
                 {user?.instagram || "Not set"}
+              </p>
+            </div>
+
+            <div>
+              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                Location
+              </p>
+              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                {user?.location || "Not set"}
               </p>
             </div>
 
@@ -242,12 +302,35 @@ export default function UserInfoCard({ user }) {
                   </div>
 
                   <div className="col-span-2 lg:col-span-1">
+                    <Label>Gender</Label>
+                    <Select
+                      options={[
+                        { value: "male", label: "Male" },
+                        { value: "female", label: "Female" },
+                        { value: "notDisclosed", label: "Not Disclosed" }
+                      ]}
+                      value={gender}
+                      onChange={setGender}
+                      placeholder="Select Gender"
+                    />
+                  </div>
+
+                  <div className="col-span-2 lg:col-span-1">
+                    <Label>Date of Birth</Label>
+                    <Input
+                      type="date"
+                      value={dob}
+                      onChange={(e) => setDob(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="col-span-2 lg:col-span-1">
                     <Label>Designation</Label>
                     <Input
                       type="text"
-                      value={location}
-                      onChange={(e) => setLocation(e.target.value)}
-                      placeholder="Your address"
+                      value={designation}
+                      onChange={(e) => setDesignation(e.target.value)}
+                      placeholder="Your designation"
                     />
                   </div>
 
@@ -278,6 +361,16 @@ export default function UserInfoCard({ user }) {
                       value={state}
                       onChange={setState}
                       placeholder="Select State"
+                    />
+                  </div>
+
+                  <div className="col-span-2">
+                    <Label>Location</Label>
+                    <Input
+                      type="text"
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                      placeholder="Your address"
                     />
                   </div>
 

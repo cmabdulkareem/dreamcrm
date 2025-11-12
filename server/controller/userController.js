@@ -182,6 +182,12 @@ export const updateUser = async (req, res) => {
     if (!id) {
       return res.status(400).json({ message: "User ID is required." });
     }
+    
+    // Prevent password updates through this endpoint for security reasons
+    if (req.body.password !== undefined) {
+      return res.status(400).json({ message: "Password cannot be updated through this endpoint. Please use the change password functionality." });
+    }
+    
     const {
       employeeCode,
       fullName,
@@ -265,7 +271,7 @@ export const updateUser = async (req, res) => {
         }
       }
     } else if (isAdminUser) {
-      // Admins can update all fields
+      // Admins can update all fields except password
       // Basic required fields validation
       if (fullName !== undefined && (!fullName || !email || !phone)) {
         return res.status(400).json({ message: "Full name, email, and phone are required." });
@@ -571,6 +577,34 @@ export const getOnlineUsers = async (req, res) => {
     return res.status(200).json({ onlineUsers: onlineUsersList });
   } catch (error) {
     console.error("Error fetching online users:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Delete user (admin only)
+export const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Check if user is admin
+    if (!req.user.isAdmin) {
+      return res.status(403).json({ message: "Access denied. Admin privileges required." });
+    }
+    
+    // Prevent admin from deleting themselves
+    if (req.user.id === id) {
+      return res.status(400).json({ message: "You cannot delete your own account." });
+    }
+    
+    // Find and delete user
+    const user = await userModel.findByIdAndDelete(id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+    
+    return res.status(200).json({ message: "User deleted successfully." });
+  } catch (error) {
+    console.error("Error deleting user:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };

@@ -6,7 +6,9 @@ import {
   updateCustomer,
   addRemark,
   deleteCustomer,
-  getConvertedCustomers
+  getConvertedCustomers,
+  assignLead,
+  markRemarkAsRead
 } from '../controller/customerController.js';
 import verifyToken from "../middleware/verifyToken.js";
 
@@ -20,5 +22,8 @@ router.get('/:id', verifyToken, getCustomerById);
 router.put('/update/:id', verifyToken, updateCustomer);
 router.post('/remark/:id', verifyToken, addRemark);
 router.delete('/delete/:id', verifyToken, deleteCustomer);
+// New routes for lead assignment
+router.put('/assign/:id', verifyToken, assignLead);
+router.put('/mark-remark-read/:id/:remarkIndex', verifyToken, markRemarkAsRead);
 
 export default router;

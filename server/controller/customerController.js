@@ -1,4 +1,5 @@
 import customerModel from "../model/customerModel.js";
+import userModel from "../model/userModel.js";
 
 // Create new customer/lead
 export const createCustomer = async (req, res) => {
@@ -202,6 +203,92 @@ export const deleteCustomer = async (req, res) => {
     return res.status(200).json({ message: "Customer deleted successfully." });
   } catch (error) {
     console.error("Delete customer error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Assign lead to user
+export const assignLead = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { assignedTo, assignmentRemark } = req.body;
+    const assignedBy = req.user.id; // Get the assigning user from token
+
+    // Check if user has permission to assign leads (Admin or Manager)
+    const isAuthorized = req.user.isAdmin || (req.user.roles && req.user.roles.includes('Manager'));
+    if (!isAuthorized) {
+      return res.status(403).json({ message: "Access denied. Only Admins and Managers can assign leads." });
+    }
+
+    // Validate assignedTo user exists
+    const assignedUser = await userModel.findById(assignedTo);
+    if (!assignedUser) {
+      return res.status(404).json({ message: "Assigned user not found." });
+    }
+
+    // Find the customer/lead
+    const customer = await customerModel.findById(id);
+    if (!customer) {
+      return res.status(404).json({ message: "Customer not found." });
+    }
+
+    // Update assignment fields
+    customer.assignedTo = assignedTo;
+    customer.assignedBy = assignedBy;
+    customer.assignedAt = new Date();
+    customer.assignmentRemark = assignmentRemark;
+
+    // Add a remark about the assignment
+    customer.remarks.push({
+      updatedOn: new Date(),
+      handledBy: req.user.fullName,
+      remark: assignmentRemark ? `Lead assigned to ${assignedUser.fullName}. Remark: ${assignmentRemark}` : `Lead assigned to ${assignedUser.fullName}`,
+      leadStatus: customer.leadStatus || 'new',
+      isUnread: true // Mark as unread for the assigned user
+    });
+
+    await customer.save();
+
+    // Fetch the updated customer with populated user details
+    const updatedCustomer = await customerModel.findById(id)
+      .populate('assignedTo', 'fullName email')
+      .populate('assignedBy', 'fullName email');
+
+    return res.status(200).json({ 
+      message: "Lead assigned successfully.", 
+      customer: updatedCustomer 
+    });
+  } catch (error) {
+    console.error("Assign lead error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Mark remark as read
+export const markRemarkAsRead = async (req, res) => {
+  try {
+    const { id, remarkIndex } = req.params;
+
+    const customer = await customerModel.findById(id);
+    if (!customer) {
+      return res.status(404).json({ message: "Customer not found." });
+    }
+
+    // Check if remark exists
+    if (!customer.remarks[remarkIndex]) {
+      return res.status(404).json({ message: "Remark not found." });
+    }
+
+    // Mark the remark as read
+    customer.remarks[remarkIndex].isUnread = false;
+    await customer.save();
+
+    return res.status(200).json({ 
+      message: "Remark marked as read.", 
+      customer 
+    });
+  } catch (error) {
+    console.error("Mark remark as read error:", error);
     return res.status(500).json({ message: "Server error" });
   }
 };

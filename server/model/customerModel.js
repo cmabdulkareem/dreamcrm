@@ -18,6 +18,11 @@ const remarkSchema = new mongoose.Schema({
     type: String,
     enum: ['new', 'contacted', 'qualified', 'negotiation', 'converted', 'callBackLater', 'notInterested', 'lost'],
     default: 'new'
+  },
+  // Add field to track if this remark is unread
+  isUnread: {
+    type: Boolean,
+    default: true
   }
 }, { _id: false });
 
@@ -81,7 +86,22 @@ const customerSchema = new mongoose.Schema({
     enum: ['new', 'contacted', 'qualified', 'negotiation', 'converted', 'callBackLater', 'notInterested', 'lost'],
     default: 'new'
   },
-  remarks: [remarkSchema]
+  remarks: [remarkSchema],
+  // Add fields for lead assignment
+  assignedTo: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  assignedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  assignedAt: {
+    type: Date
+  },
+  assignmentRemark: {
+    type: String
+  }
 }, {
   timestamps: true
 });
