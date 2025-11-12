@@ -77,7 +77,16 @@ const NotificationDropdown = () => {
                 {notifications.map((notification) => (
                   <li 
                     key={notification.id} 
-                    className={`p-3 rounded-lg ${!notification.read ? 'bg-blue-50 dark:bg-blue-900/20' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                    className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                      !notification.read 
+                        ? 'bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30' 
+                        : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
+                    onClick={() => {
+                      if (!notification.read) {
+                        markAsRead(notification.id);
+                      }
+                    }}
                   >
                     <div className="flex items-start gap-3">
                       <div className="flex-shrink-0">
@@ -97,9 +106,14 @@ const NotificationDropdown = () => {
                       </div>
                       
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          {notification.userName} {notification.action} {notification.entityName}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white">
+                            {notification.userName} {notification.action} {notification.entityName}
+                          </p>
+                          {!notification.read && (
+                            <span className="flex-shrink-0 h-2 w-2 rounded-full bg-blue-500"></span>
+                          )}
+                        </div>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
                           {notification.module} • {getTimeAgo(notification.timestamp)}
                         </p>
@@ -110,7 +124,8 @@ const NotificationDropdown = () => {
                           e.stopPropagation();
                           deleteNotification(notification.id);
                         }}
-                        className="flex-shrink-0 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                        className="flex-shrink-0 text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400 transition-colors"
+                        title="Delete notification"
                       >
                         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

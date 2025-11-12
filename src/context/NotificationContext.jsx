@@ -28,10 +28,16 @@ export const NotificationProvider = ({ children }) => {
     }
   }, []);
 
-  // Save notifications to localStorage whenever they change
+  // Save notifications to localStorage and update hasUnread whenever they change
   useEffect(() => {
+    // Keep hasUnread in sync with notifications
+    setHasUnread(notifications.some(n => !n.read));
+    
+    // Save to localStorage
     if (notifications.length > 0) {
       localStorage.setItem('crm_notifications', JSON.stringify(notifications));
+    } else {
+      localStorage.removeItem('crm_notifications');
     }
   }, [notifications]);
 
@@ -52,35 +58,22 @@ export const NotificationProvider = ({ children }) => {
     setNotifications(prev =>
       prev.map(n => (n.id === id ? { ...n, read: true } : n))
     );
-    
-    // Check if there are still unread notifications
-    setHasUnread(notifications.some(n => !n.read && n.id !== id));
+    // hasUnread will be updated automatically by the useEffect
   };
 
   const markAllAsRead = () => {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-    setHasUnread(false);
+    // hasUnread will be updated automatically by the useEffect
   };
 
   const clearNotifications = () => {
     setNotifications([]);
-    setHasUnread(false);
-    localStorage.removeItem('crm_notifications');
+    // hasUnread and localStorage will be updated automatically by the useEffect
   };
 
   const deleteNotification = (id) => {
-    setNotifications(prev => {
-      const updated = prev.filter(n => n.id !== id);
-      if (updated.length === 0) {
-        localStorage.removeItem('crm_notifications');
-      } else {
-        localStorage.setItem('crm_notifications', JSON.stringify(updated));
-      }
-      return updated;
-    });
-    
-    // Check if there are still unread notifications
-    setHasUnread(notifications.some(n => !n.read && n.id !== id));
+    setNotifications(prev => prev.filter(n => n.id !== id));
+    // hasUnread and localStorage will be updated automatically by the useEffect
   };
 
   const getTimeAgo = (timestamp) => {
