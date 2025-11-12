@@ -56,6 +56,8 @@ export default function RecentOrders() {
   const [search, setSearch] = useState("");
   const [sortOrder, setSortOrder] = useState("asc");
   const [statusFilter, setStatusFilter] = useState(""); // Added for status filter
+  const [leadStatusFilter, setLeadStatusFilter] = useState(""); // Filter by lead status
+  const [assignedUserFilter, setAssignedUserFilter] = useState(""); // Filter by assigned user
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedRow, setSelectedRow] = useState(null);
@@ -113,14 +115,20 @@ export default function RecentOrders() {
     fetchCampaigns(setCampaignOptions, campaigns);
   }, []);
 
-  // Fetch customers from database
+  // Fetch available users for admins/managers
   useEffect(() => {
-    fetchCustomers(setData, setLoading);
-    fetchCampaigns(setCampaignOptions, campaigns);
-    if (canAssignLeads) {
-      fetchAvailableUsers();
+    const checkAndFetchUsers = () => {
+      const isAdmin = user?.isAdmin;
+      const isManager = user?.roles?.includes('Manager');
+      if (isAdmin || isManager) {
+        fetchAvailableUsers();
+      }
+    };
+    
+    if (user) {
+      checkAndFetchUsers();
     }
-  }, []);
+  }, [user]);
 
   // Check if we need to open a specific lead from calendar
   useEffect(() => {
@@ -272,8 +280,22 @@ export default function RecentOrders() {
         item.fullName?.toLowerCase().includes(search.toLowerCase()) ||
         item.phone1?.includes(search);
 
-      // --- Status filter ---
+      // --- Status filter (enquirer status) ---
       const matchesStatus = statusFilter ? item.status === statusFilter : true;
+
+      // --- Lead Status filter ---
+      const matchesLeadStatus = leadStatusFilter ? item.leadStatus === leadStatusFilter : true;
+
+      // --- Assigned User filter (only for admins/managers) ---
+      let matchesAssignedUser = true;
+      if (canAssignLeads && assignedUserFilter) {
+        const assignedId = item.assignedTo?._id?.toString() || item.assignedTo?.toString();
+        if (assignedUserFilter === "unassigned") {
+          matchesAssignedUser = !assignedId;
+        } else {
+          matchesAssignedUser = assignedId === assignedUserFilter;
+        }
+      }
 
       // --- Role-based visibility ---
       let isUserLead = true;
@@ -289,7 +311,7 @@ export default function RecentOrders() {
         }
       }
 
-      return matchesSearch && matchesStatus && isUserLead;
+      return matchesSearch && matchesStatus && matchesLeadStatus && matchesAssignedUser && isUserLead;
     })
     .sort((a, b) => {
       const dateA = new Date(a.createdAt);
@@ -613,14 +635,35 @@ export default function RecentOrders() {
                 onChange={(value) => setSortOrder(value)}
               />
 
-              {/* New: Sort by Status */}
+              {/* Filter by Lead Status */}
               <Select
                 className="w-full md:w-1/4"
-                options={statusOptions}
-                value={statusFilter}
-                placeholder="Sort by status"
-                onChange={(value) => setStatusFilter(value)}
+                options={[
+                  { value: "", label: "All Lead Statuses" },
+                  ...leadStatusOptions
+                ]}
+                value={leadStatusFilter}
+                placeholder="Filter by lead status"
+                onChange={(value) => setLeadStatusFilter(value)}
               />
+
+              {/* Filter by Assigned User (only for admins/managers) */}
+              {canAssignLeads && (
+                <Select
+                  className="w-full md:w-1/4"
+                  options={[
+                    { value: "", label: "All Users" },
+                    { value: "unassigned", label: "Unassigned" },
+                    ...availableUsers.map(user => ({ 
+                      value: user._id, 
+                      label: user.fullName 
+                    }))
+                  ]}
+                  value={assignedUserFilter}
+                  placeholder="Filter by assigned user"
+                  onChange={(value) => setAssignedUserFilter(value)}
+                />
+              )}
 
               <Button
                 size="sm"
