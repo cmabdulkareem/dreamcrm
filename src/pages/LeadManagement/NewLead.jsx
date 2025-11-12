@@ -70,6 +70,12 @@ export default function FormElements() {
   const [newCampaignCashback, setNewCampaignCashback] = useState("");
   const [newCampaignActive, setNewCampaignActive] = useState(true);
 
+  // Contact Point modal states
+  const { isOpen: isContactPointModalOpen, openModal: openContactPointModal, closeModal: closeContactPointModal } = useModal();
+  const [newContactPointName, setNewContactPointName] = useState("");
+  const [newContactPointDesc, setNewContactPointDesc] = useState("");
+  const [newContactPointActive, setNewContactPointActive] = useState(true);
+
   useEffect(()=>{
     fetchCampaigns();
     fetchContactPoints();
@@ -146,8 +152,7 @@ export default function FormElements() {
 
   const handleContactPointChange = (value) => {
     if (value === "__add_new__") {
-      // For now, we'll just show a toast message since we don't have a modal for contact points yet
-      toast.info("Please add contact points in Settings > Contact Points");
+      openContactPointModal();
     } else {
       setContactPoint(value);
     }
@@ -190,6 +195,42 @@ export default function FormElements() {
     } catch (error) {
       console.error("Error creating campaign:", error);
       toast.error(error.response?.data?.message || "Failed to create campaign");
+    }
+  };
+
+  const createNewContactPoint = async () => {
+    if (!newContactPointName.trim()) {
+      toast.error("Contact point name is required");
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        `${API}/contact-points/create`,
+        { 
+          name: newContactPointName, 
+          description: newContactPointDesc,
+          isActive: newContactPointActive
+        },
+        { withCredentials: true }
+      );
+      
+      toast.success("Contact point created successfully!");
+      
+      // Set the newly created contact point as selected
+      setContactPoint(response.data.contactPoint.value);
+      
+      // Refresh contact points list
+      await fetchContactPoints();
+      
+      // Close modal and reset fields
+      closeContactPointModal();
+      setNewContactPointName("");
+      setNewContactPointDesc("");
+      setNewContactPointActive(true);
+    } catch (error) {
+      console.error("Error creating contact point:", error);
+      toast.error(error.response?.data?.message || "Failed to create contact point");
     }
   };
 
@@ -660,6 +701,63 @@ export default function FormElements() {
             </Button>
             <Button type="button" onClick={createNewCampaign}>
               Create Campaign
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Add Contact Point Modal */}
+      <Modal
+        isOpen={isContactPointModalOpen}
+        onClose={closeContactPointModal}
+        className="max-w-md p-6"
+      >
+        <h2 className="text-xl font-semibold text-gray-800 dark:text-white/90 mb-4">
+          Add New Contact Point
+        </h2>
+        
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="newContactPointName">Contact Point Name *</Label>
+            <Input
+              id="newContactPointName"
+              type="text"
+              value={newContactPointName}
+              onChange={(e) => setNewContactPointName(e.target.value)}
+              placeholder="e.g., Walk In"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="newContactPointDesc">Description</Label>
+            <textarea
+              id="newContactPointDesc"
+              value={newContactPointDesc}
+              onChange={(e) => setNewContactPointDesc(e.target.value)}
+              placeholder="Contact point description (optional)"
+              rows={3}
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:ring focus:ring-blue-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="newContactPointActive"
+              checked={newContactPointActive}
+              onChange={(e) => setNewContactPointActive(e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+            />
+            <Label htmlFor="newContactPointActive" className="mb-0">Mark as Active</Label>
+          </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Only active contact points will appear in dropdowns</p>
+
+          <div className="flex justify-end gap-3 mt-6">
+            <Button type="button" variant="outline" onClick={closeContactPointModal}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={createNewContactPoint}>
+              Create Contact Point
             </Button>
           </div>
         </div>

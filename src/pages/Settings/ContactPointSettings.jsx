@@ -24,7 +24,7 @@ const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
 export default function ContactPointSettings() {
   const { user } = useContext(AuthContext);
-  const { addNotification } = useNotifications();
+  const { addNotification, areToastsEnabled } = useNotifications();
   const [contactPoints, setContactPoints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedContactPoint, setSelectedContactPoint] = useState(null);
@@ -121,6 +121,11 @@ export default function ContactPointSettings() {
   };
 
   const updateContactPoint = async () => {
+    if (!selectedContactPoint || !selectedContactPoint._id) {
+      toast.error("No contact point selected");
+      return;
+    }
+
     if (!name.trim()) {
       toast.error("Contact point name is required");
       return;
@@ -162,6 +167,11 @@ export default function ContactPointSettings() {
   };
 
   const deleteContactPoint = async () => {
+    if (!selectedContactPoint || !selectedContactPoint._id) {
+      toast.error("No contact point selected");
+      return;
+    }
+
     try {
       await axios.delete(
         `${API}/contact-points/delete/${selectedContactPoint._id}`,
@@ -187,7 +197,7 @@ export default function ContactPointSettings() {
     } catch (error) {
       console.error("Error deleting contact point:", error);
       if (areToastsEnabled()) {
-        toast.error("Failed to delete contact point");
+        toast.error(error.response?.data?.message || "Failed to delete contact point");
       }
     }
   };
