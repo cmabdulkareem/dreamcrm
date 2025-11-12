@@ -132,9 +132,12 @@ export const updateCustomer = async (req, res) => {
 
     await customer.save();
 
+    // Fetch the updated customer with all fields
+    const updatedCustomer = await customerModel.findById(id);
+
     return res.status(200).json({ 
       message: "Customer updated successfully.", 
-      customer 
+      customer: updatedCustomer 
     });
   } catch (error) {
     console.error("Update customer error:", error);
@@ -173,9 +176,12 @@ export const addRemark = async (req, res) => {
 
     await customer.save();
 
+    // Fetch the updated customer with all fields
+    const updatedCustomer = await customerModel.findById(id);
+
     return res.status(200).json({ 
       message: "Remark added successfully.", 
-      customer 
+      customer: updatedCustomer 
     });
   } catch (error) {
     console.error("Add remark error:", error);

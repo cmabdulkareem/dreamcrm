@@ -41,13 +41,18 @@ import {
   leadStatusOptions
 } from "../../data/DataSets.jsx";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+// Import our new modules
+import { formatDate, getLeadStatusLabel, getLeadStatusColor, getLatestRemark } from "../leadManagement/leadHelpers";
+import { downloadLeadsAsPDF } from "../leadManagement/leadPdfExport";
+import { fetchCustomers, fetchCampaigns, createNewCampaign, prepareLeadForEdit } from "../leadManagement/leadDataManagement";
+import { saveLeadChanges, deleteLead, setLeadReminder } from "../leadManagement/leadUpdateService";
 
+const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
 export default function RecentOrders() {
   const { user } = useContext(AuthContext);
   const { addEvent, events, updateEvent } = useCalendar();
-  const { addNotification } = useNotifications();
+  const { addNotification, areToastsEnabled } = useNotifications();
   const [search, setSearch] = useState("");
   const [sortOrder, setSortOrder] = useState("asc");
   const [statusFilter, setStatusFilter] = useState(""); // Added for status filter
@@ -56,7 +61,6 @@ export default function RecentOrders() {
   const [selectedRow, setSelectedRow] = useState(null);
   const [campaignOptions, setCampaignOptions] = useState([]);
   const [selectedLeads, setSelectedLeads] = useState([]);
-
 
   // Separate modal states
   const { isOpen: isEditOpen, openModal: openEditModal, closeModal: closeEditModal } = useModal();
@@ -69,7 +73,6 @@ export default function RecentOrders() {
   const [editEmail, setEditEmail] = useState("");
   const [editStatus, setEditStatus] = useState("");
   const [editFollowUp, setEditFollowUp] = useState("");
-
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -101,8 +104,8 @@ export default function RecentOrders() {
 
   // Fetch customers from database
   useEffect(() => {
-    fetchCustomers();
-    fetchCampaigns();
+    fetchCustomers(setData, setLoading);
+    fetchCampaigns(setCampaignOptions, campaigns);
   }, []);
 
   // Check if we need to open a specific lead from calendar
@@ -121,47 +124,6 @@ export default function RecentOrders() {
   const isManager = user?.roles?.includes('Manager') || false;
   const isCounsellor = user?.roles?.includes('Counsellor') || false;
 
-  const fetchCustomers = async () => {
-    try {
-      const response = await axios.get(
-        `${API}/customers/all`,
-        { withCredentials: true }
-      );
-      setData(response.data.customers);
-      setLoading(false);
-    } catch (error) {
-      console.error("Error fetching customers:", error);
-      setLoading(false);
-      if (error.response?.status === 401) {
-        alert("Please login to view leads.");
-      }
-    }
-  };
-
-  const fetchCampaigns = async () => {
-    try {
-      const response = await axios.get(
-        `${API}/campaigns/active`,
-        { withCredentials: true }
-      );
-      const formattedCampaigns = response.data.campaigns.map(c => ({
-        value: c.value,
-        label: c.name
-      }));
-      // Add "Add New Campaign" option at the end
-      formattedCampaigns.push({
-        value: "__add_new__",
-        label: "+ Add New Campaign"
-      });
-      setCampaignOptions(formattedCampaigns);
-    } catch (error) {
-      console.error("Error fetching campaigns:", error);
-      // Fallback to hardcoded campaigns if API fails
-      const fallbackOptions = [...campaigns, { value: "__add_new__", label: "+ Add New Campaign" }];
-      setCampaignOptions(fallbackOptions);
-    }
-  };
-
   const validateEmail = (value) => {
     const isValidEmail =
       /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value);
@@ -174,7 +136,6 @@ export default function RecentOrders() {
     setEmail(value);
     validateEmail(value);
   };
-
 
   const filteredData = data
     .filter(
@@ -212,186 +173,39 @@ export default function RecentOrders() {
   };
 
   const downloadPDF = async () => {
-    if (selectedLeads.length === 0) {
-      toast.warning("Please select at least one lead to download.");
-      return;
-    }
-
-    try {
-      // Dynamic import of jsPDF and autotable plugin
-      const jsPDF = (await import('jspdf')).default;
-      const autoTable = (await import('jspdf-autotable')).default;
-
-      const doc = new jsPDF('landscape'); // Set landscape orientation
-      
-      // Add title
-      doc.setFontSize(18);
-      doc.text('Lead Report', 14, 20);
-      
-      // Add date
-      doc.setFontSize(10);
-      doc.text(`Generated on: ${new Date().toLocaleDateString('en-IN')}`, 14, 28);
-      
-      // Get selected leads data
-      const selectedLeadsData = data.filter(lead => selectedLeads.includes(lead._id));
-      
-      // Prepare table data
-      const tableData = selectedLeadsData.map(lead => {
-        const latestRemark = lead.remarks && lead.remarks.length > 0 
-          ? lead.remarks[lead.remarks.length - 1].remark 
-          : "No remarks";
-        
-        return [
-          lead.fullName,
-          formatDate(lead.createdAt),
-          lead.phone1,
-          lead.contactPoint || "N/A",
-          lead.campaign || "N/A",
-          getLeadStatusLabel(lead.leadStatus),
-          latestRemark.substring(0, 30) + (latestRemark.length > 30 ? '...' : ''),
-          formatDate(lead.followUpDate)
-        ];
-      });
-      
-      // Add table using autoTable
-      autoTable(doc, {
-        head: [['Name', 'Date Added', 'Mobile', 'Contact Point', 'Campaign', 'Lead Status', 'Latest Remark', 'Follow-up']],
-        body: tableData,
-        startY: 35,
-        styles: { fontSize: 8, cellPadding: 2 },
-        headStyles: { fillColor: [70, 95, 255], textColor: 255 },
-        alternateRowStyles: { fillColor: [245, 247, 250] },
-        margin: { top: 35 },
-      });
-      
-      // Add footer
-      const pageCount = doc.internal.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        doc.setFontSize(8);
-        doc.text(
-          `Page ${i} of ${pageCount}`,
-          doc.internal.pageSize.getWidth() / 2,
-          doc.internal.pageSize.getHeight() - 10,
-          { align: 'center' }
-        );
-      }
-      
-      // Save the PDF
-      doc.save(`leads-report-${new Date().toISOString().split('T')[0]}.pdf`);
-      
-      toast.success(`PDF downloaded with ${selectedLeads.length} lead(s)!`);
-      setSelectedLeads([]); // Clear selection after download
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      toast.error('Failed to generate PDF. Please try again.');
-    }
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
-    const dateObj = new Date(dateString);
-    return dateObj.toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  };
-
-  // Get lead status label from value
-  const getLeadStatusLabel = (value) => {
-    if (!value) return "New Lead";
-    const option = leadStatusOptions.find(opt => opt.value === value);
-    return option ? option.label : value;
-  };
-
-  const handleCampaignChange = (value) => {
-    if (value === "__add_new__") {
-      openCampaignModal();
-    } else {
-      setCampaign(value);
-    }
-  };
-
-  const createNewCampaign = async () => {
-    if (!newCampaignName.trim()) {
-      toast.error("Campaign name is required");
-      return;
-    }
-
-    try {
-      const response = await axios.post(
-        `${API}/campaigns/create`,
-        { 
-          name: newCampaignName, 
-          description: newCampaignDesc,
-          discountPercentage: newCampaignDiscount ? parseFloat(newCampaignDiscount) : 0,
-          cashback: newCampaignCashback ? parseFloat(newCampaignCashback) : 0,
-          isActive: newCampaignActive
-        },
-        { withCredentials: true }
-      );
-      
-      toast.success("Campaign created successfully!");
-      
-      // Set the newly created campaign as selected
-      setCampaign(response.data.campaign.value);
-      
-      // Refresh campaigns list
-      await fetchCampaigns();
-      
-      // Close modal and reset fields
-      closeCampaignModal();
-      setNewCampaignName("");
-      setNewCampaignDesc("");
-      setNewCampaignDiscount("");
-      setNewCampaignCashback("");
-      setNewCampaignActive(true);
-    } catch (error) {
-      console.error("Error creating campaign:", error);
-      toast.error(error.response?.data?.message || "Failed to create campaign");
-    }
+    await downloadLeadsAsPDF(selectedLeads, data, toast);
   };
 
   // ====== Button Handlers ======
   const handleEdit = (row) => {
-    setSelectedRow(row);
-    setEditName(row.fullName);
-    setEditPhone(row.phone1);
-    setEditEmail(row.email);
-    setEditStatus(row.status);
-    setEditFollowUp(row.followUpDate ? new Date(row.followUpDate).toISOString().split("T")[0] : "");
+    const setters = {
+      setSelectedRow,
+      setEditName,
+      setEditPhone,
+      setEditEmail,
+      setEditStatus,
+      setEditFollowUp,
+      setFullName,
+      setEmail,
+      setPhone1,
+      setPhone2,
+      setGender,
+      setDob,
+      setPlace,
+      setOtherPlace,
+      setStatus,
+      setEducation,
+      setContactPoint,
+      setOtherContactPoint,
+      setCampaign,
+      setHandledByPerson,
+      setFollowUpDate,
+      setRemarks,
+      setLeadStatus,
+      setSelectedValues
+    };
     
-    // Populate all fields from row to match dropdown option values
-    setFullName(row.fullName);
-    setEmail(row.email);
-    setPhone1(row.phone1);
-    setPhone2(row.phone2 || "");
-    setGender(row.gender || "");
-    setDob(row.dob ? new Date(row.dob).toISOString().split("T")[0] : "");
-    setPlace(row.place || "");
-    setOtherPlace(row.otherPlace || "");
-    setStatus(row.status || "");
-    setEducation(row.education || "");
-    setContactPoint(row.contactPoint || "");
-    setOtherContactPoint(row.otherContactPoint || "");
-    setCampaign(row.campaign || "");
-    setHandledByPerson(row.handledBy || "");
-    setFollowUpDate(row.followUpDate ? new Date(row.followUpDate).toISOString().split("T")[0] : "");
-    setRemarks("");
-    setLeadStatus(row.leadStatus || "");
-    
-    // Map coursePreference from database to match courseOptions format
-    const mappedCourses = row.coursePreference?.map(courseName => {
-      // Find matching option in courseOptions
-      const matchedOption = courseOptions.find(opt => 
-        opt.value === courseName || opt.text === courseName
-      );
-      return matchedOption || { value: courseName, text: courseName };
-    }) || [];
-    
-    setSelectedValues(mappedCourses);
-    
+    prepareLeadForEdit(row, setters);
     openEditModal();
   };
 
@@ -415,209 +229,87 @@ export default function RecentOrders() {
   };
 
   const saveChanges = async () => {
-    try {
-      // Check if there's a new remark to add
-      if (remarks.trim()) {
-        const remarkPayload = {
-          remark: remarks,
-          handledBy: user?.fullName || "Unknown",
-          nextFollowUpDate: followUpDate || null,
-          leadStatus: leadStatus || "new"
-        };
-        
-        // Add remark via the API endpoint with logged-in user's name and current lead status
-        await axios.post(
-          `${API}/customers/remark/${selectedRow._id}`,
-          remarkPayload,
-          { withCredentials: true }
-        );
-      }
-
-      // Update the lead details
-      const updatePayload = {
-        fullName,
-        phone1,
-        phone2,
-        email,
-        gender,
-        dob,
-        place,
-        otherPlace,
-        status,
-        education,
-        contactPoint,
-        otherContactPoint,
-        campaign,
-        handledBy: user?.fullName || handledByPerson,
-        followUpDate,
-        leadStatus,
-        coursePreference: selectedValues.map(item => item.value)
-      };
-      
-      const response = await axios.put(
-        `${API}/customers/update/${selectedRow._id}`,
-        updatePayload,
-        { withCredentials: true }
-      );
-      
-      // Automatically update calendar event if followUpDate exists
-      if (followUpDate) {
-        try {
-          // Check if an event already exists for this lead
-          const existingEvent = events.find(event => 
-            event.extendedProps?.leadId === selectedRow._id
-          );
-          
-          const formattedDate = followUpDate; // Already in YYYY-MM-DD format
-          const eventPayload = {
-            title: `Follow-up: ${fullName}`,
-            start: formattedDate,
-            end: formattedDate,
-            allDay: true,
-            extendedProps: {
-              calendar: "Warning",
-              leadId: selectedRow._id,
-              phone: phone1,
-              email: email,
-              status: leadStatus || "new",
-            },
-          };
-          
-          if (existingEvent) {
-            // Update existing event
-            updateEvent(existingEvent.id, eventPayload);
-          } else {
-            // Create new event
-            addEvent(eventPayload);
-          }
-        } catch (calendarError) {
-          console.error("Error managing calendar event:", calendarError);
-        }
-      }
-      
-      // Refresh data to show updates instantly in the table
-      await fetchCustomers();
-      
-      // Update selectedRow with the latest data from the response to refresh history stack
-      if (response.data.customer) {
-        setSelectedRow(response.data.customer);
-      }
-      
-      // Clear remarks field after successful update
-      setRemarks("");
-      
-      // Add notification
-      addNotification({
-        type: 'lead_updated',
-        userName: user?.fullName || 'Someone',
-        action: 'updated lead',
-        entityName: fullName,
-        module: 'Lead Management',
-      });
-      
-      // Show single success toast notification only if enabled
-      if (areToastsEnabled()) {
-        toast.success("Updated lead status", {
-          position: "top-center",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-        });
-      }
-    } catch (error) {
-      console.error("Error updating lead:", error);
-      if (areToastsEnabled()) {
-        toast.error("Failed to update lead. Please try again.", {
-          position: "top-center",
-          autoClose: 3000,
-        });
-      }
-    }
+    await saveLeadChanges(
+      selectedRow,
+      remarks,
+      leadStatus,
+      fullName,
+      phone1,
+      phone2,
+      email,
+      gender,
+      dob,
+      place,
+      otherPlace,
+      status,
+      education,
+      contactPoint,
+      otherContactPoint,
+      campaign,
+      followUpDate,
+      selectedValues,
+      user,
+      handledByPerson,
+      getLeadStatusLabel,
+      addEvent,
+      updateEvent,
+      events,
+      () => fetchCustomers(setData, setLoading), // Pass fetchCustomers with correct parameters
+      setSelectedRow,
+      setRemarks,
+      addNotification,
+      areToastsEnabled
+    );
   };
 
   const confirmDelete = async () => {
-    // Additional check to ensure only managers can delete
-    if (!isManager) {
-      toast.error("Only managers can delete leads.", {
-        position: "top-center",
-        autoClose: 3000,
-      });
-      closeDeleteModal();
-      return;
-    }
-    
-    try {
-      await axios.delete(
-        `${API}/customers/delete/${selectedRow._id}`,
-        { withCredentials: true }
-      );
-      
-      setData((prev) => prev.filter((item) => item._id !== selectedRow._id));
-      closeDeleteModal();
-      resetModal();
-      
-      // Add notification
-      addNotification({
-        type: 'lead_deleted',
-        userName: user?.fullName || 'Someone',
-        action: 'deleted lead',
-        entityName: selectedRow.fullName,
-        module: 'Lead Management',
-      });
-      
-      if (areToastsEnabled()) {
-        toast.success("Lead deleted successfully!", {
-          position: "top-center",
-          autoClose: 3000,
-        });
-      }
-    } catch (error) {
-      console.error("Error deleting lead:", error);
-      if (areToastsEnabled()) {
-        toast.error("Failed to delete lead. Please try again.", {
-          position: "top-center",
-          autoClose: 3000,
-        });
-      }
+    await deleteLead(
+      selectedRow,
+      isManager,
+      closeDeleteModal,
+      resetModal,
+      setData,
+      addNotification,
+      areToastsEnabled,
+      toast
+    );
+  };
+
+  const setReminder = async () => {
+    await setLeadReminder(
+      selectedRow,
+      closeAlarmModal,
+      resetModal,
+      addEvent,
+      toast
+    );
+  };
+
+  const handleCampaignChange = (value) => {
+    if (value === "__add_new__") {
+      openCampaignModal();
+    } else {
+      setCampaign(value);
     }
   };
 
-  const setReminder = () => {
-    if (!selectedRow?.followUpDate) {
-      toast.error("No follow-up date set for this lead.");
-      closeAlarmModal();
-      return;
-    }
-
-    try {
-      // Create calendar event
-      const followUpDate = new Date(selectedRow.followUpDate);
-      const formattedDate = followUpDate.toISOString().split("T")[0];
-      
-      // Add event to in-app calendar
-      addEvent({
-        title: `Follow-up: ${selectedRow.fullName}`,
-        start: formattedDate,
-        end: formattedDate,
-        allDay: true,
-        extendedProps: {
-          calendar: "Warning",
-          leadId: selectedRow._id,
-          phone: selectedRow.phone1,
-          email: selectedRow.email,
-          status: selectedRow.status,
-        },
-      });
-      
-      toast.success(`Calendar reminder added for ${selectedRow.fullName}!`);
-      closeAlarmModal();
-      resetModal();
-    } catch (error) {
-      console.error('Error creating calendar event:', error);
-      toast.error('Failed to create calendar event.');
-    }
+  const createNewCampaignHandler = async () => {
+    await createNewCampaign(
+      newCampaignName,
+      newCampaignDesc,
+      newCampaignDiscount,
+      newCampaignCashback,
+      newCampaignActive,
+      setCampaign,
+      () => fetchCampaigns(setCampaignOptions, campaigns), // Pass fetchCampaigns with correct parameters
+      closeCampaignModal,
+      setNewCampaignName,
+      setNewCampaignDesc,
+      setNewCampaignDiscount,
+      setNewCampaignCashback,
+      setNewCampaignActive,
+      toast
+    );
   };
 
   const resetModal = () => {
@@ -719,17 +411,7 @@ export default function RecentOrders() {
               </TableRow>
             ) : (
               filteredData.map((row) => {
-                const latestRemark = row.remarks && row.remarks.length > 0 
-                  ? row.remarks[row.remarks.length - 1].remark 
-                  : "No remarks yet";
-                
-                const getLeadStatusColor = (status) => {
-                  if (status === 'converted' || status === 'qualified') return "success";
-                  if (status === 'negotiation' || status === 'contacted') return "info";
-                  if (status === 'callBackLater' || status === 'new') return "warning";
-                  if (status === 'lost' || status === 'notInterested') return "error";
-                  return "light";
-                };
+                const latestRemark = getLatestRemark(row.remarks);
                 
                 return (
                 <TableRow key={row._id}>
@@ -1143,7 +825,7 @@ export default function RecentOrders() {
             <Button variant="outline" onClick={closeCampaignModal}>
               Cancel
             </Button>
-            <Button onClick={createNewCampaign}>
+            <Button onClick={createNewCampaignHandler}>
               Create Campaign
             </Button>
           </div>
