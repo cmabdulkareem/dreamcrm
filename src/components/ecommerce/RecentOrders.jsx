@@ -6,7 +6,7 @@ import {
   TableRow,
 } from "../ui/table";
 import Badge from "../ui/badge/Badge";
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useRef } from "react";
 import axios from "axios";
 import Button from "../../components/ui/button/Button";
 import { DownloadIcon, PencilIcon, CloseIcon, BellIcon } from "../../icons";
@@ -61,6 +61,11 @@ export default function RecentOrders() {
   const [selectedRow, setSelectedRow] = useState(null);
   const [campaignOptions, setCampaignOptions] = useState([]);
   const [selectedLeads, setSelectedLeads] = useState([]);
+  const [hoveredRemarkRow, setHoveredRemarkRow] = useState(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0, arrowLeft: 0 });
+  const [showTooltip, setShowTooltip] = useState(false);
+  const hoverTimeoutRef = useRef(null);
+  const tooltipRef = useRef(null);
 
   // Separate modal states
   const { isOpen: isEditOpen, openModal: openEditModal, closeModal: closeEditModal } = useModal();
@@ -135,6 +140,116 @@ export default function RecentOrders() {
   const canDeleteLeads = user?.isAdmin || user?.roles?.includes('Manager');
   const isRegularUser = !user?.isAdmin && !isManager;
   const canAssignLeads = user?.isAdmin || user?.roles?.includes('Manager');
+
+  // Calculate optimal tooltip position
+  const calculateTooltipPosition = (rect) => {
+    const tooltipWidth = 384; // w-96 = 384px
+    const tooltipMaxHeight = window.innerHeight * 0.8; // 80vh
+    const padding = 20;
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    
+    // Calculate horizontal position
+    let left = rect.left;
+    let arrowLeft = rect.left + rect.width / 2 - left; // Arrow position relative to tooltip
+    
+    // Adjust if tooltip would go off right edge
+    if (left + tooltipWidth > viewportWidth - padding) {
+      left = viewportWidth - tooltipWidth - padding;
+      arrowLeft = rect.left + rect.width / 2 - left;
+      // Clamp arrow to tooltip bounds
+      arrowLeft = Math.max(20, Math.min(tooltipWidth - 20, arrowLeft));
+    }
+    
+    // Adjust if tooltip would go off left edge
+    if (left < padding) {
+      left = padding;
+      arrowLeft = rect.left + rect.width / 2 - left;
+      arrowLeft = Math.max(20, Math.min(tooltipWidth - 20, arrowLeft));
+    }
+    
+    // Calculate vertical position (above the cell)
+    const spaceAbove = rect.top;
+    const spaceBelow = viewportHeight - rect.bottom;
+    const estimatedTooltipHeight = Math.min(tooltipMaxHeight, 400); // Estimate height
+    
+    let top = rect.top;
+    let transform = 'translateY(-100%)';
+    
+    // If not enough space above, show below
+    if (spaceAbove < estimatedTooltipHeight + 50 && spaceBelow > spaceAbove) {
+      top = rect.bottom;
+      transform = 'translateY(10px)';
+    } else {
+      top = rect.top;
+      transform = 'translateY(-100%)';
+    }
+    
+    // Ensure tooltip doesn't go off top
+    if (top < padding) {
+      top = padding;
+    }
+    
+    return { top, left, arrowLeft, transform };
+  };
+
+  // Handle tooltip hover with delay
+  const handleTooltipEnter = (e, row) => {
+    if (row.remarks && row.remarks.length > 0) {
+      // Clear any existing timeout
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+      
+      const rect = e.currentTarget.getBoundingClientRect();
+      const position = calculateTooltipPosition(rect);
+      
+      setTooltipPosition(position);
+      setHoveredRemarkRow(row._id);
+      
+      // Small delay before showing for better UX
+      hoverTimeoutRef.current = setTimeout(() => {
+        setShowTooltip(true);
+      }, 150);
+    }
+  };
+
+  const handleTooltipLeave = () => {
+    // Clear timeout if user leaves before tooltip shows
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+    
+    // Delay hiding for smoother transition
+    hoverTimeoutRef.current = setTimeout(() => {
+      setHoveredRemarkRow(null);
+      setShowTooltip(false);
+    }, 100);
+  };
+
+  // Handle window resize to recalculate tooltip position
+  useEffect(() => {
+    if (!hoveredRemarkRow) return;
+    
+    const handleResize = () => {
+      // Find the cell element and recalculate position
+      const cellElement = document.querySelector(`[data-row-id="${hoveredRemarkRow}"]`);
+      if (cellElement) {
+        const rect = cellElement.getBoundingClientRect();
+        const position = calculateTooltipPosition(rect);
+        setTooltipPosition(position);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('scroll', handleResize, true);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleResize, true);
+    };
+  }, [hoveredRemarkRow]);
 
   const validateEmail = (value) => {
     const isValidEmail =
@@ -604,12 +719,19 @@ export default function RecentOrders() {
                           )}
                         </TableCell>
                         <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
-                          <p className="text-xs max-w-[200px] truncate">{latestRemark}</p>
-                          {row.assignmentRemark && (
-                            <p className="text-xs text-red-500 dark:text-red-400 mt-1 truncate animate-pulse duration-100">
-                              Suggestion: {row.assignmentRemark}
-                            </p>
-                          )}
+                          <div 
+                            className="relative"
+                            data-row-id={row._id}
+                            onMouseEnter={(e) => handleTooltipEnter(e, row)}
+                            onMouseLeave={handleTooltipLeave}
+                          >
+                            <p className="text-xs max-w-[200px] truncate cursor-help">{latestRemark}</p>
+                            {row.assignmentRemark && (
+                              <p className="text-xs text-red-500 dark:text-red-400 mt-1 truncate animate-pulse duration-100">
+                                Suggestion: {row.assignmentRemark}
+                              </p>
+                            )}
+                          </div>
                         </TableCell>
 
                         <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{formatDate(row.followUpDate)}</TableCell>
@@ -639,6 +761,96 @@ export default function RecentOrders() {
               </TableBody>
             </Table>
           </div>
+
+          {/* History Tooltip - Fixed Position Above Table */}
+          {hoveredRemarkRow && showTooltip && (() => {
+            const hoveredRow = filteredData.find(row => row._id === hoveredRemarkRow);
+            if (!hoveredRow || !hoveredRow.remarks || hoveredRow.remarks.length === 0) return null;
+            
+            const isAbove = tooltipPosition.transform.includes('-100%');
+            
+            return (
+              <div 
+                ref={tooltipRef}
+                className={`fixed w-96 max-w-[90vw] max-h-[80vh] bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 z-[9999] transition-all duration-200 ${
+                  showTooltip ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+                }`}
+                style={{
+                  top: `${tooltipPosition.top}px`,
+                  left: `${tooltipPosition.left}px`,
+                  transform: tooltipPosition.transform
+                }}
+                onMouseEnter={() => {
+                  if (hoverTimeoutRef.current) {
+                    clearTimeout(hoverTimeoutRef.current);
+                  }
+                }}
+                onMouseLeave={handleTooltipLeave}
+              >
+                {/* Arrow pointing to cell */}
+                {tooltipPosition.arrowLeft > 0 && (
+                  <div
+                    className={`absolute ${isAbove ? 'bottom-0' : 'top-0'} left-0 w-0 h-0`}
+                    style={{
+                      left: `${tooltipPosition.arrowLeft}px`,
+                      transform: isAbove 
+                        ? `translateY(100%) translateX(-50%)` 
+                        : `translateY(-100%) translateX(-50%)`
+                    }}
+                  >
+                    <div 
+                      className={`w-0 h-0 border-l-[8px] border-r-[8px] ${
+                        isAbove 
+                          ? 'border-t-[8px] border-t-white dark:border-t-gray-800 border-l-transparent border-r-transparent' 
+                          : 'border-b-[8px] border-b-white dark:border-b-gray-800 border-l-transparent border-r-transparent'
+                      }`}
+                      style={{
+                        filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
+                      }}
+                    />
+                  </div>
+                )}
+                
+                <div className="p-3 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10 rounded-t-lg">
+                  <h4 className="text-sm font-semibold text-gray-800 dark:text-white">Remark History</h4>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{hoveredRow.remarks.length} remark{hoveredRow.remarks.length !== 1 ? 's' : ''}</p>
+                </div>
+                <div className="overflow-y-auto max-h-[calc(80vh-100px)] p-3 space-y-3 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent dark:scrollbar-thumb-gray-700 hover:scrollbar-thumb-gray-400 dark:hover:scrollbar-thumb-gray-600">
+                  {[...hoveredRow.remarks].reverse().map((remark, index) => (
+                    <div key={index} className="rounded-lg border border-gray-100 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-xs font-medium text-gray-800 dark:text-white">
+                          {remark.handledBy || "Unknown"}
+                        </span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {remark.updatedOn ? new Date(remark.updatedOn).toLocaleString() : "N/A"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge
+                          size="sm"
+                          color={getLeadStatusColor(remark.leadStatus || "new")}
+                        >
+                          {getLeadStatusLabel(remark.leadStatus || "new")}
+                        </Badge>
+                        {remark.isUnread && (
+                          <span className="text-xs text-red-500 dark:text-red-400">Unread</span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">
+                        {remark.remark || "No remarks"}
+                      </p>
+                      {remark.nextFollowUpDate && (
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                          Next Follow-up: {new Date(remark.nextFollowUpDate).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Edit Modal */}
           <Modal
