@@ -219,7 +219,7 @@ const ChatWidget = () => {
 
       {/* Chat Window */}
       {isChatOpen && (
-        <div className="flex flex-col w-80 h-96 bg-white rounded-lg shadow-xl border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+        <div className="flex flex-col w-80 h-96 bg-white rounded-lg shadow-xl border border-gray-200 dark:bg-gray-800 dark:border-gray-700 overflow-hidden">
           {/* Chat Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 rounded-t-lg">
             <div className="flex items-center">
@@ -279,7 +279,7 @@ const ChatWidget = () => {
           </div>
 
           {/* Chat Content */}
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col overflow-hidden">
             {showContacts ? (
               // Contacts List
               <div className="flex-1 overflow-y-auto">
