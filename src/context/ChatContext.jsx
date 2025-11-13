@@ -120,7 +120,7 @@ export const ChatProvider = ({ children }) => {
             _id: contactId,
             fullName: contact.fullName,
             email: contact.email,
-            avatar: contact.avatar || `/images/user/user-${(contactId.charCodeAt(0) % 4) + 1}.jpg`
+            avatar: contact.avatar || null
           };
         });
       
@@ -135,7 +135,7 @@ export const ChatProvider = ({ children }) => {
             _id: uId,
             fullName: u.fullName,
             email: u.email,
-            avatar: u.avatar || `/images/user/user-${(uId.charCodeAt(0) % 4) + 1}.jpg`
+            avatar: u.avatar || null
           };
         });
       
@@ -176,7 +176,7 @@ export const ChatProvider = ({ children }) => {
           _id: messageData.sender._id || messageData.sender.id,
           fullName: messageData.sender.fullName,
           // Use the avatar from messageData if available, otherwise generate default
-          avatar: messageData.sender.avatar || `/images/user/user-${((messageData.sender._id || messageData.sender.id || '0').charCodeAt(0) % 4) + 1}.jpg`
+          avatar: messageData.sender.avatar || null
         },
         text: messageData.text,
         timestamp: messageData.createdAt || new Date().toISOString(),
@@ -420,7 +420,7 @@ export const ChatProvider = ({ children }) => {
           _id: msg.sender._id || msg.sender.id,
           fullName: msg.sender.fullName,
           // Use the avatar from msg.sender if available, otherwise generate default
-          avatar: msg.sender.avatar || `/images/user/user-${((msg.sender._id || msg.sender.id || '0').charCodeAt(0) % 4) + 1}.jpg`
+          avatar: msg.sender.avatar || null
         },
         text: msg.text,
         timestamp: msg.createdAt || new Date().toISOString(),
@@ -483,7 +483,7 @@ export const ChatProvider = ({ children }) => {
         sender: {
           _id: serverMessage.sender._id || serverMessage.sender.id,
           fullName: serverMessage.sender.fullName,
-          avatar: serverMessage.sender.avatar || `/images/user/user-${((serverMessage.sender._id || serverMessage.sender.id).charCodeAt(0) % 4) + 1}.jpg`
+          avatar: serverMessage.sender.avatar || null
         },
         text: serverMessage.text,
         timestamp: serverMessage.createdAt || new Date().toISOString(),
