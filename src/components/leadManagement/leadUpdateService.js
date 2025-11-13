@@ -158,6 +158,7 @@ export const saveLeadChanges = async (
       addNotification({
         type: 'lead_updated',
         userName: user?.fullName || 'Someone',
+        avatar: user?.avatar || null,  // Add avatar to notification
         action: 'updated lead',
         entityName: fullName,
         module: 'Lead Management',
@@ -233,6 +234,7 @@ export const deleteLead = async (
       addNotification({
         type: 'lead_deleted',
         userName: selectedRow.handledBy || 'Someone',
+        avatar: selectedRow.avatar || null,  // Add avatar to notification
         action: 'deleted lead',
         entityName: selectedRow.fullName,
         module: 'Lead Management',

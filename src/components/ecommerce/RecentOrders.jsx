@@ -583,6 +583,7 @@ export default function RecentOrders() {
           addNotification({
             type: 'lead_assigned',
             userName: user?.fullName || 'Someone',
+            avatar: user?.avatar || null,
             action: 'assigned lead',
             entityName: selectedRow.fullName,
             module: 'Lead Management',

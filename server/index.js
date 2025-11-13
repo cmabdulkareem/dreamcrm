@@ -19,6 +19,7 @@ import studentRoutes from './routes/studentRoutes.js'
 import courseRoutes from './routes/courseRoutes.js'
 import contactPointRoutes from './routes/contactPointRoute.js'
 import chatRoutes from './routes/chatRoutes.js'
+import eventRoutes from './routes/eventRoutes.js'
 
 const app = express()
 
@@ -47,6 +48,7 @@ app.use('/api/students', studentRoutes)
 app.use('/api/courses', courseRoutes)
 app.use('/api/contact-points', contactPointRoutes)
 app.use('/api/chats', chatRoutes)
+app.use('/api/events', eventRoutes)
 
 // Catch-all route to serve index.html for client-side routing
 app.use((req, res) => {

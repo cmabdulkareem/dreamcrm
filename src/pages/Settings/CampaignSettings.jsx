@@ -112,6 +112,7 @@ export default function CampaignSettings() {
       addNotification({
         type: 'campaign_created',
         userName: user?.fullName || 'Someone',
+        avatar: user?.avatar || null,  // Add avatar to notification
         action: 'created campaign',
         entityName: name,
         module: 'Campaign Settings',
@@ -155,6 +156,7 @@ export default function CampaignSettings() {
       addNotification({
         type: 'campaign_updated',
         userName: user?.fullName || 'Someone',
+        avatar: user?.avatar || null,  // Add avatar to notification
         action: 'updated campaign',
         entityName: name,
         module: 'Campaign Settings',
@@ -186,6 +188,7 @@ export default function CampaignSettings() {
       addNotification({
         type: 'campaign_deleted',
         userName: user?.fullName || 'Someone',
+        avatar: user?.avatar || null,  // Add avatar to notification
         action: 'deleted campaign',
         entityName: selectedCampaign.name,
         module: 'Campaign Settings',

@@ -42,6 +42,7 @@ import { ReactComponent as UserCircleIcon } from "./user-circle.svg?react";
 import { ReactComponent as UserIcon } from "./user-line.svg?react";
 import { ReactComponent as MailIcon } from "./mail-line.svg?react";
 import { ReactComponent as ChatIcon } from "./chat.svg?react";
+import { ReactComponent as CalendarIcon } from "./calendar.svg?react";
 
 export {
   PlusIcon,
@@ -88,4 +89,5 @@ export {
   UserIcon,
   MailIcon,
   ChatIcon,
+  CalendarIcon,
 };

@@ -1,0 +1,780 @@
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import axios from 'axios';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import ComponentCard from '../../components/common/ComponentCard';
+import PageMeta from '../../components/common/PageMeta';
+import PageBreadcrumb from '../../components/common/PageBreadCrumb';
+import Label from '../../components/form/Label';
+import Input from '../../components/form/input/InputField';
+import Select from '../../components/form/Select';
+import DatePicker from '../../components/form/date-picker';
+import { useNavigate } from 'react-router-dom';
+import ReactCrop from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
+
+const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+
+const EventManagement = () => {
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [formData, setFormData] = useState({
+    eventName: '',
+    eventDescription: '',
+    eventDate: '',
+    maxRegistrations: 0,
+    registrationFields: [
+      { fieldName: 'Full Name', fieldType: 'text', isRequired: true },
+      { fieldName: 'Email', fieldType: 'email', isRequired: true }
+    ]
+  });
+  const [newField, setNewField] = useState({
+    fieldName: '',
+    fieldType: 'text',
+    isRequired: false
+  });
+  
+  // Banner image state
+  const [bannerPreview, setBannerPreview] = useState(null);
+  const [crop, setCrop] = useState({ unit: '%', width: 100, aspect: 16/9 });
+  const [completedCrop, setCompletedCrop] = useState(null);
+  const [croppedBannerUrl, setCroppedBannerUrl] = useState(null);
+  const imgRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  const navigate = useNavigate();
+
+  // Fetch all events
+  const fetchEvents = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(`${API}/events`, { withCredentials: true });
+      setEvents(response.data.events || []);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+      toast.error('Failed to fetch events');
+      setEvents([]); // Ensure events is always an array
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEvents();
+  }, []);
+
+  // Handle form input changes
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Handle registration field changes
+  const handleFieldChange = (index, field, value) => {
+    const updatedFields = [...formData.registrationFields];
+    updatedFields[index][field] = value;
+    setFormData(prev => ({
+      ...prev,
+      registrationFields: updatedFields
+    }));
+  };
+
+  // Add a new registration field
+  const addRegistrationField = () => {
+    if (newField.fieldName.trim() === '') {
+      toast.error('Field name is required');
+      return;
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      registrationFields: [
+        ...prev.registrationFields,
+        { ...newField }
+      ]
+    }));
+    
+    setNewField({
+      fieldName: '',
+      fieldType: 'text',
+      isRequired: false
+    });
+  };
+
+  // Remove a registration field
+  const removeRegistrationField = (index) => {
+    const updatedFields = [...formData.registrationFields];
+    updatedFields.splice(index, 1);
+    setFormData(prev => ({
+      ...prev,
+      registrationFields: updatedFields
+    }));
+  };
+
+  // Handle new field input changes
+  const handleNewFieldChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setNewField(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  const uploadBannerForEvent = async (eventId, bannerDataUrl) => {
+    try {
+      // Convert data URL to blob
+      const response = await fetch(bannerDataUrl);
+      const blob = await response.blob();
+      
+      // Create a more proper file object
+      const file = new File([blob], 'banner.jpg', { type: 'image/jpeg' });
+      
+      // Create FormData for upload
+      const formData = new FormData();
+      formData.append('banner', file);
+      
+      // Upload banner
+      const uploadResponse = await axios.post(`${API}/events/upload-banner/${eventId}`, formData, {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
+      return uploadResponse.data.bannerImage;
+    } catch (error) {
+      console.error('Error uploading banner:', error);
+      throw error;
+    }
+  };
+
+  // Create a new event
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    try {
+      // First create the event without the banner
+      const eventData = {
+        ...formData,
+        eventDate: new Date(formData.eventDate).toISOString()
+      };
+      
+      const response = await axios.post(`${API}/events/create`, eventData, { withCredentials: true });
+      
+      // If we have a banner, upload it now
+      if (croppedBannerUrl || bannerPreview) {
+        try {
+          await uploadBannerForEvent(response.data.event._id, croppedBannerUrl || bannerPreview);
+          // Refresh events to get the updated event with banner
+          await fetchEvents();
+        } catch (bannerError) {
+          console.error('Error uploading banner:', bannerError);
+          toast.error('Event created but banner upload failed');
+        }
+      }
+      
+      toast.success('Event created successfully');
+      setShowCreateForm(false);
+      resetForm();
+    } catch (error) {
+      console.error('Error creating event:', error);
+      toast.error(error.response?.data?.message || 'Failed to create event');
+    }
+  };
+
+  // Reset form
+  const resetForm = () => {
+    setFormData({
+      eventName: '',
+      eventDescription: '',
+      eventDate: '',
+      maxRegistrations: 0,
+      registrationFields: [
+        { fieldName: 'Full Name', fieldType: 'text', isRequired: true },
+        { fieldName: 'Email', fieldType: 'email', isRequired: true }
+      ]
+    });
+    setNewField({
+      fieldName: '',
+      fieldType: 'text',
+      isRequired: false
+    });
+    
+    // Reset banner state
+    setBannerPreview(null);
+    setCroppedBannerUrl(null);
+    setCrop({ unit: '%', width: 100, aspect: 16/9 });
+    setCompletedCrop(null);
+    
+    // Clear file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // Toggle event status
+  const toggleEventStatus = async (eventId) => {
+    try {
+      await axios.patch(`${API}/events/toggle-status/${eventId}`, {}, { withCredentials: true });
+      toast.success('Event status updated');
+      fetchEvents();
+    } catch (error) {
+      console.error('Error toggling event status:', error);
+      toast.error('Failed to update event status');
+    }
+  };
+
+  // Delete event
+  const deleteEvent = async (eventId) => {
+    if (!window.confirm('Are you sure you want to delete this event?')) {
+      return;
+    }
+    
+    try {
+      await axios.delete(`${API}/events/delete/${eventId}`, { withCredentials: true });
+      toast.success('Event deleted successfully');
+      fetchEvents();
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      toast.error('Failed to delete event');
+    }
+  };
+
+  // View registrations
+  const viewRegistrations = (eventId) => {
+    navigate(`/settings/events/${eventId}/registrations`);
+  };
+
+  // Copy registration link to clipboard
+  const copyRegistrationLink = (link) => {
+    const fullLink = `${window.location.origin}/event-registration/${link}`;
+    navigator.clipboard.writeText(fullLink);
+    toast.success('Registration link copied to clipboard');
+  };
+
+  const onImageLoad = useCallback((img) => {
+    imgRef.current = img;
+  }, []);
+
+  const getCroppedImg = (image, crop, fileName) => {
+    const canvas = document.createElement('canvas');
+    const scaleX = image.naturalWidth / image.width;
+    const scaleY = image.naturalHeight / image.height;
+    canvas.width = crop.width;
+    canvas.height = crop.height;
+    const ctx = canvas.getContext('2d');
+    
+    ctx.drawImage(
+      image,
+      crop.x * scaleX,
+      crop.y * scaleY,
+      crop.width * scaleX,
+      crop.height * scaleY,
+      0,
+      0,
+      crop.width,
+      crop.height
+    );
+    
+    // As a blob with compression
+    return new Promise((resolve, reject) => {
+      canvas.toBlob(blob => {
+        if (!blob) {
+          reject(new Error('Canvas is empty'));
+          return;
+        }
+        blob.name = fileName;
+        resolve(blob);
+      }, 'image/jpeg', 0.8); // 80% quality compression
+    });
+  };
+
+  const handleBannerUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setBannerPreview(e.target.result);
+      setCroppedBannerUrl(null);
+      setCrop({ unit: '%', width: 100, aspect: 16/9 });
+      setCompletedCrop(null);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCropComplete = async () => {
+    if (!completedCrop || !imgRef.current) {
+      toast.error("Please select an area to crop");
+      return;
+    }
+
+    try {
+      const croppedBlob = await getCroppedImg(
+        imgRef.current,
+        completedCrop,
+        'banner.jpg'
+      );
+      
+      setCroppedBannerUrl(URL.createObjectURL(croppedBlob));
+    } catch (e) {
+      console.error('Error cropping image:', e);
+      toast.error("Failed to crop image");
+    }
+  };
+
+  const saveBanner = async () => {
+    if (!croppedBannerUrl && !bannerPreview) {
+      toast.error("No banner image selected");
+      return;
+    }
+
+    // In a real implementation, you would upload the banner to the server here
+    toast.success("Banner ready to be saved with event!");
+  };
+
+  const triggerBannerUpload = () => {
+    fileInputRef.current?.click();
+  };
+
+  const removeBanner = () => {
+    setBannerPreview(null);
+    setCroppedBannerUrl(null);
+    setCrop({ unit: '%', width: 100, aspect: 16/9 });
+    setCompletedCrop(null);
+    
+    // Clear file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <PageMeta title="Event Management - CRM" />
+      <PageBreadcrumb pageTitle="Event Management" />
+      
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Events</h1>
+          <button
+            onClick={() => setShowCreateForm(!showCreateForm)}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition duration-300"
+          >
+            {showCreateForm ? 'Cancel' : 'Create New Event'}
+          </button>
+        </div>
+
+        {showCreateForm && (
+          <ComponentCard title="Create New Event">
+            <form onSubmit={handleSubmit}>
+              <div className="space-y-6">
+                <div className="flex flex-col md:flex-row gap-4">
+                  <div className="w-full md:w-1/2">
+                    <Label htmlFor="eventName">Event Name *</Label>
+                    <Input
+                      type="text"
+                      id="eventName"
+                      name="eventName"
+                      value={formData.eventName}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                  
+                  <div className="w-full md:w-1/2">
+                    <DatePicker
+                      id="eventDate"
+                      label="Event Date *"
+                      value={formData.eventDate}
+                      onChange={(date, dateString) => setFormData({...formData, eventDate: dateString})}
+                      placeholder="Select event date"
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <Label htmlFor="eventDescription">Event Description</Label>
+                  <textarea
+                    id="eventDescription"
+                    name="eventDescription"
+                    value={formData.eventDescription}
+                    onChange={handleInputChange}
+                    rows="3"
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-hidden focus:ring-3 focus:ring-brand-500/20 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 bg-transparent text-gray-800 focus:border-brand-300 dark:border-gray-700 dark:focus:border-brand-800 rounded-lg shadow-theme-xs"
+                  ></textarea>
+                </div>
+                
+                {/* Banner Upload Section */}
+                <div>
+                  <Label>Banner Image (Optional)</Label>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleBannerUpload}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                  
+                  {bannerPreview ? (
+                    <div className="mt-2">
+                      {!croppedBannerUrl ? (
+                        // Show full image first with cropping controls
+                        <div>
+                          <div className="relative">
+                            <div className="w-full overflow-hidden rounded-lg border border-gray-300 dark:border-gray-600">
+                              <ReactCrop
+                                crop={crop}
+                                onChange={(c) => setCrop(c)}
+                                onComplete={(c) => setCompletedCrop(c)}
+                                aspect={16/9}
+                                minWidth={100}
+                                minHeight={50}
+                              >
+                                <img 
+                                  ref={onImageLoad}
+                                  src={bannerPreview} 
+                                  alt="Banner Preview" 
+                                  className="w-full h-auto max-h-96 object-contain"
+                                />
+                              </ReactCrop>
+                            </div>
+                            
+                            <div className="absolute top-2 right-2 flex gap-2">
+                              <button
+                                type="button"
+                                onClick={triggerBannerUpload}
+                                className="bg-white dark:bg-gray-800 rounded-full p-2 shadow-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700 dark:text-gray-300" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+                                </svg>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={removeBanner}
+                                className="bg-white dark:bg-gray-800 rounded-full p-2 shadow-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
+                          
+                          <div className="flex justify-end gap-2 mt-4">
+                            <button
+                              type="button"
+                              onClick={handleCropComplete}
+                              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                            >
+                              Crop Banner
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        // Show cropped image preview
+                        <div>
+                          <div className="relative">
+                            <div className="w-full h-48 overflow-hidden rounded-lg border border-gray-300 dark:border-gray-600">
+                              <img 
+                                src={croppedBannerUrl} 
+                                alt="Cropped Banner Preview" 
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            
+                            <div className="absolute top-2 right-2 flex gap-2">
+                              <button
+                                type="button"
+                                onClick={triggerBannerUpload}
+                                className="bg-white dark:bg-gray-800 rounded-full p-2 shadow-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700 dark:text-gray-300" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+                                </svg>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={removeBanner}
+                                className="bg-white dark:bg-gray-800 rounded-full p-2 shadow-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
+                          
+                          <div className="mt-4">
+                            <Label>Cropped Banner Preview</Label>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">This is how your banner will appear on the event registration form.</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="mt-2">
+                      <div 
+                        onClick={triggerBannerUpload}
+                        className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg h-48 flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-800 cursor-pointer hover:border-blue-500 transition-colors"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <p className="text-gray-500 dark:text-gray-400 mb-2">Click to upload banner</p>
+                        <p className="text-sm text-gray-400 dark:text-gray-500">16:9 aspect ratio recommended</p>
+                      </div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Optional: Upload a banner image for this event</p>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="w-full md:w-1/2">
+                  <Label htmlFor="maxRegistrations">Max Registrations (0 for unlimited)</Label>
+                  <Input
+                    type="number"
+                    id="maxRegistrations"
+                    name="maxRegistrations"
+                    value={formData.maxRegistrations}
+                    onChange={handleInputChange}
+                    min="0"
+                  />
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="space-y-3">
+                    <Label>Registration Fields</Label>
+                    {formData.registrationFields.map((field, index) => (
+                      <div key={index} className="flex flex-col md:flex-row gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                        <div className="w-full md:w-2/5">
+                          <Label>Field Name</Label>
+                          <Input
+                            type="text"
+                            value={field.fieldName}
+                            onChange={(e) => handleFieldChange(index, 'fieldName', e.target.value)}
+                            placeholder="Field Name"
+                          />
+                        </div>
+                        <div className="w-full md:w-2/5">
+                          <Label>Field Type</Label>
+                          <Select
+                            options={[
+                              { value: "text", label: "Text" },
+                              { value: "email", label: "Email" },
+                              { value: "number", label: "Number" },
+                              { value: "date", label: "Date" },
+                              { value: "textarea", label: "Textarea" },
+                              { value: "select", label: "Select" }
+                            ]}
+                            value={field.fieldType}
+                            onChange={(value) => handleFieldChange(index, 'fieldType', value)}
+                          />
+                        </div>
+                        <div className="w-full md:w-1/5 flex items-end">
+                          <div className="flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={field.isRequired}
+                              onChange={(e) => handleFieldChange(index, 'isRequired', e.target.checked)}
+                              className="mr-2 h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
+                            />
+                            <Label className="mb-0">Required</Label>
+                          </div>
+                        </div>
+                        <div className="w-full md:w-auto flex items-end">
+                          <button
+                            type="button"
+                            onClick={() => removeRegistrationField(index)}
+                            className="text-red-500 hover:text-red-700 px-3 py-2"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="flex flex-col md:flex-row gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <div className="w-full md:w-2/5">
+                      <Input
+                        type="text"
+                        name="fieldName"
+                        value={newField.fieldName}
+                        onChange={(e) => setNewField({...newField, fieldName: e.target.value})}
+                        placeholder="New Field Name"
+                      />
+                    </div>
+                    <div className="w-full md:w-2/5">
+                      <Select
+                        options={[
+                          { value: "text", label: "Text" },
+                          { value: "email", label: "Email" },
+                          { value: "number", label: "Number" },
+                          { value: "date", label: "Date" },
+                          { value: "textarea", label: "Textarea" },
+                          { value: "select", label: "Select" }
+                        ]}
+                        value={newField.fieldType}
+                        onChange={(value) => setNewField({...newField, fieldType: value})}
+                      />
+                    </div>
+                    <div className="w-full md:w-1/5 flex items-end">
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          name="isRequired"
+                          checked={newField.isRequired}
+                          onChange={(e) => setNewField({...newField, isRequired: e.target.checked})}
+                          className="mr-2 h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
+                        />
+                        <span className="text-sm">Required</span>
+                      </div>
+                    </div>
+                    <div className="w-full md:w-auto flex items-end">
+                      <button
+                        type="button"
+                        onClick={addRegistrationField}
+                        className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm"
+                      >
+                        Add Field
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCreateForm(false);
+                    resetForm();
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                >
+                  Create Event
+                </button>
+              </div>
+            </form>
+          </ComponentCard>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {events.length === 0 ? (
+            <div className="col-span-full text-center py-12">
+              <p className="text-gray-500 dark:text-gray-400">No events found. Create your first event!</p>
+            </div>
+          ) : (
+            events.map((event) => (
+              <ComponentCard key={event._id} className="border rounded-lg overflow-hidden">
+                <div className="p-5">
+                  <div className="flex justify-between items-start mb-3">
+                    <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{event.eventName}</h3>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      event.isActive 
+                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' 
+                        : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
+                    }`}>
+                      {event.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                  
+                  <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">
+                    {event.eventDescription || 'No description provided'}
+                  </p>
+                  
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      <span className="font-medium">Date:</span> {new Date(event.eventDate).toLocaleString()}
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      <span className="font-medium">Registrations:</span> {event.currentRegistrations} / {event.maxRegistrations || 'Unlimited'}
+                    </p>
+                  </div>
+                  
+                  {event.registrationLink && (
+                    <div className="mb-4">
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+                        <span className="font-medium">Registration Link:</span>
+                      </p>
+                      <div className="flex">
+                        <input
+                          type="text"
+                          readOnly
+                          value={`${window.location.origin}/event-registration/${event.registrationLink}`}
+                          className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded-l dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        />
+                        <button
+                          onClick={() => copyRegistrationLink(event.registrationLink)}
+                          className="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded-r text-sm dark:bg-gray-600 dark:hover:bg-gray-500"
+                        >
+                          Copy
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => toggleEventStatus(event._id)}
+                      className={`px-3 py-1 rounded text-sm ${
+                        event.isActive
+                          ? 'bg-yellow-500 hover:bg-yellow-600 text-white'
+                          : 'bg-green-500 hover:bg-green-600 text-white'
+                      }`}
+                    >
+                      {event.isActive ? 'Deactivate' : 'Activate'}
+                    </button>
+                    
+                    <button
+                      onClick={() => viewRegistrations(event._id)}
+                      className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm"
+                    >
+                      View Registrations
+                    </button>
+                    
+                    <button
+                      onClick={() => deleteEvent(event._id)}
+                      className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-sm"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </ComponentCard>
+            ))
+          )}
+        </div>
+        <ToastContainer position="top-center" className="!z-[999999]" style={{ zIndex: 999999 }} />
+      </div>
+    </div>
+  );
+};
+
+export default EventManagement;

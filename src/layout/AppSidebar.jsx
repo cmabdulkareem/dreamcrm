@@ -18,7 +18,8 @@ import {
   SettingsIcon,
   UserIcon,
   ShootingStarIcon,
-  MailIcon
+  MailIcon,
+  CalendarIcon
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import SidebarWidget from "./SidebarWidget";
@@ -97,6 +98,7 @@ const settingsItems = [
       { name: "Contact Points", path: "/settings/contact-points", pro: false },
       { name: "Course Management", path: "/settings/courses", pro: false },
       { name: "User Management", path: "/settings/users", pro: false },
+      { name: "Event Management", path: "/settings/events", pro: false },
     ],
   }
 ];

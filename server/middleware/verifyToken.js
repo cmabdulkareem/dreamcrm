@@ -14,10 +14,6 @@ export default function verifyToken(req, res, next) {
     }
   }
   
-  console.log('Cookies received:', req.cookies);
-  console.log('Authorization header:', req.headers.authorization);
-  console.log('Token:', token);
-
   if (!token) {
     console.log("Token is missing");
     return res.status(401).json({ message: "Unauthorized - Token missing" });

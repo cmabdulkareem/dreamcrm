@@ -118,6 +118,7 @@ export default function ManageStudents() {
       addNotification({
         type: 'student_updated',
         userName: user?.fullName || 'Someone',
+        avatar: user?.avatar || null,  // Add avatar to notification
         action: 'updated student',
         entityName: response.data.student.fullName,
         module: 'Student Management',

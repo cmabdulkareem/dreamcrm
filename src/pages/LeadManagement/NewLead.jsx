@@ -370,6 +370,7 @@ export default function FormElements() {
         addNotification({
           type: 'lead_created',
           userName: user?.fullName || 'Someone',
+          avatar: user?.avatar || null,  // Add avatar to notification
           action: 'added new lead',
           entityName: fullName,
           module: 'Lead Management',

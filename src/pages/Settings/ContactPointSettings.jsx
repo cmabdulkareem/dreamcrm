@@ -104,6 +104,7 @@ export default function ContactPointSettings() {
       addNotification({
         type: 'contact_point_created',
         userName: user?.fullName || 'Someone',
+        avatar: user?.avatar || null,  // Add avatar to notification
         action: 'created contact point',
         entityName: name,
         module: 'Contact Point Settings',
@@ -150,6 +151,7 @@ export default function ContactPointSettings() {
       addNotification({
         type: 'contact_point_updated',
         userName: user?.fullName || 'Someone',
+        avatar: user?.avatar || null,  // Add avatar to notification
         action: 'updated contact point',
         entityName: name,
         module: 'Contact Point Settings',
@@ -186,6 +188,7 @@ export default function ContactPointSettings() {
       addNotification({
         type: 'contact_point_deleted',
         userName: user?.fullName || 'Someone',
+        avatar: user?.avatar || null,  // Add avatar to notification
         action: 'deleted contact point',
         entityName: selectedContactPoint.name,
         module: 'Contact Point Settings',

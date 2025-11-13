@@ -8,6 +8,7 @@ import PhoneInput from "../../components/form/group-input/PhoneInput.jsx";
 import Select from "../../components/form/Select.jsx";
 import DatePicker from "../../components/form/date-picker.jsx";
 import SearchableCourseSelect from "../../components/form/SearchableCourseSelect.jsx";
+import SearchableLeadSelect from "../../components/form/SearchableLeadSelect.jsx";
 import Button from "../../components/ui/button/Button.jsx";
 import { AuthContext } from "../../context/AuthContext";
 import { useNotifications } from "../../context/NotificationContext";
@@ -450,6 +451,7 @@ export default function NewStudent() {
         addNotification({
           type: 'student_created',
           userName: user?.fullName || 'Someone',
+          avatar: user?.avatar || null,
           action: 'created student',
           entityName: fullName,
           module: 'Student Management',
@@ -522,13 +524,13 @@ export default function NewStudent() {
                         <span className="ml-2 text-gray-500 dark:text-gray-400">Loading converted leads...</span>
                       </div>
                     ) : (
-                      <Select
-                        options={leadOptions}
+                      <SearchableLeadSelect
+                        leads={convertedLeads}
                         value={selectedLead}
-                        placeholder="Select a converted lead"
                         onChange={handleLeadChange}
+                        placeholder="Search and select a converted lead"
                         error={!!validationErrors.selectedLead}
-                        hint={validationErrors.selectedLead}
+                        disabled={loading}
                       />
                     )}
                   </div>
