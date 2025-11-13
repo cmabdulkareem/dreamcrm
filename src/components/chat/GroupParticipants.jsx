@@ -5,7 +5,12 @@ import { useContext } from 'react';
 
 const GroupParticipants = ({ chat, participants, onAddParticipant, onRemoveParticipant }) => {
   const { user } = useContext(AuthContext);
-  const { contacts } = useChat();
+  const { contacts, deleteGroupChat } = useChat();
+  
+  // Add safety check for chat
+  if (!chat) {
+    return <div>Loading...</div>;
+  }
 
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'participant',
@@ -15,14 +20,35 @@ const GroupParticipants = ({ chat, participants, onAddParticipant, onRemoveParti
     }),
   }));
 
+  const handleDeleteGroup = async () => {
+    if (window.confirm('Are you sure you want to delete this group? This action cannot be undone.')) {
+      try {
+        await deleteGroupChat(chat.id);
+      } catch (error) {
+        console.error('Error deleting group:', error);
+        alert('Failed to delete group. Please try again.');
+      }
+    }
+  };
+
   return (
     <div 
       ref={drop}
       className={`flex-1 overflow-y-auto p-2 ${isOver ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
     >
-      <h4 className="px-2 py-1 text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-        Group Participants
-      </h4>
+      <div className="flex justify-between items-center mb-4">
+        <h4 className="px-2 py-1 text-sm font-medium text-gray-500 dark:text-gray-400">
+          Group Participants
+        </h4>
+        {user && chat.participants && chat.participants.some(p => (p._id || p.id) === (user._id || user.id)) && (
+          <button
+            onClick={handleDeleteGroup}
+            className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-sm"
+          >
+            Delete Group
+          </button>
+        )}
+      </div>
       
       {isOver && (
         <div className="text-center py-2 text-blue-500 dark:text-blue-400">
@@ -31,7 +57,7 @@ const GroupParticipants = ({ chat, participants, onAddParticipant, onRemoveParti
       )}
       
       <div className="space-y-2">
-        {participants.map((participant) => (
+        {participants && participants.map((participant) => (
           <div 
             key={participant._id} 
             className="flex items-center justify-between p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
@@ -46,13 +72,16 @@ const GroupParticipants = ({ chat, participants, onAddParticipant, onRemoveParti
                 <p className="text-sm font-medium text-gray-900 dark:text-white">
                   {participant.fullName}
                 </p>
-                {participant._id === user._id && (
+                {user && participant._id === user._id && (
                   <p className="text-xs text-gray-500 dark:text-gray-400">You</p>
+                )}
+                {participant._id === chat.createdBy && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Admin</p>
                 )}
               </div>
             </div>
             
-            {participant._id !== user._id && chat.participants.length > 2 && (
+            {user && participant._id !== user._id && chat.participants && chat.participants.length > 2 && (
               <button
                 onClick={() => onRemoveParticipant(participant._id)}
                 className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
@@ -71,7 +100,7 @@ const GroupParticipants = ({ chat, participants, onAddParticipant, onRemoveParti
           Add Participants
         </h4>
         <div className="max-h-40 overflow-y-auto">
-          {contacts
+          {contacts && contacts
             .filter(contact => !participants.some(p => p._id === contact._id))
             .map((contact) => (
               <div

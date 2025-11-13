@@ -51,4 +51,3 @@ chatSchema.set('toJSON', {
 
 const Chat = mongoose.model("Chat", chatSchema);
 export default Chat;
-

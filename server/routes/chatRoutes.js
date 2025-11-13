@@ -5,7 +5,10 @@ import {
   getMessages,
   sendMessage,
   createGroupChat,
-  markMessagesAsRead
+  markMessagesAsRead,
+  addParticipantToGroup,
+  removeParticipantFromGroup,
+  deleteGroupChat
 } from '../controller/chatController.js';
 import verifyToken from "../middleware/verifyToken.js";
 
@@ -29,8 +32,16 @@ router.post('/message', sendMessage);
 // Create a group chat
 router.post('/group', createGroupChat);
 
+// Delete a group chat
+router.delete('/group/:chatId', deleteGroupChat);
+
+// Add participant to group
+router.post('/:chatId/participants', addParticipantToGroup);
+
+// Remove participant from group
+router.delete('/:chatId/participants/:participantId', removeParticipantFromGroup);
+
 // Mark messages as read
 router.put('/:chatId/read', markMessagesAsRead);
 
 export default router;
-

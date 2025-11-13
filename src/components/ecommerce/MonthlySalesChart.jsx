@@ -1,10 +1,65 @@
 import Chart from "react-apexcharts";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { MoreDotIcon } from "../../icons";
 
+const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+
 export default function MonthlySalesChart() {
+  const [revenueData, setRevenueData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    fetchRevenueData();
+  }, []);
+
+  const fetchRevenueData = async () => {
+    try {
+      const response = await axios.get(
+        `${API}/students/all`,
+        { withCredentials: true }
+      );
+      
+      const students = response.data.students || [];
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth();
+      
+      // Get last 12 months data
+      const monthlyRevenue = [];
+      const monthNames = [];
+      
+      for (let i = 11; i >= 0; i--) {
+        const date = new Date(currentYear, currentMonth - i, 1);
+        const monthName = date.toLocaleDateString('en-US', { month: 'short' });
+        monthNames.push(monthName);
+        
+        const monthStudents = students.filter(s => {
+          const createdDate = new Date(s.createdAt);
+          return createdDate.getMonth() === date.getMonth() && 
+                 createdDate.getFullYear() === date.getFullYear();
+        });
+        
+        const monthRevenue = monthStudents.reduce((sum, s) => sum + (s.finalAmount || 0), 0);
+        monthlyRevenue.push(monthRevenue / 100000); // Convert to lakhs
+      }
+      
+      setRevenueData({ months: monthNames, revenue: monthlyRevenue });
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching revenue data:", error);
+      setLoading(false);
+    }
+  };
+
+  const maxRevenue = revenueData.revenue?.length > 0 
+    ? Math.max(...revenueData.revenue) 
+    : 10;
+  const chartMax = maxRevenue > 0 ? Math.ceil(maxRevenue * 1.2) : 10;
+
   const options = {
     colors: ["#465fff"],
     chart: {
@@ -32,9 +87,7 @@ export default function MonthlySalesChart() {
       colors: ["transparent"],
     },
     xaxis: {
-      categories: [
-        "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"
-      ],
+      categories: revenueData.months || [],
       axisBorder: {
         show: false,
       },
@@ -48,20 +101,17 @@ export default function MonthlySalesChart() {
       horizontalAlign: "left",
       fontFamily: "Outfit",
     },
-yaxis: {
-  min: 0,
-  max: 10,
-  tickAmount: 4, // creates 0, 100, 200, 300, 400
-  labels: {
-    formatter: function(val) {
-      return `₹${val}L`;
+    yaxis: {
+      min: 0,
+      max: chartMax,
+      tickAmount: 4,
+      labels: {
+        formatter: function(val) {
+          return `₹${val.toFixed(1)}L`;
+        },
+        style: { colors: ["#6B7280"], fontSize: "12px" },
+      },
     },
-    style: { colors: ["#6B7280"], fontSize: "12px" },
-  },
-},
-
-
-
     grid: {
       yaxis: {
         lines: {
@@ -78,7 +128,7 @@ yaxis: {
       },
       y: {
         formatter: function (val) {
-          return `${val}`;
+          return `₹${(val * 100000).toLocaleString('en-IN')}`;
         },
       },
     },
@@ -86,12 +136,10 @@ yaxis: {
 
   const series = [
     {
-      name: "Sales",
-      data: [8, 7, 5, 9, 10, 6, 6, 7, 8, 9, 8, 6],
+      name: "Revenue",
+      data: revenueData.revenue || [],
     },
   ];
-
-  const [isOpen, setIsOpen] = useState(false);
 
   function toggleDropdown() {
     setIsOpen(!isOpen);
@@ -105,7 +153,7 @@ yaxis: {
     <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white px-5 pt-5 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6 sm:pt-6">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
-          Monthly Collections
+          Monthly Revenue
         </h3>
         <div className="relative inline-block">
           <button className="dropdown-toggle" onClick={toggleDropdown}>
@@ -118,19 +166,19 @@ yaxis: {
             >
               View More
             </DropdownItem>
-            <DropdownItem
-              onItemClick={closeDropdown}
-              className="flex w-full font-normal text-left text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
-            >
-              Delete
-            </DropdownItem>
           </Dropdown>
         </div>
       </div>
 
       <div className="max-w-full overflow-x-auto custom-scrollbar">
         <div className="-ml-5 min-w-[650px] xl:min-w-full pl-2">
-          <Chart options={options} series={series} type="bar" height={180} />
+          {loading ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500">Loading revenue data...</p>
+            </div>
+          ) : (
+            <Chart options={options} series={series} type="bar" height={180} />
+          )}
         </div>
       </div>
     </div>

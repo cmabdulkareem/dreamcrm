@@ -4,36 +4,65 @@ import StatisticsChart from "../../components/ecommerce/StatisticsChart";
 import MonthlyTarget from "../../components/ecommerce/MonthlyTarget";
 import LeadOverview from "../../components/ecommerce/LeadOverview";
 import DemographicCard from "../../components/ecommerce/DemographicCard";
+import LeadStatusBreakdown from "../../components/ecommerce/LeadStatusBreakdown";
+import FollowUpsDue from "../../components/ecommerce/FollowUpsDue";
 import PageMeta from "../../components/common/PageMeta";
 
 export default function Home() {
   return (
     <>
       <PageMeta
-        title="Leads and Admissions | You can overview your Lads and Admissions here"
-        description="This is React.js Ecommerce Dashboard page for TailAdmin - React.js Tailwind CSS Admin Dashboard Template"
+        title="Leads Dashboard | CRM Dashboard Overview"
+        description="Comprehensive dashboard for leads, admissions, revenue, and student management"
       />
-      <div className="grid grid-cols-12 gap-4 md:gap-6">
-        <div className="col-span-12 space-y-6 xl:col-span-7">
-          <EcommerceMetrics />
-
-          <MonthlySalesChart />
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex flex-col gap-2">
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-white/90">
+            Leads Dashboard
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Overview of your leads, admissions, revenue, and key metrics
+          </p>
         </div>
 
-        <div className="col-span-12 xl:col-span-5">
-          <MonthlyTarget />
-        </div>
+        {/* Key Metrics - 4 columns */}
+        <EcommerceMetrics />
 
-        <div className="col-span-12">
-          <StatisticsChart />
-        </div>
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-12 gap-4 md:gap-6">
+          {/* Left Column - Charts */}
+          <div className="col-span-12 space-y-6 xl:col-span-8">
+            {/* Monthly Revenue Chart */}
+            <MonthlySalesChart />
 
-        <div className="col-span-12 xl:col-span-5">
-          <DemographicCard />
-        </div>
+            {/* Lead vs Conversion Chart */}
+            <StatisticsChart />
+          </div>
 
-        <div className="col-span-12 xl:col-span-7">
-          <LeadOverview />
+          {/* Right Column - Targets and Follow-ups */}
+          <div className="col-span-12 space-y-6 xl:col-span-4">
+            {/* Monthly Target */}
+            <MonthlyTarget />
+
+            {/* Follow-ups Due */}
+            <FollowUpsDue />
+          </div>
+
+          {/* Bottom Row - Status and Demographics */}
+          <div className="col-span-12 lg:col-span-6">
+            <LeadStatusBreakdown />
+          </div>
+
+          {/* Demographics */}
+          <div className="col-span-12 lg:col-span-6">
+            <DemographicCard />
+          </div>
+
+          {/* Recent Leads - Full Width */}
+          <div className="col-span-12">
+            <LeadOverview />
+          </div>
         </div>
       </div>
     </>

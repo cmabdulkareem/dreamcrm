@@ -91,7 +91,7 @@ export const getMessages = async (req, res) => {
       // Populate sender with avatar field
       .populate('sender', 'fullName email avatar')
       .sort({ createdAt: 1 })
-      .limit(100); // Limit to last 100 messages
+      .limit(200); // Increase limit to 200 messages
 
     return res.status(200).json({ messages });
   } catch (error) {
@@ -198,15 +198,22 @@ export const createGroupChat = async (req, res) => {
     const { name, participantIds } = req.body;
     const currentUserId = req.user.id;
 
-    if (!name || !participantIds || !Array.isArray(participantIds) || participantIds.length === 0) {
-      return res.status(400).json({ message: "Group name and at least one participant are required" });
+    if (!name || !name.trim()) {
+      return res.status(400).json({ message: "Group name is required" });
     }
 
-    // Verify all participants exist
-    const participants = [currentUserId, ...participantIds];
-    const users = await User.find({ _id: { $in: participants } });
-    if (users.length !== participants.length) {
-      return res.status(404).json({ message: "One or more participants not found" });
+    // Create participants array with at least the creator
+    let participants = [currentUserId];
+    
+    // Add other participants if provided
+    if (participantIds && Array.isArray(participantIds) && participantIds.length > 0) {
+      // Verify all participants exist
+      const allParticipantIds = [currentUserId, ...participantIds];
+      const users = await User.find({ _id: { $in: allParticipantIds } });
+      if (users.length !== allParticipantIds.length) {
+        return res.status(404).json({ message: "One or more participants not found" });
+      }
+      participants = allParticipantIds;
     }
 
     // Create group chat
@@ -223,6 +230,175 @@ export const createGroupChat = async (req, res) => {
     return res.status(201).json({ chat });
   } catch (error) {
     console.error("Error creating group chat:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Add participant to group
+export const addParticipantToGroup = async (req, res) => {
+  try {
+    const { chatId } = req.params;
+    const { participantId } = req.body;
+    const currentUserId = req.user.id;
+
+    if (!participantId) {
+      return res.status(400).json({ message: "Participant ID is required" });
+    }
+
+    // Verify chat exists and is a group chat
+    const chat = await Chat.findById(chatId);
+    if (!chat) {
+      return res.status(404).json({ message: "Chat not found" });
+    }
+
+    if (chat.type !== 'group') {
+      return res.status(400).json({ message: "Can only add participants to group chats" });
+    }
+
+    // Verify user is a participant (only participants can add others)
+    const participantIds = chat.participants.map(p => p.toString());
+    if (!participantIds.includes(currentUserId.toString())) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    // Check if participant is already in the group
+    if (participantIds.includes(participantId)) {
+      return res.status(400).json({ message: "Participant is already in the group" });
+    }
+
+    // Verify participant exists
+    const participant = await User.findById(participantId);
+    if (!participant) {
+      return res.status(404).json({ message: "Participant not found" });
+    }
+
+    // Add participant to group
+    chat.participants.push(participantId);
+    await chat.save();
+    await chat.populate('participants', 'fullName email avatar');
+
+    // Emit chat update to all participants
+    const chatUpdateData = {
+      _id: chat._id.toString(),
+      id: chat._id.toString(),
+      type: chat.type,
+      name: chat.name,
+      participants: chat.participants.map(p => ({
+        _id: p._id.toString(),
+        id: p._id.toString(),
+        fullName: p.fullName,
+        email: p.email,
+        avatar: p.avatar || null
+      }))
+    };
+    emitChatUpdateToUsers(chat.participants.map(p => p.toString()), chatUpdateData);
+
+    return res.status(200).json({ chat });
+  } catch (error) {
+    console.error("Error adding participant to group:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Remove participant from group
+export const removeParticipantFromGroup = async (req, res) => {
+  try {
+    const { chatId, participantId } = req.params;
+    const currentUserId = req.user.id;
+
+    // Verify chat exists and is a group chat
+    const chat = await Chat.findById(chatId);
+    if (!chat) {
+      return res.status(404).json({ message: "Chat not found" });
+    }
+
+    if (chat.type !== 'group') {
+      return res.status(400).json({ message: "Can only remove participants from group chats" });
+    }
+
+    // Verify user is a participant (only participants can remove others)
+    const participantIds = chat.participants.map(p => p.toString());
+    if (!participantIds.includes(currentUserId.toString())) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    // Prevent removing the group creator (unless it's the creator themselves)
+    if (participantId === chat.createdBy.toString() && currentUserId.toString() !== chat.createdBy.toString()) {
+      return res.status(403).json({ message: "Cannot remove group creator" });
+    }
+
+    // Check if participant is in the group
+    if (!participantIds.includes(participantId)) {
+      return res.status(400).json({ message: "Participant is not in the group" });
+    }
+
+    // Remove participant from group
+    chat.participants = chat.participants.filter(p => p.toString() !== participantId);
+    await chat.save();
+    await chat.populate('participants', 'fullName email avatar');
+
+    // Emit chat update to all participants
+    const chatUpdateData = {
+      _id: chat._id.toString(),
+      id: chat._id.toString(),
+      type: chat.type,
+      name: chat.name,
+      participants: chat.participants.map(p => ({
+        _id: p._id.toString(),
+        id: p._id.toString(),
+        fullName: p.fullName,
+        email: p.email,
+        avatar: p.avatar || null
+      }))
+    };
+    emitChatUpdateToUsers(chat.participants.map(p => p.toString()), chatUpdateData);
+
+    return res.status(200).json({ chat });
+  } catch (error) {
+    console.error("Error removing participant from group:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Delete group chat
+export const deleteGroupChat = async (req, res) => {
+  try {
+    const { chatId } = req.params;
+    const currentUserId = req.user.id;
+
+    // Verify chat exists and is a group chat
+    const chat = await Chat.findById(chatId);
+    if (!chat) {
+      return res.status(404).json({ message: "Chat not found" });
+    }
+
+    if (chat.type !== 'group') {
+      return res.status(400).json({ message: "Can only delete group chats" });
+    }
+
+    // Any participant can delete the group
+    const participantIds = chat.participants.map(p => p.toString());
+    if (!participantIds.includes(currentUserId.toString())) {
+      return res.status(403).json({ message: "Only group participants can delete the group" });
+    }
+
+    // Delete all messages in the group
+    await Message.deleteMany({ chat: chatId });
+
+    // Delete the group chat
+    await Chat.findByIdAndDelete(chatId);
+
+    // Emit chat deletion notification to all participants
+    const chatDeleteData = {
+      _id: chat._id.toString(),
+      id: chat._id.toString(),
+      type: 'deleted'
+    };
+    emitChatUpdateToUsers(chat.participants.map(p => p.toString()), chatDeleteData);
+
+    return res.status(200).json({ message: "Group chat deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting group chat:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -268,4 +444,3 @@ export const markMessagesAsRead = async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
-

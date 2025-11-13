@@ -66,6 +66,7 @@ export const ChatProvider = ({ children }) => {
         type: chat.type,
         name: chat.name || (chat.participants?.find(p => (p._id || p.id) !== userId)?.fullName || 'Unknown'),
         participants: chat.participants || [],
+        createdBy: chat.createdBy || null,
         createdAt: chat.createdAt,
         lastMessage: chat.lastMessage ? {
           text: chat.lastMessage.text,
@@ -229,13 +230,33 @@ export const ChatProvider = ({ children }) => {
 
     // Listen for chat updates
     socket.on('chatUpdated', (chatData) => {
+      // Handle chat deletion
+      if (chatData.type === 'deleted') {
+        // Remove deleted chat from chats list
+        setChats(prev => prev.filter(chat => chat.id !== chatData.id));
+        
+        // If the deleted chat is currently active, close it
+        if (activeChat && activeChat.id === chatData.id) {
+          closeChat();
+        }
+        
+        // Remove messages for deleted chat
+        setMessages(prev => {
+          const newMessages = { ...prev };
+          delete newMessages[chatData.id];
+          return newMessages;
+        });
+        
+        return;
+      }
+      
       setChats(prev => {
         const existingChatIndex = prev.findIndex(c => c.id === chatData.id);
         if (existingChatIndex >= 0) {
           // Update existing chat
           return prev.map((c, idx) => 
             idx === existingChatIndex 
-              ? { ...c, lastMessage: chatData.lastMessage }
+              ? { ...c, lastMessage: chatData.lastMessage, participants: chatData.participants || c.participants }
               : c
           );
         } else {
@@ -312,7 +333,7 @@ export const ChatProvider = ({ children }) => {
     
     try {
       if (isGroup) {
-        // Create group chat
+        // Create group chat with selected participants
         const participantIds = participants.map(p => p._id || p.id);
         const response = await axios.post(`${API}/chats/group`, {
           name: groupName,
@@ -328,6 +349,7 @@ export const ChatProvider = ({ children }) => {
           type: 'group',
           name: serverChat.name,
           participants: serverChat.participants || [],
+          createdBy: serverChat.createdBy || userId,
           createdAt: serverChat.createdAt,
           lastMessage: null
         };
@@ -352,6 +374,7 @@ export const ChatProvider = ({ children }) => {
           type: 'user',
           name: serverChat.participants?.find(p => (p._id || p.id) !== userId)?.fullName || 'Unknown',
           participants: serverChat.participants || [],
+          createdBy: serverChat.createdBy || null,
           createdAt: serverChat.createdAt,
           lastMessage: serverChat.lastMessage ? {
             text: serverChat.lastMessage.text,
@@ -377,52 +400,6 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
-  const sendMessage = async (chatId, text) => {
-    if (!text.trim() || !user || !userId) return;
-    
-    try {
-      // Send message to server
-      const response = await axios.post(`${API}/chats/message`, {
-        chatId: chatId,
-        text: text.trim()
-      }, {
-        withCredentials: true,
-        timeout: 10000
-      });
-      
-      const serverMessage = response.data.message;
-      
-      // Format message for frontend
-      const newMessage = {
-        id: serverMessage._id || serverMessage.id,
-        chatId: chatId,
-        sender: {
-          _id: serverMessage.sender._id || serverMessage.sender.id,
-          fullName: serverMessage.sender.fullName,
-          avatar: serverMessage.sender.avatar || `/images/user/user-${((serverMessage.sender._id || serverMessage.sender.id).charCodeAt(0) % 4) + 1}.jpg`
-        },
-        text: serverMessage.text,
-        timestamp: serverMessage.createdAt || new Date().toISOString(),
-      };
-      
-      // Update messages in state
-      setMessages(prev => ({
-        ...prev,
-        [chatId]: [...(prev[chatId] || []), newMessage]
-      }));
-      
-      // Update last message in chat
-      setChats(prev => prev.map(chat => 
-        chat.id === chatId 
-          ? { ...chat, lastMessage: { text: newMessage.text, timestamp: newMessage.timestamp } }
-          : chat
-      ));
-    } catch (error) {
-      console.error('Error sending message:', error);
-      // Optionally show error to user
-    }
-  };
-  
   // Fetch messages for a chat
   const fetchMessages = async (chatId) => {
     if (!chatId || !userId) return;
@@ -473,30 +450,182 @@ export const ChatProvider = ({ children }) => {
       } catch (error) {
         // Ignore read status errors
       }
+      
+      // Scroll to bottom after fetching messages
+      setTimeout(() => {
+        const event = new CustomEvent('scrollToBottom');
+        window.dispatchEvent(event);
+      }, 100);
     } catch (error) {
       console.error('Error fetching messages:', error);
     }
   };
 
-  const addParticipantToGroup = (chatId, participant) => {
-    setChats(prev => prev.map(chat => 
-      chat.id === chatId 
-        ? { 
-            ...chat, 
-            participants: chat.participants.some(p => p._id === participant._id)
-              ? chat.participants
-              : [...chat.participants, participant]
-          }
-        : chat
-    ));
+  const sendMessage = async (chatId, text) => {
+    if (!text.trim() || !user || !userId) return;
+    
+    try {
+      // Send message to server
+      const response = await axios.post(`${API}/chats/message`, {
+        chatId: chatId,
+        text: text.trim()
+      }, {
+        withCredentials: true,
+        timeout: 10000
+      });
+      
+      const serverMessage = response.data.message;
+      
+      // Format message for frontend
+      const newMessage = {
+        id: serverMessage._id || serverMessage.id,
+        chatId: chatId,
+        sender: {
+          _id: serverMessage.sender._id || serverMessage.sender.id,
+          fullName: serverMessage.sender.fullName,
+          avatar: serverMessage.sender.avatar || `/images/user/user-${((serverMessage.sender._id || serverMessage.sender.id).charCodeAt(0) % 4) + 1}.jpg`
+        },
+        text: serverMessage.text,
+        timestamp: serverMessage.createdAt || new Date().toISOString(),
+      };
+      
+      // Update messages in state
+      setMessages(prev => {
+        const currentMessages = prev[chatId] || [];
+        // Limit to last 200 messages to prevent memory issues
+        const updatedMessages = [...currentMessages, newMessage];
+        if (updatedMessages.length > 200) {
+          return {
+            ...prev,
+            [chatId]: updatedMessages.slice(-200)
+          };
+        }
+        return {
+          ...prev,
+          [chatId]: updatedMessages
+        };
+      });
+      
+      // Update last message in chat
+      setChats(prev => prev.map(chat => 
+        chat.id === chatId 
+          ? { ...chat, lastMessage: { text: newMessage.text, timestamp: newMessage.timestamp } }
+          : chat
+      ));
+      
+      // Scroll to bottom after sending message
+      setTimeout(() => {
+        const event = new CustomEvent('scrollToBottom');
+        window.dispatchEvent(event);
+      }, 100);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      // Optionally show error to user
+    }
+  };
+  
+  // Add participant to group
+  const addParticipantToGroup = async (chatId, participant) => {
+    if (!chatId || !participant) return;
+    
+    try {
+      // Make API call to add participant to group
+      const response = await axios.post(`${API}/chats/${chatId}/participants`, {
+        participantId: participant._id || participant.id
+      }, {
+        withCredentials: true,
+        timeout: 10000
+      });
+      
+      const updatedChat = response.data.chat;
+      
+      // Update chat in state
+      setChats(prev => prev.map(chat => 
+        chat.id === chatId 
+          ? { 
+              ...chat, 
+              participants: updatedChat.participants || chat.participants,
+              createdBy: updatedChat.createdBy || chat.createdBy
+            }
+          : chat
+      ));
+      
+      // If this is the active chat, update it too
+      if (activeChat && activeChat.id === chatId) {
+        setActiveChat(prev => ({
+          ...prev,
+          participants: updatedChat.participants || prev.participants,
+          createdBy: updatedChat.createdBy || prev.createdBy
+        }));
+      }
+    } catch (error) {
+      console.error('Error adding participant to group:', error);
+      // Optionally show error to user
+    }
   };
 
-  const removeParticipantFromGroup = (chatId, participantId) => {
-    setChats(prev => prev.map(chat => 
-      chat.id === chatId 
-        ? { ...chat, participants: chat.participants.filter(p => p._id !== participantId) }
-        : chat
-    ));
+  // Remove participant from group
+  const removeParticipantFromGroup = async (chatId, participantId) => {
+    if (!chatId || !participantId) return;
+    
+    try {
+      // Make API call to remove participant from group
+      const response = await axios.delete(`${API}/chats/${chatId}/participants/${participantId}`, {
+        withCredentials: true,
+        timeout: 10000
+      });
+      
+      const updatedChat = response.data.chat;
+      
+      // Update chat in state
+      setChats(prev => prev.map(chat => 
+        chat.id === chatId 
+          ? { 
+              ...chat, 
+              participants: updatedChat.participants || chat.participants,
+              createdBy: updatedChat.createdBy || chat.createdBy
+            }
+          : chat
+      ));
+      
+      // If this is the active chat, update it too
+      if (activeChat && activeChat.id === chatId) {
+        setActiveChat(prev => ({
+          ...prev,
+          participants: updatedChat.participants || prev.participants,
+          createdBy: updatedChat.createdBy || prev.createdBy
+        }));
+      }
+    } catch (error) {
+      console.error('Error removing participant from group:', error);
+      // Optionally show error to user
+    }
+  };
+
+  // Delete group chat
+  const deleteGroupChat = async (chatId) => {
+    if (!chatId) return;
+    
+    try {
+      // Make API call to delete group chat
+      const response = await axios.delete(`${API}/chats/group/${chatId}`, {
+        withCredentials: true,
+        timeout: 10000
+      });
+      
+      // Remove chat from state
+      setChats(prev => prev.filter(chat => chat && chat.id !== chatId));
+      
+      // If this is the active chat, close it
+      if (activeChat && activeChat.id === chatId) {
+        closeChat();
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting group chat:', error);
+      throw error;
+    }
   };
 
   const toggleChat = () => {
@@ -618,6 +747,7 @@ export const ChatProvider = ({ children }) => {
         fetchChats,
         addParticipantToGroup,
         removeParticipantFromGroup,
+        deleteGroupChat,
         fetchUsers,
         setShowContacts,
         setShowGroupParticipants,

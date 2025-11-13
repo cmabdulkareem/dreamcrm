@@ -36,6 +36,8 @@ const ChatWidget = () => {
   const { user } = useContext(AuthContext);
   const [newMessage, setNewMessage] = useState('');
   const messagesEndRef = useRef(null);
+  const [selectedParticipants, setSelectedParticipants] = useState([]);
+  const [isSelectingParticipants, setIsSelectingParticipants] = useState(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -45,18 +47,18 @@ const ChatWidget = () => {
     scrollToBottom();
   }, [messages, activeChat]);
 
-  // Simulate receiving messages from other users
+  // Listen for scrollToBottom event from ChatContext
   useEffect(() => {
-    if (!user || !isChatOpen) return;
+    const handleScrollToBottom = () => {
+      scrollToBottom();
+    };
     
-    // In a real app, you would connect to a WebSocket server here
-    // For demo purposes, we'll simulate receiving messages
-    const interval = setInterval(() => {
-      // This is just for demonstration - in a real app, messages would come from the server
-    }, 5000);
+    window.addEventListener('scrollToBottom', handleScrollToBottom);
     
-    return () => clearInterval(interval);
-  }, [user, isChatOpen]);
+    return () => {
+      window.removeEventListener('scrollToBottom', handleScrollToBottom);
+    };
+  }, []);
 
   const handleSendMessage = (e) => {
     e.preventDefault();
@@ -64,11 +66,10 @@ const ChatWidget = () => {
       sendMessage(activeChat.id, newMessage);
       setNewMessage('');
       
-      // Simulate receiving a response after a delay
-      // In a real app, this would come from the server
+      // Scroll to bottom after sending message
       setTimeout(() => {
-        // This is just for demonstration
-      }, 2000);
+        scrollToBottom();
+      }, 100);
     }
   };
 
@@ -99,15 +100,46 @@ const ChatWidget = () => {
   };
 
   const handleCreateGroupChat = async () => {
+    // For group chats, we need to select participants first
+    // Show contacts list to select participants
+    setShowContacts(true);
+    setIsSelectingParticipants(true);
+    // We'll create the group after selecting participants
+  };
+
+  const handleSelectParticipant = (participant) => {
+    // Toggle participant selection
+    setSelectedParticipants(prev => {
+      const isSelected = prev.some(p => p._id === participant._id);
+      if (isSelected) {
+        return prev.filter(p => p._id !== participant._id);
+      } else {
+        return [...prev, participant];
+      }
+    });
+  };
+
+  const handleCreateGroupWithParticipants = async () => {
+    if (selectedParticipants.length === 0) {
+      alert('Please select at least one participant');
+      return;
+    }
+    
     const groupName = prompt('Enter group name:');
     if (groupName) {
-      // For group chats, we need to select participants first
-      // For now, create an empty group and let user add participants
-      const newChat = await createChat([], true, groupName);
+      const newChat = await createChat(selectedParticipants, true, groupName);
       if (newChat) {
         openChat(newChat);
+        setSelectedParticipants([]);
+        setIsSelectingParticipants(false);
+        setShowContacts(false);
       }
     }
+  };
+
+  const cancelParticipantSelection = () => {
+    setSelectedParticipants([]);
+    setIsSelectingParticipants(false);
   };
 
   const handleAddParticipant = (participant) => {
@@ -126,24 +158,32 @@ const ChatWidget = () => {
   };
 
   const getChatDisplayName = (chat) => {
+    if (!chat) return 'Unknown Chat';
+    
     if (chat.type === 'group') {
-      return chat.name;
+      return chat.name || 'Unnamed Group';
     } else {
       const userId = user ? (user._id || user.id) : null;
-      const otherParticipant = chat.participants.find(p => (p._id || p.id) !== userId);
-      return otherParticipant ? otherParticipant.fullName : 'Unknown';
+      const otherParticipant = chat.participants?.find(p => (p._id || p.id) !== userId);
+      return otherParticipant ? otherParticipant.fullName : 'Unknown User';
     }
   };
 
   const getChatDisplayAvatar = (chat) => {
+    if (!chat) return '/images/user/user-01.jpg';
+    
     if (chat.type === 'group') {
       return '/images/user/group-avatar.png';
     } else {
       const userId = user ? (user._id || user.id) : null;
-      const otherParticipant = chat.participants.find(p => (p._id || p.id) !== userId);
+      const otherParticipant = chat.participants?.find(p => (p._id || p.id) !== userId);
       // Use the avatar from the participant object if available, otherwise generate default
       return otherParticipant?.avatar || `/images/user/user-${((otherParticipant?._id || otherParticipant?.id || '0').charCodeAt(0) % 4) + 1}.jpg`;
     }
+  };
+
+  const isGroupChat = (chat) => {
+    return chat && chat.type === 'group';
   };
 
   const formatTime = (timestamp) => {
@@ -165,7 +205,7 @@ const ChatWidget = () => {
           className="flex items-center justify-center w-14 h-14 rounded-full bg-blue-500 text-white shadow-lg hover:bg-blue-600 transition-all"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9 8s9 3.582 9 8z" />
           </svg>
           {/* Show notification badge if there are unread messages */}
           {hasUnreadMessages && (
@@ -191,9 +231,23 @@ const ChatWidget = () => {
                   <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
                 </svg>
               </button>
-              <h3 className="font-medium text-gray-800 dark:text-white">
-                {showContacts ? 'Contacts' : showGroupParticipants ? 'Group Participants' : activeChat ? getChatDisplayName(activeChat) : 'Chats'}
-              </h3>
+              <div className="flex items-center">
+                <img
+                  src={getChatDisplayAvatar(activeChat)}
+                  alt={getChatDisplayName(activeChat)}
+                  className={`w-8 h-8 rounded-full ${isGroupChat(activeChat) ? 'border-2 border-blue-500' : ''}`}
+                />
+                <div className="ml-2">
+                  <h3 className={`font-medium ${isGroupChat(activeChat) ? 'text-blue-600 dark:text-blue-400' : 'text-gray-800 dark:text-white'}`}>
+                    {activeChat ? getChatDisplayName(activeChat) : 'Chat'}
+                  </h3>
+                  {isGroupChat(activeChat) && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {activeChat.participants?.length || 0} participants
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
             <div className="flex space-x-2">
               {activeChat && activeChat.type === 'group' && !showContacts && !showGroupParticipants && (
@@ -231,13 +285,36 @@ const ChatWidget = () => {
               <div className="flex-1 overflow-y-auto">
                 <div className="p-2">
                   <div className="flex justify-between items-center mb-2">
-                    <h4 className="px-2 py-1 text-sm font-medium text-gray-500 dark:text-gray-400">Online Users</h4>
-                    <button
-                      onClick={handleCreateGroupChat}
-                      className="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
-                    >
-                      New Group
-                    </button>
+                    <h4 className="px-2 py-1 text-sm font-medium text-gray-500 dark:text-gray-400">
+                      {isSelectingParticipants ? 'Select Participants' : 'Online Users'}
+                    </h4>
+                    <div className="flex space-x-2">
+                      {isSelectingParticipants && (
+                        <>
+                          <button
+                            onClick={cancelParticipantSelection}
+                            className="text-xs bg-gray-500 text-white px-2 py-1 rounded hover:bg-gray-600"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={handleCreateGroupWithParticipants}
+                            disabled={selectedParticipants.length === 0}
+                            className={`text-xs px-2 py-1 rounded ${selectedParticipants.length === 0 ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-green-500 text-white hover:bg-green-600'}`}
+                          >
+                            Create Group ({selectedParticipants.length})
+                          </button>
+                        </>
+                      )}
+                      {!isSelectingParticipants && (
+                        <button
+                          onClick={handleCreateGroupChat}
+                          className="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
+                        >
+                          New Group
+                        </button>
+                      )}
+                    </div>
                   </div>
                   {loading ? (
                     <div className="flex justify-center items-center h-20">
@@ -255,26 +332,41 @@ const ChatWidget = () => {
                       const userId = user ? (user._id || user.id) : null;
                       return onlineUsers
                         .filter(contact => (contact._id || contact.id) !== userId) // Exclude current user from online list
-                        .map((contact) => (
-                        <div
-                          key={contact._id}
-                          onClick={() => handleStartChat(contact)}
-                          className="flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer"
-                        >
-                          <div className="relative">
-                            <img
-                              src={contact.avatar || '/images/user/user-01.jpg'}
-                              alt={contact.fullName}
-                              className="w-10 h-10 rounded-full"
-                            />
-                            <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-white dark:ring-gray-800"></span>
-                          </div>
-                          <div className="ml-3">
-                            <p className="text-sm font-medium text-gray-900 dark:text-white">{contact.fullName}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Online</p>
-                          </div>
-                        </div>
-                      ));
+                        .map((contact) => {
+                          return (
+                            <div
+                              key={contact._id}
+                              onClick={() => {
+                                if (isSelectingParticipants) {
+                                  handleSelectParticipant(contact);
+                                } else {
+                                  handleStartChat(contact);
+                                }
+                              }}
+                              className={`flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer ${isSelectingParticipants && selectedParticipants.some(p => p._id === contact._id) ? 'bg-blue-100 dark:bg-blue-900' : ''}`}
+                            >
+                              <div className="relative">
+                                <img
+                                  src={contact.avatar || '/images/user/user-01.jpg'}
+                                  alt={contact.fullName}
+                                  className="w-10 h-10 rounded-full"
+                                />
+                                <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-white dark:ring-gray-800"></span>
+                                {isSelectingParticipants && selectedParticipants.some(p => p._id === contact._id) && (
+                                  <div className="absolute inset-0 flex items-center justify-center bg-blue-500 bg-opacity-50 rounded-full">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="ml-3">
+                                <p className="text-sm font-medium text-gray-900 dark:text-white">{contact.fullName}</p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400">Online</p>
+                              </div>
+                            </div>
+                          );
+                        });
                     })()
                   )}
                 </div>
@@ -294,8 +386,14 @@ const ChatWidget = () => {
                       return (
                         <div
                           key={contact._id}
-                          onClick={() => handleStartChat(contact)}
-                          className="flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer"
+                          onClick={() => {
+                            if (isSelectingParticipants) {
+                              handleSelectParticipant(contact);
+                            } else {
+                              handleStartChat(contact);
+                            }
+                          }}
+                          className={`flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer ${isSelectingParticipants && selectedParticipants.some(p => p._id === contact._id) ? 'bg-blue-100 dark:bg-blue-900' : ''}`}
                         >
                           <div className="relative">
                             <img
@@ -305,6 +403,13 @@ const ChatWidget = () => {
                             />
                             {isOnline && (
                               <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-white dark:ring-gray-800"></span>
+                            )}
+                            {isSelectingParticipants && selectedParticipants.some(p => p._id === contact._id) && (
+                              <div className="absolute inset-0 flex items-center justify-center bg-blue-500 bg-opacity-50 rounded-full">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                              </div>
                             )}
                           </div>
                           <div className="ml-3">
@@ -394,7 +499,7 @@ const ChatWidget = () => {
                 {chats.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full p-4 text-center">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9 8s9 3.582 9 8z" />
                     </svg>
                     <p className="mt-2 text-gray-500 dark:text-gray-400">No chats yet</p>
                     <button
@@ -420,29 +525,34 @@ const ChatWidget = () => {
                           <img
                             src={getChatDisplayAvatar(chat)}
                             alt={getChatDisplayName(chat)}
-                            className="w-10 h-10 rounded-full"
+                            className={`w-10 h-10 rounded-full ${isGroupChat(chat) ? 'border-2 border-blue-500' : ''}`}
                           />
                           {/* Show online status indicator for user chats */}
-                          {chat.type === 'user' && (
+                          {chat && chat.type === 'user' && (
                             <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-gray-300 ring-2 ring-white dark:ring-gray-800">
-                              {isUserOnline(chat.participants.find(p => (p._id || p.id) !== (user?._id || user?.id))?._id) && (
+                              {isUserOnline(chat.participants?.find(p => (p._id || p.id) !== (user?._id || user?.id))?._id) && (
                                 <span className="absolute inset-0 h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
                               )}
                               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-gray-300">
-                                {isUserOnline(chat.participants.find(p => (p._id || p.id) !== (user?._id || user?.id))?._id) && (
+                                {isUserOnline(chat.participants?.find(p => (p._id || p.id) !== (user?._id || user?.id))?._id) && (
                                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
                                 )}
                               </span>
                             </span>
                           )}
+                          {isGroupChat(chat) && unreadCount > 0 && (
+                            <span className="absolute -top-1 -right-1 flex items-center justify-center h-5 w-5 bg-blue-500 rounded-full text-white text-xs">
+                              {unreadCount}
+                            </span>
+                          )}
                         </div>
                         <div className="ml-3 flex-1 min-w-0">
                           <div className="flex justify-between">
-                            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                            <p className={`text-sm font-medium truncate ${isGroupChat(chat) ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'}`}>
                               {getChatDisplayName(chat)}
                             </p>
                             <div className="flex items-center gap-1">
-                              {chat.lastMessage && (
+                              {chat?.lastMessage && (
                                 <p className="text-xs text-gray-500 dark:text-gray-400">
                                   {formatTime(chat.lastMessage.timestamp)}
                                 </p>
@@ -456,7 +566,7 @@ const ChatWidget = () => {
                             </div>
                           </div>
                           <div className="flex justify-between">
-                            {chat.lastMessage && (
+                            {chat?.lastMessage && (
                               <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
                                 {chat.lastMessage.text}
                               </p>
