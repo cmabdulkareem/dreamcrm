@@ -60,7 +60,7 @@ app.use((req, res) => {
   res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
-const PORT = process.env.PORT || 5000
+const PORT = process.env.PORT || 3000
 const server = http.createServer(app)
 
 // Initialize Socket.IO

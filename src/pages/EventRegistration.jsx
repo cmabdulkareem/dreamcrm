@@ -12,6 +12,7 @@ const EventRegistration = () => {
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [registered, setRegistered] = useState(false); // New state for registration success
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
 
@@ -100,14 +101,9 @@ const EventRegistration = () => {
         registrationData
       });
       
+      // Set registered state to true instead of resetting form
+      setRegistered(true);
       toast.success('Registration successful!');
-      
-      // Reset form
-      const initialData = {};
-      event.registrationFields.forEach(field => {
-        initialData[field.fieldName] = '';
-      });
-      setFormData(initialData);
     } catch (error) {
       console.error('Registration error:', error);
       toast.error(error.response?.data?.message || 'Registration failed. Please try again.');
@@ -140,6 +136,35 @@ const EventRegistration = () => {
     );
   }
 
+  // Show thank you message after successful registration
+  if (registered) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-3xl mx-auto">
+          <ComponentCard className="shadow-lg text-center p-8">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-green-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Thank You for Registering!</h1>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              You have successfully registered for <span className="font-semibold">{event.eventName}</span>.
+            </p>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              We look forward to seeing you at the event.
+            </p>
+            <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4 mb-6">
+              <h2 className="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-2">Event Details</h2>
+              <p className="text-blue-700 dark:text-blue-300">
+                <span className="font-medium">Date:</span> {new Date(event.eventDate).toLocaleDateString()} at {new Date(event.eventDate).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+              </p>
+            </div>
+          </ComponentCard>
+          <ToastContainer position="top-center" className="!z-[999999]" style={{ zIndex: 999999 }} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto">
@@ -147,11 +172,16 @@ const EventRegistration = () => {
           {/* Banner display for all users (including public) */}
           {event.bannerImage && (
             <div className="mb-8">
-              <div className="w-full h-48 overflow-hidden rounded-lg">
+              <div className="w-full aspect-video overflow-hidden rounded-lg">
                 <img 
-                  src={event.bannerImage} 
+                  src={`${API.replace('/api', '')}${event.bannerImage}`} 
                   alt="Event Banner" 
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    // Fallback if image fails to load
+                    e.target.onerror = null;
+                    e.target.parentElement.parentElement.style.display = 'none';
+                  }}
                 />
               </div>
             </div>

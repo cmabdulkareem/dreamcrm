@@ -42,6 +42,26 @@ const EventRegistrations = () => {
     fetchEventData();
   }, [id]);
 
+  // Convert registrant to lead
+  const convertToLead = async (registrant) => {
+    try {
+      // Navigate to new lead page with pre-filled data
+      const leadData = {
+        fullName: registrant.registrantName,
+        email: registrant.registrantEmail
+      };
+      
+      // Store lead data in session storage to pre-fill the form
+      sessionStorage.setItem('prefillLeadData', JSON.stringify(leadData));
+      
+      // Navigate to new lead page
+      navigate('/new-lead');
+    } catch (error) {
+      console.error('Error converting to lead:', error);
+      toast.error('Failed to convert to lead');
+    }
+  };
+
   // Export registrations to CSV
   const exportToCSV = () => {
     if (registrations.length === 0) {
@@ -191,6 +211,9 @@ const EventRegistrations = () => {
                         {field.fieldName}
                       </th>
                     ))}
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
@@ -223,6 +246,14 @@ const EventRegistrations = () => {
                           </td>
                         );
                       })}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button
+                          onClick={() => convertToLead(registration)}
+                          className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition duration-300"
+                        >
+                          Convert to Lead
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

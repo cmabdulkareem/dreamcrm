@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useContext } from 'react';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -12,10 +12,14 @@ import DatePicker from '../../components/form/date-picker';
 import { useNavigate } from 'react-router-dom';
 import ReactCrop from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
+import { AuthContext } from '../../context/AuthContext';
+
+axios.defaults.withCredentials = true;
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
 const EventManagement = () => {
+  const { isAdmin } = useContext(AuthContext);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -34,12 +38,22 @@ const EventManagement = () => {
     fieldType: 'text',
     isRequired: false
   });
-  
+
   // Banner image state
   const [bannerPreview, setBannerPreview] = useState(null);
-  const [crop, setCrop] = useState({ unit: '%', width: 100, aspect: 16/9 });
+  const [crop, setCrop] = useState({
+    unit: '%',
+    x: 0,
+    y: 0,
+    width: 100,
+    height: 56.25, // 16:9 aspect ratio (9/16 * 100)
+    aspect: 16 / 9
+  });
+
   const [completedCrop, setCompletedCrop] = useState(null);
   const [croppedBannerUrl, setCroppedBannerUrl] = useState(null);
+  const [croppedBannerBlob, setCroppedBannerBlob] = useState(null);
+
   const imgRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -89,7 +103,7 @@ const EventManagement = () => {
       toast.error('Field name is required');
       return;
     }
-    
+
     setFormData(prev => ({
       ...prev,
       registrationFields: [
@@ -97,7 +111,7 @@ const EventManagement = () => {
         { ...newField }
       ]
     }));
-    
+
     setNewField({
       fieldName: '',
       fieldType: 'text',
@@ -124,30 +138,34 @@ const EventManagement = () => {
     }));
   };
 
-  const uploadBannerForEvent = async (eventId, bannerDataUrl) => {
+  const uploadBannerForEvent = async (eventId, blob) => {
     try {
-      // Convert data URL to blob
-      const response = await fetch(bannerDataUrl);
-      const blob = await response.blob();
-      
-      // Create a more proper file object
-      const file = new File([blob], 'banner.jpg', { type: 'image/jpeg' });
-      
-      // Create FormData for upload
+      // Check if user is admin
+      if (!isAdmin) {
+        throw new Error('Access denied. Admin privileges required.');
+      }
+
+      const file = new File([blob], "banner.jpg", { type: "image/jpeg" });
+
       const formData = new FormData();
-      formData.append('banner', file);
-      
-      // Upload banner
-      const uploadResponse = await axios.post(`${API}/events/upload-banner/${eventId}`, formData, {
-        withCredentials: true,
-        headers: {
-          'Content-Type': 'multipart/form-data'
+      formData.append("banner", file);
+
+      const uploadResponse = await axios.post(
+        `${API}/events/upload-banner/${eventId}`,
+        formData,
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
         }
-      });
-      
+      );
+
       return uploadResponse.data.bannerImage;
     } catch (error) {
-      console.error('Error uploading banner:', error);
+      console.error("Error uploading banner:", error);
+      const errorMessage = error.response?.data?.message || error.message || "Failed to upload banner";
+      toast.error(errorMessage);
       throw error;
     }
   };
@@ -155,20 +173,33 @@ const EventManagement = () => {
   // Create a new event
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
+    // Check if user is admin
+    if (!isAdmin) {
+      toast.error('Access denied. Admin privileges required.');
+      return;
+    }
+
     try {
       // First create the event without the banner
       const eventData = {
         ...formData,
         eventDate: new Date(formData.eventDate).toISOString()
       };
-      
+
       const response = await axios.post(`${API}/events/create`, eventData, { withCredentials: true });
-      
+
       // If we have a banner, upload it now
-      if (croppedBannerUrl || bannerPreview) {
+      if (croppedBannerBlob || bannerPreview) {
         try {
-          await uploadBannerForEvent(response.data.event._id, croppedBannerUrl || bannerPreview);
+          if (croppedBannerBlob) {
+            await uploadBannerForEvent(response.data.event._id, croppedBannerBlob);
+          } else if (bannerPreview?.startsWith("data:")) {
+            // convert base64 preview to blob
+            const res = await fetch(bannerPreview);
+            const blob = await res.blob();
+            await uploadBannerForEvent(response.data.event._id, blob);
+          }
           // Refresh events to get the updated event with banner
           await fetchEvents();
         } catch (bannerError) {
@@ -176,7 +207,7 @@ const EventManagement = () => {
           toast.error('Event created but banner upload failed');
         }
       }
-      
+
       toast.success('Event created successfully');
       setShowCreateForm(false);
       resetForm();
@@ -203,13 +234,20 @@ const EventManagement = () => {
       fieldType: 'text',
       isRequired: false
     });
-    
+
     // Reset banner state
     setBannerPreview(null);
     setCroppedBannerUrl(null);
-    setCrop({ unit: '%', width: 100, aspect: 16/9 });
+    setCrop({
+      unit: '%',
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 56.25, // 16:9 aspect ratio
+      aspect: 16 / 9
+    });
     setCompletedCrop(null);
-    
+
     // Clear file input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -218,29 +256,41 @@ const EventManagement = () => {
 
   // Toggle event status
   const toggleEventStatus = async (eventId) => {
+    // Check if user is admin
+    if (!isAdmin) {
+      toast.error('Access denied. Admin privileges required.');
+      return;
+    }
+
     try {
       await axios.patch(`${API}/events/toggle-status/${eventId}`, {}, { withCredentials: true });
       toast.success('Event status updated');
       fetchEvents();
     } catch (error) {
       console.error('Error toggling event status:', error);
-      toast.error('Failed to update event status');
+      toast.error(error.response?.data?.message || 'Failed to update event status');
     }
   };
 
   // Delete event
   const deleteEvent = async (eventId) => {
+    // Check if user is admin
+    if (!isAdmin) {
+      toast.error('Access denied. Admin privileges required.');
+      return;
+    }
+
     if (!window.confirm('Are you sure you want to delete this event?')) {
       return;
     }
-    
+
     try {
       await axios.delete(`${API}/events/delete/${eventId}`, { withCredentials: true });
       toast.success('Event deleted successfully');
       fetchEvents();
     } catch (error) {
       console.error('Error deleting event:', error);
-      toast.error('Failed to delete event');
+      toast.error(error.response?.data?.message || 'Failed to delete event');
     }
   };
 
@@ -264,22 +314,27 @@ const EventManagement = () => {
     const canvas = document.createElement('canvas');
     const scaleX = image.naturalWidth / image.width;
     const scaleY = image.naturalHeight / image.height;
-    canvas.width = crop.width;
-    canvas.height = crop.height;
-    const ctx = canvas.getContext('2d');
     
+    // Ensure the crop dimensions maintain 16:9 aspect ratio
+    const cropWidth = crop.width;
+    const cropHeight = crop.width / (16/9);
+    
+    canvas.width = cropWidth;
+    canvas.height = cropHeight;
+    const ctx = canvas.getContext('2d');
+
     ctx.drawImage(
       image,
       crop.x * scaleX,
       crop.y * scaleY,
-      crop.width * scaleX,
-      crop.height * scaleY,
+      cropWidth * scaleX,
+      cropHeight * scaleY,
       0,
       0,
-      crop.width,
-      crop.height
+      cropWidth,
+      cropHeight
     );
-    
+
     // As a blob with compression
     return new Promise((resolve, reject) => {
       canvas.toBlob(blob => {
@@ -303,12 +358,26 @@ const EventManagement = () => {
       return;
     }
 
+    // Validate file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File size exceeds 5MB limit");
+      return;
+    }
+
     // Create preview
     const reader = new FileReader();
     reader.onload = (e) => {
       setBannerPreview(e.target.result);
       setCroppedBannerUrl(null);
-      setCrop({ unit: '%', width: 100, aspect: 16/9 });
+      setCrop({
+        unit: '%',
+        x: 0,
+        y: 0,
+        width: 100,
+        height: 56.25, // 16:9 aspect ratio
+        aspect: 16 / 9
+      });
+
       setCompletedCrop(null);
     };
     reader.readAsDataURL(file);
@@ -326,13 +395,15 @@ const EventManagement = () => {
         completedCrop,
         'banner.jpg'
       );
-      
+
+      setCroppedBannerBlob(croppedBlob);
       setCroppedBannerUrl(URL.createObjectURL(croppedBlob));
     } catch (e) {
       console.error('Error cropping image:', e);
       toast.error("Failed to crop image");
     }
   };
+
 
   const saveBanner = async () => {
     if (!croppedBannerUrl && !bannerPreview) {
@@ -351,9 +422,17 @@ const EventManagement = () => {
   const removeBanner = () => {
     setBannerPreview(null);
     setCroppedBannerUrl(null);
-    setCrop({ unit: '%', width: 100, aspect: 16/9 });
+    setCrop({
+      unit: '%',
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 56.25, // 16:9 aspect ratio
+      aspect: 16 / 9
+    });
+
     setCompletedCrop(null);
-    
+
     // Clear file input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -372,19 +451,28 @@ const EventManagement = () => {
     <div>
       <PageMeta title="Event Management - CRM" />
       <PageBreadcrumb pageTitle="Event Management" />
-      
+
       <div className="container mx-auto px-4 py-8">
+        {!isAdmin && (
+          <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6" role="alert">
+            <p className="font-bold">Access Limited</p>
+            <p>You don't have admin privileges. Some features may be unavailable.</p>
+          </div>
+        )}
+
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Events</h1>
-          <button
-            onClick={() => setShowCreateForm(!showCreateForm)}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition duration-300"
-          >
-            {showCreateForm ? 'Cancel' : 'Create New Event'}
-          </button>
+          {isAdmin && (
+            <button
+              onClick={() => setShowCreateForm(!showCreateForm)}
+              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition duration-300"
+            >
+              {showCreateForm ? 'Cancel' : 'Create New Event'}
+            </button>
+          )}
         </div>
 
-        {showCreateForm && (
+        {showCreateForm && isAdmin && (
           <ComponentCard title="Create New Event">
             <form onSubmit={handleSubmit}>
               <div className="space-y-6">
@@ -400,18 +488,18 @@ const EventManagement = () => {
                       required
                     />
                   </div>
-                  
+
                   <div className="w-full md:w-1/2">
                     <DatePicker
                       id="eventDate"
                       label="Event Date *"
                       value={formData.eventDate}
-                      onChange={(date, dateString) => setFormData({...formData, eventDate: dateString})}
+                      onChange={(date, dateString) => setFormData({ ...formData, eventDate: dateString })}
                       placeholder="Select event date"
                     />
                   </div>
                 </div>
-                
+
                 <div>
                   <Label htmlFor="eventDescription">Event Description</Label>
                   <textarea
@@ -423,7 +511,7 @@ const EventManagement = () => {
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-hidden focus:ring-3 focus:ring-brand-500/20 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 bg-transparent text-gray-800 focus:border-brand-300 dark:border-gray-700 dark:focus:border-brand-800 rounded-lg shadow-theme-xs"
                   ></textarea>
                 </div>
-                
+
                 {/* Banner Upload Section */}
                 <div>
                   <Label>Banner Image (Optional)</Label>
@@ -434,7 +522,7 @@ const EventManagement = () => {
                     accept="image/*"
                     className="hidden"
                   />
-                  
+
                   {bannerPreview ? (
                     <div className="mt-2">
                       {!croppedBannerUrl ? (
@@ -446,19 +534,19 @@ const EventManagement = () => {
                                 crop={crop}
                                 onChange={(c) => setCrop(c)}
                                 onComplete={(c) => setCompletedCrop(c)}
-                                aspect={16/9}
+                                aspect={16 / 9}
                                 minWidth={100}
-                                minHeight={50}
+                                minHeight={56.25} // 16:9 aspect ratio
                               >
-                                <img 
+                                <img
                                   ref={onImageLoad}
-                                  src={bannerPreview} 
-                                  alt="Banner Preview" 
+                                  src={bannerPreview}
+                                  alt="Banner Preview"
                                   className="w-full h-auto max-h-96 object-contain"
                                 />
                               </ReactCrop>
                             </div>
-                            
+
                             <div className="absolute top-2 right-2 flex gap-2">
                               <button
                                 type="button"
@@ -480,7 +568,7 @@ const EventManagement = () => {
                               </button>
                             </div>
                           </div>
-                          
+
                           <div className="flex justify-end gap-2 mt-4">
                             <button
                               type="button"
@@ -496,13 +584,13 @@ const EventManagement = () => {
                         <div>
                           <div className="relative">
                             <div className="w-full h-48 overflow-hidden rounded-lg border border-gray-300 dark:border-gray-600">
-                              <img 
-                                src={croppedBannerUrl} 
-                                alt="Cropped Banner Preview" 
+                              <img
+                                src={croppedBannerUrl}
+                                alt="Cropped Banner Preview"
                                 className="w-full h-full object-cover"
                               />
                             </div>
-                            
+
                             <div className="absolute top-2 right-2 flex gap-2">
                               <button
                                 type="button"
@@ -524,7 +612,7 @@ const EventManagement = () => {
                               </button>
                             </div>
                           </div>
-                          
+
                           <div className="mt-4">
                             <Label>Cropped Banner Preview</Label>
                             <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">This is how your banner will appear on the event registration form.</p>
@@ -534,7 +622,7 @@ const EventManagement = () => {
                     </div>
                   ) : (
                     <div className="mt-2">
-                      <div 
+                      <div
                         onClick={triggerBannerUpload}
                         className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg h-48 flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-800 cursor-pointer hover:border-blue-500 transition-colors"
                       >
@@ -548,7 +636,7 @@ const EventManagement = () => {
                     </div>
                   )}
                 </div>
-                
+
                 <div className="w-full md:w-1/2">
                   <Label htmlFor="maxRegistrations">Max Registrations (0 for unlimited)</Label>
                   <Input
@@ -560,7 +648,7 @@ const EventManagement = () => {
                     min="0"
                   />
                 </div>
-                
+
                 <div className="space-y-4">
                   <div className="space-y-3">
                     <Label>Registration Fields</Label>
@@ -613,14 +701,14 @@ const EventManagement = () => {
                       </div>
                     ))}
                   </div>
-                  
+
                   <div className="flex flex-col md:flex-row gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                     <div className="w-full md:w-2/5">
                       <Input
                         type="text"
                         name="fieldName"
                         value={newField.fieldName}
-                        onChange={(e) => setNewField({...newField, fieldName: e.target.value})}
+                        onChange={(e) => setNewField({ ...newField, fieldName: e.target.value })}
                         placeholder="New Field Name"
                       />
                     </div>
@@ -635,7 +723,7 @@ const EventManagement = () => {
                           { value: "select", label: "Select" }
                         ]}
                         value={newField.fieldType}
-                        onChange={(value) => setNewField({...newField, fieldType: value})}
+                        onChange={(value) => setNewField({ ...newField, fieldType: value })}
                       />
                     </div>
                     <div className="w-full md:w-1/5 flex items-end">
@@ -644,7 +732,7 @@ const EventManagement = () => {
                           type="checkbox"
                           name="isRequired"
                           checked={newField.isRequired}
-                          onChange={(e) => setNewField({...newField, isRequired: e.target.checked})}
+                          onChange={(e) => setNewField({ ...newField, isRequired: e.target.checked })}
                           className="mr-2 h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
                         />
                         <span className="text-sm">Required</span>
@@ -662,7 +750,7 @@ const EventManagement = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   type="button"
@@ -696,19 +784,18 @@ const EventManagement = () => {
                 <div className="p-5">
                   <div className="flex justify-between items-start mb-3">
                     <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{event.eventName}</h3>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      event.isActive 
-                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' 
-                        : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
-                    }`}>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${event.isActive
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
+                      : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
+                      }`}>
                       {event.isActive ? 'Active' : 'Inactive'}
                     </span>
                   </div>
-                  
+
                   <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">
                     {event.eventDescription || 'No description provided'}
                   </p>
-                  
+
                   <div className="mb-4">
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                       <span className="font-medium">Date:</span> {new Date(event.eventDate).toLocaleString()}
@@ -717,7 +804,7 @@ const EventManagement = () => {
                       <span className="font-medium">Registrations:</span> {event.currentRegistrations} / {event.maxRegistrations || 'Unlimited'}
                     </p>
                   </div>
-                  
+
                   {event.registrationLink && (
                     <div className="mb-4">
                       <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
@@ -739,32 +826,43 @@ const EventManagement = () => {
                       </div>
                     </div>
                   )}
-                  
+
                   <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => toggleEventStatus(event._id)}
-                      className={`px-3 py-1 rounded text-sm ${
-                        event.isActive
-                          ? 'bg-yellow-500 hover:bg-yellow-600 text-white'
-                          : 'bg-green-500 hover:bg-green-600 text-white'
-                      }`}
-                    >
-                      {event.isActive ? 'Deactivate' : 'Activate'}
-                    </button>
-                    
-                    <button
-                      onClick={() => viewRegistrations(event._id)}
-                      className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm"
-                    >
-                      View Registrations
-                    </button>
-                    
-                    <button
-                      onClick={() => deleteEvent(event._id)}
-                      className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-sm"
-                    >
-                      Delete
-                    </button>
+                    {isAdmin && (
+                      <>
+                        <button
+                          onClick={() => toggleEventStatus(event._id)}
+                          className={`px-3 py-1 rounded text-sm ${event.isActive
+                            ? 'bg-yellow-500 hover:bg-yellow-600 text-white'
+                            : 'bg-green-500 hover:bg-green-600 text-white'
+                            }`}
+                        >
+                          {event.isActive ? 'Deactivate' : 'Activate'}
+                        </button>
+
+                        <button
+                          onClick={() => viewRegistrations(event._id)}
+                          className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm"
+                        >
+                          View Registrations
+                        </button>
+
+                        <button
+                          onClick={() => deleteEvent(event._id)}
+                          className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-sm"
+                        >
+                          Delete
+                        </button>
+                      </>
+                    )}
+                    {!isAdmin && (
+                      <button
+                        onClick={() => viewRegistrations(event._id)}
+                        className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm"
+                      >
+                        View Registrations
+                      </button>
+                    )}
                   </div>
                 </div>
               </ComponentCard>

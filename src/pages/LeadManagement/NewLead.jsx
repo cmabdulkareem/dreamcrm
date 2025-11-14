@@ -76,10 +76,20 @@ export default function FormElements() {
   const [newContactPointDesc, setNewContactPointDesc] = useState("");
   const [newContactPointActive, setNewContactPointActive] = useState(true);
 
-  useEffect(()=>{
+  useEffect(() => {
+    // Check for pre-filled data from event registration
+    const prefillData = sessionStorage.getItem('prefillLeadData');
+    if (prefillData) {
+      const { fullName, email } = JSON.parse(prefillData);
+      setFullName(fullName || "");
+      setEmail(email || "");
+      // Clear the session storage after using it
+      sessionStorage.removeItem('prefillLeadData');
+    }
+    
     fetchCampaigns();
     fetchContactPoints();
-  }, [])
+  }, []);
 
   const fetchCampaigns = async () => {
     try {

@@ -12,9 +12,15 @@ import fs from 'fs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Ensure the banners directory exists
+const bannersDir = path.join(__dirname, "../uploads/banners");
+if (!fs.existsSync(bannersDir)) {
+  fs.mkdirSync(bannersDir, { recursive: true });
+}
+
 const bannerStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, "../uploads/banners"));
+    cb(null, bannersDir);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1E9);
@@ -30,6 +36,9 @@ const bannerUpload = multer({
     } else {
       cb(new Error("Only image files are allowed"));
     }
+  },
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
   }
 });
 
@@ -84,6 +93,11 @@ export const getEventByLink = async (req, res) => {
 // Create new event
 export const createEvent = async (req, res) => {
   try {
+    // Check if user is admin
+    if (!req.user.isAdmin) {
+      return res.status(403).json({ message: "Access denied. Admin privileges required." });
+    }
+
     const {
       eventName,
       eventDescription,
@@ -119,6 +133,11 @@ export const createEvent = async (req, res) => {
 // Update event
 export const updateEvent = async (req, res) => {
   try {
+    // Check if user is admin
+    if (!req.user.isAdmin) {
+      return res.status(403).json({ message: "Access denied. Admin privileges required." });
+    }
+
     const { id } = req.params;
     const updateData = req.body;
 
@@ -155,6 +174,11 @@ export const updateEvent = async (req, res) => {
 // Delete event
 export const deleteEvent = async (req, res) => {
   try {
+    // Check if user is admin
+    if (!req.user.isAdmin) {
+      return res.status(403).json({ message: "Access denied. Admin privileges required." });
+    }
+
     const { id } = req.params;
     
     const event = await eventModel.findByIdAndDelete(id);
@@ -175,6 +199,11 @@ export const deleteEvent = async (req, res) => {
 // Toggle event status
 export const toggleEventStatus = async (req, res) => {
   try {
+    // Check if user is admin
+    if (!req.user.isAdmin) {
+      return res.status(403).json({ message: "Access denied. Admin privileges required." });
+    }
+
     const { id } = req.params;
     
     const event = await eventModel.findById(id);
@@ -259,6 +288,11 @@ export const registerForEvent = async (req, res) => {
 // Get all registrations for an event
 export const getEventRegistrations = async (req, res) => {
   try {
+    // Check if user is admin
+    if (!req.user.isAdmin) {
+      return res.status(403).json({ message: "Access denied. Admin privileges required." });
+    }
+
     const { id } = req.params;
     
     // Check if event exists
@@ -279,6 +313,11 @@ export const getEventRegistrations = async (req, res) => {
 // Upload event banner
 export const uploadEventBanner = async (req, res) => {
   try {
+    // Check if user is admin
+    if (!req.user.isAdmin) {
+      return res.status(403).json({ message: "Access denied. Admin privileges required." });
+    }
+
     const { id } = req.params;
     
     // Check if event exists
@@ -294,17 +333,17 @@ export const uploadEventBanner = async (req, res) => {
 
     // Compress the image using sharp
     const compressedFileName = `compressed-${req.file.filename}`;
-    const compressedFilePath = path.join(__dirname, "../uploads/banners", compressedFileName);
+    const compressedFilePath = path.join(bannersDir, compressedFileName);
     
     await sharp(req.file.path)
-      .resize(800, 800, { fit: 'inside', withoutEnlargement: true }) // Resize to max 800x800
+      .resize(1280, 720, { fit: 'inside', withoutEnlargement: true }) // Resize to max 1280x720 (16:9)
       .jpeg({ quality: 80 }) // Compress to 80% quality
       .toFile(compressedFilePath);
     
     // Remove the original uncompressed file
     fs.unlinkSync(req.file.path);
 
-    // Save the compressed file path in the database
+    // Save the compressed file path in the database (relative path for web access)
     const bannerImageUrl = `/uploads/banners/${compressedFileName}`;
     
     event.bannerImage = bannerImageUrl;
@@ -316,6 +355,21 @@ export const uploadEventBanner = async (req, res) => {
     });
   } catch (error) {
     console.error("Error uploading event banner:", error);
+    
+    // Clean up any uploaded files if there was an error
+    if (req.file) {
+      const filePath = req.file.path;
+      const compressedFilePath = path.join(bannersDir, `compressed-${req.file.filename}`);
+      
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+      
+      if (fs.existsSync(compressedFilePath)) {
+        fs.unlinkSync(compressedFilePath);
+      }
+    }
+    
     return res.status(500).json({ message: "Internal server error" });
   }
 };
