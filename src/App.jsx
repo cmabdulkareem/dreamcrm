@@ -29,8 +29,8 @@ import ContactPointSettings from "./pages/Settings/ContactPointSettings";
 import CourseManagement from "./pages/Settings/CourseManagement";
 import UserManagement from "./pages/Settings/UserManagement";
 import EmailInbox from "./pages/Email/EmailInbox";
-import EventManagement from "./pages/Settings/EventManagement";
-import EventRegistrations from "./pages/Settings/EventRegistrations";
+import EventManagement from "./pages/EventManagement/index";
+import EventRegistrations from "./pages/EventManagement/EventRegistrations";
 import EventRegistration from "./pages/EventRegistration";
 import ProtectedRoutes from "./routes/ProtectedRoutes";
 import { CalendarProvider } from "./context/calendarContext";
@@ -66,8 +66,10 @@ export default function App() {
                 <Route path="/settings/contact-points" element={<ProtectedRoutes><ContactPointSettings /></ProtectedRoutes>} />
                 <Route path="/settings/courses" element={<ProtectedRoutes requireAdmin={true}><CourseManagement /></ProtectedRoutes>} />
                 <Route path="/settings/users" element={<ProtectedRoutes requireAdmin={true}><UserManagement /></ProtectedRoutes>} />
-                <Route path="/settings/events" element={<ProtectedRoutes requireAdmin={true}><EventManagement /></ProtectedRoutes>} />
-                <Route path="/settings/events/:id/registrations" element={<ProtectedRoutes requireAdmin={true}><EventRegistrations /></ProtectedRoutes>} />
+                
+                {/* Event Management - Moved out of settings */}
+                <Route path="/events" element={<ProtectedRoutes requireAdmin={true}><EventManagement /></ProtectedRoutes>} />
+                <Route path="/events/:id/registrations" element={<ProtectedRoutes requireAdmin={true}><EventRegistrations /></ProtectedRoutes>} />
 
                 {/* Forms */}
                 <Route path="/new-lead" element={<ProtectedRoutes><NewLead /></ProtectedRoutes>} />

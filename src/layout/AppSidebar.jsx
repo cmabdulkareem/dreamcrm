@@ -19,7 +19,8 @@ import {
   UserIcon,
   ShootingStarIcon,
   MailIcon,
-  CalendarIcon
+  CalendarIcon,
+  GroupIcon
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import SidebarWidget from "./SidebarWidget";
@@ -50,6 +51,7 @@ const navItems = [
     ],
   },
   { icon: <CalenderIcon />, name: "Calendar", path: "/calendar" },
+  { icon: <GroupIcon />, name: "Events", path: "/events" },
   { icon: <MailIcon />, name: "Email", path: "/email" },
   {
     name: "Operations",
@@ -98,7 +100,6 @@ const settingsItems = [
       { name: "Contact Points", path: "/settings/contact-points", pro: false },
       { name: "Course Management", path: "/settings/courses", pro: false },
       { name: "User Management", path: "/settings/users", pro: false },
-      { name: "Event Management", path: "/settings/events", pro: false },
     ],
   }
 ];
