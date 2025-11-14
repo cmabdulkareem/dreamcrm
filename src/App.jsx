@@ -32,6 +32,9 @@ import EmailInbox from "./pages/Email/EmailInbox";
 import EventManagement from "./pages/EventManagement/index";
 import EventRegistrations from "./pages/EventManagement/EventRegistrations";
 import EventRegistration from "./pages/EventRegistration";
+import LeaveManagement from "./pages/LeaveManagement/index";
+import LeaveRequestPortal from "./pages/LeaveRequestPortal";
+import LeaveStatusCheck from "./pages/LeaveStatusCheck";
 import ProtectedRoutes from "./routes/ProtectedRoutes";
 import { CalendarProvider } from "./context/calendarContext";
 import { NotificationProvider } from "./context/NotificationContext";
@@ -68,8 +71,17 @@ export default function App() {
                 <Route path="/settings/users" element={<ProtectedRoutes requireAdmin={true}><UserManagement /></ProtectedRoutes>} />
                 
                 {/* Event Management - Moved out of settings */}
-                <Route path="/events" element={<ProtectedRoutes requireAdmin={true}><EventManagement /></ProtectedRoutes>} />
+                <Route path="/events" element={<ProtectedRoutes requireAdmin={true}><EventManagement /></ProtectedRoutes>}>
+                  <Route index element={<EventManagement />} />
+                  <Route path="create" element={<EventManagement />} />
+                </Route>
                 <Route path="/events/:id/registrations" element={<ProtectedRoutes requireAdmin={true}><EventRegistrations /></ProtectedRoutes>} />
+
+                {/* Leave Management */}
+                <Route path="/leave-management" element={<ProtectedRoutes requireAdmin={true}><LeaveManagement /></ProtectedRoutes>}>
+                  <Route index element={<LeaveManagement />} />
+                  <Route path="requests" element={<LeaveManagement />} />
+                </Route>
 
                 {/* Forms */}
                 <Route path="/new-lead" element={<ProtectedRoutes><NewLead /></ProtectedRoutes>} />
@@ -105,6 +117,8 @@ export default function App() {
               
               {/* Public Routes */}
               <Route path="/event-registration/:link" element={<EventRegistration />} />
+              <Route path="/leave-request" element={<LeaveRequestPortal />} />
+              <Route path="/leave-status-check" element={<LeaveStatusCheck />} />
             </Routes>
           </Router>
           <ChatWidget />

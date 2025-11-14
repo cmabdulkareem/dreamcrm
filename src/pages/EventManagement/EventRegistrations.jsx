@@ -118,7 +118,7 @@ const EventRegistrations = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-500"></div>
       </div>
     );
   }
@@ -132,7 +132,7 @@ const EventRegistrations = () => {
           <div>
             <button
               onClick={goBack}
-              className="flex items-center text-blue-500 hover:text-blue-700 mb-2"
+              className="flex items-center text-brand-500 hover:text-brand-600 mb-2 transition-colors"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
@@ -158,7 +158,7 @@ const EventRegistrations = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="border rounded-lg p-4">
               <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300">Total Registrations</h3>
-              <p className="text-3xl font-bold text-blue-500">{registrations.length}</p>
+              <p className="text-3xl font-bold text-brand-500">{registrations.length}</p>
             </div>
             <div className="border rounded-lg p-4">
               <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300">Event Date</h3>
@@ -249,7 +249,7 @@ const EventRegistrations = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <button
                           onClick={() => convertToLead(registration)}
-                          className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition duration-300"
+                          className="bg-brand-500 hover:bg-brand-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
                         >
                           Convert to Lead
                         </button>

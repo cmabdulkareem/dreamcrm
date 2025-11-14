@@ -50,8 +50,22 @@ const navItems = [
       { name: "Manage Students (beta)", path: "/manage-students", pro: false },
     ],
   },
-  { icon: <CalenderIcon />, name: "Calendar", path: "/calendar" },
-  { icon: <GroupIcon />, name: "Events", path: "/events" },
+  {
+    icon: <GroupIcon />, 
+    name: "Events", 
+    subItems: [
+      { name: "Create Event", path: "/events/create", pro: false },
+      { name: "Manage Events", path: "/events", pro: false }
+    ]
+  },
+  {
+    icon: <GroupIcon />, 
+    name: "Leave Management", 
+    subItems: [
+      { name: "Manage Leaves", path: "/leave-management", pro: false },
+      { name: "Leave Requests", path: "/leave-management/requests", pro: false }
+    ]
+  },
   { icon: <MailIcon />, name: "Email", path: "/email" },
   {
     name: "Operations",
