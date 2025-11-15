@@ -245,11 +245,19 @@ export const prepareLeadForEdit = (row, setters) => {
   
   // Map coursePreference from database to match courseOptions format
   const mappedCourses = row.coursePreference?.map(courseName => {
-    // Find matching option in courseOptions
-    const matchedOption = courseOptions.find(opt => 
-      opt.value === courseName || opt.label === courseName
-    );
-    return matchedOption ? matchedOption.value : courseName;
+    // If courseName is already in the correct format (value from courseOptions), use it directly
+    if (typeof courseName === 'string') {
+      // Check if it's already a valid course option value
+      const isValidValue = courseOptions.some(opt => opt.value === courseName);
+      if (isValidValue) {
+        return courseName;
+      }
+      // If not a valid value, try to find a matching option by label
+      const matchedOption = courseOptions.find(opt => opt.label === courseName);
+      return matchedOption ? matchedOption.value : courseName;
+    }
+    // Fallback for any other case
+    return courseName;
   }) || [];
   
   if (typeof setSelectedValues === 'function') {

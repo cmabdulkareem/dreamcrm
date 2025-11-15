@@ -157,6 +157,7 @@ export default function RecentOrders() {
   const [sortOrder, setSortOrder] = useState("asc");
   const [statusFilter, setStatusFilter] = useState(""); // Added for status filter
   const [leadStatusFilter, setLeadStatusFilter] = useState(""); // Filter by lead status
+  const [leadPotentialFilter, setLeadPotentialFilter] = useState(""); // Filter by lead potential
   const [assignedUserFilter, setAssignedUserFilter] = useState(""); // Filter by assigned user
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -387,6 +388,9 @@ export default function RecentOrders() {
       // --- Lead Status filter ---
       const matchesLeadStatus = leadStatusFilter ? item.leadStatus === leadStatusFilter : true;
 
+      // --- Lead Potential filter ---
+      const matchesLeadPotential = leadPotentialFilter ? item.leadPotential === leadPotentialFilter : true;
+
       // --- Assigned User filter (only for admins/managers) ---
       let matchesAssignedUser = true;
       if (canAssignLeads && assignedUserFilter) {
@@ -412,7 +416,7 @@ export default function RecentOrders() {
         }
       }
 
-      return matchesSearch && matchesStatus && matchesLeadStatus && matchesAssignedUser && isUserLead;
+      return matchesSearch && matchesStatus && matchesLeadStatus && matchesLeadPotential && matchesAssignedUser && isUserLead;
     })
     .sort((a, b) => {
       const dateA = new Date(a.createdAt);
@@ -770,6 +774,18 @@ export default function RecentOrders() {
                 value={leadStatusFilter}
                 placeholder="Filter by lead status"
                 onChange={(value) => setLeadStatusFilter(value)}
+              />
+
+              {/* Filter by Lead Potential */}
+              <Select
+                className="w-full md:w-1/4"
+                options={[
+                  { value: "", label: "All Lead Potentials" },
+                  ...leadPotentialOptions
+                ]}
+                value={leadPotentialFilter}
+                placeholder="Filter by lead potential"
+                onChange={(value) => setLeadPotentialFilter(value)}
               />
 
               {/* Filter by Assigned User (only for admins/managers) */}

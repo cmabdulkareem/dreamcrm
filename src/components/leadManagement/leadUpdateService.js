@@ -88,7 +88,7 @@ export const saveLeadChanges = async (
       followUpDate,
       leadStatus,
       leadPotential, // Include leadPotential in update
-      coursePreference: selectedValues.map(item => item.value)
+      coursePreference: selectedValues
     };
 
     console.log("Sending updatePayload with leadPotential:", updatePayload); // Add logging
