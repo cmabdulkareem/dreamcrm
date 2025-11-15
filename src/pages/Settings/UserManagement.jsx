@@ -176,15 +176,11 @@ const UserManagement = () => {
     setSelectedUser(user);
     setUpdateMode(false); // Set update mode to false for role assignment
     
-    // Convert user roles to the format expected by MultiSelect
+    // Convert user roles to just values for the MultiSelect component
     const userRoles = user.roles || ["General"];
-    const selectedRoles = userRoles.map(role => ({
-      value: role,
-      label: roleOptions.find(option => option.value === role)?.label || role
-    }));
     
     setFormData({
-      roles: selectedRoles,
+      roles: userRoles,
       isAdmin: user.isAdmin || false,
       accountStatus: user.accountStatus || "Pending"
     });
@@ -245,7 +241,7 @@ const UserManagement = () => {
       } else {
         // Assign roles (existing functionality)
         const payload = {
-          roles: formData.roles.map(role => role.value),
+          roles: formData.roles,
           isAdmin: formData.isAdmin,
           accountStatus: formData.accountStatus
         };
@@ -286,7 +282,7 @@ const UserManagement = () => {
       company: "",
       
       // Role assignment fields
-      roles: [{ value: "General", text: "General" }],
+      roles: ["General"],
       isAdmin: false,
       accountStatus: "Pending"
     });
