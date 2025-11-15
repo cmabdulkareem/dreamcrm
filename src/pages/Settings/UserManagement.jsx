@@ -33,19 +33,34 @@ const UserManagement = () => {
     company: "",
     
     // Role assignment fields
-    roles: [{ value: "General", text: "General" }],
+    roles: [{ value: "General", label: "General" }],
     isAdmin: false,
     accountStatus: "Pending"
   });
 
   const roleOptions = [
-    { value: "Admin", text: "Admin" },
-    { value: "Manager", text: "Manager" },
-    { value: "Counsellor", text: "Counsellor" },
-    { value: "Marketing", text: "Marketing" },
-    { value: "Finance", text: "Finance" },
-    { value: "Placement", text: "Placement" },
-    { value: "General", text: "General" }
+    { value: "Owner", label: "Owner" },
+    { value: "Admin", label: "Admin" },
+    { value: "Center Head / Manager", label: "Center Head / Manager" },
+    { value: "Academic Coordinator", label: "Academic Coordinator" },
+    { value: "Counsellor", label: "Counsellor" },
+    { value: "Marketing / Social Media Executive", label: "Marketing / Social Media Executive" },
+    { value: "Faculty / Trainers", label: "Faculty / Trainers" },
+    { value: "Placement Officer", label: "Placement Officer" },
+    { value: "Lab Assistant", label: "Lab Assistant" },
+    { value: "CADD Club Support", label: "CADD Club Support" },
+    { value: "Accounts Executive", label: "Accounts Executive" },
+    { value: "Front Office / Receptionist", label: "Front Office / Receptionist" },
+    { value: "IT Support", label: "IT Support" },
+    { value: "Event Coordinator", label: "Event Coordinator" },
+    { value: "Housekeeping / Office Assistant", label: "Housekeeping / Office Assistant" },
+    { value: "PRO", label: "PRO" },
+    // Backward compatibility roles
+    { value: "Manager", label: "Manager (Legacy)" },
+    { value: "Marketing", label: "Marketing (Legacy)" },
+    { value: "Finance", label: "Finance (Legacy)" },
+    { value: "Placement", label: "Placement (Legacy)" },
+    { value: "General", label: "General" }
   ];
 
   const accountStatusOptions = [
@@ -165,7 +180,7 @@ const UserManagement = () => {
     const userRoles = user.roles || ["General"];
     const selectedRoles = userRoles.map(role => ({
       value: role,
-      text: roleOptions.find(option => option.value === role)?.text || role
+      label: roleOptions.find(option => option.value === role)?.label || role
     }));
     
     setFormData({

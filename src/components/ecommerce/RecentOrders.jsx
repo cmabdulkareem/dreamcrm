@@ -37,8 +37,8 @@ import {
   courseOptions,
   contactPoints,
   campaigns,
-  handledBy,
-  leadStatusOptions
+  leadStatusOptions,
+  leadPotentialOptions
 } from "../../data/DataSets.jsx";
 
 // Import our new modules
@@ -46,6 +46,106 @@ import { formatDate, getLeadStatusLabel, getLeadStatusColor, getLatestRemark, ha
 import { downloadLeadsAsPDF } from "../leadManagement/leadPdfExport";
 import { fetchCustomers, fetchCampaigns, createNewCampaign, prepareLeadForEdit } from "../leadManagement/leadDataManagement";
 import { saveLeadChanges, deleteLead, setLeadReminder, markRemarkAsRead } from "../leadManagement/leadUpdateService";
+
+// Import role helper function
+import { isAdmin } from "../../utils/roleHelpers";
+
+// Helper function to determine row background color based on due date
+const getRowBackgroundColor = (followUpDate) => {
+  if (!followUpDate) return "";
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const dayAfterTomorrow = new Date(today);
+  dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+
+  const dueDate = new Date(followUpDate);
+  dueDate.setHours(0, 0, 0, 0);
+
+  // If due date is today or in the past - red background (matching error badge)
+  if (dueDate <= today) {
+    return "bg-red-50 dark:bg-red-900/30";
+  }
+
+  // If due date is tomorrow - orange background (matching warning badge)
+  if (dueDate.getTime() === tomorrow.getTime()) {
+    return "bg-orange-50 dark:bg-orange-900/30";
+  }
+
+  // If due date is day after tomorrow - green background (matching success badge)
+  if (dueDate.getTime() === dayAfterTomorrow.getTime()) {
+    return "bg-green-50 dark:bg-green-900/30";
+  }
+
+  return ""; // No background color for other cases
+};
+
+// Helper function to determine lead potential background color for the name cell
+const getNameCellBackgroundColor = (leadPotential) => {
+  return getLeadPotentialBackgroundColor(leadPotential);
+};
+
+// Helper function to determine lead potential background color
+const getLeadPotentialBackgroundColor = (leadPotential) => {
+  switch (leadPotential) {
+    case "strongProspect":
+      return "bg-green-200 dark:bg-green-800"; // More vibrant green background for strong prospect
+    case "potentialProspect":
+      return "bg-blue-200 dark:bg-blue-800"; // More vibrant blue background for potential prospect
+    case "weakProspect":
+      return "bg-yellow-200 dark:bg-yellow-800"; // More vibrant yellow background for weak prospect
+    case "notAProspect":
+      return "bg-red-200 dark:bg-red-800"; // More vibrant red background for not a prospect
+    default:
+      return ""; // No background color for undefined or other values
+  }
+};
+
+// Helper function to determine due date badge color based on due date
+const getDueDateBadgeColor = (followUpDate) => {
+  if (!followUpDate) return "light";
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const dayAfterTomorrow = new Date(today);
+  dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+
+  const dueDate = new Date(followUpDate);
+  dueDate.setHours(0, 0, 0, 0);
+
+  // If due date is today or in the past - red background
+  if (dueDate <= today) {
+    return "error";
+  }
+
+  // If due date is tomorrow - orange background
+  if (dueDate.getTime() === tomorrow.getTime()) {
+    return "warning";
+  }
+
+  // If due date is day after tomorrow - green background
+  if (dueDate.getTime() === dayAfterTomorrow.getTime()) {
+    return "success";
+  }
+
+  return "light"; // Default light background for other dates
+};
+
+// Helper function to get due date badge text
+const getDueDateBadgeText = (followUpDate) => {
+  if (!followUpDate) return "No Date";
+
+  // For all cases, show the actual formatted date
+  return formatDate(followUpDate);
+};
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
@@ -101,6 +201,7 @@ export default function RecentOrders() {
   const [followUpDate, setFollowUpDate] = useState("");
   const [selectedValues, setSelectedValues] = useState([]);
   const [leadStatus, setLeadStatus] = useState("");
+  const [leadPotential, setLeadPotential] = useState(""); // Added lead potential state
 
   // Campaign modal states
   const [newCampaignName, setNewCampaignName] = useState("");
@@ -124,7 +225,7 @@ export default function RecentOrders() {
         fetchAvailableUsers();
       }
     };
-    
+
     if (user) {
       checkAndFetchUsers();
     }
@@ -156,11 +257,11 @@ export default function RecentOrders() {
     const padding = 20;
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
-    
+
     // Calculate horizontal position
     let left = rect.left;
     let arrowLeft = rect.left + rect.width / 2 - left; // Arrow position relative to tooltip
-    
+
     // Adjust if tooltip would go off right edge
     if (left + tooltipWidth > viewportWidth - padding) {
       left = viewportWidth - tooltipWidth - padding;
@@ -168,22 +269,22 @@ export default function RecentOrders() {
       // Clamp arrow to tooltip bounds
       arrowLeft = Math.max(20, Math.min(tooltipWidth - 20, arrowLeft));
     }
-    
+
     // Adjust if tooltip would go off left edge
     if (left < padding) {
       left = padding;
       arrowLeft = rect.left + rect.width / 2 - left;
       arrowLeft = Math.max(20, Math.min(tooltipWidth - 20, arrowLeft));
     }
-    
+
     // Calculate vertical position (above the cell)
     const spaceAbove = rect.top;
     const spaceBelow = viewportHeight - rect.bottom;
     const estimatedTooltipHeight = Math.min(tooltipMaxHeight, 400); // Estimate height
-    
+
     let top = rect.top;
     let transform = 'translateY(-100%)';
-    
+
     // If not enough space above, show below
     if (spaceAbove < estimatedTooltipHeight + 50 && spaceBelow > spaceAbove) {
       top = rect.bottom;
@@ -192,12 +293,12 @@ export default function RecentOrders() {
       top = rect.top;
       transform = 'translateY(-100%)';
     }
-    
+
     // Ensure tooltip doesn't go off top
     if (top < padding) {
       top = padding;
     }
-    
+
     return { top, left, arrowLeft, transform };
   };
 
@@ -208,13 +309,13 @@ export default function RecentOrders() {
       if (hoverTimeoutRef.current) {
         clearTimeout(hoverTimeoutRef.current);
       }
-      
+
       const rect = e.currentTarget.getBoundingClientRect();
       const position = calculateTooltipPosition(rect);
-      
+
       setTooltipPosition(position);
       setHoveredRemarkRow(row._id);
-      
+
       // Small delay before showing for better UX
       hoverTimeoutRef.current = setTimeout(() => {
         setShowTooltip(true);
@@ -228,7 +329,7 @@ export default function RecentOrders() {
       clearTimeout(hoverTimeoutRef.current);
       hoverTimeoutRef.current = null;
     }
-    
+
     // Delay hiding for smoother transition
     hoverTimeoutRef.current = setTimeout(() => {
       setHoveredRemarkRow(null);
@@ -239,7 +340,7 @@ export default function RecentOrders() {
   // Handle window resize to recalculate tooltip position
   useEffect(() => {
     if (!hoveredRemarkRow) return;
-    
+
     const handleResize = () => {
       // Find the cell element and recalculate position
       const cellElement = document.querySelector(`[data-row-id="${hoveredRemarkRow}"]`);
@@ -252,7 +353,7 @@ export default function RecentOrders() {
 
     window.addEventListener('resize', handleResize);
     window.addEventListener('scroll', handleResize, true);
-    
+
     return () => {
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('scroll', handleResize, true);
@@ -404,6 +505,7 @@ export default function RecentOrders() {
       setFollowUpDate,
       setRemarks,
       setLeadStatus,
+      setLeadPotential, // Add missing lead potential setter
       setSelectedValues
     };
 
@@ -431,10 +533,32 @@ export default function RecentOrders() {
   };
 
   const saveChanges = async () => {
+    // Validate required fields
+    if (!leadStatus) {
+      toast.error("Lead Status is required");
+      return;
+    }
+    
+    if (!leadPotential) {
+      toast.error("Lead Potential is required");
+      return;
+    }
+    
+    if (!followUpDate) {
+      toast.error("Next Follow Up Date is required");
+      return;
+    }
+    
+    if (!remarks.trim()) {
+      toast.error("Remarks are required");
+      return;
+    }
+
     await saveLeadChanges(
       selectedRow,
       remarks,
       leadStatus,
+      leadPotential, // Added lead potential
       fullName,
       phone1,
       phone2,
@@ -655,9 +779,9 @@ export default function RecentOrders() {
                   options={[
                     { value: "", label: "All Users" },
                     { value: "unassigned", label: "Unassigned" },
-                    ...availableUsers.map(user => ({ 
-                      value: user._id, 
-                      label: user.fullName 
+                    ...availableUsers.map(user => ({
+                      value: user._id,
+                      label: user.fullName
                     }))
                   ]}
                   value={assignedUserFilter}
@@ -707,7 +831,7 @@ export default function RecentOrders() {
               <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
                 {filteredData.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={10} className="py-8 text-center text-gray-500">
+                    <TableCell colSpan={11} className="py-8 text-center text-gray-500">
                       {isRegularUser ? "No leads assigned to you." : "No leads found. Create your first lead!"}
                     </TableCell>
                   </TableRow>
@@ -726,7 +850,7 @@ export default function RecentOrders() {
                             className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
                           />
                         </TableCell>
-                        <TableCell className="py-3">
+                        <TableCell className={`py-3 ${getNameCellBackgroundColor(row.leadPotential)}`}>
                           {hasUnread && (
                             <div className="flex justify-center">
                               <span className="relative flex h-3 w-3">
@@ -736,7 +860,7 @@ export default function RecentOrders() {
                             </div>
                           )}
                         </TableCell>
-                        <TableCell className="py-3">
+                        <TableCell className={`py-3`}>
                           <div className="flex items-center gap-3">
                             <div className="relative">
                               <p className="font-medium text-gray-800 text-theme-sm dark:text-white/90">{row.fullName}</p>
@@ -763,7 +887,7 @@ export default function RecentOrders() {
                           )}
                         </TableCell>
                         <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
-                          <div 
+                          <div
                             className="relative"
                             data-row-id={row._id}
                             onMouseEnter={(e) => handleTooltipEnter(e, row)}
@@ -778,7 +902,14 @@ export default function RecentOrders() {
                           </div>
                         </TableCell>
 
-                        <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{formatDate(row.followUpDate)}</TableCell>
+                        <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
+                          <Badge
+                            size="sm"
+                            color={getDueDateBadgeColor(row.followUpDate)}
+                          >
+                            {getDueDateBadgeText(row.followUpDate)}
+                          </Badge>
+                        </TableCell>
                         <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                           <div className="flex items-center">
                             <Button size="sm" variant="outline" className="mr-2" endIcon={<PencilIcon className="size-5" />} onClick={() => handleEdit(row)} />
@@ -810,15 +941,14 @@ export default function RecentOrders() {
           {hoveredRemarkRow && showTooltip && (() => {
             const hoveredRow = filteredData.find(row => row._id === hoveredRemarkRow);
             if (!hoveredRow || !hoveredRow.remarks || hoveredRow.remarks.length === 0) return null;
-            
+
             const isAbove = tooltipPosition.transform.includes('-100%');
-            
+
             return (
-              <div 
+              <div
                 ref={tooltipRef}
-                className={`fixed w-96 max-w-[90vw] max-h-[80vh] bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 z-[9999] transition-all duration-200 ${
-                  showTooltip ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
-                }`}
+                className={`fixed w-96 max-w-[90vw] max-h-[80vh] bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 z-[9999] transition-all duration-200 ${showTooltip ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+                  }`}
                 style={{
                   top: `${tooltipPosition.top}px`,
                   left: `${tooltipPosition.left}px`,
@@ -837,24 +967,23 @@ export default function RecentOrders() {
                     className={`absolute ${isAbove ? 'bottom-0' : 'top-0'} left-0 w-0 h-0`}
                     style={{
                       left: `${tooltipPosition.arrowLeft}px`,
-                      transform: isAbove 
-                        ? `translateY(100%) translateX(-50%)` 
+                      transform: isAbove
+                        ? `translateY(100%) translateX(-50%)`
                         : `translateY(-100%) translateX(-50%)`
                     }}
                   >
-                    <div 
-                      className={`w-0 h-0 border-l-[8px] border-r-[8px] ${
-                        isAbove 
-                          ? 'border-t-[8px] border-t-white dark:border-t-gray-800 border-l-transparent border-r-transparent' 
+                    <div
+                      className={`w-0 h-0 border-l-[8px] border-r-[8px] ${isAbove
+                          ? 'border-t-[8px] border-t-white dark:border-t-gray-800 border-l-transparent border-r-transparent'
                           : 'border-b-[8px] border-b-white dark:border-b-gray-800 border-l-transparent border-r-transparent'
-                      }`}
+                        }`}
                       style={{
                         filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
                       }}
                     />
                   </div>
                 )}
-                
+
                 <div className="p-3 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10 rounded-t-lg">
                   <h4 className="text-sm font-semibold text-gray-800 dark:text-white">Remark History</h4>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{hoveredRow.remarks.length} remark{hoveredRow.remarks.length !== 1 ? 's' : ''}</p>
@@ -925,7 +1054,13 @@ export default function RecentOrders() {
                       id="firstName"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
+                      disabled={!isAdmin(user)}
                     />
+                    {!isAdmin(user) && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Only owners can edit this field
+                      </p>
+                    )}
                   </div>
                   <div className="w-full md:w-1/2">
                     <Label>Email</Label>
@@ -936,7 +1071,13 @@ export default function RecentOrders() {
                       onChange={handleEmailChange}
                       placeholder="Enter your email"
                       hint={error ? "This is an invalid email address." : ""}
+                      disabled={!isAdmin(user)}
                     />
+                    {!isAdmin(user) && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Only owners can edit this field
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -949,7 +1090,13 @@ export default function RecentOrders() {
                       placeholder="+91 98765 43210"
                       value={phone1}
                       onChange={setPhone1}
+                      disabled={!isAdmin(user)}
                     />
+                    {!isAdmin(user) && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Only owners can edit this field
+                      </p>
+                    )}
                   </div>
                   <div className="w-full md:w-1/2">
                     <Label>Phone (optional)</Label>
@@ -1030,7 +1177,13 @@ export default function RecentOrders() {
                       value={contactPoint}
                       placeholder="Contacted Through"
                       onChange={setContactPoint}
+                      disabled={!isAdmin(user)}
                     />
+                    {!isAdmin(user) && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Only owners can edit this field
+                      </p>
+                    )}
                   </div>
                   <div className="w-full md:w-1/4">
                     <Label htmlFor="otherContactPoint">Specify other</Label>
@@ -1044,7 +1197,7 @@ export default function RecentOrders() {
                   </div>
                 </div>
                 <div className="flex flex-col md:flex-row gap-4 items-stretch">
-                  <div className="w-full md:w-3/4">
+                  <div className="w-full">
                     <MultiSelect
                       label="Course Preference"
                       options={courseOptions}
@@ -1052,6 +1205,8 @@ export default function RecentOrders() {
                       onChange={setSelectedValues}
                     />
                   </div>
+                </div>
+                <div className="flex flex-col md:flex-row gap-4 items-stretch">
                   <div className="w-full md:w-1/4">
                     <Label>Campaign</Label>
                     <Select
@@ -1059,32 +1214,47 @@ export default function RecentOrders() {
                       value={campaign}
                       placeholder="Campaigns"
                       onChange={handleCampaignChange}
+                      disabled={!isAdmin(user)}
                     />
+                    {!isAdmin(user) && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Only owners can edit this field
+                      </p>
+                    )}
                   </div>
-                </div>
-                <div className="flex flex-col md:flex-row gap-4 items-stretch">
-                  <div className="w-full md:w-1/2">
-                    <Label>Lead Status</Label>
+                  <div className="w-full md:w-1/4">
+                    <Label>Lead Status *</Label>
                     <Select
-                      options={leadStatusOptions}
+                      options={leadStatusOptions.filter(option => option.value !== "new")}
                       value={leadStatus}
                       placeholder="Select Lead Status"
                       onChange={setLeadStatus}
                     />
                   </div>
-                  <div className="w-full md:w-1/2">
+                  <div className="w-full md:w-1/4">
+                    <Label>Lead Potential *</Label>
+                    <Select
+                      options={leadPotentialOptions}
+                      value={leadPotential}
+                      placeholder="Select Lead Potential"
+                      onChange={setLeadPotential}
+                    />
+                  </div>
+                  <div className="w-full md:w-1/4">
                     <DatePicker
                       id="followupDate"
-                      label="Next Follow Up Date"
+                      label="Next Follow Up Date *"
                       placeholder="Select a date"
                       value={followUpDate}
+                      disablePastDates={true} // Hide past dates completely
                       onChange={(date, str) => setFollowUpDate(str)}
                     />
                   </div>
                 </div>
+
                 <div className="flex flex-col md:flex-row gap-4 items-stretch">
                   <div className="w-full">
-                    <Label htmlFor="remarks">Remarks</Label>
+                    <Label htmlFor="remarks">Remarks *</Label>
                     <Input
                       type="text"
                       id="remarks"
@@ -1314,3 +1484,35 @@ export default function RecentOrders() {
     </div>
   );
 }
+
+// Helper function to get lead potential label
+const getLeadPotentialLabel = (leadPotential) => {
+  switch (leadPotential) {
+    case "strongProspect":
+      return "Strong Prospect";
+    case "potentialProspect":
+      return "Potential Prospect";
+    case "weakProspect":
+      return "Weak Prospect";
+    case "notAProspect":
+      return "Not a Prospect";
+    default:
+      return "N/A";
+  }
+};
+
+// Helper function to get lead potential class
+const getLeadPotentialClass = (leadPotential) => {
+  switch (leadPotential) {
+    case "strongProspect":
+      return "text-green-800 bg-green-200 dark:text-green-200 dark:bg-green-800";
+    case "potentialProspect":
+      return "text-blue-800 bg-blue-200 dark:text-blue-200 dark:bg-blue-800";
+    case "weakProspect":
+      return "text-yellow-800 bg-yellow-200 dark:text-yellow-200 dark:bg-yellow-800";
+    case "notAProspect":
+      return "text-red-800 bg-red-200 dark:text-red-200 dark:bg-red-800";
+    default:
+      return "text-gray-600 bg-gray-100";
+  }
+};

@@ -24,6 +24,7 @@ import {
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import SidebarWidget from "./SidebarWidget";
+import { isManager } from "../utils/roleHelpers";
 
 const navItems = [
   {
@@ -49,6 +50,11 @@ const navItems = [
       { name: "New Student (beta)", path: "/new-student", pro: false },
       { name: "Manage Students (beta)", path: "/manage-students", pro: false },
     ],
+  },
+  {
+    icon: <CalendarIcon />,
+    name: "Calendar",
+    path: "/calendar"
   },
   {
     icon: <GroupIcon />, 
@@ -119,7 +125,7 @@ const settingsItems = [
 ];
 
 const AppSidebar = () => {
-  const { isAdmin } = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const location = useLocation();
 
@@ -146,6 +152,7 @@ const AppSidebar = () => {
           });
         }
       });
+      if (submenuMatched) return;
     });
 
     if (!submenuMatched) setOpenSubmenu(null);
@@ -171,7 +178,10 @@ const AppSidebar = () => {
     );
   };
 
-  const renderMenuItems = (items, menuType, isAdminUser) => (
+  // Check if user has manager privileges (Owner, Admin, Centre Head/Manager)
+  const hasManagerAccess = isManager(user);
+
+  const renderMenuItems = (items, menuType) => (
     <ul className="flex flex-col gap-4">
       {items.map((nav, index) => (
         <li key={nav.name}>
@@ -244,7 +254,9 @@ const AppSidebar = () => {
             >
               <ul className="mt-2 space-y-1 ml-9">
                 {nav.subItems.map((subItem) => (
-                  (subItem.name !== "Manage Profiles" && subItem.name !== "Course Management" && subItem.name !== "User Management") || isAdminUser ? (
+                  // Only show Campaigns, Contact Points, Course Management, and User Management to managers
+                  (subItem.name !== "Campaigns" && subItem.name !== "Contact Points" && 
+                   subItem.name !== "Course Management" && subItem.name !== "User Management") || hasManagerAccess ? (
                     <li key={subItem.name}>
                       <Link
                         to={subItem.path}
@@ -344,7 +356,7 @@ const AppSidebar = () => {
               >
                 {isExpanded || isHovered || isMobileOpen ? "Menu" : <MoreDotIcon className="size-6" />}
               </h2>
-              {renderMenuItems(navItems, "main", isAdmin)}
+              {renderMenuItems(navItems, "main")}
             </div>
             <div className="">
               <h2
@@ -353,7 +365,7 @@ const AppSidebar = () => {
               >
                 {isExpanded || isHovered || isMobileOpen ? "Downloads" : <MoreDotIcon />}
               </h2>
-              {renderMenuItems(othersItems, "others", isAdmin)}
+              {renderMenuItems(othersItems, "others")}
             </div>
             <div className="">
               <h2
@@ -362,7 +374,7 @@ const AppSidebar = () => {
               >
                 {isExpanded || isHovered || isMobileOpen ? "Settings" : <MoreDotIcon />}
               </h2>
-              {renderMenuItems(settingsItems, "settings", isAdmin)}
+              {renderMenuItems(settingsItems, "settings")}
             </div>
           </div>
         </nav>

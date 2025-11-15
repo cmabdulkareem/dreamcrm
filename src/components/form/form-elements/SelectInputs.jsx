@@ -18,10 +18,10 @@ export default function SelectInputs() {
   const [selectedValues, setSelectedValues] = useState([]);
 
   const courseOptions = [
-    { value: "1", text: "Interior Design", selected: false },
-    { value: "2", text: "Fashion Design", selected: false },    
-    { value: "3", text: "Graphic Design", selected: false },
-    { value: "4", text: "General", selected: false },
+    { value: "1", label: "Interior Design" },
+    { value: "2", label: "Fashion Design" },    
+    { value: "3", label: "Graphic Design" },
+    { value: "4", label: "General" },
   ];
 
   const contactPoints = [

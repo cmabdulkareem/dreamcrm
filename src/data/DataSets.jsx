@@ -154,13 +154,13 @@ const employmentType = [
   ];
 
   const enquirerEducation = [
-    { value: "notEducated", label: "No Education" },
     { value: "below10th", label: "Below 10th" },
     { value: "10th", label: "10th" },
     { value: "12th", label: "12th" },
     { value: "diploma", label: "Diploma" },
     { value: "graduate", label: "Graduate" },
     { value: "postGraduate", label: "Post Graduate" },
+    { value: "Other", label: "Other" },
   ];
 
   // Data with Date objects and unique enquiryStatus
@@ -207,18 +207,18 @@ const employmentType = [
   ];
 
   const courseOptions = [
-    { value: "Interior", text: "Interior Design", selected: false },
-    { value: "Fashion", text: "Fashion Design", selected: false },
-    { value: "Graphics", text: "Graphic Design", selected: false },
-    { value: "General", text: "General", selected: false },
+    { value: "Interior", label: "Interior Design" },
+    { value: "Fashion", label: "Fashion Design" },
+    { value: "Graphics", label: "Graphic Design" },
+    { value: "General", label: "General" },
   ];
 
   
   const rolesOptions = [
-    { value: "Leads", text: "Leads", selected: false },
-    { value: "Students", text: "Students", selected: false },
-    { value: "Finance", text: "Finance", selected: false },
-    { value: "Marketing", text: "Marketing", selected: false },
+    { value: "Leads", label: "Leads" },
+    { value: "Students", label: "Students" },
+    { value: "Finance", label: "Finance" },
+    { value: "Marketing", label: "Marketing" },
   ];
 
   // Options
@@ -251,6 +251,13 @@ const employmentType = [
     { value: "lost", label: "Lost" },
   ];
 
+  // Lead Potential options
+  const leadPotentialOptions = [
+    { value: "strongProspect", label: "Strong Prospect", color: "text-green-600 bg-green-100" },
+    { value: "potentialProspect", label: "Potential Prospect", color: "text-blue-600 bg-blue-100" },
+    { value: "weakProspect", label: "Weak Prospect", color: "text-yellow-600 bg-yellow-100" },
+    { value: "notAProspect", label: "Not a Prospect", color: "text-red-600 bg-red-100" },
+  ];
 
 export { 
   placeOptions, 
@@ -273,5 +280,6 @@ export {
   departments,
   employmentType,
   rolesOptions,
-  leadStatusOptions
+  leadStatusOptions,
+  leadPotentialOptions
 };

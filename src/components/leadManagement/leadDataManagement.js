@@ -12,6 +12,9 @@ export const fetchCustomers = async (setData, setLoading) => {
       `${API}/customers/all`,
       { withCredentials: true }
     );
+    
+    console.log("Received customers data:", response.data.customers); // Add logging
+    
     if (typeof setData === 'function') {
       setData(response.data.customers);
     }
@@ -160,6 +163,7 @@ export const prepareLeadForEdit = (row, setters) => {
     setFollowUpDate,
     setRemarks,
     setLeadStatus,
+    setLeadPotential, // Added lead potential setter
     setSelectedValues
   } = setters;
 
@@ -234,14 +238,18 @@ export const prepareLeadForEdit = (row, setters) => {
   if (typeof setLeadStatus === 'function') {
     setLeadStatus(row.leadStatus || "");
   }
+  if (typeof setLeadPotential === 'function') { // Added lead potential setter
+    console.log("Setting leadPotential in edit form:", row.leadPotential); // Add logging
+    setLeadPotential(row.leadPotential || "");
+  }
   
   // Map coursePreference from database to match courseOptions format
   const mappedCourses = row.coursePreference?.map(courseName => {
     // Find matching option in courseOptions
     const matchedOption = courseOptions.find(opt => 
-      opt.value === courseName || opt.text === courseName
+      opt.value === courseName || opt.label === courseName
     );
-    return matchedOption || { value: courseName, text: courseName };
+    return matchedOption ? matchedOption.value : courseName;
   }) || [];
   
   if (typeof setSelectedValues === 'function') {

@@ -38,7 +38,29 @@ const userSchema = new mongoose.Schema(
     roles: { 
       type: [{
         type: String,
-        enum: ['Admin', 'Manager', 'Counsellor', 'Marketing', 'Finance', 'Placement', 'General']
+        enum: [
+          'Owner',
+          'Admin',
+          'Center Head / Manager',
+          'Academic Coordinator',
+          'Counsellor',
+          'Marketing / Social Media Executive',
+          'Faculty / Trainers',
+          'Placement Officer',
+          'Lab Assistant',
+          'CADD Club Support',
+          'Accounts Executive',
+          'Front Office / Receptionist',
+          'IT Support',
+          'Event Coordinator',
+          'Housekeeping / Office Assistant',
+          'PRO',
+          'Manager', // Keep for backward compatibility
+          'Marketing', // Keep for backward compatibility
+          'Finance', // Keep for backward compatibility
+          'Placement', // Keep for backward compatibility
+          'General'
+        ]
       }], 
       default: ['General'] 
     },
@@ -61,17 +83,17 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// Pre-save middleware to handle first user as admin
+// Pre-save middleware to handle first user as Owner
 userSchema.pre('save', async function(next) {
   // Check if this is a new user
   if (this.isNew) {
     // Count existing users
     const userCount = await mongoose.model('User').countDocuments();
     
-    // If this is the first user, make them admin
+    // If this is the first user, make them Owner
     if (userCount === 0) {
       this.isAdmin = true;
-      this.roles = ['Admin'];
+      this.roles = ['Owner'];
       this.accountStatus = 'Active';
     }
   }

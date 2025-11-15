@@ -5,6 +5,7 @@ import { comparePassword } from "../helpers/comparePassword.js";
 import {validateEmail} from "../validators/validateEmail.js";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import { isAdmin } from "../utils/roleHelpers.js";
 dotenv.config();
 
 // Signup user
@@ -153,8 +154,8 @@ export const authCheck = async (req, res) => {
 // Get all users (admin only)
 export const getAllUsers = async (req, res) => {
   try {
-    // Check if user is admin
-    if (!req.user.isAdmin) {
+    // Check if user is admin (backward compatible)
+    if (!isAdmin(req.user)) {
       return res.status(403).json({ message: "Access denied. Admin privileges required." });
     }
     
@@ -204,7 +205,7 @@ export const updateUser = async (req, res) => {
       company,
       instagram,
       location,
-      isAdmin,
+      isAdmin: isAdminValue,
       bloodGroup,
       country,
       state,
@@ -338,7 +339,7 @@ export const updateUser = async (req, res) => {
       
       // Only admins can update roles and admin status
       if (roles !== undefined) user.roles = roles;
-      if (isAdmin !== undefined) user.isAdmin = isAdmin;
+      if (isAdminValue !== undefined) user.isAdmin = isAdminValue;
       
       // Update personal details
       if (bloodGroup !== undefined) user.bloodGroup = bloodGroup;
@@ -413,10 +414,10 @@ export const updateUser = async (req, res) => {
 export const assignRoles = async (req, res) => {
   try {
     const { id } = req.params;
-    const { roles, isAdmin, accountStatus } = req.body;
+    const { roles, isAdmin: isAdminValue, accountStatus } = req.body;
 
-    // Check if requesting user is admin
-    if (!req.user.isAdmin) {
+    // Check if requesting user is admin (backward compatible)
+    if (!isAdmin(req.user)) {
       return res.status(403).json({ message: "Access denied. Admin privileges required." });
     }
 
@@ -431,8 +432,8 @@ export const assignRoles = async (req, res) => {
       user.roles = roles;
     }
     
-    if (isAdmin !== undefined) {
-      user.isAdmin = isAdmin;
+    if (isAdminValue !== undefined) {
+      user.isAdmin = isAdminValue;
     }
     
     // Update account status if provided
@@ -586,8 +587,8 @@ export const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Check if user is admin
-    if (!req.user.isAdmin) {
+    // Check if user is admin (backward compatible)
+    if (!isAdmin(req.user)) {
       return res.status(403).json({ message: "Access denied. Admin privileges required." });
     }
     

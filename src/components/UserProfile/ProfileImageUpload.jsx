@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useContext } from "react";
+import { useState, useRef, useCallback, useContext, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { Modal } from "../ui/modal";
@@ -18,9 +18,15 @@ export default function ProfileImageUpload({ user, updateAvatar }) {
   const [crop, setCrop] = useState({ unit: '%', width: 50, aspect: 1 });
   const [completedCrop, setCompletedCrop] = useState(null);
   const [croppedImageUrl, setCroppedImageUrl] = useState(null);
+  const [avatarKey, setAvatarKey] = useState(0); // For forcing image refresh
   const imgRef = useRef(null);
   const fileInputRef = useRef(null);
   const canvasRef = useRef(null);
+
+  // Update avatar key when user avatar changes to force image refresh
+  useEffect(() => {
+    setAvatarKey(prev => prev + 1);
+  }, [user?.avatar]);
 
   const onImageLoad = useCallback((img) => {
     imgRef.current = img;
@@ -139,15 +145,30 @@ export default function ProfileImageUpload({ user, updateAvatar }) {
         }
       );
 
+      console.log("Avatar upload response:", response.data); // Debug log
+
       // Update user context/state if updateAvatar function is provided
       if (updateAvatar && typeof updateAvatar === 'function') {
-        updateAvatar(response.data.avatar);
+        // If updateAvatar is the setUser function from context, we need to pass the full user object
+        if (updateAvatar.name === 'setUser') {
+          const updatedUser = {
+            ...user,
+            avatar: response.data.avatar
+          };
+          console.log("Updating user with:", updatedUser); // Debug log
+          updateAvatar(updatedUser);
+        } else {
+          // For other cases, pass just the avatar URL
+          updateAvatar(response.data.avatar);
+        }
       } else if (updateUser && typeof updateUser === 'function') {
         // Fallback to updateUser if updateAvatar is not available
-        updateUser({
+        const updatedUser = {
           ...user,
           avatar: response.data.avatar
-        });
+        };
+        console.log("Updating user with fallback:", updatedUser); // Debug log
+        updateUser(updatedUser);
       }
 
       toast.success("Profile image updated successfully!");
@@ -185,11 +206,11 @@ export default function ProfileImageUpload({ user, updateAvatar }) {
       />
       
       <button
-        key={user?.avatar || 'default-avatar'} // Add key prop to force remount when avatar changes
         onClick={triggerFileSelect}
         className="w-20 h-20 overflow-hidden border-2 border-dashed border-gray-300 rounded-full cursor-pointer hover:border-brand-500 transition-colors"
       >
         <img 
+          key={`${user?.avatar || 'default-avatar'}-${avatarKey}`} // Use avatarKey for forced refresh
           src={user?.avatar || "/images/user/user-01.jpg"} 
           alt="Profile" 
           className="w-full h-full object-cover"

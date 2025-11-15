@@ -9,11 +9,11 @@ const MultiSelect = ({
   disabled = false,
 }) => {
   // Use controlled mode if selectedValues is provided
-  const isControlled = selectedValues !== undefined;
+  const isControlled = selectedValues !== undefined && selectedValues !== null;
   const [internalSelected, setInternalSelected] = useState(defaultSelected);
   
   const selectedOptions = isControlled 
-    ? selectedValues.map(v => v.value)
+    ? selectedValues
     : internalSelected;
   
   const [isOpen, setIsOpen] = useState(false);
@@ -49,12 +49,8 @@ const MultiSelect = ({
       setInternalSelected(newSelectedOptions);
     }
     
-    // Convert to the format expected by onChange
-    const selectedItems = newSelectedOptions.map(val => 
-      options.find(opt => opt.value === val)
-    ).filter(Boolean);
-    
-    onChange?.(selectedItems);
+    // Convert to the format expected by onChange - just the values
+    onChange?.(newSelectedOptions);
   };
 
   const removeOption = (value) => {
@@ -64,16 +60,12 @@ const MultiSelect = ({
       setInternalSelected(newSelectedOptions);
     }
     
-    // Convert to the format expected by onChange
-    const selectedItems = newSelectedOptions.map(val => 
-      options.find(opt => opt.value === val)
-    ).filter(Boolean);
-    
-    onChange?.(selectedItems);
+    // Convert to the format expected by onChange - just the values
+    onChange?.(newSelectedOptions);
   };
 
   const selectedValuesText = selectedOptions.map(
-    (value) => options.find((option) => option.value === value)?.text || ""
+    (value) => options.find((option) => option.value === value)?.label || value
   );
 
   return (
@@ -158,7 +150,7 @@ const MultiSelect = ({
 
           {isOpen && (
             <div
-              className="absolute left-0 z-40 w-full overflow-y-auto bg-white rounded-lg shadow-sm top-full max-h-select dark:bg-gray-900"
+              className="absolute left-0 z-40 w-full overflow-y-auto bg-white rounded-lg shadow-sm top-full max-h-60 dark:bg-gray-900"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex flex-col">
@@ -176,7 +168,7 @@ const MultiSelect = ({
                       }`}
                     >
                       <div className="mx-2 leading-6 text-gray-800 dark:text-white/90">
-                        {option.text}
+                        {option.label}
                       </div>
                     </div>
                   </div>

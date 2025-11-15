@@ -1,0 +1,78 @@
+/**
+ * Backend role helper functions
+ * Provides utilities for checking user roles and permissions
+ */
+
+/**
+ * Check if user has admin, manager, or counselor privileges
+ * Maintains backward compatibility with isAdmin flag
+ * As per requirements: existing functionalities should work for admin, manager, and counselor
+ */
+export function hasAdminOrManagerOrCounsellorAccess(user) {
+  if (!user) return false;
+  
+  // Check isAdmin flag for backward compatibility
+  if (user.isAdmin) return true;
+  
+  // Check roles array
+  const userRoles = Array.isArray(user.roles) ? user.roles : (typeof user.roles === 'string' ? [user.roles] : []);
+  
+  // Admin roles (Owner, Admin)
+  if (userRoles.includes('Owner') || userRoles.includes('Admin')) return true;
+  
+  // Manager roles (Center Head / Manager, Manager)
+  if (userRoles.includes('Center Head / Manager') || userRoles.includes('Manager')) return true;
+  
+  // Counselor role
+  if (userRoles.includes('Counsellor') || userRoles.includes('Counselor')) return true;
+  
+  return false;
+}
+
+/**
+ * Check if user has admin privileges (Owner or Admin role, or isAdmin flag)
+ */
+export function isAdmin(user) {
+  if (!user) return false;
+  
+  // Check isAdmin flag for backward compatibility
+  if (user.isAdmin) return true;
+  
+  // Check roles array
+  const userRoles = Array.isArray(user.roles) ? user.roles : (typeof user.roles === 'string' ? [user.roles] : []);
+  
+  // Admin roles
+  return userRoles.includes('Owner') || userRoles.includes('Admin');
+}
+
+/**
+ * Check if user has a specific role
+ */
+export function hasRole(user, role) {
+  if (!user) return false;
+  
+  // Check isAdmin flag for backward compatibility with Admin role
+  if (user.isAdmin && (role === 'Admin' || role === 'Owner')) {
+    return true;
+  }
+  
+  // Check roles array
+  const userRoles = Array.isArray(user.roles) ? user.roles : (typeof user.roles === 'string' ? [user.roles] : []);
+  return userRoles.includes(role);
+}
+
+/**
+ * Check if user has any of the specified roles
+ */
+export function hasAnyRole(user, roles) {
+  if (!user) return false;
+  
+  // Check isAdmin flag for backward compatibility
+  if (user.isAdmin && (roles.includes('Admin') || roles.includes('Owner'))) {
+    return true;
+  }
+  
+  const userRoles = Array.isArray(user.roles) ? user.roles : (typeof user.roles === 'string' ? [user.roles] : []);
+  return roles.some(role => userRoles.includes(role));
+}
+

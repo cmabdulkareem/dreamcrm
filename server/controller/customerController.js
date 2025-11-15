@@ -1,5 +1,7 @@
 import customerModel from "../model/customerModel.js";
 import userModel from "../model/userModel.js";
+import { isAdmin } from "../utils/roleHelpers.js";
+import { isManager } from "../middleware/roleMiddleware.js";
 
 // Create new customer/lead
 export const createCustomer = async (req, res) => {
@@ -21,8 +23,11 @@ export const createCustomer = async (req, res) => {
       campaign,
       handledBy,
       followUpDate,
-      leadRemarks
+      leadRemarks,
+      leadPotential // Added leadPotential field
     } = req.body;
+
+    console.log("Creating customer with leadPotential:", leadPotential); // Add logging
 
     // Validation
     if (!fullName || !email || !phone1) {
@@ -56,6 +61,7 @@ export const createCustomer = async (req, res) => {
       handledBy,
       followUpDate: followUpDate ? new Date(followUpDate) : null,
       remarks,
+      leadPotential, // Added leadPotential field
       // Automatically assign the lead to the user who created it
       assignedTo: req.user.id,
       assignedBy: req.user.id,
@@ -64,10 +70,14 @@ export const createCustomer = async (req, res) => {
 
     await newCustomer.save();
 
+    console.log("Customer saved with leadPotential:", newCustomer.leadPotential); // Add logging
+
     // Fetch the updated customer with populated user details
     const updatedCustomer = await customerModel.findById(newCustomer._id)
       .populate('assignedTo', 'fullName email')
       .populate('assignedBy', 'fullName email');
+
+    console.log("Updated customer with leadPotential:", updatedCustomer.leadPotential); // Add logging
 
     return res.status(201).json({ 
       message: "Lead created successfully.", 
@@ -82,14 +92,14 @@ export const createCustomer = async (req, res) => {
 // Get all customers/leads
 export const getAllCustomers = async (req, res) => {
   try {
-    // Check user role
-    const isAdmin = req.user.isAdmin;
-    const isManager = req.user.roles && req.user.roles.includes('Manager');
+    // Check user role using role helpers
+    const hasAdminAccess = isAdmin(req.user);
+    const hasManagerAccess = isManager(req.user);
     
     let query = {};
     
     // If user is not admin or manager, only show leads assigned to them
-    if (!isAdmin && !isManager) {
+    if (!hasAdminAccess && !hasManagerAccess) {
       query = {
         assignedTo: req.user.id // Only leads assigned to the user
       };
@@ -104,6 +114,12 @@ export const getAllCustomers = async (req, res) => {
       .populate('assignedBy', 'fullName email')
       .sort({ createdAt: -1 });
     console.log(`Found ${customers.length} customers`);
+    
+    // Log the first customer's leadPotential to debug
+    if (customers.length > 0) {
+      console.log("First customer leadPotential:", customers[0].leadPotential);
+    }
+
     return res.status(200).json({ customers });
   } catch (error) {
     console.error("Error fetching customers:", error);
@@ -114,14 +130,14 @@ export const getAllCustomers = async (req, res) => {
 // Get all converted customers/leads
 export const getConvertedCustomers = async (req, res) => {
   try {
-    // Check user role
-    const isAdmin = req.user.isAdmin;
-    const isManager = req.user.roles && req.user.roles.includes('Manager');
+    // Check user role using role helpers
+    const hasAdminAccess = isAdmin(req.user);
+    const hasManagerAccess = isManager(req.user);
     
     let query = { leadStatus: 'converted' };
     
     // If user is not admin or manager, only show leads assigned to them
-    if (!isAdmin && !isManager) {
+    if (!hasAdminAccess && !hasManagerAccess) {
       query = {
         leadStatus: 'converted',
         assignedTo: req.user.id // Only leads assigned to the user
@@ -154,6 +170,8 @@ export const getCustomerById = async (req, res) => {
       return res.status(404).json({ message: "Customer not found." });
     }
 
+    console.log("Customer fetched with leadPotential:", customer.leadPotential); // Add logging
+
     return res.status(200).json({ customer });
   } catch (error) {
     console.error("Error fetching customer:", error);
@@ -166,6 +184,8 @@ export const updateCustomer = async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
+
+    console.log("Updating customer with data:", updateData); // Add logging
 
     const customer = await customerModel.findById(id);
     if (!customer) {
@@ -183,10 +203,14 @@ export const updateCustomer = async (req, res) => {
 
     await customer.save();
 
+    console.log("Customer updated with leadPotential:", customer.leadPotential); // Add logging
+
     // Fetch the updated customer with all fields
     const updatedCustomer = await customerModel.findById(id)
       .populate('assignedTo', 'fullName email')
       .populate('assignedBy', 'fullName email');
+
+    console.log("Updated customer with leadPotential:", updatedCustomer.leadPotential); // Add logging
 
     return res.status(200).json({ 
       message: "Customer updated successfully.", 
@@ -269,7 +293,7 @@ export const assignLead = async (req, res) => {
     const assignedBy = req.user.id; // Get the assigning user from token
 
     // Check if user has permission to assign leads (Admin or Manager)
-    const isAuthorized = req.user.isAdmin || (req.user.roles && req.user.roles.includes('Manager'));
+    const isAuthorized = isAdmin(req.user) || isManager(req.user);
     if (!isAuthorized) {
       return res.status(403).json({ message: "Access denied. Only Admins and Managers can assign leads." });
     }

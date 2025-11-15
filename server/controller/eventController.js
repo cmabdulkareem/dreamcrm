@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
 import sharp from 'sharp';
 import fs from 'fs';
+import { hasAdminOrManagerOrCounsellorAccess } from '../utils/roleHelpers.js';
 
 // Configure multer for banner uploads
 const __filename = fileURLToPath(import.meta.url);
@@ -93,9 +94,9 @@ export const getEventByLink = async (req, res) => {
 // Create new event
 export const createEvent = async (req, res) => {
   try {
-    // Check if user is admin
-    if (!req.user.isAdmin) {
-      return res.status(403).json({ message: "Access denied. Admin privileges required." });
+    // Check if user has admin, manager, or counselor access
+    if (!hasAdminOrManagerOrCounsellorAccess(req.user)) {
+      return res.status(403).json({ message: "Access denied. Admin, Manager, or Counselor privileges required." });
     }
 
     const {
@@ -133,9 +134,9 @@ export const createEvent = async (req, res) => {
 // Update event
 export const updateEvent = async (req, res) => {
   try {
-    // Check if user is admin
-    if (!req.user.isAdmin) {
-      return res.status(403).json({ message: "Access denied. Admin privileges required." });
+    // Check if user has admin, manager, or counselor access
+    if (!hasAdminOrManagerOrCounsellorAccess(req.user)) {
+      return res.status(403).json({ message: "Access denied. Admin, Manager, or Counselor privileges required." });
     }
 
     const { id } = req.params;
@@ -174,9 +175,9 @@ export const updateEvent = async (req, res) => {
 // Delete event
 export const deleteEvent = async (req, res) => {
   try {
-    // Check if user is admin
-    if (!req.user.isAdmin) {
-      return res.status(403).json({ message: "Access denied. Admin privileges required." });
+    // Check if user has admin, manager, or counselor access
+    if (!hasAdminOrManagerOrCounsellorAccess(req.user)) {
+      return res.status(403).json({ message: "Access denied. Admin, Manager, or Counselor privileges required." });
     }
 
     const { id } = req.params;
@@ -199,9 +200,9 @@ export const deleteEvent = async (req, res) => {
 // Toggle event status
 export const toggleEventStatus = async (req, res) => {
   try {
-    // Check if user is admin
-    if (!req.user.isAdmin) {
-      return res.status(403).json({ message: "Access denied. Admin privileges required." });
+    // Check if user has admin, manager, or counselor access
+    if (!hasAdminOrManagerOrCounsellorAccess(req.user)) {
+      return res.status(403).json({ message: "Access denied. Admin, Manager, or Counselor privileges required." });
     }
 
     const { id } = req.params;
@@ -288,9 +289,9 @@ export const registerForEvent = async (req, res) => {
 // Get all registrations for an event
 export const getEventRegistrations = async (req, res) => {
   try {
-    // Check if user is admin
-    if (!req.user.isAdmin) {
-      return res.status(403).json({ message: "Access denied. Admin privileges required." });
+    // Check if user has admin, manager, or counselor access
+    if (!hasAdminOrManagerOrCounsellorAccess(req.user)) {
+      return res.status(403).json({ message: "Access denied. Admin, Manager, or Counselor privileges required." });
     }
 
     const { id } = req.params;
@@ -313,9 +314,9 @@ export const getEventRegistrations = async (req, res) => {
 // Upload event banner
 export const uploadEventBanner = async (req, res) => {
   try {
-    // Check if user is admin
-    if (!req.user.isAdmin) {
-      return res.status(403).json({ message: "Access denied. Admin privileges required." });
+    // Check if user has admin, manager, or counselor access
+    if (!hasAdminOrManagerOrCounsellorAccess(req.user)) {
+      return res.status(403).json({ message: "Access denied. Admin, Manager, or Counselor privileges required." });
     }
 
     const { id } = req.params;

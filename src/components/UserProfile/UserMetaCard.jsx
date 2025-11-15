@@ -109,7 +109,12 @@ export default function UserMetaCard({ user, setUsers }) {
               <ProfileImageUpload user={user} updateAvatar={setUser} />
             ) : (
               <div className="w-20 h-20 overflow-hidden border border-gray-200 rounded-full dark:border-gray-800">
-                <img src={user?.avatar || "/images/user/user-01.jpg"} alt="user" className="w-full h-full object-cover" />
+                <img 
+                  key={`${user?.avatar || 'default-avatar'}-view`} // Add key for view mode
+                  src={user?.avatar || "/images/user/user-01.jpg"} 
+                  alt="user" 
+                  className="w-full h-full object-cover" 
+                />
               </div>
             )}
             <div className="order-3 xl:order-2">

@@ -1,13 +1,20 @@
-import { useContext } from "react";
+import { useContext, useState, useEffect } from "react";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
 import UserMetaCard from "../components/UserProfile/UserMetaCard";
 import UserInfoCard from "../components/UserProfile/UserInfoCard";
-import UserAddressCard from "../components/UserProfile/UserAddressCard";
 import PageMeta from "../components/common/PageMeta";
 import { AuthContext } from "../context/AuthContext";
 
 export default function UserProfiles() {
   const { user } = useContext(AuthContext);
+  const [refreshKey, setRefreshKey] = useState(0);
+  
+  // Listen for avatar updates and trigger a refresh
+  useEffect(() => {
+    if (user?.avatar) {
+      setRefreshKey(prev => prev + 1);
+    }
+  }, [user?.avatar]);
   
   return (
     <>
@@ -21,7 +28,7 @@ export default function UserProfiles() {
           Profile
         </h3>
         <div className="space-y-6">
-          <UserMetaCard user={user} />
+          <UserMetaCard key={`${user?._id}-${refreshKey}`} user={user} />
           <UserInfoCard user={user} />
           {/* <UserAddressCard /> */}
         </div>

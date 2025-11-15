@@ -1,4 +1,5 @@
 import leaveModel from '../model/leaveModel.js';
+import { hasAdminOrManagerOrCounsellorAccess } from '../utils/roleHelpers.js';
 
 // Generate unique ticket number
 const generateTicketNumber = async () => {
@@ -150,9 +151,9 @@ export const createLeave = async (req, res) => {
 // Update leave
 export const updateLeave = async (req, res) => {
   try {
-    // Check if user is admin
-    if (!req.user.isAdmin) {
-      return res.status(403).json({ message: "Access denied. Admin privileges required." });
+    // Check if user has admin, manager, or counselor access
+    if (!hasAdminOrManagerOrCounsellorAccess(req.user)) {
+      return res.status(403).json({ message: "Access denied. Admin, Manager, or Counselor privileges required." });
     }
 
     const { id } = req.params;
@@ -187,9 +188,9 @@ export const updateLeave = async (req, res) => {
 // Delete leave
 export const deleteLeave = async (req, res) => {
   try {
-    // Check if user is admin
-    if (!req.user.isAdmin) {
-      return res.status(403).json({ message: "Access denied. Admin privileges required." });
+    // Check if user has admin, manager, or counselor access
+    if (!hasAdminOrManagerOrCounsellorAccess(req.user)) {
+      return res.status(403).json({ message: "Access denied. Admin, Manager, or Counselor privileges required." });
     }
 
     const { id } = req.params;
@@ -209,9 +210,9 @@ export const deleteLeave = async (req, res) => {
 // Update leave status
 export const updateLeaveStatus = async (req, res) => {
   try {
-    // Check if user is admin
-    if (!req.user.isAdmin) {
-      return res.status(403).json({ message: "Access denied. Admin privileges required." });
+    // Check if user has admin, manager, or counselor access
+    if (!hasAdminOrManagerOrCounsellorAccess(req.user)) {
+      return res.status(403).json({ message: "Access denied. Admin, Manager, or Counselor privileges required." });
     }
 
     const { id } = req.params;

@@ -101,6 +101,11 @@ const customerSchema = new mongoose.Schema({
   },
   assignmentRemark: {
     type: String
+  },
+  leadPotential: {
+    type: String,
+    enum: ['strongProspect', 'potentialProspect', 'weakProspect', 'notAProspect'],
+    required: false // Explicitly set required to false
   }
 }, {
   timestamps: true

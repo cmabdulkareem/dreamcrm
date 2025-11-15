@@ -23,8 +23,12 @@ function AuthProvider({ children }) {
         const { user, role } = res.data;
         setUser(user);
         setIsLoggedIn(true);
-        // Check if user has admin role or isAdmin flag is true
-        const isAdminUser = user.isAdmin || (Array.isArray(role) && role.includes('Admin')) || (typeof role === 'string' && role === 'Admin');
+        // Check if user has admin role (Owner or Admin) or isAdmin flag is true
+        const userRoles = user.roles || role || [];
+        const rolesArray = Array.isArray(userRoles) ? userRoles : (typeof userRoles === 'string' ? [userRoles] : []);
+        const isAdminUser = user.isAdmin || 
+                           rolesArray.includes('Owner') || 
+                           rolesArray.includes('Admin');
         setIsAdmin(isAdminUser);
       } catch (err) {
         console.error("Auth check error:", err);
@@ -55,8 +59,12 @@ function AuthProvider({ children }) {
   function login(userData, role) {
     setUser(userData);
     setIsLoggedIn(true);
-    // Check if user has admin role or isAdmin flag is true
-    const isAdminUser = userData.isAdmin || (Array.isArray(role) && role.includes('Admin')) || (typeof role === 'string' && role === 'Admin');
+    // Check if user has admin role (Owner or Admin) or isAdmin flag is true
+    const userRoles = userData.roles || role || [];
+    const rolesArray = Array.isArray(userRoles) ? userRoles : (typeof userRoles === 'string' ? [userRoles] : []);
+    const isAdminUser = userData.isAdmin || 
+                       rolesArray.includes('Owner') || 
+                       rolesArray.includes('Admin');
     setIsAdmin(isAdminUser);
     setLoading(false);
   }

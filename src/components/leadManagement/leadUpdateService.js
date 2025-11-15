@@ -8,6 +8,7 @@ export const saveLeadChanges = async (
   selectedRow,
   remarks,
   leadStatus,
+  leadPotential, // Added lead potential
   fullName,
   phone1,
   phone2,
@@ -86,9 +87,13 @@ export const saveLeadChanges = async (
       handledBy: user?.fullName || handledByPerson,
       followUpDate,
       leadStatus,
+      leadPotential, // Include leadPotential in update
       coursePreference: selectedValues.map(item => item.value)
     };
-    
+
+    console.log("Sending updatePayload with leadPotential:", updatePayload); // Add logging
+    console.log("leadPotential value:", leadPotential); // Add logging
+
     const response = await axios.put(
       `${API}/customers/update/${selectedRow._id}`,
       updatePayload,

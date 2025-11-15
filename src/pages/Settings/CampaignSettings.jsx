@@ -19,12 +19,17 @@ import {
   TableHeader,
   TableRow,
 } from "../../components/ui/table";
+import { isManager } from "../../utils/roleHelpers";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
 export default function CampaignSettings() {
   const { user } = useContext(AuthContext);
   const { addNotification } = useNotifications();
+  
+  // Check if user has appropriate role (Owner, Admin, Centre Head/Manager)
+  const hasAccess = isManager(user);
+  
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCampaign, setSelectedCampaign] = useState(null);
@@ -41,8 +46,12 @@ export default function CampaignSettings() {
   const { isOpen: isDeleteOpen, openModal: openDeleteModal, closeModal: closeDeleteModal } = useModal();
 
   useEffect(() => {
-    fetchCampaigns();
-  }, []);
+    if (hasAccess) {
+      fetchCampaigns();
+    } else {
+      setLoading(false);
+    }
+  }, [hasAccess]);
 
   const fetchCampaigns = async () => {
     try {
@@ -204,6 +213,32 @@ export default function CampaignSettings() {
       }
     }
   };
+
+  if (!hasAccess) {
+    return (
+      <>
+        <PageMeta
+          title="Campaign Settings | Access Denied"
+          description="Access denied to campaign management"
+        />
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-800 dark:text-white/90">Campaign Management</h1>
+            </div>
+          </div>
+          <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6">
+            <div className="text-center py-8">
+              <p className="text-gray-500">
+                You don't have permission to access campaign management. Only Owners, Admins, and Centre Heads/Managers can manage campaigns.
+              </p>
+            </div>
+          </div>
+        </div>
+        <ToastContainer position="top-center" className="!z-[999999]" style={{ zIndex: 999999 }} />
+      </>
+    );
+  }
 
   return (
     <>

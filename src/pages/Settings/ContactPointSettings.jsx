@@ -19,12 +19,17 @@ import {
   TableHeader,
   TableRow,
 } from "../../components/ui/table";
+import { isManager } from "../../utils/roleHelpers";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
 export default function ContactPointSettings() {
   const { user } = useContext(AuthContext);
   const { addNotification, areToastsEnabled } = useNotifications();
+  
+  // Check if user has appropriate role (Owner, Admin, Centre Head/Manager)
+  const hasAccess = isManager(user);
+  
   const [contactPoints, setContactPoints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedContactPoint, setSelectedContactPoint] = useState(null);
@@ -39,8 +44,12 @@ export default function ContactPointSettings() {
   const { isOpen: isDeleteOpen, openModal: openDeleteModal, closeModal: closeDeleteModal } = useModal();
 
   useEffect(() => {
-    fetchContactPoints();
-  }, []);
+    if (hasAccess) {
+      fetchContactPoints();
+    } else {
+      setLoading(false);
+    }
+  }, [hasAccess]);
 
   const fetchContactPoints = async () => {
     try {
@@ -200,10 +209,36 @@ export default function ContactPointSettings() {
     } catch (error) {
       console.error("Error deleting contact point:", error);
       if (areToastsEnabled()) {
-        toast.error(error.response?.data?.message || "Failed to delete contact point");
+        toast.error("Failed to delete contact point");
       }
     }
   };
+
+  if (!hasAccess) {
+    return (
+      <>
+        <PageMeta
+          title="Contact Point Settings | Access Denied"
+          description="Access denied to contact point management"
+        />
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-800 dark:text-white/90">Contact Point Management</h1>
+            </div>
+          </div>
+          <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6">
+            <div className="text-center py-8">
+              <p className="text-gray-500">
+                You don't have permission to access contact point management. Only Owners, Admins, and Centre Heads/Managers can manage contact points.
+              </p>
+            </div>
+          </div>
+        </div>
+        <ToastContainer position="top-center" className="!z-[999999]" style={{ zIndex: 999999 }} />
+      </>
+    );
+  }
 
   return (
     <>
@@ -213,90 +248,76 @@ export default function ContactPointSettings() {
       />
       
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-title-md2 font-bold text-black dark:text-white">
-              Contact Point Management
-            </h2>
-            <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-              Manage contact points for lead tracking
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-white/90">Contact Point Management</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Manage contact points used across the CRM system
             </p>
           </div>
-          <Button
-            variant="primary"
-            onClick={handleAdd}
-            startIcon={<PlusIcon className="size-5" />}
-          >
+          <Button onClick={handleAdd} endIcon={<PlusIcon className="size-5" />}>
             Add Contact Point
           </Button>
         </div>
 
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6">
+        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6">
           {loading ? (
-            <div className="flex justify-center items-center h-32">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>
+            <div className="text-center py-8">
+              <p className="text-gray-500">Loading contact points...</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
+            <div className="max-w-full overflow-x-auto">
+              <Table className="min-w-[800px]">
                 <TableHeader className="border-gray-100 dark:border-gray-800 border-y">
                   <TableRow>
-                    <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
-                      Name
-                    </TableCell>
-                    <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
-                      Description
-                    </TableCell>
-                    <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
-                      Status
-                    </TableCell>
-                    <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
-                      Actions
-                    </TableCell>
+                    <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Contact Point Name</TableCell>
+                    <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Description</TableCell>
+                    <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Status</TableCell>
+                    <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Actions</TableCell>
                   </TableRow>
                 </TableHeader>
+
                 <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
-                  {contactPoints.length > 0 ? (
+                  {contactPoints.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="py-8 text-center text-gray-500">
+                        No contact points found. Create your first contact point!
+                      </TableCell>
+                    </TableRow>
+                  ) : (
                     contactPoints.map((contactPoint) => (
                       <TableRow key={contactPoint._id}>
-                        <TableCell className="py-3 font-medium text-gray-800 dark:text-white/90">
-                          {contactPoint.name}
+                        <TableCell className="py-3">
+                          <p className="font-medium text-gray-800 text-theme-sm dark:text-white/90">
+                            {contactPoint.name}
+                          </p>
                         </TableCell>
-                        <TableCell className="py-3 text-gray-500 dark:text-gray-400">
-                          {contactPoint.description || "No description"}
+                        <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
+                          {contactPoint.description || "N/A"}
                         </TableCell>
                         <TableCell className="py-3">
-                          <Badge
-                            size="sm"
-                            color={contactPoint.isActive ? "success" : "error"}
-                          >
+                          <Badge size="sm" color={contactPoint.isActive ? "success" : "error"}>
                             {contactPoint.isActive ? "Active" : "Inactive"}
                           </Badge>
                         </TableCell>
                         <TableCell className="py-3">
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => handleEdit(contactPoint)}
-                              className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-                            >
-                              <PencilIcon className="size-5" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(contactPoint)}
-                              className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-                            >
-                              <CloseIcon className="size-5" />
-                            </button>
-                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="mr-2"
+                            endIcon={<PencilIcon className="size-5" />}
+                            onClick={() => handleEdit(contactPoint)}
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-red-500"
+                            endIcon={<CloseIcon className="size-5" />}
+                            onClick={() => handleDelete(contactPoint)}
+                          />
                         </TableCell>
                       </TableRow>
                     ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={4} className="py-8 text-center text-gray-500 dark:text-gray-400">
-                        No contact points found. Add your first contact point to get started.
-                      </TableCell>
-                    </TableRow>
                   )}
                 </TableBody>
               </Table>
@@ -317,9 +338,9 @@ export default function ContactPointSettings() {
         
         <div className="space-y-4">
           <div>
-            <Label htmlFor="newContactPointName">Contact Point Name *</Label>
+            <Label htmlFor="contactPointName">Contact Point Name *</Label>
             <Input
-              id="newContactPointName"
+              id="contactPointName"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -328,9 +349,9 @@ export default function ContactPointSettings() {
           </div>
 
           <div>
-            <Label htmlFor="newContactPointDesc">Description</Label>
+            <Label htmlFor="contactPointDesc">Description</Label>
             <textarea
-              id="newContactPointDesc"
+              id="contactPointDesc"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Contact point description (optional)"
@@ -342,20 +363,20 @@ export default function ContactPointSettings() {
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
-              id="newContactPointActive"
+              id="isActiveContactPointAdd"
               checked={isActive}
               onChange={(e) => setIsActive(e.target.checked)}
               className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
             />
-            <Label htmlFor="newContactPointActive" className="mb-0">Mark as Active</Label>
+            <Label htmlFor="isActiveContactPointAdd" className="mb-0">Mark as Active</Label>
           </div>
           <p className="text-xs text-gray-500 dark:text-gray-400">Only active contact points will appear in dropdowns</p>
 
           <div className="flex justify-end gap-3 mt-6">
-            <Button type="button" variant="outline" onClick={closeAddModal}>
+            <Button variant="outline" onClick={closeAddModal}>
               Cancel
             </Button>
-            <Button type="button" onClick={createContactPoint}>
+            <Button onClick={createContactPoint}>
               Create Contact Point
             </Button>
           </div>
@@ -380,7 +401,7 @@ export default function ContactPointSettings() {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., Walk In"
+              placeholder="Contact point name"
             />
           </div>
 
@@ -399,19 +420,20 @@ export default function ContactPointSettings() {
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
-              id="editContactPointActive"
+              id="isActiveContactPointEdit"
               checked={isActive}
               onChange={(e) => setIsActive(e.target.checked)}
               className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
             />
-            <Label htmlFor="editContactPointActive" className="mb-0">Mark as Active</Label>
+            <Label htmlFor="isActiveContactPointEdit" className="mb-0">Active Contact Point</Label>
           </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Only active contact points will appear in dropdowns</p>
 
           <div className="flex justify-end gap-3 mt-6">
-            <Button type="button" variant="outline" onClick={closeEditModal}>
+            <Button variant="outline" onClick={closeEditModal}>
               Cancel
             </Button>
-            <Button type="button" onClick={updateContactPoint}>
+            <Button onClick={updateContactPoint}>
               Update Contact Point
             </Button>
           </div>

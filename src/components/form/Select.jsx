@@ -7,6 +7,7 @@ const Select = ({
   className = "",
   defaultValue = "",
   value, // Add value prop
+  disabled, // Add disabled prop
 }) => {
   // Use controlled mode if value prop is provided, otherwise use internal state
   const isControlled = value !== undefined;
@@ -14,7 +15,14 @@ const Select = ({
   
   const selectedValue = isControlled ? value : internalValue;
 
+  // Find the selected option to get its color
+  const selectedOption = options.find(option => option.value === selectedValue);
+  const selectedColor = selectedOption && selectedOption.color ? selectedOption.color : "";
+
   const handleChange = (e) => {
+    // Prevent changes when disabled
+    if (disabled) return;
+    
     const newValue = e.target.value;
     if (!isControlled) {
       setInternalValue(newValue);
@@ -24,13 +32,14 @@ const Select = ({
 
   return (
     <select
-      className={`h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 pr-11 text-sm shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 dark:focus:border-brand-800 ${
+      className={`h-11 w-full appearance-none rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 pr-11 text-sm shadow-theme-xs placeholder:text-gray-400 focus:border-brand-300 focus:outline-hidden focus:ring-3 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:placeholder:text-white/30 dark:focus:border-brand-800 ${
         selectedValue
-          ? "text-gray-800 dark:text-white/90"
+          ? `text-gray-800 dark:text-white/90 ${selectedColor}`
           : "text-gray-400 dark:text-gray-400"
-      } ${className}`}
+      } ${disabled ? "bg-gray-100 cursor-not-allowed opacity-40" : ""} ${className}`}
       value={selectedValue}
       onChange={handleChange}
+      disabled={disabled} // Pass disabled prop to select element
     >
       {/* Placeholder option */}
       <option
@@ -45,7 +54,7 @@ const Select = ({
         <option
           key={option.value}
           value={option.value}
-          className="text-gray-700 dark:bg-gray-900 dark:text-gray-400"
+          className={`text-gray-700 dark:bg-gray-900 dark:text-gray-400 ${option.color || ""}`}
         >
           {option.label}
         </option>

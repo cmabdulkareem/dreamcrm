@@ -66,8 +66,8 @@ export default function App() {
                     <Route path="/blank" element={<ProtectedRoutes><Blank /></ProtectedRoutes>} />
 
                     {/* Settings */}
-                    <Route path="/settings/campaigns" element={<ProtectedRoutes><CampaignSettings /></ProtectedRoutes>} />
-                    <Route path="/settings/contact-points" element={<ProtectedRoutes><ContactPointSettings /></ProtectedRoutes>} />
+                    <Route path="/settings/campaigns" element={<ProtectedRoutes requireAdmin={true}><CampaignSettings /></ProtectedRoutes>} />
+                    <Route path="/settings/contact-points" element={<ProtectedRoutes requireAdmin={true}><ContactPointSettings /></ProtectedRoutes>} />
                     <Route path="/settings/courses" element={<ProtectedRoutes requireAdmin={true}><CourseManagement /></ProtectedRoutes>} />
                     <Route path="/settings/users" element={<ProtectedRoutes requireAdmin={true}><UserManagement /></ProtectedRoutes>} />
 
