@@ -76,7 +76,11 @@ const userSchema = new mongoose.Schema(
     bloodGroup: { type: String, default: "" },
     country: { type: String, default: "" },
     state: { type: String, default: "" },
-    reportingHead: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null }
+    reportingHead: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    
+    // Password reset fields
+    resetPasswordToken: { type: String },
+    resetPasswordExpires: { type: Date }
   },
   {
     timestamps: true, // enable both createdAt and updatedAt

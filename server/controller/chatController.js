@@ -3,6 +3,7 @@ import Message from '../model/messageModel.js';
 import User from '../model/userModel.js';
 import mongoose from 'mongoose';
 import { emitMessageToUsers, emitChatUpdateToUsers } from '../realtime/socket.js';
+import { isAdmin } from '../utils/roleHelpers.js';
 
 // Get or create a chat between two users
 export const getOrCreateChat = async (req, res) => {
@@ -198,6 +199,11 @@ export const createGroupChat = async (req, res) => {
     const { name, participantIds } = req.body;
     const currentUserId = req.user.id;
 
+    // Check if user has admin or owner privileges
+    if (!isAdmin(req.user)) {
+      return res.status(403).json({ message: "Access denied. Only admins or owners can create group chats." });
+    }
+
     if (!name || !name.trim()) {
       return res.status(400).json({ message: "Group name is required" });
     }
@@ -376,10 +382,9 @@ export const deleteGroupChat = async (req, res) => {
       return res.status(400).json({ message: "Can only delete group chats" });
     }
 
-    // Any participant can delete the group
-    const participantIds = chat.participants.map(p => p.toString());
-    if (!participantIds.includes(currentUserId.toString())) {
-      return res.status(403).json({ message: "Only group participants can delete the group" });
+    // Check if user has admin or owner privileges
+    if (!isAdmin(req.user)) {
+      return res.status(403).json({ message: "Access denied. Only admins or owners can delete group chats." });
     }
 
     // Delete all messages in the group

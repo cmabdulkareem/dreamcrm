@@ -6,6 +6,7 @@ import DraggableParticipant from './DraggableParticipant';
 import GroupParticipants from './GroupParticipants';
 import Badge from '../ui/badge/Badge'; // Import Badge component
 import { ChatIcon } from '../../icons'; // Import ChatIcon
+import { isAdmin } from '../../utils/roleHelpers'; // Add this import
 
 const ChatWidget = () => {
   const { 
@@ -101,6 +102,12 @@ const ChatWidget = () => {
   };
 
   const handleCreateGroupChat = async () => {
+    // Check if user has admin privileges
+    if (!isAdmin(user)) {
+      alert('Only admins or owners can create group chats.');
+      return;
+    }
+    
     // For group chats, we need to select participants first
     // Show contacts list to select participants
     setShowContacts(true);
@@ -305,7 +312,7 @@ const ChatWidget = () => {
                           </button>
                         </>
                       )}
-                      {!isSelectingParticipants && (
+                      {!isSelectingParticipants && isAdmin(user) && ( // Only show for admins
                         <button
                           onClick={handleCreateGroupChat}
                           className="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
@@ -430,6 +437,7 @@ const ChatWidget = () => {
                 participants={activeChat.participants}
                 onAddParticipant={handleAddParticipant}
                 onRemoveParticipant={handleRemoveParticipant}
+                user={user} // Pass user to component
               />
             ) : activeChat ? (
               // Active Chat

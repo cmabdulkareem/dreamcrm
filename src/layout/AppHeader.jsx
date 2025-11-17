@@ -1,13 +1,12 @@
-import { useEffect, useRef, useState, useContext } from "react";
+import { useState, useEffect, useRef, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useSidebar } from "../context/SidebarContext";
 import { useChat } from "../context/ChatContext";
-import { useNotifications } from "../context/NotificationContext"; // Import useNotifications
-import { ThemeToggleButton } from "../components/common/ThemeToggleButton";
+import { useNotifications } from "../context/NotificationContext";
+import { useSidebar } from "../context/SidebarContext";
+import NotificationDropdown from "../components/header/NotificationDropdown";
 import UserDropdown from "../components/header/UserDropdown";
-import NotificationDropdown from "../components/header/NotificationDropdown"; // Import NotificationDropdown
-import axios from "axios";
-const API = import.meta.env.VITE_API_URL;
+import AnimatedAnnouncement from "../components/header/AnimatedAnnouncement";
+import { ThemeToggleButton } from "../components/common/ThemeToggleButton";
 
 const AppHeader = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
@@ -18,7 +17,7 @@ const AppHeader = () => {
   const [isSearching, setIsSearching] = useState(false);
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
   const { hasUnreadMessages, toggleChat } = useChat();
-  const { hasUnread } = useNotifications(); // Use notifications context
+  const { hasUnread } = useNotifications();
   const inputRef = useRef(null);
   const searchRef = useRef(null);
   const navigate = useNavigate();
@@ -103,7 +102,7 @@ const AppHeader = () => {
 
   const handleSearch = async (query) => {
     setSearchQuery(query);
-    
+
     if (!query.trim()) {
       setSearchResults([]);
       setShowResults(false);
@@ -117,7 +116,7 @@ const AppHeader = () => {
       const results = [];
 
       // Search navigation items
-      const navResults = navigationItems.filter(item => 
+      const navResults = navigationItems.filter(item =>
         item.title.toLowerCase().includes(query.toLowerCase()) ||
         item.category.toLowerCase().includes(query.toLowerCase())
       ).map(item => ({ ...item, type: "navigation" }));
@@ -128,9 +127,9 @@ const AppHeader = () => {
       try {
         const response = await axios.get(`${API}/customers/all`, { withCredentials: true });
         const customers = response.data.customers || [];
-        
+
         const customerResults = customers
-          .filter(customer => 
+          .filter(customer =>
             customer.fullName?.toLowerCase().includes(query.toLowerCase()) ||
             customer.phone1?.includes(query) ||
             customer.phone2?.includes(query) ||
@@ -244,6 +243,7 @@ const AppHeader = () => {
             )}
           </button>
 
+
           <Link to="/" className="lg:hidden">
             <img
               className="dark:hidden"
@@ -356,15 +356,18 @@ const AppHeader = () => {
           </div>
         </div>
 
+
+
         <div
-          className={`${
-            isApplicationMenuOpen ? "flex" : "hidden"
-          } items-center justify-between w-full gap-4 px-5 py-4 lg:flex shadow-theme-md lg:justify-end lg:px-0 lg:shadow-none`}
+          className={`${isApplicationMenuOpen ? "flex" : "hidden"
+            } items-center justify-between w-full gap-4 px-5 py-4 lg:flex shadow-theme-md lg:justify-end lg:px-0 lg:shadow-none`}
         >
+                  <AnimatedAnnouncement />
           <div className="flex items-center gap-2 2xsm:gap-3">
             {/* Notification Dropdown */}
-            <NotificationDropdown />
             
+            <NotificationDropdown />
+
             {/* Chat Notification Icon */}
             <button
               onClick={toggleChat}
@@ -380,7 +383,7 @@ const AppHeader = () => {
                 </span>
               )}
             </button>
-            
+
             {/* <!-- Dark Mode Toggler --> */}
             <ThemeToggleButton />
           </div>

@@ -6,6 +6,7 @@ import {validateEmail} from "../validators/validateEmail.js";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import { isAdmin } from "../utils/roleHelpers.js";
+import crypto from "crypto";
 dotenv.config();
 
 // Signup user
@@ -28,9 +29,78 @@ export const signUpUser = async (req, res) => {
 
     await newUser.save();
 
+    // Send welcome email to the new user
+    try {
+      const { sendWelcomeEmail } = await import('../utils/emailService.js');
+      await sendWelcomeEmail(newUser);
+    } catch (emailError) {
+      console.error("Failed to send welcome email:", emailError);
+      // Don't fail the signup if email sending fails
+    }
+
+    // Send notification to admins about new user registration
+    try {
+      const { sendNewUserNotification } = await import('../utils/emailService.js');
+      // Get admin emails
+      const admins = await userModel.find({ isAdmin: true }, { email: 1 });
+      const adminEmails = admins.map(admin => admin.email);
+      
+      if (adminEmails.length > 0) {
+        await sendNewUserNotification(newUser, adminEmails);
+      }
+    } catch (notificationError) {
+      console.error("Failed to send new user notification:", notificationError);
+      // Don't fail the signup if notification fails
+    }
+
     return res.status(201).json({ message: "Account created successfully." });
   } catch (error) {
     console.error("Signup error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Forgot password
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Check if email is provided
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    // Find user by email
+    const user = await userModel.findOne({ email });
+    if (!user) {
+      // For security reasons, we don't reveal if the email exists
+      return res.status(200).json({ message: "If your email is registered with us, you will receive a password reset link shortly" });
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    
+    // Hash the token and set expiration
+    const resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    const resetPasswordExpires = Date.now() + 60 * 60 * 1000; // 1 hour
+
+    // Save token and expiration to user
+    user.resetPasswordToken = resetPasswordToken;
+    user.resetPasswordExpires = resetPasswordExpires;
+    await user.save();
+
+    // Send email with reset token
+    try {
+      const { sendPasswordResetEmail } = await import('../utils/emailService.js');
+      await sendPasswordResetEmail(user, resetToken);
+    } catch (emailError) {
+      console.error("Failed to send password reset email:", emailError);
+      // Don't fail the request if email sending fails
+    }
+
+    return res.status(200).json({ message: "If your email is registered with us, you will receive a password reset link shortly" });
+  } catch (error) {
+    console.error("Forgot password error:", error);
     return res.status(500).json({ message: "Server error" });
   }
 };
@@ -113,6 +183,54 @@ export const signInUser = async (req, res) => {
   } catch (error) {
     console.error("Login error:", error);
     return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Reset password
+export const resetPassword = async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    // Check if token and new password are provided
+    if (!token || !newPassword) {
+      return res.status(400).json({ message: "Token and new password are required" });
+    }
+
+    // Hash the token
+    const resetPasswordToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    // Find user with this token and check if it's not expired
+    const user = await userModel.findOne({
+      resetPasswordToken,
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: "Password reset token is invalid or has expired" });
+    }
+
+    // Validate password strength
+    if (newPassword.length < 8 || 
+        !/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_\-+=\[\]{};':"\\|,.<>/?]).{8,}/.test(newPassword)) {
+      return res.status(400).json({ 
+        message: "Password must be at least 8 characters long, and include uppercase, lowercase, number, and special character." 
+      });
+    }
+
+    // Hash and set new password
+    const hashedPassword = await hashPassword(newPassword);
+    user.password = hashedPassword;
+    
+    // Clear reset token fields
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    
+    await user.save();
+
+    return res.status(200).json({ message: "Password reset successfully" });
+  } catch (error) {
+    console.error("Reset password error:", error);
+    return res.status(500).json({ message: "Server error" });
   }
 };
 

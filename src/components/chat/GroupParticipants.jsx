@@ -2,9 +2,9 @@ import { useDrop } from 'react-dnd';
 import { useChat } from '../../context/ChatContext';
 import { AuthContext } from '../../context/AuthContext';
 import { useContext } from 'react';
+import { isAdmin } from '../../utils/roleHelpers';
 
-const GroupParticipants = ({ chat, participants, onAddParticipant, onRemoveParticipant }) => {
-  const { user } = useContext(AuthContext);
+const GroupParticipants = ({ chat, participants, onAddParticipant, onRemoveParticipant, user }) => {
   const { contacts, deleteGroupChat } = useChat();
   
   // Add safety check for chat
@@ -40,7 +40,7 @@ const GroupParticipants = ({ chat, participants, onAddParticipant, onRemoveParti
         <h4 className="px-2 py-1 text-sm font-medium text-gray-500 dark:text-gray-400">
           Group Participants
         </h4>
-        {user && chat.participants && chat.participants.some(p => (p._id || p.id) === (user._id || user.id)) && (
+        {user && isAdmin(user) && chat.participants && chat.participants.some(p => (p._id || p.id) === (user._id || user.id)) && (
           <button
             onClick={handleDeleteGroup}
             className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-sm"

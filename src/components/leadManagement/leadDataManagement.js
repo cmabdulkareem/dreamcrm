@@ -13,8 +13,6 @@ export const fetchCustomers = async (setData, setLoading) => {
       { withCredentials: true }
     );
     
-    console.log("Received customers data:", response.data.customers); // Add logging
-    
     if (typeof setData === 'function') {
       setData(response.data.customers);
     }

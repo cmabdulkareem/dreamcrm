@@ -93,15 +93,19 @@ const getNameCellBackgroundColor = (leadPotential) => {
 const getLeadPotentialBackgroundColor = (leadPotential) => {
   switch (leadPotential) {
     case "strongProspect":
-      return "bg-green-200 dark:bg-green-800"; // More vibrant green background for strong prospect
+      return "bg-green-100 dark:bg-green-800"; 
+
     case "potentialProspect":
-      return "bg-blue-200 dark:bg-blue-800"; // More vibrant blue background for potential prospect
+      return "bg-blue-100 dark:bg-blue-800"; 
+
     case "weakProspect":
-      return "bg-yellow-200 dark:bg-yellow-800"; // More vibrant yellow background for weak prospect
+      return "bg-yellow-200 dark:bg-yellow-800"; 
+
     case "notAProspect":
-      return "bg-red-200 dark:bg-red-800"; // More vibrant red background for not a prospect
+      return "bg-gray-300 dark:bg-gray-700"; // Neutral grey for NOT a prospect
+
     default:
-      return ""; // No background color for undefined or other values
+      return "";
   }
 };
 

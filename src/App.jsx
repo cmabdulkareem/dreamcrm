@@ -1,75 +1,77 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router";
+import { lazy, Suspense } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import ProtectedRoutes from "./routes/ProtectedRoutes";
+import AuthProvider from "./context/AuthContext";
+import { NotificationProvider } from "./context/NotificationContext";
+import { ChatProvider } from "./context/ChatContext";
+import { CalendarProvider } from "./context/calendarContext";
+import { DndProvider } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
+
+// Import pages
 import SignIn from "./pages/AuthPages/SignIn";
 import SignUp from "./pages/AuthPages/SignUp";
 import NotFound from "./pages/OtherPage/NotFound";
-import UserProfiles from "./pages/UserProfiles";
-import Videos from "./pages/UiElements/Videos";
-import Images from "./pages/UiElements/Images";
-import Alerts from "./pages/UiElements/Alerts";
-import Badges from "./pages/UiElements/Badges";
-import Avatars from "./pages/UiElements/Avatars";
-import Buttons from "./pages/UiElements/Buttons";
-import LineChart from "./pages/Charts/LineChart";
-import BarChart from "./pages/Charts/BarChart";
-import Calendar from "./pages/Calendar";
-import BasicTables from "./pages/Tables/BasicTables";
-import NewLead from "./pages/LeadManagement/NewLead";
-import ManageLeads from "./pages/LeadManagement/ManageLeads";
-import LeadBlank from "./pages/LeadManagement/LeadBlank";
-import NewStudent from "./pages/StudentManagement/NewStudent";
-import ManageStudents from "./pages/StudentManagement/ManageStudents";
-import Blank from "./pages/Blank";
-import AppLayout from "./layout/AppLayout";
-import { ScrollToTop } from "./components/common/ScrollToTop";
-import LeadsOverview from "./pages/Dashboard/LeadsOverview";
-import StudentsOverview from "./pages/Dashboard/StudentsOverview";
-import RevenueOverview from "./pages/Dashboard/RevenewOverview";
 import CampaignSettings from "./pages/Settings/CampaignSettings";
 import ContactPointSettings from "./pages/Settings/ContactPointSettings";
 import CourseManagement from "./pages/Settings/CourseManagement";
 import UserManagement from "./pages/Settings/UserManagement";
-import EmailInbox from "./pages/Email/EmailInbox";
-import CreateEvent from "./pages/EventManagement/CreateEvent";
-import ManageEvents from "./pages/EventManagement/ManageEvents";
-import EventRegistrations from "./pages/EventManagement/EventRegistrations";
-import EventRegistration from "./pages/EventRegistration";
-import LeaveManagement from "./pages/LeaveManagement/index";
-import LeaveRequestPortal from "./pages/LeaveRequestPortal";
-import LeaveStatusCheck from "./pages/LeaveStatusCheck";
-import ProtectedRoutes from "./routes/ProtectedRoutes";
-import { CalendarProvider } from "./context/calendarContext";
-import { NotificationProvider } from "./context/NotificationContext";
-import { ChatProvider } from "./context/ChatContext";
-import DnDProvider from "./context/DnDProvider";
+import AnnouncementManagement from "./pages/Settings/AnnouncementManagement";
+
+// Lazy load other components
+const AppLayout = lazy(() => import("./layout/AppLayout"));
+const Dashboard = lazy(() => import("./pages/Dashboard/LeadsOverview"));
+const EcommerceDashboard = lazy(() => import("./pages/Dashboard/RevenewOverview"));
+const Calendar = lazy(() => import("./pages/Calendar"));
+const EmailInbox = lazy(() => import("./pages/Email/EmailInbox"));
+const Blank = lazy(() => import("./pages/Blank"));
+const ManageEvents = lazy(() => import("./pages/EventManagement/ManageEvents"));
+const CreateEvent = lazy(() => import("./pages/EventManagement/CreateEvent"));
+const EventRegistrations = lazy(() => import("./pages/EventManagement/EventRegistrations"));
+const LeaveManagement = lazy(() => import("./pages/LeaveManagement"));
+const NewLead = lazy(() => import("./pages/LeadManagement/NewLead"));
+const ManageLeads = lazy(() => import("./pages/LeadManagement/ManageLeads"));
+const LeadBlank = lazy(() => import("./pages/LeadManagement/LeadBlank"));
+const NewStudent = lazy(() => import("./pages/StudentManagement/NewStudent"));
+const ManageStudents = lazy(() => import("./pages/StudentManagement/ManageStudents"));
+const BasicTables = lazy(() => import("./pages/Tables/BasicTables"));
+const Alerts = lazy(() => import("./pages/UiElements/Alerts"));
+const Avatars = lazy(() => import("./pages/UiElements/Avatars"));
+const Badges = lazy(() => import("./pages/UiElements/Badges"));
+const Buttons = lazy(() => import("./pages/UiElements/Buttons"));
+const Images = lazy(() => import("./pages/UiElements/Images"));
+const Videos = lazy(() => import("./pages/UiElements/Videos"));
+const LineChart = lazy(() => import("./pages/Charts/LineChart"));
+const BarChart = lazy(() => import("./pages/Charts/BarChart"));
+const EventRegistration = lazy(() => import("./pages/EventRegistration"));
+const LeaveRequestPortal = lazy(() => import("./pages/LeaveRequestPortal"));
+const LeaveStatusCheck = lazy(() => import("./pages/LeaveStatusCheck"));
 import ChatWidget from "./components/chat/ChatWidget";
 
-export default function App() {
+function App() {
   return (
     <>
       <NotificationProvider>
         <CalendarProvider>
           <ChatProvider>
-            <DnDProvider>
+            <DndProvider backend={HTML5Backend}>
               <Router>
-                <ScrollToTop />
                 <Routes>
-                  {/* Dashboard Layout */}
-                  <Route element={<AppLayout />}>
-                    <Route index path="/" element={<ProtectedRoutes><LeadsOverview /></ProtectedRoutes>} />
-                    <Route path="/students-overview" element={<ProtectedRoutes><StudentsOverview /></ProtectedRoutes>} />
-                    <Route path="/revenue-overview" element={<ProtectedRoutes><RevenueOverview /></ProtectedRoutes>} />
-
-                    {/* Others Page */}
-                    <Route path="/profile" element={<ProtectedRoutes><UserProfiles /></ProtectedRoutes>} />
-                    <Route path="/calendar" element={<ProtectedRoutes><Calendar /></ProtectedRoutes>} />
-                    <Route path="/email" element={<ProtectedRoutes><EmailInbox /></ProtectedRoutes>} />
-                    <Route path="/blank" element={<ProtectedRoutes><Blank /></ProtectedRoutes>} />
+                  {/* Authenticated Routes */}
+                  <Route element={<ProtectedRoutes><AppLayout /></ProtectedRoutes>}>
+                    <Route index element={<Suspense fallback="Loading..."><Dashboard /></Suspense>} />
+                    <Route path="/dashboard" element={<Suspense fallback="Loading..."><Dashboard /></Suspense>} />
+                    <Route path="/ecommerce-dashboard" element={<Suspense fallback="Loading..."><EcommerceDashboard /></Suspense>} />
+                    <Route path="/calendar" element={<Suspense fallback="Loading..."><Calendar /></Suspense>} />
+                    <Route path="/email" element={<Suspense fallback="Loading..."><EmailInbox /></Suspense>} />
+                    <Route path="/blank" element={<Suspense fallback="Loading..."><Blank /></Suspense>} />
 
                     {/* Settings */}
                     <Route path="/settings/campaigns" element={<ProtectedRoutes requireAdmin={true}><CampaignSettings /></ProtectedRoutes>} />
                     <Route path="/settings/contact-points" element={<ProtectedRoutes requireAdmin={true}><ContactPointSettings /></ProtectedRoutes>} />
                     <Route path="/settings/courses" element={<ProtectedRoutes requireAdmin={true}><CourseManagement /></ProtectedRoutes>} />
                     <Route path="/settings/users" element={<ProtectedRoutes requireAdmin={true}><UserManagement /></ProtectedRoutes>} />
+                    <Route path="/settings/announcements" element={<ProtectedRoutes requireAdmin={false}><AnnouncementManagement /></ProtectedRoutes>} />
 
                     {/* Event Management */}
                     <Route path="/events" element={<ProtectedRoutes requireAdmin={true}><ManageEvents /></ProtectedRoutes>} />
@@ -121,10 +123,12 @@ export default function App() {
                 </Routes>
               </Router>
               <ChatWidget />
-            </DnDProvider>
+            </DndProvider>
           </ChatProvider>
         </CalendarProvider>
       </NotificationProvider>
     </>
   );
 }
+
+export default App;

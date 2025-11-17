@@ -12,7 +12,9 @@ import {
     markUserOfflineStatus,
     handleOfflineBeacon,
     getOnlineUsers,
-    deleteUser
+    deleteUser,
+    forgotPassword,
+    resetPassword
 } from '../controller/userController.js'
 import verifyToken from "../middleware/verifyToken.js";
 
@@ -20,6 +22,8 @@ const router = express.Router();
 
 router.post('/signup', signUpUser)
 router.post('/signin', signInUser)
+router.post('/forgot-password', forgotPassword)
+router.post('/reset-password', resetPassword)
 router.get('/allusers', verifyToken, getAllUsers)
 router.get('/dropdown', verifyToken, getUsersForDropdown)
 router.put('/update/:id', verifyToken, updateUser)

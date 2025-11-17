@@ -120,6 +120,7 @@ const settingsItems = [
       { name: "Contact Points", path: "/settings/contact-points", pro: false },
       { name: "Course Management", path: "/settings/courses", pro: false },
       { name: "User Management", path: "/settings/users", pro: false },
+            { name: "Announcements", path: "/settings/announcements", pro: false }
     ],
   }
 ];

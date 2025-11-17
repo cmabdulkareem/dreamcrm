@@ -23,9 +23,6 @@ router.post('/accounts/add', verifyToken, async (req, res) => {
   try {
     const { name, email, password, protocol, imapHost, imapPort, smtpHost, smtpPort } = req.body;
 
-    console.log('req.user:', req.user); // Debug log
-    console.log('userId:', req.user?.id); // Debug log
-
     if (!name || !email || !password || !imapHost || !smtpHost) {
       return res.status(400).json({ message: 'All fields are required' });
     }
