@@ -31,8 +31,8 @@ export const signUpUser = async (req, res) => {
 
     // Send welcome email to the new user
     try {
-      const { sendWelcomeEmail } = await import('../utils/emailService.js');
-      await sendWelcomeEmail(newUser);
+      const emailService = await import('../utils/emailService.js');
+      await emailService.default.sendWelcomeEmail(newUser);
     } catch (emailError) {
       console.error("Failed to send welcome email:", emailError);
       // Don't fail the signup if email sending fails
@@ -40,13 +40,13 @@ export const signUpUser = async (req, res) => {
 
     // Send notification to admins about new user registration
     try {
-      const { sendNewUserNotification } = await import('../utils/emailService.js');
+      const emailService2 = await import('../utils/emailService.js');
       // Get admin emails
       const admins = await userModel.find({ isAdmin: true }, { email: 1 });
       const adminEmails = admins.map(admin => admin.email);
       
       if (adminEmails.length > 0) {
-        await sendNewUserNotification(newUser, adminEmails);
+        await emailService2.default.sendNewUserNotification(newUser, adminEmails);
       }
     } catch (notificationError) {
       console.error("Failed to send new user notification:", notificationError);
@@ -91,8 +91,8 @@ export const forgotPassword = async (req, res) => {
 
     // Send email with reset token
     try {
-      const { sendPasswordResetEmail } = await import('../utils/emailService.js');
-      await sendPasswordResetEmail(user, resetToken);
+      const emailService = await import('../utils/emailService.js');
+      await emailService.default.sendPasswordResetEmail(user, resetToken);
     } catch (emailError) {
       console.error("Failed to send password reset email:", emailError);
       // Don't fail the request if email sending fails
@@ -109,14 +109,37 @@ export const forgotPassword = async (req, res) => {
 export const getUsersForDropdown = async (req, res) => {
   try {
     // Fetch only necessary user information for dropdown
-    const users = await userModel.find({}, { _id: 1, fullName: 1, email: 1, avatar: 1 });
+    const users = await userModel.find({}, { 
+      _id: 1, 
+      fullName: 1, 
+      email: 1, 
+      avatar: 1,
+      gender: 1,
+      bloodGroup: 1,
+      country: 1,
+      state: 1,
+      reportingHead: 1,
+      instagram: 1,
+      location: 1,
+      dob: 1,
+      designation: 1
+    });
     
     // Format avatar URLs if they exist
     const formattedUsers = users.map(user => ({
       _id: user._id,
       fullName: user.fullName,
       email: user.email,
-      avatar: user.avatar ? `${req.protocol}://${req.get('host')}${user.avatar}` : null
+      avatar: user.avatar ? `${req.protocol}://${req.get('host')}${user.avatar}` : null,
+      gender: user.gender,
+      bloodGroup: user.bloodGroup,
+      country: user.country,
+      state: user.state,
+      reportingHead: user.reportingHead,
+      instagram: user.instagram,
+      location: user.location,
+      dob: user.dob,
+      designation: user.designation
     }));
     
     return res.status(200).json({ users: formattedUsers });
@@ -302,6 +325,11 @@ export const updateUser = async (req, res) => {
       return res.status(400).json({ message: "User ID is required." });
     }
     
+    // Validate that ID is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid user ID format." });
+    }
+    
     // Prevent password updates through this endpoint for security reasons
     if (req.body.password !== undefined) {
       return res.status(400).json({ message: "Password cannot be updated through this endpoint. Please use the change password functionality." });
@@ -341,7 +369,18 @@ export const updateUser = async (req, res) => {
     const isOwnProfile = req.user.id === id;
 
     // Regular users can update their own profile information
-    console.log('Regular user updating profile:', { fullName, email, phone, gender, dob, bloodGroup, country, state, location, employeeCode, department, designation, employmentType, joiningDate, company, instagram, reportingHead });
+    // Only log the fields that are actually being updated
+    const updateFields = {};
+    if (instagram !== undefined) updateFields.instagram = instagram;
+    if (location !== undefined) updateFields.location = location;
+    if (bloodGroup !== undefined) updateFields.bloodGroup = bloodGroup;
+    if (country !== undefined) updateFields.country = country;
+    if (state !== undefined) updateFields.state = state;
+    if (designation !== undefined) updateFields.designation = designation;
+    if (gender !== undefined) updateFields.gender = gender;
+    if (dob !== undefined) updateFields.dob = dob;
+    
+    console.log('Regular user updating profile:', updateFields);
     if (isOwnProfile && !isAdminUser) {
       // Update personal information fields
       if (fullName !== undefined) user.fullName = fullName;
@@ -352,7 +391,18 @@ export const updateUser = async (req, res) => {
         if (dob === null || dob === "") {
           user.dob = null;
         } else {
-          user.dob = new Date(dob);
+          // Validate date format before parsing
+          if (!/\d{4}-\d{2}-\d{2}/.test(dob) && !/\d{4}-\d{2}-\d{2}T/.test(dob)) {
+            console.warn('Invalid date format for dob:', dob);
+            // Don't fail the request, just don't update the date
+          } else {
+            try {
+              user.dob = new Date(dob);
+            } catch (dateError) {
+              console.error('Error parsing date of birth:', dateError);
+              // Don't fail the request, just don't update the date
+            }
+          }
         }
       }
       if (bloodGroup !== undefined) user.bloodGroup = bloodGroup;
@@ -372,7 +422,18 @@ export const updateUser = async (req, res) => {
         if (joiningDate === null || joiningDate === "") {
           user.joiningDate = null;
         } else {
-          user.joiningDate = new Date(joiningDate);
+          // Validate date format before parsing
+          if (!/\d{4}-\d{2}-\d{2}/.test(joiningDate) && !/\d{4}-\d{2}-\d{2}T/.test(joiningDate)) {
+            console.warn('Invalid date format for joiningDate:', joiningDate);
+            // Don't fail the request, just don't update the date
+          } else {
+            try {
+              user.joiningDate = new Date(joiningDate);
+            } catch (dateError) {
+              console.error('Error parsing joining date:', dateError);
+              // Don't fail the request, just don't update the date
+            }
+          }
         }
       }
       if (company !== undefined) user.company = company;
@@ -386,7 +447,13 @@ export const updateUser = async (req, res) => {
         if (reportingHead === null || reportingHead === "") {
           user.reportingHead = null;
         } else {
-          user.reportingHead = reportingHead;
+          // Validate that reportingHead is a valid ObjectId
+          if (mongoose.Types.ObjectId.isValid(reportingHead)) {
+            user.reportingHead = reportingHead;
+          } else {
+            console.warn('Invalid reportingHead ID provided:', reportingHead);
+            // Don't fail the request, just don't update the reportingHead
+          }
         }
       }
     } else if (isAdminUser) {
@@ -422,11 +489,22 @@ export const updateUser = async (req, res) => {
         if (dob === null || dob === "") {
           user.dob = null;
         } else {
-          const dobDate = new Date(dob);
-          if (isNaN(dobDate)) {
-            return res.status(400).json({ message: "Invalid date of birth." });
+          // Validate date format before parsing
+          if (!/\d{4}-\d{2}-\d{2}/.test(dob) && !/\d{4}-\d{2}-\d{2}T/.test(dob)) {
+            console.warn('Invalid date format for dob:', dob);
+            return res.status(400).json({ message: "Invalid date of birth format. Please use YYYY-MM-DD format." });
+          } else {
+            try {
+              const dobDate = new Date(dob);
+              if (isNaN(dobDate)) {
+                return res.status(400).json({ message: "Invalid date of birth." });
+              }
+              user.dob = dobDate;
+            } catch (dateError) {
+              console.error('Error parsing date of birth:', dateError);
+              return res.status(400).json({ message: "Invalid date of birth format." });
+            }
           }
-          user.dob = dobDate;
         }
       }
       
@@ -434,11 +512,22 @@ export const updateUser = async (req, res) => {
         if (joiningDate === null || joiningDate === "") {
           user.joiningDate = null;
         } else {
-          const joiningDateObj = new Date(joiningDate);
-          if (isNaN(joiningDateObj)) {
-            return res.status(400).json({ message: "Invalid joining date." });
+          // Validate date format before parsing
+          if (!/\d{4}-\d{2}-\d{2}/.test(joiningDate) && !/\d{4}-\d{2}-\d{2}T/.test(joiningDate)) {
+            console.warn('Invalid date format for joiningDate:', joiningDate);
+            return res.status(400).json({ message: "Invalid joining date format. Please use YYYY-MM-DD format." });
+          } else {
+            try {
+              const joiningDateObj = new Date(joiningDate);
+              if (isNaN(joiningDateObj)) {
+                return res.status(400).json({ message: "Invalid joining date." });
+              }
+              user.joiningDate = joiningDateObj;
+            } catch (dateError) {
+              console.error('Error parsing joining date:', dateError);
+              return res.status(400).json({ message: "Invalid joining date format." });
+            }
           }
-          user.joiningDate = joiningDateObj;
         }
       }
       
@@ -474,7 +563,13 @@ export const updateUser = async (req, res) => {
         if (reportingHead === null || reportingHead === "") {
           user.reportingHead = null;
         } else {
-          user.reportingHead = reportingHead;
+          // Validate that reportingHead is a valid ObjectId
+          if (mongoose.Types.ObjectId.isValid(reportingHead)) {
+            user.reportingHead = reportingHead;
+          } else {
+            console.warn('Invalid reportingHead ID provided:', reportingHead);
+            // Don't fail the request, just don't update the reportingHead
+          }
         }
       }
     } else {
@@ -487,7 +582,12 @@ export const updateUser = async (req, res) => {
     console.log('User saved. Designation is now:', user.designation);
 
     // Populate reportingHead before returning
-    await user.populate('reportingHead', 'fullName email');
+    try {
+      await user.populate('reportingHead', 'fullName email');
+    } catch (populateError) {
+      console.warn('Failed to populate reportingHead:', populateError);
+      // Don't fail the request if populate fails
+    }
     
     // Return updated user data
     const updatedUser = {
@@ -524,7 +624,14 @@ export const updateUser = async (req, res) => {
 
   } catch (error) {
     console.error("Update user error:", error);
-    return res.status(500).json({ message: "Server error. Please try again." });
+    // Provide more specific error message based on error type
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ message: "Validation error: " + error.message });
+    } else if (error.name === 'CastError') {
+      return res.status(400).json({ message: "Invalid data format: " + error.message });
+    } else {
+      return res.status(500).json({ message: "Server error. Please try again." });
+    }
   }
 };
 

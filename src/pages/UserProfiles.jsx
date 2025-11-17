@@ -1,6 +1,5 @@
 import { useContext, useState, useEffect } from "react";
 import PageBreadcrumb from "../components/common/PageBreadCrumb";
-import UserMetaCard from "../components/UserProfile/UserMetaCard";
 import UserInfoCard from "../components/UserProfile/UserInfoCard";
 import PageMeta from "../components/common/PageMeta";
 import { AuthContext } from "../context/AuthContext";
@@ -9,12 +8,12 @@ export default function UserProfiles() {
   const { user } = useContext(AuthContext);
   const [refreshKey, setRefreshKey] = useState(0);
   
-  // Listen for avatar updates and trigger a refresh
+  // Listen for user data updates and trigger a refresh
   useEffect(() => {
-    if (user?.avatar) {
+    if (user) {
       setRefreshKey(prev => prev + 1);
     }
-  }, [user?.avatar]);
+  }, [user]);
   
   return (
     <>
@@ -28,9 +27,7 @@ export default function UserProfiles() {
           Profile
         </h3>
         <div className="space-y-6">
-          <UserMetaCard key={`${user?._id}-${refreshKey}`} user={user} />
-          <UserInfoCard user={user} />
-          {/* <UserAddressCard /> */}
+          <UserInfoCard key={`${user?._id}-${refreshKey}`} user={user} />
         </div>
       </div>
     </>

@@ -11,12 +11,15 @@ import { HTML5Backend } from "react-dnd-html5-backend";
 // Import pages
 import SignIn from "./pages/AuthPages/SignIn";
 import SignUp from "./pages/AuthPages/SignUp";
+import ForgotPassword from "./pages/AuthPages/ForgotPassword";
+import ResetPassword from "./pages/AuthPages/ResetPassword";
 import NotFound from "./pages/OtherPage/NotFound";
 import CampaignSettings from "./pages/Settings/CampaignSettings";
 import ContactPointSettings from "./pages/Settings/ContactPointSettings";
 import CourseManagement from "./pages/Settings/CourseManagement";
 import UserManagement from "./pages/Settings/UserManagement";
 import AnnouncementManagement from "./pages/Settings/AnnouncementManagement";
+import UserProfiles from "./pages/UserProfiles";
 
 // Lazy load other components
 const AppLayout = lazy(() => import("./layout/AppLayout"));
@@ -73,6 +76,9 @@ function App() {
                     <Route path="/settings/users" element={<ProtectedRoutes requireAdmin={true}><UserManagement /></ProtectedRoutes>} />
                     <Route path="/settings/announcements" element={<ProtectedRoutes requireAdmin={false}><AnnouncementManagement /></ProtectedRoutes>} />
 
+                    {/* Profile */}
+                    <Route path="/profile" element={<ProtectedRoutes><UserProfiles /></ProtectedRoutes>} />
+
                     {/* Event Management */}
                     <Route path="/events" element={<ProtectedRoutes requireAdmin={true}><ManageEvents /></ProtectedRoutes>} />
                     <Route path="/events/create" element={<ProtectedRoutes requireAdmin={true}><CreateEvent /></ProtectedRoutes>} />
@@ -112,6 +118,9 @@ function App() {
                   {/* Auth Layout */}
                   <Route path="/signin" element={<SignIn />} />
                   <Route path="/signup" element={<SignUp />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/reset-password/:token" element={<ResetPassword />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
 
                   {/* Fallback Route */}
                   <Route path="*" element={<NotFound />} />

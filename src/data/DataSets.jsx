@@ -102,11 +102,11 @@ const stateOptions = [
     { value: "other", label: "Other" },
   ];
 
-  const accountGender = [
-    { value: "male", label: "Male" },
-    { value: "female", label: "Female" },
-    { value: "notDisclosed", label: "Not Disclosed" },
-  ];
+const accountGender = [
+  { value: "male", label: "Male" },
+  { value: "female", label: "Female" },
+  { value: "notDisclosed", label: "Not Disclosed" },
+];
 
 const departments = [
   { value: "general", label: "General" },
