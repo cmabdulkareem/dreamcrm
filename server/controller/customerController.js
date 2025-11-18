@@ -375,3 +375,62 @@ export const markRemarkAsRead = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+
+// Get total leads count across all users
+export const getAllLeadsCount = async (req, res) => {
+  try {
+    // Count all customers/leads in the database
+    const totalCount = await customerModel.countDocuments();
+    
+    return res.status(200).json({ 
+      count: totalCount,
+      message: "Total leads count retrieved successfully."
+    });
+  } catch (error) {
+    console.error("Error fetching total leads count:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Get brand-wide conversion metrics
+export const getBrandConversionMetrics = async (req, res) => {
+  try {
+    // Get all customers/leads in the database (not filtered by user)
+    const allCustomers = await customerModel.find();
+    
+    // Total leads count across all users
+    const totalLeads = allCustomers.length;
+    
+    // Count converted leads across all users
+    const convertedLeads = allCustomers.filter(c => c.leadStatus === 'converted').length;
+    
+    // Calculate conversion rate
+    const conversionRate = totalLeads > 0 ? ((convertedLeads / totalLeads) * 100) : 0;
+    
+    return res.status(200).json({ 
+      totalLeads,
+      convertedLeads,
+      conversionRate: parseFloat(conversionRate.toFixed(2)),
+      message: "Brand conversion metrics retrieved successfully."
+    });
+  } catch (error) {
+    console.error("Error fetching brand conversion metrics:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Get all customers without user filtering (for brand-wide metrics)
+export const getAllCustomersUnfiltered = async (req, res) => {
+  try {
+    // Get all customers/leads in the database without any user filtering
+    const customers = await customerModel.find()
+      .populate('assignedTo', 'fullName email')
+      .populate('assignedBy', 'fullName email')
+      .sort({ createdAt: -1 });
+    
+    return res.status(200).json({ customers });
+  } catch (error) {
+    console.error("Error fetching all customers:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};

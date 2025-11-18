@@ -9,6 +9,7 @@ import {
   ShootingStarIcon,
 } from "../../icons";
 import Badge from "../ui/badge/Badge";
+import FlipCard from "./FlipCard";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
@@ -19,6 +20,9 @@ export default function EcommerceMetrics() {
     lastMonthLeads: 0,
     leadsGrowth: 0,
     conversionRate: 0,
+    convertedLeads: 0,
+    brandConvertedLeads: 0,  // Start with 0 instead of copying user data
+    brandConversionRate: 0,  // Start with 0 instead of copying user data
     totalRevenue: 0,
     currentMonthRevenue: 0,
     lastMonthRevenue: 0,
@@ -29,9 +33,12 @@ export default function EcommerceMetrics() {
     studentsGrowth: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [allLeadsCount, setAllLeadsCount] = useState(0);
 
   useEffect(() => {
     fetchMetrics();
+    fetchAllLeadsCount();
+    fetchBrandConversionMetrics();
   }, []);
 
   const fetchMetrics = async () => {
@@ -125,6 +132,9 @@ export default function EcommerceMetrics() {
         lastMonthLeads,
         leadsGrowth: parseFloat(leadsGrowth.toFixed(2)),
         conversionRate: parseFloat(conversionRate.toFixed(2)),
+        convertedLeads,
+        brandConvertedLeads: convertedLeads, // Will be updated by fetchBrandConversionMetrics
+        brandConversionRate: conversionRate, // Will be updated by fetchBrandConversionMetrics
         totalRevenue,
         currentMonthRevenue,
         lastMonthRevenue,
@@ -141,6 +151,32 @@ export default function EcommerceMetrics() {
     }
   };
 
+  // Fetch total leads count across all users
+  const fetchAllLeadsCount = async () => {
+    try {
+      const response = await axios.get(`${API}/customers/all-leads-count`, { withCredentials: true });
+      setAllLeadsCount(response.data.count);
+    } catch (error) {
+      console.error("Error fetching all leads count:", error);
+    }
+  };
+
+  // Fetch brand-wide conversion metrics
+  const fetchBrandConversionMetrics = async () => {
+    try {
+      const response = await axios.get(`${API}/customers/brand-conversion-metrics`, { withCredentials: true });
+      const { convertedLeads, conversionRate } = response.data;
+      
+      setMetrics(prevMetrics => ({
+        ...prevMetrics,
+        brandConvertedLeads: convertedLeads,
+        brandConversionRate: parseFloat(conversionRate.toFixed(2))
+      }));
+    } catch (error) {
+      console.error("Error fetching brand conversion metrics:", error);
+    }
+  };
+
   const formatCurrency = (amount) => {
     if (amount >= 10000000) {
       return `₹${(amount / 10000000).toFixed(2)}Cr`;
@@ -152,53 +188,115 @@ export default function EcommerceMetrics() {
     return `₹${amount.toFixed(0)}`;
   };
 
-  return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 md:gap-6">
-      {/* Total Leads */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6">
-        <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-xl dark:bg-blue-900/30">
-          <GroupIcon className="text-blue-600 size-6 dark:text-blue-400" />
-        </div>
-
-        <div className="flex items-end justify-between mt-5">
-          <div>
-            <span className="text-sm text-gray-500 dark:text-gray-400">
-              Total Leads
-            </span>
-            <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-              {loading ? "..." : metrics.totalLeads}
-            </h4>
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              {metrics.currentMonthLeads} this month
-            </p>
-          </div>
-          {!loading && metrics.leadsGrowth !== 0 && (
-            <Badge color={metrics.leadsGrowth >= 0 ? "success" : "error"}>
-              {metrics.leadsGrowth >= 0 ? <ArrowUpIcon /> : <ArrowDownIcon />}
-              {Math.abs(metrics.leadsGrowth)}%
-            </Badge>
-          )}
-        </div>
+  // Front content for the Total Leads card
+  const totalLeadsFrontContent = (
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6 h-full">
+      <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-xl dark:bg-blue-900/30">
+        <GroupIcon className="text-blue-600 size-6 dark:text-blue-400" />
       </div>
 
-      {/* Conversion Rate */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6">
-        <div className="flex items-center justify-center w-12 h-12 bg-green-100 rounded-xl dark:bg-green-900/30">
-          <ShootingStarIcon className="text-green-600 size-6 dark:text-green-400" />
+      <div className="flex items-end justify-between mt-5">
+        <div>
+          <span className="text-sm text-gray-500 dark:text-gray-400">
+            Total Leads
+          </span>
+          <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
+            {loading ? "..." : metrics.totalLeads}
+          </h4>
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            {metrics.currentMonthLeads} this month
+          </p>
         </div>
-        <div className="flex items-end justify-between mt-5">
-          <div>
-            <span className="text-sm text-gray-500 dark:text-gray-400">
-              Conversion Rate
-            </span>
-            <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-              {loading ? "..." : `${metrics.conversionRate.toFixed(1)}%`}
-            </h4>
-            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              Leads to Students
-            </p>
-          </div>
+        {!loading && metrics.leadsGrowth !== 0 && (
+          <Badge color={metrics.leadsGrowth >= 0 ? "success" : "error"}>
+            {metrics.leadsGrowth >= 0 ? <ArrowUpIcon /> : <ArrowDownIcon />}
+            {Math.abs(metrics.leadsGrowth)}%
+          </Badge>
+        )}
+      </div>
+    </div>
+  );
+
+  // Back content for the Total Leads card (shows all leads across brand)
+  const totalLeadsBackContent = (
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6 h-full flex flex-col items-center justify-center text-center">
+      <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-xl dark:bg-blue-900/30">
+        <GroupIcon className="text-blue-600 size-6 dark:text-blue-400" />
+      </div>
+
+      <div className="mt-4">
+        <span className="text-sm text-gray-500 dark:text-gray-400">
+          Total Leads Across Brand
+        </span>
+        <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
+          {loading ? "..." : allLeadsCount}
+        </h4>
+        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          Leads from all users
+        </p>
+      </div>
+    </div>
+  );
+
+  // Front content for the Conversion Rate card
+  const conversionRateFrontContent = (
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6 h-full">
+      <div className="flex items-center justify-center w-12 h-12 bg-green-100 rounded-xl dark:bg-green-900/30">
+        <ShootingStarIcon className="text-green-600 size-6 dark:text-green-400" />
+      </div>
+      <div className="flex items-end justify-between mt-5">
+        <div>
+          <span className="text-sm text-gray-500 dark:text-gray-400">
+            Conversion Rate
+          </span>
+          <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
+            {loading ? "..." : `${metrics.conversionRate.toFixed(1)}%`}
+          </h4>
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            {loading ? "..." : `${metrics.convertedLeads} / ${metrics.totalLeads} Leads`}
+          </p>
         </div>
+      </div>
+    </div>
+  );
+
+  // Back content for the Conversion Rate card (shows total conversions across all users)
+  const conversionRateBackContent = (
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6 h-full flex flex-col items-center justify-center text-center">
+      <div className="flex items-center justify-center w-12 h-12 bg-green-100 rounded-xl dark:bg-green-900/30">
+        <ShootingStarIcon className="text-green-600 size-6 dark:text-green-400" />
+      </div>
+
+      <div className="mt-4">
+        <span className="text-sm text-gray-500 dark:text-gray-400">
+          Brand Conversion Rate
+        </span>
+        <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
+          {loading ? "..." : `${metrics.brandConversionRate?.toFixed(1) || 0}%`}
+        </h4>
+        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          {loading ? "..." : `${metrics.brandConvertedLeads || 0} / ${allLeadsCount} Leads`}
+        </p>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 md:gap-6">
+      {/* Total Leads with Flip Card */}
+      <div className="h-full">
+        <FlipCard 
+          frontContent={totalLeadsFrontContent} 
+          backContent={totalLeadsBackContent} 
+        />
+      </div>
+
+      {/* Conversion Rate with Flip Card */}
+      <div className="h-full">
+        <FlipCard 
+          frontContent={conversionRateFrontContent} 
+          backContent={conversionRateBackContent} 
+        />
       </div>
 
       {/* Total Revenue */}

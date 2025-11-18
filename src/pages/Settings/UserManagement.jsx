@@ -127,7 +127,7 @@ const UserManagement = () => {
 
   const handleDeleteUser = async (user) => {
     // Prevent admin from deleting themselves
-    if (currentUser._id === user._id) {
+    if (currentUser.id === user.id) {
       toast.error("You cannot delete your own account.");
       return;
     }
@@ -139,12 +139,12 @@ const UserManagement = () => {
     
     try {
       await axios.delete(
-        `${API}/users/delete/${user._id}`,
+        `${API}/users/delete/${user.id}`,
         { withCredentials: true }
       );
       
       // Remove user from the local state
-      setUsers(prev => prev.filter(u => u._id !== user._id));
+      setUsers(prev => prev.filter(u => u.id !== user.id));
       
       toast.success("User deleted successfully");
     } catch (error) {
@@ -154,6 +154,15 @@ const UserManagement = () => {
   };
 
   const handleUpdateUser = (user) => {
+    // Ensure user object has an id property (not _id)
+    if (!user || !user.id) {
+      toast.error("Invalid user data. Cannot update user.");
+      return;
+    }
+    
+    // Log user data for debugging
+    console.log("Updating user:", user);
+    
     setSelectedUser(user);
     setUpdateMode(true); // Set update mode to true for user details update
     
@@ -173,6 +182,12 @@ const UserManagement = () => {
   };
 
   const handleAssignRoles = (user) => {
+    // Ensure user object has an id property
+    if (!user || !user.id) {
+      toast.error("Invalid user data. Cannot assign roles.");
+      return;
+    }
+    
     setSelectedUser(user);
     setUpdateMode(false); // Set update mode to false for role assignment
     
@@ -204,6 +219,12 @@ const UserManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    // Validate selectedUser before making API call
+    if (!selectedUser || !selectedUser.id) {
+      toast.error("Invalid user data. Cannot update user.");
+      return;
+    }
+    
     try {
       if (updateMode) {
         // Update user details
@@ -219,6 +240,27 @@ const UserManagement = () => {
           company: formData.company
         };
         
+        // Validate required fields
+        if (!payload.fullName || !payload.email || !payload.phone) {
+          toast.error("Full name, email, and phone are required.");
+          return;
+        }
+        
+        // Validate email format in frontend
+        if (payload.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email)) {
+          toast.error("Please enter a valid email address.");
+          return;
+        }
+        
+        // Validate date formats
+        if (payload.joiningDate && payload.joiningDate !== "" && !/\d{4}-\d{2}-\d{2}/.test(payload.joiningDate) && !/\d{4}-\d{2}-\d{2}T/.test(payload.joiningDate)) {
+          toast.error("Please enter a valid joining date in YYYY-MM-DD format.");
+          return;
+        }
+        
+        // Log payload for debugging
+        console.log("Updating user with payload:", payload);
+        
         // Remove empty fields
         Object.keys(payload).forEach(key => {
           if (payload[key] === "" || payload[key] === null || payload[key] === undefined) {
@@ -226,15 +268,18 @@ const UserManagement = () => {
           }
         });
         
+        // Log final payload for debugging
+        console.log("Final payload after cleanup:", payload);
+        
         const response = await axios.put(
-          `${API}/users/update/${selectedUser._id}`,
+          `${API}/users/update/${selectedUser.id}`,
           payload,
           { withCredentials: true }
         );
         
         // Update user in the local state
         setUsers(prev => prev.map(user => 
-          user._id === selectedUser._id ? { ...user, ...response.data.user } : user
+          user.id === selectedUser.id ? { ...user, ...response.data.user } : user
         ));
         
         toast.success("User details updated successfully");
@@ -247,14 +292,14 @@ const UserManagement = () => {
         };
         
         const response = await axios.patch(
-          `${API}/users/assign-roles/${selectedUser._id}`,
+          `${API}/users/assign-roles/${selectedUser.id}`,
           payload,
           { withCredentials: true }
         );
         
         // Update user in the local state
         setUsers(prev => prev.map(user => 
-          user._id === selectedUser._id ? { ...user, ...response.data.user } : user
+          user.id === selectedUser.id ? { ...user, ...response.data.user } : user
         ));
         
         toast.success("User roles updated successfully");
@@ -377,7 +422,7 @@ const UserManagement = () => {
                 <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-900 dark:divide-gray-700">
                   {users.length > 0 ? (
                     users.map((user) => (
-                      <tr key={user._id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                      <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="flex-shrink-0 h-10 w-10">

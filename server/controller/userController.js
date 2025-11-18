@@ -277,6 +277,8 @@ export const getAllUsers = async (req, res) => {
 export const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
+    console.log("Updating user with ID:", id);
+    console.log("Request body:", req.body);
 
     // Validate ID
     if (!id) {
@@ -321,10 +323,12 @@ export const updateUser = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found." });
     }
+    console.log("Found user:", user.email);
 
     // Check if the requesting user is an admin or updating their own profile
     const isAdminUser = req.user.isAdmin;
     const isOwnProfile = req.user.id === id;
+    console.log("isAdminUser:", isAdminUser, "isOwnProfile:", isOwnProfile);
 
     // Regular users can update their own profile information
     // Only log the fields that are actually being updated
@@ -342,7 +346,7 @@ export const updateUser = async (req, res) => {
     if (isOwnProfile && !isAdminUser) {
       // Update personal information fields
       if (fullName !== undefined) user.fullName = fullName;
-      if (email !== undefined) user.email = email;
+      if (email !== undefined) user.email = email.toLowerCase(); // Apply lowercase conversion
       if (phone !== undefined) user.phone = phone;
       if (gender !== undefined) user.gender = gender;
       if (dob !== undefined) {
@@ -423,11 +427,14 @@ export const updateUser = async (req, res) => {
 
       // Email validation
       if (email !== undefined) {
-        if (!validateEmail(email)) {
-          return res.status(400).json({ message: "Invalid email format." });
+        const emailValidationError = validateEmail(email);
+        if (emailValidationError) {
+          return res.status(400).json({ message: emailValidationError });
         }
+        // Convert email to lowercase to match schema behavior
+        const lowerCaseEmail = email.toLowerCase();
         // Check if email is already taken by another user
-        const existingUser = await userModel.findOne({ email, _id: { $ne: id } });
+        const existingUser = await userModel.findOne({ email: lowerCaseEmail, _id: { $ne: id } });
         if (existingUser) {
           return res.status(400).json({ message: "Email is already taken by another user." });
         }
@@ -435,7 +442,7 @@ export const updateUser = async (req, res) => {
 
       // Update personal information fields
       if (fullName !== undefined) user.fullName = fullName;
-      if (email !== undefined) user.email = email;
+      if (email !== undefined) user.email = email.toLowerCase(); // Apply lowercase conversion
       if (phone !== undefined) user.phone = phone;
       if (gender !== undefined) user.gender = gender;
       if (dob !== undefined) {
@@ -537,7 +544,9 @@ export const updateUser = async (req, res) => {
     }
 
     // Save updated user
+    console.log("Saving user with email:", user.email);
     await user.save();
+    console.log("User saved successfully");
 
     // Populate reportingHead for the response
     await user.populate('reportingHead', 'fullName email');
@@ -582,6 +591,10 @@ export const updateUser = async (req, res) => {
       return res.status(400).json({ message: "Validation error: " + error.message });
     } else if (error.name === 'CastError') {
       return res.status(400).json({ message: "Invalid data format: " + error.message });
+    } else if (error.code === 11000) {
+      // Duplicate key error
+      const duplicateField = Object.keys(error.keyPattern)[0];
+      return res.status(400).json({ message: `Duplicate ${duplicateField}. This ${duplicateField} is already taken.` });
     } else {
       return res.status(500).json({ message: "Server error. Please try again." });
     }
