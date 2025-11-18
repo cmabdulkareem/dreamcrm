@@ -93,13 +93,13 @@ const getNameCellBackgroundColor = (leadPotential) => {
 const getLeadPotentialBackgroundColor = (leadPotential) => {
   switch (leadPotential) {
     case "strongProspect":
-      return "bg-green-100 dark:bg-green-800"; 
+      return "bg-green-100 dark:bg-green-800";
 
     case "potentialProspect":
-      return "bg-blue-100 dark:bg-blue-800"; 
+      return "bg-blue-100 dark:bg-blue-800";
 
     case "weakProspect":
-      return "bg-yellow-200 dark:bg-yellow-800"; 
+      return "bg-yellow-200 dark:bg-yellow-800";
 
     case "notAProspect":
       return "bg-gray-300 dark:bg-gray-700"; // Neutral grey for NOT a prospect
@@ -546,17 +546,17 @@ export default function RecentOrders() {
       toast.error("Lead Status is required");
       return;
     }
-    
+
     if (!leadPotential) {
       toast.error("Lead Potential is required");
       return;
     }
-    
+
     if (!followUpDate) {
       toast.error("Next Follow Up Date is required");
       return;
     }
-    
+
     if (!remarks.trim()) {
       toast.error("Remarks are required");
       return;
@@ -883,9 +883,9 @@ export default function RecentOrders() {
                         <TableCell className={`py-3`}>
                           <div className="flex items-center gap-3">
                             <div className="relative">
-                              <p className="font-medium text-gray-800 text-theme-sm dark:text-white/90">{row.fullName}</p>
+                              <p className="font-medium text-gray-800 text-theme-sm dark:text-white/90">&nbsp;{row.fullName}</p>
                               <p className="text-gray-400 text-xs whitespace-pre-wrap break-words">
-                                {row.coursePreference?.join(", ") || "N/A"}
+                                &nbsp;{row.coursePreference?.join(", ") || "N/A"}
                               </p>
                             </div>
                           </div>
@@ -994,8 +994,8 @@ export default function RecentOrders() {
                   >
                     <div
                       className={`w-0 h-0 border-l-[8px] border-r-[8px] ${isAbove
-                          ? 'border-t-[8px] border-t-white dark:border-t-gray-800 border-l-transparent border-r-transparent'
-                          : 'border-b-[8px] border-b-white dark:border-b-gray-800 border-l-transparent border-r-transparent'
+                        ? 'border-t-[8px] border-t-white dark:border-t-gray-800 border-l-transparent border-r-transparent'
+                        : 'border-b-[8px] border-b-white dark:border-b-gray-800 border-l-transparent border-r-transparent'
                         }`}
                       style={{
                         filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))'
@@ -1245,10 +1245,12 @@ export default function RecentOrders() {
                   <div className="w-full md:w-1/4">
                     <Label>Lead Status *</Label>
                     <Select
-                      options={leadStatusOptions.filter(option => option.value !== "new")}
+                      id="leadStatus"
+                      label="Lead Status"
+                      options={leadStatusOptions}
                       value={leadStatus}
-                      placeholder="Select Lead Status"
                       onChange={setLeadStatus}
+                      required
                     />
                   </div>
                   <div className="w-full md:w-1/4">

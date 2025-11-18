@@ -2,7 +2,7 @@ import userModel from "../model/userModel.js";
 import mongoose from "mongoose";
 import { hashPassword } from "../helpers/hashPassword.js";
 import { comparePassword } from "../helpers/comparePassword.js";
-import {validateEmail} from "../validators/validateEmail.js";
+import { validateEmail } from "../validators/validateEmail.js";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import { isAdmin } from "../utils/roleHelpers.js";
@@ -35,84 +35,22 @@ export const signUpUser = async (req, res) => {
       await emailService.default.sendWelcomeEmail(newUser);
     } catch (emailError) {
       console.error("Failed to send welcome email:", emailError);
-      // Don't fail the signup if email sending fails
     }
 
-    // Send notification to admins about new user registration
-    try {
-      const emailService2 = await import('../utils/emailService.js');
-      // Get admin emails
-      const admins = await userModel.find({ isAdmin: true }, { email: 1 });
-      const adminEmails = admins.map(admin => admin.email);
-      
-      if (adminEmails.length > 0) {
-        await emailService2.default.sendNewUserNotification(newUser, adminEmails);
-      }
-    } catch (notificationError) {
-      console.error("Failed to send new user notification:", notificationError);
-      // Don't fail the signup if notification fails
-    }
-
-    return res.status(201).json({ message: "Account created successfully." });
+    return res.status(201).json({ message: "User created successfully" });
   } catch (error) {
     console.error("Signup error:", error);
-    return res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
 
-// Forgot password
-export const forgotPassword = async (req, res) => {
-  try {
-    const { email } = req.body;
-
-    // Check if email is provided
-    if (!email) {
-      return res.status(400).json({ message: "Email is required" });
-    }
-
-    // Find user by email
-    const user = await userModel.findOne({ email });
-    if (!user) {
-      // For security reasons, we don't reveal if the email exists
-      return res.status(200).json({ message: "If your email is registered with us, you will receive a password reset link shortly" });
-    }
-
-    // Generate reset token
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    
-    // Hash the token and set expiration
-    const resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-    const resetPasswordExpires = Date.now() + 60 * 60 * 1000; // 1 hour
-
-    // Save token and expiration to user
-    user.resetPasswordToken = resetPasswordToken;
-    user.resetPasswordExpires = resetPasswordExpires;
-    await user.save();
-
-    // Send email with reset token
-    try {
-      const emailService = await import('../utils/emailService.js');
-      await emailService.default.sendPasswordResetEmail(user, resetToken);
-    } catch (emailError) {
-      console.error("Failed to send password reset email:", emailError);
-      // Don't fail the request if email sending fails
-    }
-
-    return res.status(200).json({ message: "If your email is registered with us, you will receive a password reset link shortly" });
-  } catch (error) {
-    console.error("Forgot password error:", error);
-    return res.status(500).json({ message: "Server error" });
-  }
-};
-
-// Get users for reporting head dropdown (accessible to all authenticated users)
 export const getUsersForDropdown = async (req, res) => {
   try {
     // Fetch only necessary user information for dropdown
-    const users = await userModel.find({}, { 
-      _id: 1, 
-      fullName: 1, 
-      email: 1, 
+    const users = await userModel.find({}, {
+      _id: 1,
+      fullName: 1,
+      email: 1,
       avatar: 1,
       gender: 1,
       bloodGroup: 1,
@@ -124,7 +62,7 @@ export const getUsersForDropdown = async (req, res) => {
       dob: 1,
       designation: 1
     });
-    
+
     // Format avatar URLs if they exist
     const formattedUsers = users.map(user => ({
       _id: user._id,
@@ -141,7 +79,7 @@ export const getUsersForDropdown = async (req, res) => {
       dob: user.dob,
       designation: user.designation
     }));
-    
+
     return res.status(200).json({ users: formattedUsers });
   } catch (error) {
     console.error("Error fetching users for dropdown:", error);
@@ -166,12 +104,12 @@ export const signInUser = async (req, res) => {
 
     // Create token with user roles and admin status
     const token = jwt.sign(
-      { 
-        id: user._id, 
+      {
+        id: user._id,
         roles: user.roles,
         isAdmin: user.isAdmin
-      }, 
-      process.env.JWT_SECRET, 
+      },
+      process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
 
@@ -186,12 +124,12 @@ export const signInUser = async (req, res) => {
 
     return res.status(200).json({
       message: "Login successful",
-      user: { 
-        id: user._id, 
-        fullName: user.fullName, 
-        email: user.email, 
-        phone: user.phone, 
-        roles: user.roles, 
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        phone: user.phone,
+        roles: user.roles,
         isAdmin: user.isAdmin,
         avatar: user.avatar ? `${req.protocol}://${req.get('host')}${user.avatar}` : null,
         bloodGroup: user.bloodGroup,
@@ -199,7 +137,10 @@ export const signInUser = async (req, res) => {
         state: user.state,
         reportingHead: user.reportingHead,
         instagram: user.instagram,
-        location: user.location
+        location: user.location,
+        gender: user.gender,
+        dob: user.dob,
+        designation: user.designation
       },
       role: user.roles
     });
@@ -233,21 +174,21 @@ export const resetPassword = async (req, res) => {
     }
 
     // Validate password strength
-    if (newPassword.length < 8 || 
-        !/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_\-+=\[\]{};':"\\|,.<>/?]).{8,}/.test(newPassword)) {
-      return res.status(400).json({ 
-        message: "Password must be at least 8 characters long, and include uppercase, lowercase, number, and special character." 
+    if (newPassword.length < 8 ||
+      !/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_\-+=\[\]{};':"\\|,.<>/?]).{8,}/.test(newPassword)) {
+      return res.status(400).json({
+        message: "Password must be at least 8 characters long, and include uppercase, lowercase, number, and special character."
       });
     }
 
     // Hash and set new password
     const hashedPassword = await hashPassword(newPassword);
     user.password = hashedPassword;
-    
+
     // Clear reset token fields
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
-    
+
     await user.save();
 
     return res.status(200).json({ message: "Password reset successfully" });
@@ -269,12 +210,12 @@ export const authCheck = async (req, res) => {
     }
 
     return res.status(200).json({
-      user: { 
-        id: user._id, 
-        fullName: user.fullName, 
-        email: user.email, 
-        phone: user.phone, 
-        roles: user.roles, 
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        phone: user.phone,
+        roles: user.roles,
         isAdmin: user.isAdmin,
         avatar: user.avatar ? `${req.protocol}://${req.get('host')}${user.avatar}` : null,
         bloodGroup: user.bloodGroup,
@@ -282,7 +223,10 @@ export const authCheck = async (req, res) => {
         state: user.state,
         reportingHead: user.reportingHead,
         instagram: user.instagram,
-        location: user.location
+        location: user.location,
+        gender: user.gender,
+        dob: user.dob,
+        designation: user.designation
       },
       role: user.roles
     });
@@ -299,15 +243,29 @@ export const getAllUsers = async (req, res) => {
     if (!isAdmin(req.user)) {
       return res.status(403).json({ message: "Access denied. Admin privileges required." });
     }
-    
+
     const users = await userModel.find().populate('reportingHead', 'fullName email');
-    
+
     // Format users with absolute avatar URLs
     const formattedUsers = users.map(user => ({
-      ...user.toObject(),
-      avatar: user.avatar ? `${req.protocol}://${req.get('host')}${user.avatar}` : null
+      id: user._id,
+      fullName: user.fullName,
+      email: user.email,
+      phone: user.phone,
+      roles: user.roles,
+      isAdmin: user.isAdmin,
+      location: user.location,
+      instagram: user.instagram,
+      gender: user.gender,
+      dob: user.dob,
+      designation: user.designation,
+      bloodGroup: user.bloodGroup,
+      country: user.country,
+      state: user.state,
+      reportingHead: user.reportingHead,
+      avatar: user.avatar ? `${req.protocol}://${req.get('host')}${user.avatar}` : null,
     }));
-    
+
     return res.status(200).json({ users: formattedUsers });
   } catch (error) {
     console.error("Error fetching users:", error);
@@ -319,22 +277,22 @@ export const getAllUsers = async (req, res) => {
 export const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     // Validate ID
     if (!id) {
       return res.status(400).json({ message: "User ID is required." });
     }
-    
+
     // Validate that ID is a valid ObjectId
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid user ID format." });
     }
-    
+
     // Prevent password updates through this endpoint for security reasons
     if (req.body.password !== undefined) {
       return res.status(400).json({ message: "Password cannot be updated through this endpoint. Please use the change password functionality." });
     }
-    
+
     const {
       employeeCode,
       fullName,
@@ -379,7 +337,7 @@ export const updateUser = async (req, res) => {
     if (designation !== undefined) updateFields.designation = designation;
     if (gender !== undefined) updateFields.gender = gender;
     if (dob !== undefined) updateFields.dob = dob;
-    
+
     console.log('Regular user updating profile:', updateFields);
     if (isOwnProfile && !isAdminUser) {
       // Update personal information fields
@@ -409,7 +367,7 @@ export const updateUser = async (req, res) => {
       if (country !== undefined) user.country = country;
       if (state !== undefined) user.state = state;
       if (location !== undefined) user.location = location;
-      
+
       // Update work information fields
       if (employeeCode !== undefined) user.employeeCode = employeeCode;
       if (department !== undefined) user.department = department;
@@ -437,10 +395,10 @@ export const updateUser = async (req, res) => {
         }
       }
       if (company !== undefined) user.company = company;
-      
+
       // Update social information fields
       if (instagram !== undefined) user.instagram = instagram;
-      
+
       // Removed duplicate field updates
       if (reportingHead !== undefined) {
         // Handle the case where reportingHead is null or empty string
@@ -465,26 +423,21 @@ export const updateUser = async (req, res) => {
 
       // Email validation
       if (email !== undefined) {
-        const emailError = validateEmail(email);
-        if (emailError) {
-          return res.status(400).json({ message: emailError });
+        if (!validateEmail(email)) {
+          return res.status(400).json({ message: "Invalid email format." });
         }
-        user.email = email;
+        // Check if email is already taken by another user
+        const existingUser = await userModel.findOne({ email, _id: { $ne: id } });
+        if (existingUser) {
+          return res.status(400).json({ message: "Email is already taken by another user." });
+        }
       }
 
       // Update personal information fields
       if (fullName !== undefined) user.fullName = fullName;
-      if (email !== undefined) {
-        const emailError = validateEmail(email);
-        if (emailError) {
-          return res.status(400).json({ message: emailError });
-        }
-        user.email = email;
-      }
+      if (email !== undefined) user.email = email;
       if (phone !== undefined) user.phone = phone;
       if (gender !== undefined) user.gender = gender;
-      
-      // Handle dates
       if (dob !== undefined) {
         if (dob === null || dob === "") {
           user.dob = null;
@@ -492,22 +445,30 @@ export const updateUser = async (req, res) => {
           // Validate date format before parsing
           if (!/\d{4}-\d{2}-\d{2}/.test(dob) && !/\d{4}-\d{2}-\d{2}T/.test(dob)) {
             console.warn('Invalid date format for dob:', dob);
-            return res.status(400).json({ message: "Invalid date of birth format. Please use YYYY-MM-DD format." });
+            // Don't fail the request, just don't update the date
           } else {
             try {
-              const dobDate = new Date(dob);
-              if (isNaN(dobDate)) {
-                return res.status(400).json({ message: "Invalid date of birth." });
-              }
-              user.dob = dobDate;
+              user.dob = new Date(dob);
             } catch (dateError) {
               console.error('Error parsing date of birth:', dateError);
-              return res.status(400).json({ message: "Invalid date of birth format." });
+              // Don't fail the request, just don't update the date
             }
           }
         }
       }
-      
+      if (bloodGroup !== undefined) user.bloodGroup = bloodGroup;
+      if (country !== undefined) user.country = country;
+      if (state !== undefined) user.state = state;
+      if (location !== undefined) user.location = location;
+
+      // Update work information fields
+      if (employeeCode !== undefined) user.employeeCode = employeeCode;
+      if (department !== undefined) user.department = department;
+      if (designation !== undefined) {
+        console.log('Admin updating designation from', user.designation, 'to', designation);
+        user.designation = designation;
+      }
+      if (employmentType !== undefined) user.employmentType = employmentType;
       if (joiningDate !== undefined) {
         if (joiningDate === null || joiningDate === "") {
           user.joiningDate = null;
@@ -515,7 +476,7 @@ export const updateUser = async (req, res) => {
           // Validate date format before parsing
           if (!/\d{4}-\d{2}-\d{2}/.test(joiningDate) && !/\d{4}-\d{2}-\d{2}T/.test(joiningDate)) {
             console.warn('Invalid date format for joiningDate:', joiningDate);
-            return res.status(400).json({ message: "Invalid joining date format. Please use YYYY-MM-DD format." });
+            // Don't fail the request, just don't update the date
           } else {
             try {
               const joiningDateObj = new Date(joiningDate);
@@ -530,7 +491,7 @@ export const updateUser = async (req, res) => {
           }
         }
       }
-      
+
       // Update work information fields
       if (employeeCode !== undefined) user.employeeCode = employeeCode;
       if (department !== undefined) user.department = department;
@@ -540,23 +501,23 @@ export const updateUser = async (req, res) => {
       }
       if (employmentType !== undefined) user.employmentType = employmentType;
       if (company !== undefined) user.company = company;
-      
+
       // Update account status (admin only)
       if (accountStatus !== undefined) user.accountStatus = accountStatus;
-      
+
       // Only admins can update roles and admin status
       if (roles !== undefined) user.roles = roles;
       if (isAdminValue !== undefined) user.isAdmin = isAdminValue;
-      
+
       // Update personal details
       if (bloodGroup !== undefined) user.bloodGroup = bloodGroup;
       if (country !== undefined) user.country = country;
       if (state !== undefined) user.state = state;
       if (location !== undefined) user.location = location;
-      
+
       // Update social information
       if (instagram !== undefined) user.instagram = instagram;
-      
+
       // Update reporting structure
       if (reportingHead !== undefined) {
         // Handle the case where reportingHead is null or empty string
@@ -567,29 +528,21 @@ export const updateUser = async (req, res) => {
           if (mongoose.Types.ObjectId.isValid(reportingHead)) {
             user.reportingHead = reportingHead;
           } else {
-            console.warn('Invalid reportingHead ID provided:', reportingHead);
-            // Don't fail the request, just don't update the reportingHead
+            return res.status(400).json({ message: "Invalid reporting head ID." });
           }
         }
       }
     } else {
-      return res.status(403).json({ message: "Access denied. You can only update your own profile information." });
+      return res.status(403).json({ message: "Access denied. You can only update your own profile." });
     }
 
     // Save updated user
-    console.log('Saving user with designation:', user.designation);
     await user.save();
-    console.log('User saved. Designation is now:', user.designation);
 
-    // Populate reportingHead before returning
-    try {
-      await user.populate('reportingHead', 'fullName email');
-    } catch (populateError) {
-      console.warn('Failed to populate reportingHead:', populateError);
-      // Don't fail the request if populate fails
-    }
-    
-    // Return updated user data
+    // Populate reportingHead for the response
+    await user.populate('reportingHead', 'fullName email');
+
+    // Format user data for response
     const updatedUser = {
       id: user._id,
       fullName: user.fullName,
@@ -614,7 +567,7 @@ export const updateUser = async (req, res) => {
       state: user.state,
       reportingHead: user.reportingHead
     };
-    
+
     console.log('Returning updated user with designation:', updatedUser.designation);
 
     return res.status(200).json({
@@ -656,11 +609,11 @@ export const assignRoles = async (req, res) => {
     if (roles) {
       user.roles = roles;
     }
-    
+
     if (isAdminValue !== undefined) {
       user.isAdmin = isAdminValue;
     }
-    
+
     // Update account status if provided
     if (accountStatus) {
       user.accountStatus = accountStatus;
@@ -694,7 +647,7 @@ export const logoutUser = async (req, res) => {
       const { markUserOffline } = await import('../utils/onlineStatusManager.js');
       markUserOffline(req.user.id);
     }
-    
+
     res.clearCookie("token", {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -714,21 +667,21 @@ export const markUserOnlineStatus = async (req, res) => {
     if (!req.user || !req.user.id) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    
+
     const { markUserOnline } = await import('../utils/onlineStatusManager.js');
     const user = await userModel.findById(req.user.id);
-    
+
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    
+
     // Mark user as online with user data
     markUserOnline(req.user.id, {
       fullName: user.fullName,
       email: user.email,
       avatar: user.avatar ? `${req.protocol}://${req.get('host')}${user.avatar}` : null
     });
-    
+
     return res.status(200).json({ message: "User marked as online" });
   } catch (error) {
     console.error("Error marking user as online:", error);
@@ -742,10 +695,10 @@ export const markUserOfflineStatus = async (req, res) => {
     if (!req.user || !req.user.id) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    
+
     const { markUserOffline } = await import('../utils/onlineStatusManager.js');
     markUserOffline(req.user.id);
-    
+
     return res.status(200).json({ message: "User marked as offline" });
   } catch (error) {
     console.error("Error marking user as offline:", error);
@@ -759,7 +712,7 @@ export const handleOfflineBeacon = async (req, res) => {
     // This endpoint handles sendBeacon requests during page unload
     // Try to get userId from token first (if available), then from request body
     let userId = null;
-    
+
     // Try to verify token if available
     try {
       const token = req.cookies?.token || (req.headers.authorization && req.headers.authorization.startsWith('Bearer ') ? req.headers.authorization.substring(7) : null);
@@ -770,17 +723,17 @@ export const handleOfflineBeacon = async (req, res) => {
     } catch (err) {
       // Token not available or invalid, try request body
     }
-    
+
     // Fallback to request body if token not available
     if (!userId && req.body && req.body.userId) {
       userId = req.body.userId;
     }
-    
+
     if (userId) {
       const { markUserOffline } = await import('../utils/onlineStatusManager.js');
       markUserOffline(userId);
     }
-    
+
     // Always return 200 for beacon requests (they don't wait for response)
     return res.status(200).json({ message: "Offline status updated" });
   } catch (error) {
@@ -790,19 +743,14 @@ export const handleOfflineBeacon = async (req, res) => {
   }
 };
 
-// Get all online users
+// Get online users
 export const getOnlineUsers = async (req, res) => {
   try {
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-    
-    const { getOnlineUsers: getOnlineUsersList } = await import('../utils/onlineStatusManager.js');
-    const onlineUsersList = getOnlineUsersList();
-    
-    return res.status(200).json({ onlineUsers: onlineUsersList });
+    const { getOnlineUsers } = await import('../utils/onlineStatusManager.js');
+    const onlineUsers = getOnlineUsers();
+    return res.status(200).json({ onlineUsers });
   } catch (error) {
-    console.error("Error fetching online users:", error);
+    console.error("Error getting online users:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -811,26 +759,77 @@ export const getOnlineUsers = async (req, res) => {
 export const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
-    
-    // Check if user is admin (backward compatible)
+
+    // Check if requesting user is admin (backward compatible)
     if (!isAdmin(req.user)) {
       return res.status(403).json({ message: "Access denied. Admin privileges required." });
     }
-    
-    // Prevent admin from deleting themselves
+
+    // Prevent deletion of self
     if (req.user.id === id) {
       return res.status(400).json({ message: "You cannot delete your own account." });
     }
-    
+
     // Find and delete user
     const user = await userModel.findByIdAndDelete(id);
     if (!user) {
       return res.status(404).json({ message: "User not found." });
     }
-    
+
     return res.status(200).json({ message: "User deleted successfully." });
   } catch (error) {
-    console.error("Error deleting user:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    console.error("Delete user error:", error);
+    return res.status(500).json({ message: "Server error. Please try again." });
+  }
+};
+
+// Forgot password
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Check if email is provided
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+
+    // Find user by email
+    const user = await userModel.findOne({ email });
+    if (!user) {
+      // Don't reveal if user exists or not for security
+      return res.status(200).json({ message: "If your email exists in our system, you will receive a password reset link shortly." });
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+    // Set token expiration (1 hour)
+    const resetPasswordExpires = Date.now() + 60 * 60 * 1000;
+
+    // Save token and expiration to user
+    user.resetPasswordToken = resetPasswordToken;
+    user.resetPasswordExpires = resetPasswordExpires;
+    await user.save();
+
+    // Send reset email
+    try {
+      const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+      const emailService = await import('../utils/emailService.js');
+      await emailService.default.sendPasswordResetEmail(user, resetUrl);
+
+      return res.status(200).json({ message: "Password reset link sent to your email." });
+    } catch (emailError) {
+      console.error("Failed to send password reset email:", emailError);
+      // Clear the reset token if email fails
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpires = undefined;
+      await user.save();
+
+      return res.status(500).json({ message: "Failed to send password reset email. Please try again." });
+    }
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    return res.status(500).json({ message: "Server error" });
   }
 };

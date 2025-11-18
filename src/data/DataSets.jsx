@@ -241,7 +241,7 @@ const employmentType = [
   ];
 
   const leadStatusOptions = [
-    { value: "new", label: "New Lead" },
+    { value: "new", label: "Pending" },
     { value: "contacted", label: "Contacted" },
     { value: "qualified", label: "Qualified" },
     { value: "negotiation", label: "In Negotiation" },

@@ -2,7 +2,7 @@ import { createContext, useEffect, useState } from "react";
 import axios from "axios";
 
 const AuthContext = createContext();
-const BACKEND_URL = import.meta.env.PROD 
+const BACKEND_URL = import.meta.env.PROD
   ? import.meta.env.VITE_API_URL_PRODUCTION || "https://dreamcrm.onrender.com/api"
   : import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
@@ -15,7 +15,7 @@ function AuthProvider({ children }) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await axios.get(`${BACKEND_URL}/users/auth`, { 
+        const res = await axios.get(`${BACKEND_URL}/users/auth`, {
           withCredentials: true,
           // Add timeout to prevent hanging requests
           timeout: 10000
@@ -26,9 +26,9 @@ function AuthProvider({ children }) {
         // Check if user has admin role (Owner or Admin) or isAdmin flag is true
         const userRoles = user.roles || role || [];
         const rolesArray = Array.isArray(userRoles) ? userRoles : (typeof userRoles === 'string' ? [userRoles] : []);
-        const isAdminUser = user.isAdmin || 
-                           rolesArray.includes('Owner') || 
-                           rolesArray.includes('Admin');
+        const isAdminUser = user.isAdmin ||
+          rolesArray.includes('Owner') ||
+          rolesArray.includes('Admin');
         setIsAdmin(isAdminUser);
       } catch (err) {
         console.error("Auth check error:", err);
@@ -62,9 +62,9 @@ function AuthProvider({ children }) {
     // Check if user has admin role (Owner or Admin) or isAdmin flag is true
     const userRoles = userData.roles || role || [];
     const rolesArray = Array.isArray(userRoles) ? userRoles : (typeof userRoles === 'string' ? [userRoles] : []);
-    const isAdminUser = userData.isAdmin || 
-                       rolesArray.includes('Owner') || 
-                       rolesArray.includes('Admin');
+    const isAdminUser = userData.isAdmin ||
+      rolesArray.includes('Owner') ||
+      rolesArray.includes('Admin');
     setIsAdmin(isAdminUser);
     setLoading(false);
   }
@@ -77,7 +77,19 @@ function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ isLoggedIn, isAdmin, loading, setLoading, user, login, logout, updateUser }}>
+    <AuthContext.Provider
+      value={{
+        isLoggedIn,
+        isAdmin,
+        loading,
+        setLoading,
+        user,
+        setUser,       // ← THIS FIXES THE ENTIRE ISSUE
+        login,
+        logout,
+        updateUser
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

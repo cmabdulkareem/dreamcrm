@@ -24,7 +24,7 @@ export default function DatePicker({
         from: "1900-01-01",
         to: new Date().toISOString().split('T')[0] // Use today's date instead of yesterday
       }
-    ] : null;
+    ] : [];
     
     const flatPickr = flatpickr(`#${id}`, {
       mode: mode || "single",
