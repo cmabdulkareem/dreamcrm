@@ -34,7 +34,7 @@ const GroupParticipants = ({ chat, participants, onAddParticipant, onRemoveParti
   return (
     <div 
       ref={drop}
-      className={`flex-1 overflow-y-auto p-2 ${isOver ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
+      className={`flex-1 overflow-y-auto p-2 ${isOver ? 'bg-blue-50 dark:bg-gray-700' : ''}`}
     >
       <div className="flex justify-between items-center mb-4">
         <h4 className="px-2 py-1 text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -51,7 +51,7 @@ const GroupParticipants = ({ chat, participants, onAddParticipant, onRemoveParti
       </div>
       
       {isOver && (
-        <div className="text-center py-2 text-blue-500 dark:text-blue-400">
+        <div className="text-center py-2 text-blue-500 dark:text-gray-300">
           Drop participant here to add to group
         </div>
       )}
