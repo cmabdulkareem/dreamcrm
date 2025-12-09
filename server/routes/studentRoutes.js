@@ -8,11 +8,15 @@ import {
   deleteStudent
 } from '../controller/studentController.js';
 import verifyToken from "../middleware/verifyToken.js";
+import { applyBrandFilter } from "../middleware/brandMiddleware.js";
 
 const router = express.Router();
 
-// All routes require authentication
-router.post('/create', verifyToken, uploadStudentPhoto, createStudent);
+// All routes require authentication and brand filter
+router.use(verifyToken);
+router.use(applyBrandFilter);
+
+router.post('/create', uploadStudentPhoto, createStudent);
 router.get('/all', verifyToken, getAllStudents);
 router.get('/:id', verifyToken, getStudentById);
 router.put('/update/:id', verifyToken, updateStudent);

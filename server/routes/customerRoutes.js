@@ -14,11 +14,15 @@ import {
   getAllCustomersUnfiltered
 } from '../controller/customerController.js';
 import verifyToken from "../middleware/verifyToken.js";
+import { applyBrandFilter } from "../middleware/brandMiddleware.js";
 
 const router = express.Router();
 
-// All routes require authentication
-router.post('/create', verifyToken, createCustomer);
+// All routes require authentication and brand filter
+router.use(verifyToken);
+router.use(applyBrandFilter);
+
+router.post('/create', createCustomer);
 router.get('/all', verifyToken, getAllCustomers);
 router.get('/all-unfiltered', verifyToken, getAllCustomersUnfiltered);
 router.get('/converted', verifyToken, getConvertedCustomers);

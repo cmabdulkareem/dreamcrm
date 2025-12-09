@@ -26,14 +26,14 @@ const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 export default function CampaignSettings() {
   const { user } = useContext(AuthContext);
   const { addNotification } = useNotifications();
-  
+
   // Check if user has appropriate role (Owner, Admin, Centre Head/Manager)
   const hasAccess = isManager(user);
-  
+
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCampaign, setSelectedCampaign] = useState(null);
-  
+
   // Form fields
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -103,38 +103,34 @@ export default function CampaignSettings() {
     try {
       await axios.post(
         `${API}/campaigns/create`,
-        { 
-          name, 
-          description, 
+        {
+          name,
+          description,
           discountPercentage: discountPercentage ? parseFloat(discountPercentage) : 0,
           cashback: cashback ? parseFloat(cashback) : 0,
-          isActive 
+          isActive
         },
         { withCredentials: true }
       );
-      
-      if (areToastsEnabled()) {
-        toast.success("Campaign created successfully!");
-      }
-      
+
+      toast.success("Campaign created successfully!");
+
       // Add notification
       addNotification({
         type: 'campaign_created',
         userName: user?.fullName || 'Someone',
-        avatar: user?.avatar || null,  // Add avatar to notification
+        avatar: user?.avatar || null,
         action: 'created campaign',
         entityName: name,
         module: 'Campaign Settings',
       });
-      
+
       closeAddModal();
       resetForm();
       fetchCampaigns();
     } catch (error) {
       console.error("Error creating campaign:", error);
-      if (areToastsEnabled()) {
-        toast.error(error.response?.data?.message || "Failed to create campaign");
-      }
+      toast.error(error.response?.data?.message || "Failed to create campaign");
     }
   };
 
@@ -147,38 +143,34 @@ export default function CampaignSettings() {
     try {
       await axios.put(
         `${API}/campaigns/update/${selectedCampaign._id}`,
-        { 
-          name, 
-          description, 
+        {
+          name,
+          description,
           discountPercentage: discountPercentage ? parseFloat(discountPercentage) : 0,
           cashback: cashback ? parseFloat(cashback) : 0,
-          isActive 
+          isActive
         },
         { withCredentials: true }
       );
-      
-      if (areToastsEnabled()) {
-        toast.success("Campaign updated successfully!");
-      }
-      
+
+      toast.success("Campaign updated successfully!");
+
       // Add notification
       addNotification({
         type: 'campaign_updated',
         userName: user?.fullName || 'Someone',
-        avatar: user?.avatar || null,  // Add avatar to notification
+        avatar: user?.avatar || null,
         action: 'updated campaign',
         entityName: name,
         module: 'Campaign Settings',
       });
-      
+
       closeEditModal();
       resetForm();
       fetchCampaigns();
     } catch (error) {
       console.error("Error updating campaign:", error);
-      if (areToastsEnabled()) {
-        toast.error(error.response?.data?.message || "Failed to update campaign");
-      }
+      toast.error(error.response?.data?.message || "Failed to update campaign");
     }
   };
 
@@ -188,29 +180,25 @@ export default function CampaignSettings() {
         `${API}/campaigns/delete/${selectedCampaign._id}`,
         { withCredentials: true }
       );
-      
-      if (areToastsEnabled()) {
-        toast.success("Campaign deleted successfully!");
-      }
-      
+
+      toast.success("Campaign deleted successfully!");
+
       // Add notification
       addNotification({
         type: 'campaign_deleted',
         userName: user?.fullName || 'Someone',
-        avatar: user?.avatar || null,  // Add avatar to notification
+        avatar: user?.avatar || null,
         action: 'deleted campaign',
         entityName: selectedCampaign.name,
         module: 'Campaign Settings',
       });
-      
+
       closeDeleteModal();
       resetForm();
       fetchCampaigns();
     } catch (error) {
       console.error("Error deleting campaign:", error);
-      if (areToastsEnabled()) {
-        toast.error("Failed to delete campaign");
-      }
+      toast.error("Failed to delete campaign");
     }
   };
 
@@ -246,7 +234,7 @@ export default function CampaignSettings() {
         title="Campaign Settings | Manage Campaigns"
         description="Manage marketing campaigns for lead tracking"
       />
-      
+
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -343,7 +331,7 @@ export default function CampaignSettings() {
         <h2 className="text-xl font-semibold text-gray-800 dark:text-white/90 mb-4">
           Add New Campaign
         </h2>
-        
+
         <div className="space-y-4">
           <div>
             <Label htmlFor="campaignName">Campaign Name *</Label>
@@ -426,7 +414,7 @@ export default function CampaignSettings() {
         <h2 className="text-xl font-semibold text-gray-800 dark:text-white/90 mb-4">
           Edit Campaign
         </h2>
-        
+
         <div className="space-y-4">
           <div>
             <Label htmlFor="editCampaignName">Campaign Name *</Label>
@@ -509,7 +497,7 @@ export default function CampaignSettings() {
         <h2 className="text-xl font-semibold text-gray-800 dark:text-white/90 mb-4">
           Delete Campaign
         </h2>
-        
+
         <p className="text-gray-600 dark:text-gray-400 mb-6">
           Are you sure you want to delete <strong>{selectedCampaign?.name}</strong>? This action cannot be undone.
         </p>

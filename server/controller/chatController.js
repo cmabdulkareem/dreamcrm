@@ -27,6 +27,14 @@ export const getOrCreateChat = async (req, res) => {
       .populate('lastMessage.sender', 'fullName email avatar');
 
     if (!chat) {
+      // Check if user has owner privileges - only Owner can create new chats
+      const userRoles = req.user.roles || [];
+      const isOwnerUser = Array.isArray(userRoles) ? userRoles.includes('Owner') : userRoles === 'Owner';
+
+      if (!isOwnerUser) {
+        return res.status(403).json({ message: "Access denied. Only the Owner can initiate new chats." });
+      }
+
       // Verify participant exists
       const participant = await User.findById(participantId);
       if (!participant) {
@@ -199,9 +207,12 @@ export const createGroupChat = async (req, res) => {
     const { name, participantIds } = req.body;
     const currentUserId = req.user.id;
 
-    // Check if user has admin or owner privileges
-    if (!isAdmin(req.user)) {
-      return res.status(403).json({ message: "Access denied. Only admins or owners can create group chats." });
+    // Check if user has owner privileges
+    const userRoles = req.user.roles || [];
+    const isOwnerUser = Array.isArray(userRoles) ? userRoles.includes('Owner') : userRoles === 'Owner';
+
+    if (!isOwnerUser) {
+      return res.status(403).json({ message: "Access denied. Only the Owner can create group chats." });
     }
 
     if (!name || !name.trim()) {
@@ -210,7 +221,7 @@ export const createGroupChat = async (req, res) => {
 
     // Create participants array with at least the creator
     let participants = [currentUserId];
-    
+
     // Add other participants if provided
     if (participantIds && Array.isArray(participantIds) && participantIds.length > 0) {
       // Verify all participants exist
@@ -382,9 +393,12 @@ export const deleteGroupChat = async (req, res) => {
       return res.status(400).json({ message: "Can only delete group chats" });
     }
 
-    // Check if user has admin or owner privileges
-    if (!isAdmin(req.user)) {
-      return res.status(403).json({ message: "Access denied. Only admins or owners can delete group chats." });
+    // Check if user has owner privileges
+    const userRoles = req.user.roles || [];
+    const isOwnerUser = Array.isArray(userRoles) ? userRoles.includes('Owner') : userRoles === 'Owner';
+
+    if (!isOwnerUser) {
+      return res.status(403).json({ message: "Access denied. Only the Owner can delete group chats." });
     }
 
     // Delete all messages in the group
@@ -446,6 +460,70 @@ export const markMessagesAsRead = async (req, res) => {
     return res.status(200).json({ message: "Messages marked as read" });
   } catch (error) {
     console.error("Error marking messages as read:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Delete a one-on-one chat (Owner only)
+export const deleteChat = async (req, res) => {
+  try {
+    const { chatId } = req.params;
+    const currentUserId = req.user.id;
+
+    // Check if user has owner privileges
+    const userRoles = req.user.roles || [];
+    const isOwnerUser = Array.isArray(userRoles) ? userRoles.includes('Owner') : userRoles === 'Owner';
+
+    if (!isOwnerUser) {
+      return res.status(403).json({ message: "Access denied. Only the Owner can delete chats." });
+    }
+
+    // Verify chat exists and is a one-on-one chat
+    const chat = await Chat.findById(chatId);
+    if (!chat) {
+      return res.status(404).json({ message: "Chat not found" });
+    }
+
+    if (chat.type !== 'user') {
+      return res.status(400).json({ message: "Can only delete one-on-one chats with this endpoint. Use deleteGroupChat for groups." });
+    }
+
+    // Delete all messages in the chat
+    await Message.deleteMany({ chat: chatId });
+
+    // Delete the chat
+    await Chat.findByIdAndDelete(chatId);
+
+    return res.status(200).json({ message: "Chat deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting chat:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Delete a single message (Owner only)
+export const deleteMessage = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const currentUserId = req.user.id;
+
+    // Check if user has owner privileges
+    const userRoles = req.user.roles || [];
+    const isOwnerUser = Array.isArray(userRoles) ? userRoles.includes('Owner') : userRoles === 'Owner';
+
+    if (!isOwnerUser) {
+      return res.status(403).json({ message: "Access denied. Only the Owner can delete messages." });
+    }
+
+    // Find and delete the message
+    const message = await Message.findByIdAndDelete(messageId);
+    if (!message) {
+      return res.status(404).json({ message: "Message not found" });
+    }
+
+    return res.status(200).json({ message: "Message deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting message:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };

@@ -21,10 +21,22 @@ export const signUpUser = async (req, res) => {
     const existingUser = await userModel.findOne({ email });
     if (existingUser) return res.status(400).json({ message: "User already exists" });
 
+    // Check if this is the first user
+    const userCount = await userModel.countDocuments();
+    const isFirstUser = userCount === 0;
+
     const hashedPassword = await hashPassword(password);
 
     const newUser = new userModel({
-      fullName, email, phone, password: hashedPassword, consent
+      fullName,
+      email,
+      phone,
+      password: hashedPassword,
+      consent,
+      // Auto-approve first user and make them admin
+      accountStatus: isFirstUser ? "Active" : "Pending",
+      isAdmin: isFirstUser,
+      roles: isFirstUser ? ["Owner"] : ["General"]
     });
 
     await newUser.save();
@@ -37,7 +49,10 @@ export const signUpUser = async (req, res) => {
       console.error("Failed to send welcome email:", emailError);
     }
 
-    return res.status(201).json({ message: "User created successfully" });
+    return res.status(201).json({
+      message: "User created successfully",
+      isFirstUser
+    });
   } catch (error) {
     console.error("Signup error:", error);
     return res.status(500).json({ message: "Internal server error" });
@@ -60,7 +75,8 @@ export const getUsersForDropdown = async (req, res) => {
       instagram: 1,
       location: 1,
       dob: 1,
-      designation: 1
+      designation: 1,
+      brands: 1 // Include brands in the projection
     });
 
     // Format avatar URLs if they exist
@@ -77,7 +93,8 @@ export const getUsersForDropdown = async (req, res) => {
       instagram: user.instagram,
       location: user.location,
       dob: user.dob,
-      designation: user.designation
+      designation: user.designation,
+      brands: user.brands || [] // Include brand information
     }));
 
     return res.status(200).json({ users: formattedUsers });
@@ -92,7 +109,7 @@ export const signInUser = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const user = await userModel.findOne({ email }).populate('reportingHead', 'fullName email');
+    const user = await userModel.findOne({ email }).populate('reportingHead', 'fullName email').populate('brands');
     if (!user) return res.status(401).json({ message: "User not found" });
 
     const isPasswordValid = await comparePassword(password, user.password);
@@ -140,7 +157,9 @@ export const signInUser = async (req, res) => {
         location: user.location,
         gender: user.gender,
         dob: user.dob,
-        designation: user.designation
+        designation: user.designation,
+        accountStatus: user.accountStatus,
+        brands: user.brands || [] // Include brands in login response
       },
       role: user.roles
     });
@@ -201,7 +220,7 @@ export const resetPassword = async (req, res) => {
 // Auth check
 export const authCheck = async (req, res) => {
   try {
-    const user = await userModel.findById(req.user.id).populate('reportingHead', 'fullName email');
+    const user = await userModel.findById(req.user.id).populate('reportingHead', 'fullName email').populate('brands');
     if (!user) return res.status(404).json({ message: "User not found" });
 
     // Check if account is active
@@ -226,7 +245,9 @@ export const authCheck = async (req, res) => {
         location: user.location,
         gender: user.gender,
         dob: user.dob,
-        designation: user.designation
+        designation: user.designation,
+        accountStatus: user.accountStatus,
+        brands: user.brands || [] // Include brand information
       },
       role: user.roles
     });
@@ -244,7 +265,7 @@ export const getAllUsers = async (req, res) => {
       return res.status(403).json({ message: "Access denied. Admin privileges required." });
     }
 
-    const users = await userModel.find().populate('reportingHead', 'fullName email');
+    const users = await userModel.find().populate('reportingHead', 'fullName email').populate('brands');
 
     // Format users with absolute avatar URLs
     const formattedUsers = users.map(user => ({
@@ -263,7 +284,15 @@ export const getAllUsers = async (req, res) => {
       country: user.country,
       state: user.state,
       reportingHead: user.reportingHead,
+      brands: user.brands || [], // Include brand information
       avatar: user.avatar ? `${req.protocol}://${req.get('host')}${user.avatar}` : null,
+      accountStatus: user.accountStatus,
+      // Added missing employee fields
+      employeeCode: user.employeeCode,
+      department: user.department,
+      employmentType: user.employmentType,
+      joiningDate: user.joiningDate,
+      company: user.company,
     }));
 
     return res.status(200).json({ users: formattedUsers });
@@ -315,7 +344,8 @@ export const updateUser = async (req, res) => {
       bloodGroup,
       country,
       state,
-      reportingHead
+      reportingHead,
+      brands // Add brands to destructuring
     } = req.body;
 
     // Find user by ID
@@ -522,6 +552,23 @@ export const updateUser = async (req, res) => {
       if (state !== undefined) user.state = state;
       if (location !== undefined) user.location = location;
 
+      // Update brand associations
+      if (brands !== undefined) {
+        // Validate that brands is an array
+        if (!Array.isArray(brands)) {
+          return res.status(400).json({ message: "Brands must be an array of brand IDs." });
+        }
+
+        // Validate each brand ID
+        for (const brandId of brands) {
+          if (!mongoose.Types.ObjectId.isValid(brandId)) {
+            return res.status(400).json({ message: `Invalid brand ID: ${brandId}` });
+          }
+        }
+
+        user.brands = brands;
+      }
+
       // Update social information
       if (instagram !== undefined) user.instagram = instagram;
 
@@ -605,7 +652,7 @@ export const updateUser = async (req, res) => {
 export const assignRoles = async (req, res) => {
   try {
     const { id } = req.params;
-    const { roles, isAdmin: isAdminValue, accountStatus } = req.body;
+    const { roles, isAdmin: isAdminValue, accountStatus, brands } = req.body;
 
     // Check if requesting user is admin (backward compatible)
     if (!isAdmin(req.user)) {
@@ -628,8 +675,13 @@ export const assignRoles = async (req, res) => {
     }
 
     // Update account status if provided
-    if (accountStatus) {
+    if (accountStatus !== undefined) {
       user.accountStatus = accountStatus;
+    }
+
+    // Update brands if provided
+    if (brands !== undefined) {
+      user.brands = brands;
     }
 
     // Save updated user
@@ -643,7 +695,8 @@ export const assignRoles = async (req, res) => {
         email: user.email,
         roles: user.roles,
         isAdmin: user.isAdmin,
-        accountStatus: user.accountStatus
+        accountStatus: user.accountStatus,
+        brands: user.brands
       }
     });
 

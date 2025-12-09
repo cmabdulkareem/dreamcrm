@@ -43,14 +43,14 @@ export default function ProfileImageUpload({ user, updateAvatar }) {
     }
 
     setSelectedFile(file);
-    
+
     // Create preview
     const reader = new FileReader();
     reader.onload = (e) => {
       setPreviewUrl(e.target.result);
     };
     reader.readAsDataURL(file);
-    
+
     setIsUploadModalOpen(true);
   };
 
@@ -61,7 +61,7 @@ export default function ProfileImageUpload({ user, updateAvatar }) {
     canvas.width = crop.width;
     canvas.height = crop.height;
     const ctx = canvas.getContext('2d');
-    
+
     ctx.drawImage(
       image,
       crop.x * scaleX,
@@ -73,7 +73,7 @@ export default function ProfileImageUpload({ user, updateAvatar }) {
       crop.width,
       crop.height
     );
-    
+
     // As a blob with compression
     return new Promise((resolve, reject) => {
       canvas.toBlob(blob => {
@@ -99,7 +99,7 @@ export default function ProfileImageUpload({ user, updateAvatar }) {
         completedCrop,
         selectedFile.name
       );
-      
+
       setCroppedImageUrl(URL.createObjectURL(croppedBlob));
     } catch (e) {
       console.error('Error cropping image:', e);
@@ -114,7 +114,7 @@ export default function ProfileImageUpload({ user, updateAvatar }) {
     }
 
     setIsUploading(true);
-    
+
     // Use cropped image if available, otherwise use original
     let fileToUpload = selectedFile;
     if (croppedImageUrl) {
@@ -129,7 +129,7 @@ export default function ProfileImageUpload({ user, updateAvatar }) {
         return;
       }
     }
-    
+
     const formData = new FormData();
     formData.append('avatar', fileToUpload);
 
@@ -147,25 +147,23 @@ export default function ProfileImageUpload({ user, updateAvatar }) {
 
       console.log("Avatar upload response:", response.data); // Debug log
 
-      // Update user context/state if updateAvatar function is provided
+      // Add timestamp to avatar URL for cache busting
+      const avatarUrlWithTimestamp = `${response.data.avatar}?t=${Date.now()}`;
+
+      // Update user context/state
       if (updateAvatar && typeof updateAvatar === 'function') {
-        // If updateAvatar is the setUser function from context, we need to pass the full user object
-        if (updateAvatar.name === 'setUser') {
-          const updatedUser = {
-            ...user,
-            avatar: response.data.avatar
-          };
-          console.log("Updating user with:", updatedUser); // Debug log
-          updateAvatar(updatedUser);
-        } else {
-          // For other cases, pass just the avatar URL
-          updateAvatar(response.data.avatar);
-        }
-      } else if (updateUser && typeof updateUser === 'function') {
-        // Fallback to updateUser if updateAvatar is not available
+        // Update the full user object with the new avatar
         const updatedUser = {
           ...user,
-          avatar: response.data.avatar
+          avatar: avatarUrlWithTimestamp
+        };
+        console.log("Updating user with:", updatedUser); // Debug log
+        updateAvatar(updatedUser);
+      } else if (updateUser && typeof updateUser === 'function') {
+        // Fallback to updateUser from AuthContext
+        const updatedUser = {
+          ...user,
+          avatar: avatarUrlWithTimestamp
         };
         console.log("Updating user with fallback:", updatedUser); // Debug log
         updateUser(updatedUser);
@@ -178,7 +176,7 @@ export default function ProfileImageUpload({ user, updateAvatar }) {
       setCroppedImageUrl(null);
       setCrop({ unit: '%', width: 50, aspect: 1 });
       setCompletedCrop(null);
-      
+
       // Clear file input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -204,15 +202,19 @@ export default function ProfileImageUpload({ user, updateAvatar }) {
         accept="image/*"
         className="hidden"
       />
-      
+
       <button
         onClick={triggerFileSelect}
         className="w-20 h-20 overflow-hidden border-2 border-dashed border-gray-300 rounded-full cursor-pointer hover:border-brand-500 transition-colors"
       >
-        <img 
-          key={`${user?.avatar || 'default-avatar'}-${avatarKey}`} // Use avatarKey for forced refresh
-          src={user?.avatar || "/images/user/user-01.jpg"} 
-          alt="Profile" 
+        <img
+          key={`${user?.avatar || 'default-avatar'}-${avatarKey}`}
+          src={
+            user?.avatar
+              ? `${user.avatar.split('?')[0]}?t=${avatarKey}`
+              : "/images/user/user-01.jpg"
+          }
+          alt="Profile"
           className="w-full h-full object-cover"
         />
       </button>
@@ -222,7 +224,7 @@ export default function ProfileImageUpload({ user, updateAvatar }) {
           <h3 className="text-xl font-semibold text-gray-800 dark:text-white/90 mb-4">
             Upload Profile Image
           </h3>
-          
+
           <div className="mb-6 flex flex-col items-center">
             {previewUrl && !croppedImageUrl && (
               <div className="mb-4">
@@ -234,56 +236,56 @@ export default function ProfileImageUpload({ user, updateAvatar }) {
                   minWidth={100}
                   minHeight={100}
                 >
-                  <img 
+                  <img
                     ref={onImageLoad}
-                    src={previewUrl} 
-                    alt="Preview" 
+                    src={previewUrl}
+                    alt="Preview"
                     className="max-h-96"
                   />
                 </ReactCrop>
               </div>
             )}
-            
+
             {croppedImageUrl && (
               <div className="mb-4">
-                <img 
-                  src={croppedImageUrl} 
-                  alt="Cropped Preview" 
+                <img
+                  src={croppedImageUrl}
+                  alt="Cropped Preview"
                   className="w-32 h-32 mx-auto rounded-full object-cover border border-gray-200 dark:border-gray-700"
                 />
               </div>
             )}
-            
+
             {!previewUrl && !croppedImageUrl && (
               <p className="text-gray-500">No image selected</p>
             )}
           </div>
-          
+
           <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-            {croppedImageUrl 
-              ? "Preview of your cropped profile image" 
+            {croppedImageUrl
+              ? "Preview of your cropped profile image"
               : "Select an area to crop your profile image. The image should be in JPG, PNG, or GIF format. Images will be automatically compressed after upload."}
           </p>
-          
+
           <div className="flex justify-center gap-3">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setIsUploadModalOpen(false)}
               disabled={isUploading}
             >
               Cancel
             </Button>
-            
+
             {!croppedImageUrl && previewUrl && (
-              <Button 
+              <Button
                 onClick={handleCropComplete}
                 disabled={isUploading}
               >
                 Crop Image
               </Button>
             )}
-            
-            <Button 
+
+            <Button
               onClick={handleUpload}
               disabled={isUploading}
             >

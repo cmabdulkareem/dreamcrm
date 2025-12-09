@@ -22,6 +22,7 @@ import chatRoutes from './routes/chatRoutes.js'
 import eventRoutes from './routes/eventRoutes.js'
 import leaveRoutes from './routes/leaveRoutes.js'
 import announcementRoutes from './routes/announcementRoutes.js'
+import brandRoutes from './routes/brandRoutes.js'
 
 const app = express()
 
@@ -53,6 +54,7 @@ app.use('/api/chats', chatRoutes)
 app.use('/api/events', eventRoutes)
 app.use('/api/leaves', leaveRoutes)
 app.use('/api/announcements', announcementRoutes)
+app.use('/api/brands', brandRoutes)
 
 // Catch-all route to serve index.html for client-side routing
 app.use((req, res) => {

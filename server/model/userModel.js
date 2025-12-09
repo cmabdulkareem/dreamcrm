@@ -72,6 +72,12 @@ const userSchema = new mongoose.Schema(
     location: { type: String, default: "DreamZone, Kasaragod" },
     avatar: { type: String, default: null },
     
+    // Brand associations - which brands this user can access
+    brands: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Brand'
+    }],
+    
     // New profile fields
     bloodGroup: { type: String, default: "" },
     country: { type: String, default: "" },

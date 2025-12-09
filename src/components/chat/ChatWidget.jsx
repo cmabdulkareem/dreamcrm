@@ -6,35 +6,38 @@ import DraggableParticipant from './DraggableParticipant';
 import GroupParticipants from './GroupParticipants';
 import Badge from '../ui/badge/Badge'; // Import Badge component
 import { ChatIcon } from '../../icons'; // Import ChatIcon
-import { isAdmin } from '../../utils/roleHelpers'; // Add this import
+import { isAdmin, isOwner } from '../../utils/roleHelpers'; // Add this import
 
 const ChatWidget = () => {
-  const { 
-    isChatOpen, 
-    activeChat, 
-    showContacts, 
+  const {
+    isChatOpen,
+    activeChat,
+    showContacts,
     showGroupParticipants,
-    chats, 
-    messages, 
-    onlineUsers, 
-    contacts, 
+    chats,
+    messages,
+    onlineUsers,
+    contacts,
     loading,
     unreadCounts, // Import unread counts
     hasUnreadMessages, // Import has unread messages flag
-    toggleChat, 
-    openChat, 
-    closeChat, 
+    toggleChat,
+    openChat,
+    closeChat,
     handleBack,
-    createChat, 
+    createChat,
     sendMessage,
     addParticipantToGroup,
     removeParticipantFromGroup,
+    deleteGroupChat,
+    deleteChat,
+    deleteMessage,
     fetchUsers,
     setShowContacts,
     setShowGroupParticipants,
     isUserOnline
   } = useChat();
-  
+
   const { user } = useContext(AuthContext);
   const [newMessage, setNewMessage] = useState('');
   const messagesEndRef = useRef(null);
@@ -54,9 +57,9 @@ const ChatWidget = () => {
     const handleScrollToBottom = () => {
       scrollToBottom();
     };
-    
+
     window.addEventListener('scrollToBottom', handleScrollToBottom);
-    
+
     return () => {
       window.removeEventListener('scrollToBottom', handleScrollToBottom);
     };
@@ -67,7 +70,7 @@ const ChatWidget = () => {
     if (newMessage.trim() && activeChat) {
       sendMessage(activeChat.id, newMessage);
       setNewMessage('');
-      
+
       // Scroll to bottom after sending message
       setTimeout(() => {
         scrollToBottom();
@@ -79,15 +82,15 @@ const ChatWidget = () => {
     // Normalize user IDs
     const userId = user ? (user._id || user.id) : null;
     const contactId = contact._id || contact.id;
-    
+
     // Check if chat already exists
-    const existingChat = chats.find(chat => 
-      chat.type === 'user' && 
-      chat.participants.length === 2 && 
+    const existingChat = chats.find(chat =>
+      chat.type === 'user' &&
+      chat.participants.length === 2 &&
       chat.participants.some(p => (p._id || p.id) === contactId) &&
       chat.participants.some(p => (p._id || p.id) === userId)
     );
-    
+
     if (existingChat) {
       openChat(existingChat);
     } else {
@@ -97,17 +100,17 @@ const ChatWidget = () => {
         openChat(newChat);
       }
     }
-    
+
     setShowContacts(false);
   };
 
   const handleCreateGroupChat = async () => {
-    // Check if user has admin privileges
-    if (!isAdmin(user)) {
-      alert('Only admins or owners can create group chats.');
+    // Check if user has owner privileges
+    if (!isOwner(user)) {
+      alert('Only the Owner can create group chats.');
       return;
     }
-    
+
     // For group chats, we need to select participants first
     // Show contacts list to select participants
     setShowContacts(true);
@@ -132,7 +135,7 @@ const ChatWidget = () => {
       alert('Please select at least one participant');
       return;
     }
-    
+
     const groupName = prompt('Enter group name:');
     if (groupName) {
       const newChat = await createChat(selectedParticipants, true, groupName);
@@ -167,7 +170,7 @@ const ChatWidget = () => {
 
   const getChatDisplayName = (chat) => {
     if (!chat) return 'Unknown Chat';
-    
+
     if (chat.type === 'group') {
       return chat.name || 'Unnamed Group';
     } else {
@@ -179,14 +182,15 @@ const ChatWidget = () => {
 
   const getChatDisplayAvatar = (chat) => {
     if (!chat) return '/images/user/user-01.jpg';
-    
+
     if (chat.type === 'group') {
-      return '/images/user/group-avatar.png';
+      return null; // Will render icon instead
     } else {
       const userId = user ? (user._id || user.id) : null;
       const otherParticipant = chat.participants?.find(p => (p._id || p.id) !== userId);
-      // Use the avatar from the participant object if available
-      return otherParticipant?.avatar || '/images/user/user-01.jpg';
+      // Use cache-busting for profile images
+      const avatar = otherParticipant?.avatar;
+      return avatar ? `${avatar.split('?')[0]}?t=${Date.now()}` : '/images/user/user-01.jpg';
     }
   };
 
@@ -210,7 +214,7 @@ const ChatWidget = () => {
       {!isChatOpen && (
         <button
           onClick={toggleChat}
-          className="flex items-center justify-center w-14 h-14 rounded-full bg-blue-500 text-white shadow-lg hover:bg-blue-600 transition-all"
+          className="flex items-center justify-center w-14 h-14 rounded-full bg-brand-600 text-white shadow-lg hover:bg-brand-700 transition-all"
         >
           <ChatIcon className="h-6 w-6" />
           {/* Show notification badge if there are unread messages */}
@@ -233,18 +237,33 @@ const ChatWidget = () => {
                 onClick={handleBack}
                 className="mr-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
-                </svg>
+                {activeChat ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  </svg>
+                )}
               </button>
               <div className="flex items-center">
-                <img
-                  src={getChatDisplayAvatar(activeChat)}
-                  alt={getChatDisplayName(activeChat)}
-                  className={`w-8 h-8 rounded-full ${isGroupChat(activeChat) ? 'border-2 border-gray-500' : ''}`}
-                />
+                {isGroupChat(activeChat) ? (
+                  <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900 flex items-center justify-center border-2 border-brand-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-brand-600 dark:text-brand-300" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+                    </svg>
+                  </div>
+                ) : (
+                  <img
+                    src={getChatDisplayAvatar(activeChat)}
+                    alt={getChatDisplayName(activeChat)}
+                    className="w-8 h-8 rounded-full"
+                    key={getChatDisplayAvatar(activeChat)}
+                  />
+                )}
                 <div className="ml-2">
-                  <h3 className={`font-medium ${isGroupChat(activeChat) ? 'text-blue-600 dark:text-gray-300' : 'text-gray-800 dark:text-white'}`}>
+                  <h3 className={`font-medium ${isGroupChat(activeChat) ? 'text-brand-600 dark:text-gray-300' : 'text-gray-800 dark:text-white'}`}>
                     {activeChat ? getChatDisplayName(activeChat) : 'Chat'}
                   </h3>
                   {isGroupChat(activeChat) && (
@@ -266,7 +285,7 @@ const ChatWidget = () => {
                   </svg>
                 </button>
               )}
-              {!showContacts && !showGroupParticipants && (
+              {!showContacts && !showGroupParticipants && isOwner(user) && ( // Only owners can initiate chats
                 <button
                   onClick={() => {
                     setShowContacts(!showContacts);
@@ -312,10 +331,10 @@ const ChatWidget = () => {
                           </button>
                         </>
                       )}
-                      {!isSelectingParticipants && isAdmin(user) && ( // Only show for admins
+                      {!isSelectingParticipants && isOwner(user) && ( // Only show for owners
                         <button
                           onClick={handleCreateGroupChat}
-                          className="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
+                          className="text-xs bg-brand-500 text-white px-2 py-1 rounded hover:bg-brand-600"
                         >
                           New Group
                         </button>
@@ -349,13 +368,14 @@ const ChatWidget = () => {
                                   handleStartChat(contact);
                                 }
                               }}
-                              className={`flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer ${isSelectingParticipants && selectedParticipants.some(p => p._id === contact._id) ? 'bg-blue-100 dark:bg-gray-700' : ''}`}
+                              className={`flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer ${isSelectingParticipants && selectedParticipants.some(p => p._id === contact._id) ? 'bg-brand-50 dark:bg-gray-700' : ''}`}
                             >
                               <div className="relative">
                                 <img
-                                  src={contact.avatar || '/images/user/user-01.jpg'}
+                                  src={contact.avatar ? `${contact.avatar.split('?')[0]}?t=${Date.now()}` : '/images/user/user-01.jpg'}
                                   alt={contact.fullName}
                                   className="w-10 h-10 rounded-full"
+                                  key={contact.avatar}
                                 />
                                 <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-white dark:ring-gray-800"></span>
                                 {isSelectingParticipants && selectedParticipants.some(p => p._id === contact._id) && (
@@ -399,13 +419,14 @@ const ChatWidget = () => {
                               handleStartChat(contact);
                             }
                           }}
-                          className={`flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer ${isSelectingParticipants && selectedParticipants.some(p => p._id === contact._id) ? 'bg-blue-100 dark:bg-gray-700' : ''}`}
+                          className={`flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer ${isSelectingParticipants && selectedParticipants.some(p => p._id === contact._id) ? 'bg-brand-50 dark:bg-gray-700' : ''}`}
                         >
                           <div className="relative">
                             <img
-                              src={contact.avatar || '/images/user/user-01.jpg'}
+                              src={contact.avatar ? `${contact.avatar.split('?')[0]}?t=${Date.now()}` : '/images/user/user-01.jpg'}
                               alt={contact.fullName}
                               className="w-10 h-10 rounded-full"
+                              key={contact.avatar}
                             />
                             {isOnline && (
                               <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-white dark:ring-gray-800"></span>
@@ -447,25 +468,25 @@ const ChatWidget = () => {
                     const userId = user ? (user._id || user.id) : null;
                     const messageSenderId = message.sender._id || message.sender.id;
                     const isOwnMessage = messageSenderId === userId;
-                    
+
                     return (
                       <div
                         key={message.id}
-                        className={`flex mb-4 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
+                        className={`flex mb-4 ${isOwnMessage ? 'justify-end' : 'justify-start'} group`}
                       >
                         {!isOwnMessage && (
                           <img
-                            src={message.sender.avatar || '/images/user/user-01.jpg'}
+                            src={message.sender.avatar ? `${message.sender.avatar.split('?')[0]}?t=${Date.now()}` : '/images/user/user-01.jpg'}
                             alt={message.sender.fullName}
                             className="w-8 h-8 rounded-full mr-2"
+                            key={message.sender.avatar}
                           />
                         )}
                         <div
-                          className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                            isOwnMessage
-                              ? 'bg-gray-700 text-white rounded-br-none'
-                              : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-bl-none'
-                          }`}
+                          className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${isOwnMessage
+                            ? 'bg-gray-700 text-white rounded-br-none'
+                            : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-bl-none'
+                            }`}
                         >
                           {!isOwnMessage && (
                             <p className="text-xs font-medium">{message.sender.fullName}</p>
@@ -475,6 +496,24 @@ const ChatWidget = () => {
                             {formatTime(message.timestamp)}
                           </p>
                         </div>
+                        {/* Delete button (Owner only, visible on hover) */}
+                        {isOwner(user) && (
+                          <button
+                            onClick={() => {
+                              if (confirm('Delete this message?')) {
+                                deleteMessage(message.id, activeChat.id).catch(err => {
+                                  alert('Failed: ' + (err.response?.data?.message || err.message));
+                                });
+                              }
+                            }}
+                            className="ml-2 opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 transition-opacity"
+                            title="Delete message"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                          </button>
+                        )}
                       </div>
                     );
                   })}
@@ -491,7 +530,7 @@ const ChatWidget = () => {
                     />
                     <button
                       type="submit"
-                      className="bg-blue-500 text-white px-4 py-2 rounded-r-lg hover:bg-blue-600 focus:outline-none"
+                      className="bg-brand-600 text-white px-4 py-2 rounded-r-lg hover:bg-brand-700 focus:outline-none"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                         <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
@@ -506,7 +545,7 @@ const ChatWidget = () => {
                 {chats.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full p-4 text-center">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9 8s9 3.582 9 8z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                     </svg>
                     <p className="mt-2 text-gray-500 dark:text-gray-400">No chats yet</p>
                     <button
@@ -514,7 +553,7 @@ const ChatWidget = () => {
                         setShowContacts(true);
                         fetchUsers();
                       }}
-                      className="mt-2 text-blue-500 hover:text-blue-700 dark:text-gray-300 dark:hover:text-gray-200"
+                      className="mt-2 text-brand-600 hover:text-brand-800 dark:text-gray-300 dark:hover:text-gray-200"
                     >
                       Start a conversation
                     </button>
@@ -525,52 +564,84 @@ const ChatWidget = () => {
                     return (
                       <div
                         key={chat.id}
-                        onClick={() => openChat(chat)}
-                        className="flex items-center p-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700"
+                        className="flex items-center p-3 hover:bg-gray-100 dark:hover:bg-gray-700 border-b border-gray-100 dark:border-gray-700"
                       >
-                        <div className="relative">
-                          <img
-                            src={getChatDisplayAvatar(chat)}
-                            alt={getChatDisplayName(chat)}
-                            className={`w-10 h-10 rounded-full ${isGroupChat(chat) ? 'border-2 border-gray-500' : ''}`}
-                          />
-                          {/* Show online status indicator for user chats */}
-                          {chat && chat.type === 'user' && isUserOnline(chat.participants?.find(p => (p._id || p.id) !== (user?._id || user?.id))?._id) && (
-                            <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-white dark:ring-gray-800"></span>
-                          )}
-                          {isGroupChat(chat) && unreadCount > 0 && (
-                            <span className="absolute -top-1 -right-1 flex items-center justify-center h-5 w-5 bg-gray-700 rounded-full text-white text-xs">
-                              {unreadCount}
-                            </span>
-                          )}
-                        </div>
-                        <div className="ml-3 flex-1 min-w-0">
-                          <div className="flex justify-between">
-                            <p className={`text-sm font-medium truncate ${isGroupChat(chat) ? 'text-blue-600 dark:text-gray-300' : 'text-gray-900 dark:text-white'}`}>
-                              {getChatDisplayName(chat)}
-                            </p>
-                            <div className="flex items-center gap-1">
+                        <div
+                          onClick={() => openChat(chat)}
+                          className="flex items-center flex-1 cursor-pointer"
+                        >
+                          <div className="relative">
+                            {isGroupChat(chat) ? (
+                              <div className="w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-900 flex items-center justify-center border-2 border-brand-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-brand-600 dark:text-brand-300" viewBox="0 0 20 20" fill="currentColor">
+                                  <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+                                </svg>
+                              </div>
+                            ) : (
+                              <img
+                                src={getChatDisplayAvatar(chat)}
+                                alt={getChatDisplayName(chat)}
+                                className="w-10 h-10 rounded-full"
+                                key={getChatDisplayAvatar(chat)}
+                              />
+                            )}
+                            {/* Show online status indicator for user chats */}
+                            {chat && chat.type === 'user' && isUserOnline(chat.participants?.find(p => (p._id || p.id) !== (user?._id || user?.id))?._id) && (
+                              <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-white dark:ring-gray-800"></span>
+                            )}
+                            {isGroupChat(chat) && unreadCount > 0 && (
+                              <span className="absolute -top-1 -right-1 flex items-center justify-center h-5 w-5 bg-gray-700 rounded-full text-white text-xs">
+                                {unreadCount}
+                              </span>
+                            )}
+                          </div>
+                          <div className="ml-3 flex-1 min-w-0">
+                            <div className="flex justify-between">
+                              <p className={`text-sm font-medium truncate ${isGroupChat(chat) ? 'text-brand-600 dark:text-gray-300' : 'text-gray-900 dark:text-white'}`}>
+                                {getChatDisplayName(chat)}
+                              </p>
+                              <div className="flex items-center gap-1">
+                                {chat?.lastMessage && (
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    {formatTime(chat.lastMessage.timestamp)}
+                                  </p>
+                                )}
+                                {/* Show unread message badge */}
+                                {unreadCount > 0 && (
+                                  <Badge variant="solid" color="primary" size="sm">
+                                    {unreadCount}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex justify-between">
                               {chat?.lastMessage && (
-                                <p className="text-xs text-gray-500 dark:text-gray-400">
-                                  {formatTime(chat.lastMessage.timestamp)}
+                                <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                                  {chat.lastMessage.text}
                                 </p>
-                              )}
-                              {/* Show unread message badge */}
-                              {unreadCount > 0 && (
-                                <Badge variant="solid" color="primary" size="sm">
-                                  {unreadCount}
-                                </Badge>
                               )}
                             </div>
                           </div>
-                          <div className="flex justify-between">
-                            {chat?.lastMessage && (
-                              <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                                {chat.lastMessage.text}
-                              </p>
-                            )}
-                          </div>
                         </div>
+                        {/* Delete button for one-on-one chats (Owner only) */}
+                        {isOwner(user) && chat.type === 'user' && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm('Delete this chat?')) {
+                                deleteChat(chat.id).catch(err => {
+                                  alert('Failed: ' + (err.response?.data?.message || err.message));
+                                });
+                              }
+                            }}
+                            className="ml-2 p-2 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                            title="Delete chat"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                          </button>
+                        )}
                       </div>
                     );
                   })

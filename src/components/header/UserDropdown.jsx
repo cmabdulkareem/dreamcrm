@@ -6,7 +6,7 @@ import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { AuthContext } from "../../context/AuthContext";
 import { useChat } from "../../context/ChatContext";
 
-const API = import.meta.env.PROD 
+const API = import.meta.env.PROD
   ? import.meta.env.VITE_API_URL_PRODUCTION || "https://dreamcrm.onrender.com/api"
   : import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
@@ -28,9 +28,9 @@ export default function UserDropdown() {
     try {
       // Mark user as offline in chat system before logging out
       setUserOffline();
-      
+
       // Call logout API
-      await axios.get(`${API}/users/logout`, { 
+      await axios.get(`${API}/users/logout`, {
         withCredentials: true,
         timeout: 5000
       });
@@ -52,7 +52,12 @@ export default function UserDropdown() {
         className="flex items-center text-gray-700 dropdown-toggle dark:text-gray-400"
       >
         <span className="mr-3 overflow-hidden rounded-full h-11 w-11">
-          <img src={user?.avatar || "/images/user/user-01.jpg"} alt="User" className="w-full h-full object-cover" />
+          <img
+            src={user?.avatar ? `${user.avatar.split('?')[0]}?t=${Date.now()}` : "/images/user/user-01.jpg"}
+            alt="User"
+            className="w-full h-full object-cover"
+            key={user?.avatar}
+          />
         </span>
         <span className="block mr-1 font-medium text-theme-sm">{user?.fullName}</span>
         <svg

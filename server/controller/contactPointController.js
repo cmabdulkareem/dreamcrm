@@ -3,7 +3,8 @@ import ContactPoint from '../model/contactPointModel.js';
 // Get all contact points
 export const getAllContactPoints = async (req, res) => {
   try {
-    const contactPoints = await ContactPoint.find().sort({ createdAt: -1 });
+    const query = { ...req.brandFilter };
+    const contactPoints = await ContactPoint.find(query).sort({ createdAt: -1 });
     return res.status(200).json({ contactPoints });
   } catch (error) {
     console.error('Get contact points error:', error);
@@ -14,7 +15,8 @@ export const getAllContactPoints = async (req, res) => {
 // Get active contact points only (for dropdowns)
 export const getActiveContactPoints = async (req, res) => {
   try {
-    const contactPoints = await ContactPoint.find({ isActive: true }).sort({ name: 1 });
+    const query = { isActive: true, ...req.brandFilter };
+    const contactPoints = await ContactPoint.find(query).sort({ name: 1 });
     return res.status(200).json({ contactPoints });
   } catch (error) {
     console.error('Get active contact points error:', error);
@@ -52,24 +54,25 @@ export const createContactPoint = async (req, res) => {
       name: name.trim(),
       value,
       description: description ? description.trim() : '',
-      isActive: isActive !== undefined ? isActive : true
+      isActive: isActive !== undefined ? isActive : true,
+      brand: req.brandFilter?.brand || req.headers['x-brand-id'] || null // Strict brand assignment
     });
 
     await contactPoint.save();
     return res.status(201).json({ message: 'Contact point created successfully', contactPoint });
   } catch (error) {
     console.error('Create contact point error:', error);
-    
+
     // Handle MongoDB duplicate key error
     if (error.code === 11000) {
       return res.status(400).json({ message: 'Contact point with this name or value already exists' });
     }
-    
+
     // Handle Mongoose validation errors
     if (error.name === 'ValidationError') {
       return res.status(400).json({ message: error.message });
     }
-    
+
     return res.status(500).json({ message: 'Server error' });
   }
 };
@@ -99,22 +102,22 @@ export const updateContactPoint = async (req, res) => {
       if (trimmedName !== contactPoint.name) {
         // Generate new value from name
         const newValue = trimmedName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-        
+
         // Validate that value is not empty after processing
         if (!newValue || newValue.trim() === '') {
           return res.status(400).json({ message: 'Contact point name must contain at least one alphanumeric character' });
         }
-        
+
         // Check if new name or value already exists
         const existingContactPoint = await ContactPoint.findOne({
           _id: { $ne: id },
           $or: [{ name: trimmedName }, { value: newValue }]
         });
-        
+
         if (existingContactPoint) {
           return res.status(400).json({ message: 'Contact point with this name or value already exists' });
         }
-        
+
         contactPoint.name = trimmedName;
         // Update value when name changes
         contactPoint.value = newValue;
@@ -128,22 +131,22 @@ export const updateContactPoint = async (req, res) => {
     return res.status(200).json({ message: 'Contact point updated successfully', contactPoint });
   } catch (error) {
     console.error('Update contact point error:', error);
-    
+
     // Handle MongoDB duplicate key error
     if (error.code === 11000) {
       return res.status(400).json({ message: 'Contact point with this name or value already exists' });
     }
-    
+
     // Handle Mongoose validation errors
     if (error.name === 'ValidationError') {
       return res.status(400).json({ message: error.message });
     }
-    
+
     // Handle CastError (invalid ObjectId)
     if (error.name === 'CastError') {
       return res.status(400).json({ message: 'Invalid contact point ID' });
     }
-    
+
     return res.status(500).json({ message: 'Server error' });
   }
 };
@@ -166,12 +169,12 @@ export const deleteContactPoint = async (req, res) => {
     return res.status(200).json({ message: 'Contact point deleted successfully' });
   } catch (error) {
     console.error('Delete contact point error:', error);
-    
+
     // Handle CastError (invalid ObjectId)
     if (error.name === 'CastError') {
       return res.status(400).json({ message: 'Invalid contact point ID' });
     }
-    
+
     return res.status(500).json({ message: 'Server error' });
   }
 };

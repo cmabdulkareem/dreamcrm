@@ -3,7 +3,7 @@ import axios from 'axios';
 import { io } from 'socket.io-client';
 import { AuthContext } from './AuthContext';
 
-const API = import.meta.env.PROD 
+const API = import.meta.env.PROD
   ? import.meta.env.VITE_API_URL_PRODUCTION || "https://dreamcrm.onrender.com/api"
   : import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
@@ -44,22 +44,22 @@ export const ChatProvider = ({ children }) => {
   const [hasUnreadMessages, setHasUnreadMessages] = useState(false); // Track if there are any unread messages
   const onlineStatusIntervalRef = useRef(null);
   const socketRef = useRef(null);
-  
+
   // Normalize user ID - handle both 'id' and '_id' formats
   const userId = user ? (user._id || user.id) : null;
 
   // Fetch chats from server
   const fetchChats = useCallback(async () => {
     if (!userId) return;
-    
+
     try {
       const response = await axios.get(`${API}/chats`, {
         withCredentials: true,
         timeout: 10000
       });
-      
+
       const serverChats = response.data.chats || [];
-      
+
       // Format chats for frontend
       const formattedChats = serverChats.map(chat => ({
         id: chat._id || chat.id,
@@ -73,7 +73,7 @@ export const ChatProvider = ({ children }) => {
           timestamp: chat.lastMessage.timestamp
         } : null
       }));
-      
+
       setChats(formattedChats);
     } catch (error) {
       console.error('Error fetching chats:', error);
@@ -90,27 +90,27 @@ export const ChatProvider = ({ children }) => {
   // Fetch all users from the API
   const fetchUsers = useCallback(async () => {
     if (!userId) return;
-    
+
     setLoading(true);
     try {
       // Fetch all users and online users in parallel
       const [usersResponse, onlineResponse] = await Promise.all([
-        axios.get(`${API}/users/dropdown`, { 
+        axios.get(`${API}/users/dropdown`, {
           withCredentials: true,
           timeout: 10000
         }),
-        axios.get(`${API}/users/online`, { 
+        axios.get(`${API}/users/online`, {
           withCredentials: true,
           timeout: 10000
         }).catch(() => ({ data: { onlineUsers: [] } })) // Fallback if endpoint doesn't exist yet
       ]);
-      
+
       const allUsers = usersResponse.data.users || [];
       const onlineUsersList = onlineResponse.data.onlineUsers || [];
-      
+
       // Normalize user IDs - handle both 'id' and '_id' formats
       const normalizeUserId = (u) => u._id || u.id;
-      
+
       // Filter out current user and format the data
       const filteredUsers = allUsers
         .filter(contact => normalizeUserId(contact) !== userId)
@@ -123,9 +123,9 @@ export const ChatProvider = ({ children }) => {
             avatar: contact.avatar || null
           };
         });
-      
+
       setContacts(filteredUsers);
-      
+
       // Set online users from server response
       const formattedOnlineUsers = onlineUsersList
         .filter(u => normalizeUserId(u) !== userId)
@@ -138,7 +138,7 @@ export const ChatProvider = ({ children }) => {
             avatar: u.avatar || null
           };
         });
-      
+
       setOnlineUsers(formattedOnlineUsers);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -189,7 +189,7 @@ export const ChatProvider = ({ children }) => {
         if (existingMessages.some(m => m.id === message.id)) {
           return prev;
         }
-      
+
         // Update unread count for this chat if it's not the current user's message
         const messageSenderId = message.sender._id || message.sender.id;
         if (userId && messageSenderId !== userId) {
@@ -199,7 +199,7 @@ export const ChatProvider = ({ children }) => {
           }));
           setHasUnreadMessages(true);
         }
-      
+
         return {
           ...prev,
           [message.chatId]: [...existingMessages, message]
@@ -207,8 +207,8 @@ export const ChatProvider = ({ children }) => {
       });
 
       // Update chat's last message
-      setChats(prev => prev.map(chat => 
-        chat.id === message.chatId 
+      setChats(prev => prev.map(chat =>
+        chat.id === message.chatId
           ? { ...chat, lastMessage: { text: message.text, timestamp: message.timestamp } }
           : chat
       ));
@@ -218,8 +218,8 @@ export const ChatProvider = ({ children }) => {
         axios.put(`${API}/chats/${message.chatId}/read`, {}, {
           withCredentials: true,
           timeout: 5000
-        }).catch(() => {});
-        
+        }).catch(() => { });
+
         // Reset unread count for this chat
         setUnreadCounts(prevUnread => ({
           ...prevUnread,
@@ -234,28 +234,28 @@ export const ChatProvider = ({ children }) => {
       if (chatData.type === 'deleted') {
         // Remove deleted chat from chats list
         setChats(prev => prev.filter(chat => chat.id !== chatData.id));
-        
+
         // If the deleted chat is currently active, close it
         if (activeChat && activeChat.id === chatData.id) {
           closeChat();
         }
-        
+
         // Remove messages for deleted chat
         setMessages(prev => {
           const newMessages = { ...prev };
           delete newMessages[chatData.id];
           return newMessages;
         });
-        
+
         return;
       }
-      
+
       setChats(prev => {
         const existingChatIndex = prev.findIndex(c => c.id === chatData.id);
         if (existingChatIndex >= 0) {
           // Update existing chat
-          return prev.map((c, idx) => 
-            idx === existingChatIndex 
+          return prev.map((c, idx) =>
+            idx === existingChatIndex
               ? { ...c, lastMessage: chatData.lastMessage, participants: chatData.participants || c.participants }
               : c
           );
@@ -290,16 +290,16 @@ export const ChatProvider = ({ children }) => {
             withCredentials: true,
             timeout: 5000
           });
-          
+
           // Fetch updated online users list
           fetchUsers();
         } catch (error) {
           console.error('Error marking user as online:', error);
         }
       };
-      
+
       markUserOnline();
-      
+
       // Set up heartbeat - update online status every 30 seconds to keep user online
       const heartbeatInterval = setInterval(async () => {
         try {
@@ -311,12 +311,12 @@ export const ChatProvider = ({ children }) => {
           console.error('Error updating heartbeat:', error);
         }
       }, 30000); // Every 30 seconds
-      
+
       // Set up periodic refresh of online users list (every 30 seconds)
       onlineStatusIntervalRef.current = setInterval(() => {
         fetchUsers();
       }, 30000);
-      
+
       // Cleanup on unmount or user change
       return () => {
         clearInterval(heartbeatInterval);
@@ -330,7 +330,7 @@ export const ChatProvider = ({ children }) => {
 
   const createChat = async (participants, isGroup = false, groupName = '') => {
     if (!userId) return null;
-    
+
     try {
       if (isGroup) {
         // Create group chat with selected participants
@@ -342,7 +342,7 @@ export const ChatProvider = ({ children }) => {
           withCredentials: true,
           timeout: 10000
         });
-        
+
         const serverChat = response.data.chat;
         const newChat = {
           id: serverChat._id || serverChat.id,
@@ -353,21 +353,21 @@ export const ChatProvider = ({ children }) => {
           createdAt: serverChat.createdAt,
           lastMessage: null
         };
-        
+
         setChats(prev => [...prev, newChat]);
         return newChat;
       } else {
         // Get or create user chat
         const participantId = participants[0]?._id || participants[0]?.id;
         if (!participantId) return null;
-        
+
         const response = await axios.post(`${API}/chats/get-or-create`, {
           participantId: participantId
         }, {
           withCredentials: true,
           timeout: 10000
         });
-        
+
         const serverChat = response.data.chat;
         const newChat = {
           id: serverChat._id || serverChat.id,
@@ -381,7 +381,7 @@ export const ChatProvider = ({ children }) => {
             timestamp: serverChat.lastMessage.timestamp
           } : null
         };
-        
+
         // Check if chat already exists in list
         const existingChatIndex = chats.findIndex(c => c.id === newChat.id);
         if (existingChatIndex >= 0) {
@@ -391,7 +391,7 @@ export const ChatProvider = ({ children }) => {
           // Add new chat
           setChats(prev => [...prev, newChat]);
         }
-        
+
         return newChat;
       }
     } catch (error) {
@@ -403,15 +403,15 @@ export const ChatProvider = ({ children }) => {
   // Fetch messages for a chat
   const fetchMessages = async (chatId) => {
     if (!chatId || !userId) return;
-    
+
     try {
       const response = await axios.get(`${API}/chats/${chatId}/messages`, {
         withCredentials: true,
         timeout: 10000
       });
-      
+
       const serverMessages = response.data.messages || [];
-      
+
       // Format messages for frontend
       const formattedMessages = serverMessages.map(msg => ({
         id: msg._id || msg.id,
@@ -425,32 +425,32 @@ export const ChatProvider = ({ children }) => {
         text: msg.text,
         timestamp: msg.createdAt || new Date().toISOString(),
       }));
-      
+
       setMessages(prev => ({
         ...prev,
         [chatId]: formattedMessages
       }));
-      
+
       // Mark messages as read and reset unread count
       try {
         await axios.put(`${API}/chats/${chatId}/read`, {}, {
           withCredentials: true,
           timeout: 5000
         });
-        
+
         // Reset unread count for this chat
         setUnreadCounts(prevUnread => ({
           ...prevUnread,
           [chatId]: 0
         }));
-        
+
         // Check if there are still any unread messages
         const hasUnread = Object.values({ ...unreadCounts, [chatId]: 0 }).some(count => count > 0);
         setHasUnreadMessages(hasUnread);
       } catch (error) {
         // Ignore read status errors
       }
-      
+
       // Scroll to bottom after fetching messages
       setTimeout(() => {
         const event = new CustomEvent('scrollToBottom');
@@ -463,7 +463,7 @@ export const ChatProvider = ({ children }) => {
 
   const sendMessage = async (chatId, text) => {
     if (!text.trim() || !user || !userId) return;
-    
+
     try {
       // Send message to server
       const response = await axios.post(`${API}/chats/message`, {
@@ -473,9 +473,9 @@ export const ChatProvider = ({ children }) => {
         withCredentials: true,
         timeout: 10000
       });
-      
+
       const serverMessage = response.data.message;
-      
+
       // Format message for frontend
       const newMessage = {
         id: serverMessage._id || serverMessage.id,
@@ -488,7 +488,7 @@ export const ChatProvider = ({ children }) => {
         text: serverMessage.text,
         timestamp: serverMessage.createdAt || new Date().toISOString(),
       };
-      
+
       // Update messages in state
       setMessages(prev => {
         const currentMessages = prev[chatId] || [];
@@ -505,14 +505,14 @@ export const ChatProvider = ({ children }) => {
           [chatId]: updatedMessages
         };
       });
-      
+
       // Update last message in chat
-      setChats(prev => prev.map(chat => 
-        chat.id === chatId 
+      setChats(prev => prev.map(chat =>
+        chat.id === chatId
           ? { ...chat, lastMessage: { text: newMessage.text, timestamp: newMessage.timestamp } }
           : chat
       ));
-      
+
       // Scroll to bottom after sending message
       setTimeout(() => {
         const event = new CustomEvent('scrollToBottom');
@@ -523,11 +523,11 @@ export const ChatProvider = ({ children }) => {
       // Optionally show error to user
     }
   };
-  
+
   // Add participant to group
   const addParticipantToGroup = async (chatId, participant) => {
     if (!chatId || !participant) return;
-    
+
     try {
       // Make API call to add participant to group
       const response = await axios.post(`${API}/chats/${chatId}/participants`, {
@@ -536,20 +536,20 @@ export const ChatProvider = ({ children }) => {
         withCredentials: true,
         timeout: 10000
       });
-      
+
       const updatedChat = response.data.chat;
-      
+
       // Update chat in state
-      setChats(prev => prev.map(chat => 
-        chat.id === chatId 
-          ? { 
-              ...chat, 
-              participants: updatedChat.participants || chat.participants,
-              createdBy: updatedChat.createdBy || chat.createdBy
-            }
+      setChats(prev => prev.map(chat =>
+        chat.id === chatId
+          ? {
+            ...chat,
+            participants: updatedChat.participants || chat.participants,
+            createdBy: updatedChat.createdBy || chat.createdBy
+          }
           : chat
       ));
-      
+
       // If this is the active chat, update it too
       if (activeChat && activeChat.id === chatId) {
         setActiveChat(prev => ({
@@ -567,27 +567,27 @@ export const ChatProvider = ({ children }) => {
   // Remove participant from group
   const removeParticipantFromGroup = async (chatId, participantId) => {
     if (!chatId || !participantId) return;
-    
+
     try {
       // Make API call to remove participant from group
       const response = await axios.delete(`${API}/chats/${chatId}/participants/${participantId}`, {
         withCredentials: true,
         timeout: 10000
       });
-      
+
       const updatedChat = response.data.chat;
-      
+
       // Update chat in state
-      setChats(prev => prev.map(chat => 
-        chat.id === chatId 
-          ? { 
-              ...chat, 
-              participants: updatedChat.participants || chat.participants,
-              createdBy: updatedChat.createdBy || chat.createdBy
-            }
+      setChats(prev => prev.map(chat =>
+        chat.id === chatId
+          ? {
+            ...chat,
+            participants: updatedChat.participants || chat.participants,
+            createdBy: updatedChat.createdBy || chat.createdBy
+          }
           : chat
       ));
-      
+
       // If this is the active chat, update it too
       if (activeChat && activeChat.id === chatId) {
         setActiveChat(prev => ({
@@ -605,25 +605,78 @@ export const ChatProvider = ({ children }) => {
   // Delete group chat
   const deleteGroupChat = async (chatId) => {
     if (!chatId) return;
-    
+
     try {
       // Make API call to delete group chat
       const response = await axios.delete(`${API}/chats/group/${chatId}`, {
         withCredentials: true,
         timeout: 10000
       });
-      
+
       // Remove chat from state
       setChats(prev => prev.filter(chat => chat && chat.id !== chatId));
-      
+
       // If this is the active chat, close it
       if (activeChat && activeChat.id === chatId) {
         closeChat();
       }
-      
+
       return response.data;
     } catch (error) {
       console.error('Error deleting group chat:', error);
+      throw error;
+    }
+  };
+
+  // Delete one-on-one chat (Owner only)
+  const deleteChat = async (chatId) => {
+    if (!chatId) return;
+
+    try {
+      // Make API call to delete chat
+      await axios.delete(`${API}/chats/${chatId}`, {
+        withCredentials: true,
+        timeout: 10000
+      });
+
+      // Remove chat from state
+      setChats(prev => prev.filter(chat => chat && chat.id !== chatId));
+
+      // If this is the active chat, close it
+      if (activeChat && activeChat.id === chatId) {
+        closeChat();
+      }
+
+      // Remove messages for this chat
+      setMessages(prev => {
+        const newMessages = { ...prev };
+        delete newMessages[chatId];
+        return newMessages;
+      });
+    } catch (error) {
+      console.error('Error deleting chat:', error);
+      throw error;
+    }
+  };
+
+  // Delete a single message (Owner only)
+  const deleteMessage = async (messageId, chatId) => {
+    if (!messageId || !chatId) return;
+
+    try {
+      // Make API call to delete message
+      await axios.delete(`${API}/chats/messages/${messageId}`, {
+        withCredentials: true,
+        timeout: 10000
+      });
+
+      // Remove message from state
+      setMessages(prev => ({
+        ...prev,
+        [chatId]: (prev[chatId] || []).filter(msg => msg.id !== messageId)
+      }));
+    } catch (error) {
+      console.error('Error deleting message:', error);
       throw error;
     }
   };
@@ -637,7 +690,7 @@ export const ChatProvider = ({ children }) => {
     setIsChatOpen(true);
     setShowContacts(false);
     setShowGroupParticipants(false);
-    
+
     // Fetch messages for this chat
     if (chat && chat.id) {
       await fetchMessages(chat.id);
@@ -673,7 +726,7 @@ export const ChatProvider = ({ children }) => {
           withCredentials: true,
           timeout: 5000
         });
-        
+
         // Remove current user from online users list
         setOnlineUsers(prev => prev.filter(u => (u._id || u.id) !== userId));
       } catch (error) {
@@ -683,7 +736,7 @@ export const ChatProvider = ({ children }) => {
       }
     }
   }, [userId]);
-  
+
   // Cleanup on page unload - try to mark offline, but rely on timeout if it fails
   useEffect(() => {
     const handleBeforeUnload = () => {
@@ -700,9 +753,9 @@ export const ChatProvider = ({ children }) => {
         }
       }
     };
-    
+
     window.addEventListener('beforeunload', handleBeforeUnload);
-    
+
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       // Clean up intervals
@@ -748,6 +801,8 @@ export const ChatProvider = ({ children }) => {
         addParticipantToGroup,
         removeParticipantFromGroup,
         deleteGroupChat,
+        deleteChat,
+        deleteMessage,
         fetchUsers,
         setShowContacts,
         setShowGroupParticipants,

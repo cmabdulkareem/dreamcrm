@@ -1,15 +1,20 @@
+import { useState, useEffect, useContext } from "react";
+import axios from "axios";
+import { toast, ToastContainer } from "react-toastify";
+
 import PageBreadcrumb from "../../components/common/PageBreadCrumb.jsx";
 import PageMeta from "../../components/common/PageMeta.jsx";
-import { useState, useEffect, useContext } from "react";
 import ComponentCard from "../../components/common/ComponentCard.jsx";
+import Badge from "../../components/ui/badge/Badge.jsx";
 import Button from "../../components/ui/button/Button.jsx";
 import Label from "../../components/form/Label.jsx";
+import Input from "../../components/form/input/InputField.jsx";
 import Select from "../../components/form/Select.jsx";
-import MultiSelect from "../../components/form/MultiSelect.jsx";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import axios from "axios";
+import MultiSelect from "../../components/form/MultiSelect";
 import { AuthContext } from "../../context/AuthContext";
+import { isAdmin } from "../../utils/roleHelpers";
+
+import "react-toastify/dist/ReactToastify.css";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
@@ -18,10 +23,10 @@ const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [updateMode, setUpdateMode] = useState(false); // New state to track update mode
+  const [updateMode, setUpdateMode] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [brands, setBrands] = useState([]);
   const [formData, setFormData] = useState({
-    // User details fields
     fullName: "",
     email: "",
     phone: "",
@@ -31,11 +36,10 @@ const UserManagement = () => {
     employmentType: "fullTime",
     joiningDate: "",
     company: "",
-    
-    // Role assignment fields
     roles: [{ value: "General", label: "General" }],
     isAdmin: false,
-    accountStatus: "Pending"
+    accountStatus: "Pending",
+    brands: []
   });
 
   const roleOptions = [
@@ -96,26 +100,36 @@ const UserManagement = () => {
     { value: "seasonal", label: "Seasonal" }
   ];
 
-  const genderOptions = [
-    { value: "male", label: "Male" },
-    { value: "female", label: "Female" },
-    { value: "notDisclosed", label: "Not Disclosed" }
-  ];
-
   useEffect(() => {
     if (currentUser?.isAdmin) {
       fetchUsers();
     }
   }, [currentUser]);
 
+  useEffect(() => {
+    const fetchBrands = async () => {
+      try {
+        const res = await axios.get(`${API}/brands`, {
+          withCredentials: true
+        });
+        setBrands(res.data.brands);
+      } catch (error) {
+        console.error("Error fetching brands:", error);
+      }
+    };
+
+    if (showModal && isAdmin(currentUser)) {
+      fetchBrands();
+    }
+  }, [showModal, currentUser]);
+
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(
-        `${API}/users/allusers`,
-        { withCredentials: true }
-      );
-      
+      const response = await axios.get(`${API}/users/allusers`, {
+        withCredentials: true
+      });
+
       setUsers(response.data.users);
       setLoading(false);
     } catch (error) {
@@ -126,47 +140,54 @@ const UserManagement = () => {
   };
 
   const handleDeleteUser = async (user) => {
-    // Prevent admin from deleting themselves
     if (currentUser.id === user.id) {
       toast.error("You cannot delete your own account.");
       return;
     }
-    
-    // Confirm deletion
-    if (!window.confirm(`Are you sure you want to delete ${user.fullName}? This action cannot be undone.`)) {
+
+    if (
+      !window.confirm(
+        `Are you sure you want to delete ${user.fullName}? This action cannot be undone.`
+      )
+    ) {
       return;
     }
-    
+
     try {
-      await axios.delete(
-        `${API}/users/delete/${user.id}`,
-        { withCredentials: true }
-      );
-      
-      // Remove user from the local state
-      setUsers(prev => prev.filter(u => u.id !== user.id));
-      
+      await axios.delete(`${API}/users/delete/${user.id}`, {
+        withCredentials: true
+      });
+
+      setUsers((prev) => prev.filter((u) => u.id !== user.id));
+
       toast.success("User deleted successfully");
     } catch (error) {
       console.error("Error deleting user:", error);
-      toast.error(error.response?.data?.message || "Failed to delete user. Please try again.");
+      toast.error(
+        error.response?.data?.message ||
+          "Failed to delete user. Please try again."
+      );
     }
   };
 
   const handleUpdateUser = (user) => {
-    // Ensure user object has an id property (not _id)
     if (!user || !user.id) {
       toast.error("Invalid user data. Cannot update user.");
       return;
     }
-    
-    // Log user data for debugging
-    console.log("Updating user:", user);
-    
+
     setSelectedUser(user);
-    setUpdateMode(true); // Set update mode to true for user details update
-    
-    // Set form data with user details
+    setUpdateMode(true);
+
+    let userBrands = [];
+    if (user.brands && Array.isArray(user.brands)) {
+      if (user.brands.length > 0 && user.brands[0]._id) {
+        userBrands = user.brands.map((brand) => brand._id);
+      } else {
+        userBrands = user.brands;
+      }
+    }
+
     setFormData({
       fullName: user.fullName || "",
       email: user.email || "",
@@ -175,42 +196,68 @@ const UserManagement = () => {
       department: user.department || "general",
       designation: user.designation || "General",
       employmentType: user.employmentType || "fullTime",
-      joiningDate: user.joiningDate || "",
-      company: user.company || ""
+      joiningDate: user.joiningDate ? user.joiningDate.split("T")[0] : "",
+      company: user.company || "",
+      roles: user.roles || ["General"],
+      isAdmin: user.isAdmin || false,
+      accountStatus: user.accountStatus || "Pending",
+      brands: userBrands
     });
     setShowModal(true);
   };
 
   const handleAssignRoles = (user) => {
-    // Ensure user object has an id property
     if (!user || !user.id) {
       toast.error("Invalid user data. Cannot assign roles.");
       return;
     }
-    
+
     setSelectedUser(user);
-    setUpdateMode(false); // Set update mode to false for role assignment
-    
-    // Convert user roles to just values for the MultiSelect component
-    const userRoles = user.roles || ["General"];
-    
+    setUpdateMode(false);
+
+    let userBrands = [];
+    if (user.brands && Array.isArray(user.brands)) {
+      if (user.brands.length > 0 && user.brands[0]._id) {
+        userBrands = user.brands.map((brand) => brand._id);
+      } else {
+        userBrands = user.brands;
+      }
+    }
+
     setFormData({
-      roles: userRoles,
+      fullName: user.fullName || "",
+      email: user.email || "",
+      phone: user.phone || "",
+      employeeCode: user.employeeCode || "",
+      department: user.department || "general",
+      designation: user.designation || "General",
+      employmentType: user.employmentType || "fullTime",
+      joiningDate: user.joiningDate ? user.joiningDate.split("T")[0] : "",
+      company: user.company || "",
+      roles: user.roles || ["General"],
       isAdmin: user.isAdmin || false,
-      accountStatus: user.accountStatus || "Pending"
+      accountStatus: user.accountStatus || "Pending",
+      brands: userBrands
     });
     setShowModal(true);
   };
 
   const handleRoleChange = (selectedRoles) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       roles: selectedRoles
     }));
   };
 
+  const handleBrandChange = (selectedBrands) => {
+    setFormData((prev) => ({
+      ...prev,
+      brands: selectedBrands
+    }));
+  };
+
   const handleAdminChange = (e) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       isAdmin: e.target.checked
     }));
@@ -218,17 +265,22 @@ const UserManagement = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validate selectedUser before making API call
+
     if (!selectedUser || !selectedUser.id) {
       toast.error("Invalid user data. Cannot update user.");
       return;
     }
-    
+
     try {
+      const updateData = {
+        roles: formData.roles,
+        isAdmin: formData.isAdmin,
+        accountStatus: formData.accountStatus,
+        brands: formData.brands
+      };
+
       if (updateMode) {
-        // Update user details
-        const payload = {
+        Object.assign(updateData, {
           fullName: formData.fullName,
           email: formData.email,
           phone: formData.phone,
@@ -238,84 +290,62 @@ const UserManagement = () => {
           employmentType: formData.employmentType,
           joiningDate: formData.joiningDate,
           company: formData.company
-        };
-        
-        // Validate required fields
-        if (!payload.fullName || !payload.email || !payload.phone) {
-          toast.error("Full name, email, and phone are required.");
-          return;
-        }
-        
-        // Validate email format in frontend
-        if (payload.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email)) {
-          toast.error("Please enter a valid email address.");
-          return;
-        }
-        
-        // Validate date formats
-        if (payload.joiningDate && payload.joiningDate !== "" && !/\d{4}-\d{2}-\d{2}/.test(payload.joiningDate) && !/\d{4}-\d{2}-\d{2}T/.test(payload.joiningDate)) {
-          toast.error("Please enter a valid joining date in YYYY-MM-DD format.");
-          return;
-        }
-        
-        // Log payload for debugging
-        console.log("Updating user with payload:", payload);
-        
-        // Remove empty fields
-        Object.keys(payload).forEach(key => {
-          if (payload[key] === "" || payload[key] === null || payload[key] === undefined) {
-            delete payload[key];
-          }
         });
-        
-        // Log final payload for debugging
-        console.log("Final payload after cleanup:", payload);
-        
-        const response = await axios.put(
-          `${API}/users/update/${selectedUser.id}`,
-          payload,
-          { withCredentials: true }
-        );
-        
-        // Update user in the local state
-        setUsers(prev => prev.map(user => 
-          user.id === selectedUser.id ? { ...user, ...response.data.user } : user
-        ));
-        
-        toast.success("User details updated successfully");
-      } else {
-        // Assign roles (existing functionality)
-        const payload = {
-          roles: formData.roles,
-          isAdmin: formData.isAdmin,
-          accountStatus: formData.accountStatus
-        };
-        
-        const response = await axios.patch(
-          `${API}/users/assign-roles/${selectedUser.id}`,
-          payload,
-          { withCredentials: true }
-        );
-        
-        // Update user in the local state
-        setUsers(prev => prev.map(user => 
-          user.id === selectedUser.id ? { ...user, ...response.data.user } : user
-        ));
-        
-        toast.success("User roles updated successfully");
       }
-      
+
+      let response;
+      if (updateMode) {
+        response = await axios.put(
+          `${API}/users/update/${selectedUser.id}`,
+          updateData,
+          { withCredentials: true }
+        );
+      } else {
+        response = await axios.patch(
+          `${API}/users/assign-roles/${selectedUser.id}`,
+          updateData,
+          { withCredentials: true }
+        );
+      }
+
+      toast.success(response.data.message || "User updated successfully");
+
+      fetchUsers();
+
       setShowModal(false);
+
+      setFormData({
+        fullName: "",
+        email: "",
+        phone: "",
+        employeeCode: "",
+        department: "general",
+        designation: "General",
+        employmentType: "fullTime",
+        joiningDate: "",
+        company: "",
+        roles: [{ value: "General", label: "General" }],
+        isAdmin: false,
+        accountStatus: "Pending",
+        brands: []
+      });
       setSelectedUser(null);
     } catch (error) {
       console.error("Error updating user:", error);
-      toast.error(error.response?.data?.message || "Failed to update user. Please try again.");
+      if (
+        error.response &&
+        error.response.data &&
+        error.response.data.message
+      ) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error("Failed to update user");
+      }
     }
   };
 
   const resetForm = () => {
     setFormData({
-      // User details fields
       fullName: "",
       email: "",
       phone: "",
@@ -325,48 +355,35 @@ const UserManagement = () => {
       employmentType: "fullTime",
       joiningDate: "",
       company: "",
-      
-      // Role assignment fields
       roles: ["General"],
       isAdmin: false,
-      accountStatus: "Pending"
+      accountStatus: "Pending",
+      brands: []
     });
     setSelectedUser(null);
     setShowModal(false);
-    setUpdateMode(false); // Reset update mode
   };
 
-  const getRoleBadgeClass = (role) => {
-    const baseClass = "px-2 inline-flex text-xs leading-5 font-semibold rounded-full";
-    switch (role) {
-      case "Admin":
-        return `${baseClass} bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100`;
-      case "Manager":
-        return `${baseClass} bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100`;
-      case "Counsellor":
-        return `${baseClass} bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100`;
-      case "Marketing":
-        return `${baseClass} bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100`;
-      case "Finance":
-        return `${baseClass} bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100`;
-      case "Placement":
-        return `${baseClass} bg-indigo-100 text-indigo-800 dark:bg-indigo-800 dark:text-indigo-100`;
-      default:
-        return `${baseClass} bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100`;
+  const getBrandNames = (brands) => {
+    if (!brands || brands.length === 0) return "No brands assigned";
+
+    if (brands[0] && brands[0]._id) {
+      return brands.map((brand) => brand.name).join(", ");
     }
+
+    return "Brands assigned";
   };
 
   if (!currentUser?.isAdmin) {
     return (
       <div>
-        <PageMeta
-          title="Access Denied | DreamCRM"
-          description="Access denied"
-        />
+        <PageMeta title="Access Denied | DreamCRM" description="Access denied" />
         <PageBreadcrumb pageTitle="Access Denied" />
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Access Denied</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Access Denied
+            </h2>
             <p className="mt-2 text-gray-600 dark:text-gray-400">
               You don't have permission to access this page.
             </p>
@@ -396,114 +413,122 @@ const UserManagement = () => {
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead className="bg-gray-50 dark:bg-gray-800">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                    >
                       User
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                    >
                       Email
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Phone
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                    >
                       Roles
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Admin
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                    >
+                      Assigned Brands
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Status
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                    >
+                      Account Status
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th
+                      scope="col"
+                      className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                    >
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-900 dark:divide-gray-700">
-                  {users.length > 0 ? (
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                  {users.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan="6"
+                        className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400"
+                      >
+                        No users found
+                      </td>
+                    </tr>
+                  ) : (
                     users.map((user) => (
-                      <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                      <tr
+                        key={user.id}
+                        className="hover:bg-gray-50 dark:hover:bg-gray-700"
+                      >
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10">
-                              {user.avatar ? (
-                                <img 
-                                  className="h-10 w-10 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700" 
-                                  src={user.avatar} 
-                                  alt={user.fullName} 
-                                  onError={(e) => {
-                                    e.target.src = "/images/user/user-01.jpg";
-                                  }}
-                                />
-                              ) : (
-                                <div className="bg-gray-200 border-2 border-dashed rounded-xl w-10 h-10 flex items-center justify-center">
-                                  <span className="text-gray-500 text-xs font-bold">
-                                    {user.fullName ? user.fullName.charAt(0).toUpperCase() : "U"}
-                                  </span>
-                                </div>
-                              )}
+                            <div className="flex-shrink-0 h-10 w-10 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
+                              <span className="text-gray-700 dark:text-gray-300 font-medium">
+                                {user.fullName.charAt(0).toUpperCase()}
+                              </span>
                             </div>
                             <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900 dark:text-white">
+                              <div className="text-sm font-medium text-gray-900 dark:text:white dark:text-white">
                                 {user.fullName}
                               </div>
                               <div className="text-sm text-gray-500 dark:text-gray-400">
-                                {user.designation || "General"}
+                                {user.designation || "No designation"}
                               </div>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                          {user.email}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                          {user.phone}
-                        </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex flex-wrap gap-1">
-                            {user.roles && user.roles.map((role, index) => (
-                              <span key={index} className={getRoleBadgeClass(role)}>
-                                {role}
-                              </span>
-                            ))}
+                          <div className="text-sm text-gray-900 dark:text-white">
+                            {user.email}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                          {user.isAdmin ? (
-                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100">
-                              Yes
-                            </span>
-                          ) : (
-                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100">
-                              No
-                            </span>
-                          )}
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900 dark:text-white">
+                            {user.roles && user.roles.length > 0
+                              ? user.roles.join(", ")
+                              : "No roles"}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900 dark:text-white">
+                            {getBrandNames(user.brands)}
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            user.accountStatus === "Active" 
-                              ? "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100" 
-                              : user.accountStatus === "Pending"
-                                ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100"
-                                : "bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100"
-                          }`}>
+                          <Badge
+                            size="sm"
+                            color={
+                              user.accountStatus === "Active"
+                                ? "success"
+                                : user.accountStatus === "Pending"
+                                ? "warning"
+                                : "error"
+                            }
+                          >
                             {user.accountStatus}
-                          </span>
+                          </Badge>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <button 
+                          <button
                             onClick={() => handleUpdateUser(user)}
                             className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-3"
                           >
                             Update
                           </button>
-                          <button 
+                          <button
                             onClick={() => handleAssignRoles(user)}
                             className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-3"
                           >
                             Assign Roles
                           </button>
-                          <button 
+                          <button
                             onClick={() => handleDeleteUser(user)}
                             className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                           >
@@ -512,12 +537,6 @@ const UserManagement = () => {
                         </td>
                       </tr>
                     ))
-                  ) : (
-                    <tr>
-                      <td colSpan="7" className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                        No users found
-                      </td>
-                    </tr>
                   )}
                 </tbody>
               </table>
@@ -526,134 +545,171 @@ const UserManagement = () => {
         </ComponentCard>
       </div>
 
-      {/* Assign Roles Modal */}
+      {/* Assign Roles / Update Modal */}
       {showModal && selectedUser && (
         <div className="fixed inset-0 z-[99999] overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-            <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={resetForm}></div>
-            
-            {/* This element is to trick the browser into centering the modal contents. */}
-            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            
+            <div
+              className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
+              onClick={resetForm}
+            ></div>
+
+            <span
+              className="hidden sm:inline-block sm:align-middle sm:h-screen"
+              aria-hidden="true"
+            >
+              &#8203;
+            </span>
+
             <div className="inline-block overflow-hidden text-left align-middle transition-all transform bg-white rounded-lg shadow-xl sm:my-8 sm:max-w-lg sm:w-full dark:bg-gray-800">
               <form onSubmit={handleSubmit}>
                 <div className="px-4 pt-5 pb-4 bg-white sm:p-6 sm:pb-4 dark:bg-gray-800">
                   <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white">
-                    {updateMode ? "Update User Details" : "Assign Roles"} - {selectedUser.fullName}
+                    {updateMode ? "Update User Details" : "Assign Roles"} -{" "}
+                    {selectedUser.fullName}
                   </h3>
-                  
-                  <div className="mt-4 space-y-4">
+
+                  <div className="mt-4 space-y-4 max-h-[70vh] overflow-y-auto pr-2">
                     {updateMode ? (
-                      // User details update form
-                      <>
+                      <div className="space-y-4">
                         <div>
-                          <Label>Full Name</Label>
-                          <input
+                          <Label>Full Name *</Label>
+                          <Input
                             type="text"
                             value={formData.fullName}
-                            onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
-                            className="w-full rounded-lg border border-gray-300 bg-white py-2 px-3 text-sm text-gray-700 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                fullName: e.target.value
+                              }))
+                            }
+                            placeholder="Enter full name"
                             required
                           />
                         </div>
-                        
+
                         <div>
-                          <Label>Email</Label>
-                          <input
+                          <Label>Email *</Label>
+                          <Input
                             type="email"
                             value={formData.email}
-                            onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                            className="w-full rounded-lg border border-gray-300 bg-white py-2 px-3 text-sm text-gray-700 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                email: e.target.value
+                              }))
+                            }
+                            placeholder="Enter email"
                             required
                           />
                         </div>
-                        
+
                         <div>
-                          <Label>Phone</Label>
-                          <input
-                            type="text"
+                          <Label>Phone *</Label>
+                          <Input
+                            type="tel"
                             value={formData.phone}
-                            onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                            className="w-full rounded-lg border border-gray-300 bg-white py-2 px-3 text-sm text-gray-700 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                phone: e.target.value
+                              }))
+                            }
+                            placeholder="Enter phone number"
                             required
                           />
                         </div>
-                        
+
                         <div>
                           <Label>Employee Code</Label>
-                          <input
+                          <Input
                             type="text"
                             value={formData.employeeCode}
-                            onChange={(e) => setFormData(prev => ({ ...prev, employeeCode: e.target.value }))}
-                            className="w-full rounded-lg border border-gray-300 bg-white py-2 px-3 text-sm text-gray-700 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                employeeCode: e.target.value
+                              }))
+                            }
+                            placeholder="Enter employee code"
                           />
                         </div>
-                        
+
                         <div>
                           <Label>Department</Label>
-                          <select
+                          <Select
+                            options={departmentOptions}
                             value={formData.department}
-                            onChange={(e) => setFormData(prev => ({ ...prev, department: e.target.value }))}
-                            className="w-full rounded-lg border border-gray-300 bg-white py-2 px-3 text-sm text-gray-700 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-                          >
-                            {departmentOptions.map(option => (
-                              <option key={option.value} value={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        
-                        <div>
-                          <Label>Designation</Label>
-                          <input
-                            type="text"
-                            value={formData.designation}
-                            onChange={(e) => setFormData(prev => ({ ...prev, designation: e.target.value }))}
-                            className="w-full rounded-lg border border-gray-300 bg-white py-2 px-3 text-sm text-gray-700 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                            onChange={(value) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                department: value
+                              }))
+                            }
                           />
                         </div>
-                        
+
+                        <div>
+                          <Label>Designation</Label>
+                          <Input
+                            type="text"
+                            value={formData.designation}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                designation: e.target.value
+                              }))
+                            }
+                            placeholder="Enter designation"
+                          />
+                        </div>
+
                         <div>
                           <Label>Employment Type</Label>
-                          <select
+                          <Select
+                            options={employmentTypeOptions}
                             value={formData.employmentType}
-                            onChange={(e) => setFormData(prev => ({ ...prev, employmentType: e.target.value }))}
-                            className="w-full rounded-lg border border-gray-300 bg-white py-2 px-3 text-sm text-gray-700 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-                          >
-                            {employmentTypeOptions.map(option => (
-                              <option key={option.value} value={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
+                            onChange={(value) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                employmentType: value
+                              }))
+                            }
+                          />
                         </div>
-                        
+
                         <div>
                           <Label>Joining Date</Label>
                           <input
                             type="date"
                             value={formData.joiningDate}
-                            onChange={(e) => setFormData(prev => ({ ...prev, joiningDate: e.target.value }))}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                joiningDate: e.target.value
+                              }))
+                            }
                             className="w-full rounded-lg border border-gray-300 bg-white py-2 px-3 text-sm text-gray-700 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
                           />
                         </div>
-                        
+
                         <div>
                           <Label>Company</Label>
                           <input
                             type="text"
                             value={formData.company}
-                            onChange={(e) => setFormData(prev => ({ ...prev, company: e.target.value }))}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                company: e.target.value
+                              }))
+                            }
                             className="w-full rounded-lg border border-gray-300 bg-white py-2 px-3 text-sm text-gray-700 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
                           />
                         </div>
-                        
-                        
-                      </>
+                      </div>
                     ) : (
-                      // Role assignment form (existing)
-                      <>
+                      <div className="space-y-4">
                         <div>
                           <Label>Roles</Label>
                           <MultiSelect
@@ -663,22 +719,37 @@ const UserManagement = () => {
                             onChange={handleRoleChange}
                           />
                         </div>
-                        
+
+                        {isAdmin(currentUser) && (
+                          <div className="mt-4">
+                            <Label>Assigned Brands</Label>
+                            <MultiSelect
+                              label=""
+                              options={brands.map((brand) => ({
+                                value: brand._id,
+                                label: brand.name
+                              }))}
+                              selectedValues={formData.brands}
+                              onChange={handleBrandChange}
+                              placeholder="Select brands..."
+                            />
+                          </div>
+                        )}
+
                         <div>
                           <Label>Account Status</Label>
-                          <select
+                          <Select
+                            options={accountStatusOptions}
                             value={formData.accountStatus}
-                            onChange={(e) => setFormData(prev => ({ ...prev, accountStatus: e.target.value }))}
-                            className="w-full rounded-lg border border-gray-300 bg-white py-2 px-3 text-sm text-gray-700 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-                          >
-                            {accountStatusOptions.map(option => (
-                              <option key={option.value} value={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
+                            onChange={(value) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                accountStatus: value
+                              }))
+                            }
+                          />
                         </div>
-                        
+
                         <div className="flex items-center">
                           <input
                             type="checkbox"
@@ -688,14 +759,14 @@ const UserManagement = () => {
                             className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
                           />
                           <Label htmlFor="isAdmin" className="ml-2 mb-0">
-                            Admin User
+                            Is Admin User
                           </Label>
                         </div>
-                      </>
+                      </div>
                     )}
                   </div>
                 </div>
-                
+
                 <div className="px-4 py-3 bg-gray-50 sm:px-6 sm:flex sm:flex-row-reverse dark:bg-gray-700">
                   <Button
                     type="submit"
@@ -719,7 +790,11 @@ const UserManagement = () => {
         </div>
       )}
 
-      <ToastContainer position="top-center" className="!z-[999999]" style={{ zIndex: 999999 }} />
+      <ToastContainer
+        position="top-center"
+        className="!z-[999999]"
+        style={{ zIndex: 999999 }}
+      />
     </div>
   );
 };

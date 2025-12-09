@@ -48,7 +48,7 @@ import { fetchCustomers, fetchCampaigns, createNewCampaign, prepareLeadForEdit }
 import { saveLeadChanges, deleteLead, setLeadReminder, markRemarkAsRead } from "../leadManagement/leadUpdateService";
 
 // Import role helper function
-import { isAdmin } from "../../utils/roleHelpers";
+import { isAdmin, isOwner } from "../../utils/roleHelpers";
 
 // Helper function to determine row background color based on due date
 const getRowBackgroundColor = (followUpDate) => {
@@ -933,7 +933,7 @@ export default function RecentOrders() {
                         <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                           <div className="flex items-center">
                             <Button size="sm" variant="outline" className="mr-2" endIcon={<PencilIcon className="size-5" />} onClick={() => handleEdit(row)} />
-                            {canDeleteLeads && (
+                            {isOwner(user) && (
                               <Button size="sm" variant="outline" className="text-red-500 mr-2" endIcon={<CloseIcon className="size-5" />} onClick={() => handleDelete(row)} />
                             )}
                             {canAssignLeads && (

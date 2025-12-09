@@ -50,6 +50,7 @@ const EventRegistration = lazy(() => import("./pages/EventRegistration"));
 const LeaveRequestPortal = lazy(() => import("./pages/LeaveRequestPortal"));
 const LeaveStatusCheck = lazy(() => import("./pages/LeaveStatusCheck"));
 import ChatWidget from "./components/chat/ChatWidget";
+import BrandManagement from "./components/brandManagement/BrandManagement";
 
 function App() {
   return (
@@ -74,6 +75,7 @@ function App() {
                     <Route path="/settings/contact-points" element={<ProtectedRoutes requireAdmin={true}><ContactPointSettings /></ProtectedRoutes>} />
                     <Route path="/settings/courses" element={<ProtectedRoutes requireAdmin={true}><CourseManagement /></ProtectedRoutes>} />
                     <Route path="/settings/users" element={<ProtectedRoutes requireAdmin={true}><UserManagement /></ProtectedRoutes>} />
+                    <Route path="/settings/brands" element={<ProtectedRoutes requireAdmin={true}><BrandManagement /></ProtectedRoutes>} />
                     <Route path="/settings/announcements" element={<ProtectedRoutes requireAdmin={false}><AnnouncementManagement /></ProtectedRoutes>} />
 
                     {/* Profile */}

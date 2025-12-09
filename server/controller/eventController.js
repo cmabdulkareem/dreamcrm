@@ -29,7 +29,7 @@ const bannerStorage = multer.diskStorage({
   }
 });
 
-const bannerUpload = multer({ 
+const bannerUpload = multer({
   storage: bannerStorage,
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith("image/")) {
@@ -49,7 +49,8 @@ export const uploadEventBannerMiddleware = bannerUpload.single("banner");
 // Get all events
 export const getAllEvents = async (req, res) => {
   try {
-    const events = await eventModel.find().sort({ createdAt: -1 });
+    const query = { ...req.brandFilter };
+    const events = await eventModel.find(query).sort({ createdAt: -1 });
     return res.status(200).json({ events });
   } catch (error) {
     console.error("Error fetching events:", error);
@@ -62,7 +63,7 @@ export const getEventById = async (req, res) => {
   try {
     const { id } = req.params;
     const event = await eventModel.findById(id);
-    
+
     if (!event) {
       return res.status(404).json({ message: "Event not found." });
     }
@@ -79,7 +80,7 @@ export const getEventByLink = async (req, res) => {
   try {
     const { link } = req.params;
     const event = await eventModel.findOne({ registrationLink: link, isActive: true });
-    
+
     if (!event) {
       return res.status(404).json({ message: "Event not found or inactive." });
     }
@@ -116,14 +117,15 @@ export const createEvent = async (req, res) => {
       eventDate: new Date(eventDate),
       registrationFields,
       registrationLink,
-      maxRegistrations: parseInt(maxRegistrations) || 0
+      maxRegistrations: parseInt(maxRegistrations) || 0,
+      brand: req.brandFilter?.brand || req.headers['x-brand-id'] || null // Strict brand assignment
     });
 
     await newEvent.save();
 
-    return res.status(201).json({ 
-      message: "Event created successfully.", 
-      event: newEvent 
+    return res.status(201).json({
+      message: "Event created successfully.",
+      event: newEvent
     });
   } catch (error) {
     console.error("Create event error:", error);
@@ -162,9 +164,9 @@ export const updateEvent = async (req, res) => {
 
     await event.save();
 
-    return res.status(200).json({ 
-      message: "Event updated successfully.", 
-      event 
+    return res.status(200).json({
+      message: "Event updated successfully.",
+      event
     });
   } catch (error) {
     console.error("Update event error:", error);
@@ -181,7 +183,7 @@ export const deleteEvent = async (req, res) => {
     }
 
     const { id } = req.params;
-    
+
     const event = await eventModel.findByIdAndDelete(id);
     if (!event) {
       return res.status(404).json({ message: "Event not found." });
@@ -206,7 +208,7 @@ export const toggleEventStatus = async (req, res) => {
     }
 
     const { id } = req.params;
-    
+
     const event = await eventModel.findById(id);
     if (!event) {
       return res.status(404).json({ message: "Event not found." });
@@ -215,9 +217,9 @@ export const toggleEventStatus = async (req, res) => {
     event.isActive = !event.isActive;
     await event.save();
 
-    return res.status(200).json({ 
-      message: `Event ${event.isActive ? 'activated' : 'deactivated'} successfully.`, 
-      event 
+    return res.status(200).json({
+      message: `Event ${event.isActive ? 'activated' : 'deactivated'} successfully.`,
+      event
     });
   } catch (error) {
     console.error("Toggle event status error:", error);
@@ -276,9 +278,9 @@ export const registerForEvent = async (req, res) => {
     event.currentRegistrations += 1;
     await event.save();
 
-    return res.status(201).json({ 
-      message: "Registration successful.", 
-      registration: newRegistration 
+    return res.status(201).json({
+      message: "Registration successful.",
+      registration: newRegistration
     });
   } catch (error) {
     console.error("Event registration error:", error);
@@ -295,7 +297,7 @@ export const getEventRegistrations = async (req, res) => {
     }
 
     const { id } = req.params;
-    
+
     // Check if event exists
     const event = await eventModel.findById(id);
     if (!event) {
@@ -320,7 +322,7 @@ export const uploadEventBanner = async (req, res) => {
     }
 
     const { id } = req.params;
-    
+
     // Check if event exists
     const event = await eventModel.findById(id);
     if (!event) {
@@ -335,42 +337,42 @@ export const uploadEventBanner = async (req, res) => {
     // Compress the image using sharp
     const compressedFileName = `compressed-${req.file.filename}`;
     const compressedFilePath = path.join(bannersDir, compressedFileName);
-    
+
     await sharp(req.file.path)
       .resize(1280, 720, { fit: 'inside', withoutEnlargement: true }) // Resize to max 1280x720 (16:9)
       .jpeg({ quality: 80 }) // Compress to 80% quality
       .toFile(compressedFilePath);
-    
+
     // Remove the original uncompressed file
     fs.unlinkSync(req.file.path);
 
     // Save the compressed file path in the database (relative path for web access)
     const bannerImageUrl = `/uploads/banners/${compressedFileName}`;
-    
+
     event.bannerImage = bannerImageUrl;
     await event.save();
 
-    return res.status(200).json({ 
-      message: "Banner uploaded successfully.", 
-      bannerImage: bannerImageUrl 
+    return res.status(200).json({
+      message: "Banner uploaded successfully.",
+      bannerImage: bannerImageUrl
     });
   } catch (error) {
     console.error("Error uploading event banner:", error);
-    
+
     // Clean up any uploaded files if there was an error
     if (req.file) {
       const filePath = req.file.path;
       const compressedFilePath = path.join(bannersDir, `compressed-${req.file.filename}`);
-      
+
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
       }
-      
+
       if (fs.existsSync(compressedFilePath)) {
         fs.unlinkSync(compressedFilePath);
       }
     }
-    
+
     return res.status(500).json({ message: "Internal server error" });
   }
 };

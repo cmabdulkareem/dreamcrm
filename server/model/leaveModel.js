@@ -39,6 +39,10 @@ const leaveSchema = new mongoose.Schema({
     type: String,
     enum: ['pending', 'approved', 'rejected'],
     default: 'pending'
+  },
+  brand: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Brand'
   }
 }, {
   timestamps: true

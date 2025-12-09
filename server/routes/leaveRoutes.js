@@ -1,14 +1,15 @@
 import { Router } from 'express';
-import { 
-  getAllLeaves, 
-  getLeaveById, 
-  createLeave, 
-  updateLeave, 
+import {
+  getAllLeaves,
+  getLeaveById,
+  createLeave,
+  updateLeave,
   deleteLeave,
   updateLeaveStatus,
   getLeaveByTicketNumber
 } from '../controller/leaveController.js';
 import verifyToken from '../middleware/verifyToken.js';
+import { applyBrandFilter } from '../middleware/brandMiddleware.js';
 
 const router = Router();
 
@@ -17,11 +18,14 @@ router.post('/create', createLeave);
 router.get('/status/:ticketNumber', getLeaveByTicketNumber);
 
 // Protected routes (require authentication)
+router.use(verifyToken);
+router.use(applyBrandFilter); // Apply brand filter to protected routes
+
 // Note: Specific routes must come before parameterized routes
-router.get('/', verifyToken, getAllLeaves);
-router.put('/update/:id', verifyToken, updateLeave);
-router.patch('/status/:id', verifyToken, updateLeaveStatus);
-router.delete('/delete/:id', verifyToken, deleteLeave);
-router.get('/:id', verifyToken, getLeaveById);
+router.get('/', getAllLeaves);
+router.put('/update/:id', updateLeave);
+router.patch('/status/:id', updateLeaveStatus);
+router.delete('/delete/:id', deleteLeave);
+router.get('/:id', getLeaveById);
 
 export default router;

@@ -86,6 +86,10 @@ const studentSchema = new mongoose.Schema({
   },
   createdBy: {
     type: String
+  },
+  brand: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Brand'
   }
 }, {
   timestamps: true

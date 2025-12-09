@@ -72,7 +72,15 @@ export default function SignUpForm() {
       const payload = { ...formData, phone, consent: isChecked };
       const response = await axios.post(`${API}/users/signup`, payload);
 
-      toast.success("Signup successful!");
+      // Check if this is the first user
+      const { isFirstUser } = response.data;
+
+      if (isFirstUser) {
+        toast.success("Signup successful! You are the first user and have been granted admin privileges.");
+      } else {
+        toast.success("Signup successful! Your account is pending approval.");
+      }
+
       setSignupSuccess(true); // ✅ Show thank-you message
       console.log("Signup success:", response.data);
     } catch (error) {

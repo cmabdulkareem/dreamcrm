@@ -9,11 +9,11 @@ import { ThemeProvider } from "./context/ThemeContext.jsx";
 import AuthContext from "./context/AuthContext.jsx";
 
 createRoot(document.getElementById("root")).render(
-  <ThemeProvider>
-    <AuthContext>
+  <AuthContext>
+    <ThemeProvider>
       <AppWrapper>
         <App />
       </AppWrapper>
-    </AuthContext>
-  </ThemeProvider>
+    </ThemeProvider>
+  </AuthContext>
 );

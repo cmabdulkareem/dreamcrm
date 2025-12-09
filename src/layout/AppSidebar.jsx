@@ -57,16 +57,16 @@ const navItems = [
     path: "/calendar"
   },
   {
-    icon: <GroupIcon />, 
-    name: "Events", 
+    icon: <GroupIcon />,
+    name: "Events",
     subItems: [
       { name: "Create Event", path: "/events/create", pro: false },
       { name: "Manage Events", path: "/events", pro: false }
     ]
   },
   {
-    icon: <GroupIcon />, 
-    name: "Leave Management", 
+    icon: <GroupIcon />,
+    name: "Leave Management",
     subItems: [
       { name: "Manage Leaves", path: "/leave-management", pro: false },
       { name: "Leave Requests", path: "/leave-management/requests", pro: false }
@@ -120,13 +120,14 @@ const settingsItems = [
       { name: "Contact Points", path: "/settings/contact-points", pro: false },
       { name: "Course Management", path: "/settings/courses", pro: false },
       { name: "User Management", path: "/settings/users", pro: false },
-            { name: "Announcements", path: "/settings/announcements", pro: false }
+      { name: "Brand Management", path: "/settings/brands", pro: false },
+      { name: "Announcements", path: "/settings/announcements", pro: false }
     ],
   }
 ];
 
 const AppSidebar = () => {
-  const { user } = useContext(AuthContext);
+  const { user, selectedBrand } = useContext(AuthContext);
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const location = useLocation();
 
@@ -171,6 +172,13 @@ const AppSidebar = () => {
     }
   }, [openSubmenu]);
 
+  useEffect(() => {
+    // Force close submenus if brand is deselected and they are not global
+    if (!selectedBrand) {
+      // Logic could be added here if needed, but the disabled state handles the UX
+    }
+  }, [selectedBrand]);
+
   const handleSubmenuToggle = (index, menuType) => {
     setOpenSubmenu((prev) =>
       prev && prev.type === menuType && prev.index === index
@@ -182,56 +190,51 @@ const AppSidebar = () => {
   // Check if user has manager privileges (Owner, Admin, Centre Head/Manager)
   const hasManagerAccess = isManager(user);
 
+  // Helper to determine if an item is global (always accessible)
+  const isGlobalItem = (name) => {
+    // Settings category itself should be clickable to reveal subitems
+    if (name === "Settings") return true;
+
+    // Whitelisted Global Modules
+    const globalModules = [
+      "User Management",
+      "Brand Management",
+      "Edit Profile",
+      "Sign In", // If present
+      "Sign Up"  // If present
+    ];
+    return globalModules.includes(name);
+  };
+
   const renderMenuItems = (items, menuType) => (
     <ul className="flex flex-col gap-4">
-      {items.map((nav, index) => (
-        <li key={nav.name}>
-          {nav.subItems ? (
-            <button
-              onClick={() => handleSubmenuToggle(index, menuType)}
-              className={`menu-item group ${openSubmenu?.type === menuType && openSubmenu?.index === index
+      {items.map((nav, index) => {
+        // Determine if this item or any of its subitems are enabled
+        // If it's a parent menu (like Settings), checks if it has AT LEAST ONE enabled child or is itself global
+        const isParentEnabled = selectedBrand || isGlobalItem(nav.name) || (nav.subItems && nav.subItems.some(sub => isGlobalItem(sub.name)));
+
+        // Disable style
+        const itemDisabledClass = !isParentEnabled ? "opacity-40 cursor-not-allowed pointer-events-none" : "";
+
+        return (
+          <li key={nav.name} className={itemDisabledClass}>
+            {nav.subItems ? (
+              <button
+                onClick={() => isParentEnabled && handleSubmenuToggle(index, menuType)}
+                disabled={!isParentEnabled}
+                className={`menu-item group ${openSubmenu?.type === menuType && openSubmenu?.index === index
                   ? "menu-item-active"
                   : "menu-item-inactive"
-                } cursor-pointer ${!isExpanded && !isHovered
-                  ? "lg:justify-center"
-                  : "lg:justify-start"
-                }`}
-            >
-              <span
-                className={`menu-item-icon-size  ${openSubmenu?.type === menuType &&
-                    openSubmenu?.index === index
-                    ? "menu-item-icon-active"
-                    : "menu-item-icon-inactive"
-                  }`}
-              >
-                {nav.icon}
-              </span>
-              {(isExpanded || isHovered || isMobileOpen) && (
-                <span className="menu-item-text">{nav.name}</span>
-              )}
-              {(isExpanded || isHovered || isMobileOpen) && (
-                <ChevronDownIcon
-                  className={`ml-auto w-5 h-5 transition-transform duration-200 ${openSubmenu?.type === menuType &&
-                      openSubmenu?.index === index
-                      ? "rotate-180 text-brand-500"
-                      : ""
-                    }`}
-                />
-              )}
-            </button>
-          ) : (
-            nav.path && (
-              <Link
-                to={nav.path}
-                className={`menu-item group ${isActive(nav.path)
-                    ? "menu-item-active"
-                    : "menu-item-inactive"
+                  } cursor-pointer ${!isExpanded && !isHovered
+                    ? "lg:justify-center"
+                    : "lg:justify-start"
                   }`}
               >
                 <span
-                  className={`menu-item-icon-size ${isActive(nav.path)
-                      ? "menu-item-icon-active"
-                      : "menu-item-icon-inactive"
+                  className={`menu-item-icon-size  ${openSubmenu?.type === menuType &&
+                    openSubmenu?.index === index
+                    ? "menu-item-icon-active"
+                    : "menu-item-icon-inactive"
                     }`}
                 >
                   {nav.icon}
@@ -239,65 +242,106 @@ const AppSidebar = () => {
                 {(isExpanded || isHovered || isMobileOpen) && (
                   <span className="menu-item-text">{nav.name}</span>
                 )}
-              </Link>
-            )
-          )}
-          {nav.subItems && (isExpanded || isHovered || isMobileOpen) && (
-            <div
-              ref={(el) => (subMenuRefs.current[`${menuType}-${index}`] = el)}
-              className="overflow-hidden transition-all duration-300"
-              style={{
-                height:
-                  openSubmenu?.type === menuType && openSubmenu?.index === index
-                    ? `${subMenuHeight[`${menuType}-${index}`]}px`
-                    : "0px",
-              }}
-            >
-              <ul className="mt-2 space-y-1 ml-9">
-                {nav.subItems.map((subItem) => (
-                  // Only show Campaigns, Contact Points, Course Management, and User Management to managers
-                  (subItem.name !== "Campaigns" && subItem.name !== "Contact Points" && 
-                   subItem.name !== "Course Management" && subItem.name !== "User Management") || hasManagerAccess ? (
-                    <li key={subItem.name}>
-                      <Link
-                        to={subItem.path}
-                        className={`menu-dropdown-item ${isActive(subItem.path)
+                {(isExpanded || isHovered || isMobileOpen) && (
+                  <ChevronDownIcon
+                    className={`ml-auto w-5 h-5 transition-transform duration-200 ${openSubmenu?.type === menuType &&
+                      openSubmenu?.index === index
+                      ? "rotate-180 text-brand-500"
+                      : ""
+                      }`}
+                  />
+                )}
+              </button>
+            ) : (
+              nav.path && (
+                <Link
+                  to={isParentEnabled ? nav.path : "#"}
+                  onClick={e => !isParentEnabled && e.preventDefault()}
+                  className={`menu-item group ${isActive(nav.path)
+                    ? "menu-item-active"
+                    : "menu-item-inactive"
+                    }`}
+                >
+                  <span
+                    className={`menu-item-icon-size ${isActive(nav.path)
+                      ? "menu-item-icon-active"
+                      : "menu-item-icon-inactive"
+                      }`}
+                  >
+                    {nav.icon}
+                  </span>
+                  {(isExpanded || isHovered || isMobileOpen) && (
+                    <span className="menu-item-text">{nav.name}</span>
+                  )}
+                </Link>
+              )
+            )}
+            {nav.subItems && (isExpanded || isHovered || isMobileOpen) && (
+              <div
+                ref={(el) => (subMenuRefs.current[`${menuType}-${index}`] = el)}
+                className="overflow-hidden transition-all duration-300"
+                style={{
+                  height:
+                    openSubmenu?.type === menuType && openSubmenu?.index === index
+                      ? `${subMenuHeight[`${menuType}-${index}`]}px`
+                      : "0px",
+                }}
+              >
+                <ul className="mt-2 space-y-1 ml-9">
+                  {nav.subItems.map((subItem) => {
+                    // Check if this specific sub-item is enabled
+                    const isSubItemEnabled = selectedBrand || isGlobalItem(subItem.name);
+                    const subItemDisabledClass = !isSubItemEnabled ? "opacity-40 cursor-not-allowed pointer-events-none" : "";
+
+                    // Only show Campaigns, Contact Points, Course Management, and User Management to managers
+                    if ((subItem.name === "Campaigns" || subItem.name === "Contact Points" ||
+                      subItem.name === "Course Management" || subItem.name === "User Management") && !hasManagerAccess) {
+                      return null;
+                    }
+
+                    return (
+                      <li key={subItem.name} className={subItemDisabledClass}>
+                        <Link
+                          to={isSubItemEnabled ? subItem.path : "#"}
+                          onClick={e => !isSubItemEnabled && e.preventDefault()}
+                          className={`menu-dropdown-item ${isActive(subItem.path)
                             ? "menu-dropdown-item-active"
                             : "menu-dropdown-item-inactive"
-                          }`}
-                      >
-                        {subItem.name}
-                        <span className="flex items-center gap-1 ml-auto">
-                          {subItem.new && (
-                            <span
-                              className={`ml-auto ${isActive(subItem.path)
+                            }`}
+                        >
+                          {subItem.name}
+                          <span className="flex items-center gap-1 ml-auto">
+                            {subItem.new && (
+                              <span
+                                className={`ml-auto ${isActive(subItem.path)
                                   ? "menu-dropdown-badge-active"
                                   : "menu-dropdown-badge-inactive"
-                                } menu-dropdown-badge`}
-                            >
-                              new
-                            </span>
-                          )}
-                          {subItem.pro && (
-                            <span
-                              className={`ml-auto ${isActive(subItem.path)
+                                  } menu-dropdown-badge`}
+                              >
+                                new
+                              </span>
+                            )}
+                            {subItem.pro && (
+                              <span
+                                className={`ml-auto ${isActive(subItem.path)
                                   ? "menu-dropdown-badge-active"
                                   : "menu-dropdown-badge-inactive"
-                                } menu-dropdown-badge`}
-                            >
-                              pro
-                            </span>
-                          )}
-                        </span>
-                      </Link>
-                    </li>
-                  ) : null
-                ))}
-              </ul>
-            </div>
-          )}
-        </li>
-      ))}
+                                  } menu-dropdown-badge`}
+                              >
+                                pro
+                              </span>
+                            )}
+                          </span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+          </li>
+        );
+      })}
     </ul>
   );
 

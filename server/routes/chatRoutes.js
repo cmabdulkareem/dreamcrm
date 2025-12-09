@@ -8,7 +8,9 @@ import {
   markMessagesAsRead,
   addParticipantToGroup,
   removeParticipantFromGroup,
-  deleteGroupChat
+  deleteGroupChat,
+  deleteChat,
+  deleteMessage
 } from '../controller/chatController.js';
 import verifyToken from "../middleware/verifyToken.js";
 
@@ -43,5 +45,11 @@ router.delete('/:chatId/participants/:participantId', removeParticipantFromGroup
 
 // Mark messages as read
 router.put('/:chatId/read', markMessagesAsRead);
+
+// Delete message (Owner only) - must be before /:chatId to avoid conflict
+router.delete('/messages/:messageId', deleteMessage);
+
+// Delete one-on-one chat (Owner only)
+router.delete('/:chatId', deleteChat);
 
 export default router;

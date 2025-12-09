@@ -11,6 +11,27 @@ function AuthProvider({ children }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
+  const [selectedBrand, setSelectedBrand] = useState(() => {
+    // Initialize from localStorage or default to null
+    const saved = localStorage.getItem("selectedBrand");
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  // Axios interceptor to add x-brand-id header
+  useEffect(() => {
+    const interceptor = axios.interceptors.request.use((config) => {
+      if (selectedBrand && selectedBrand._id) {
+        config.headers["x-brand-id"] = selectedBrand._id;
+      }
+      return config;
+    }, (error) => {
+      return Promise.reject(error);
+    });
+
+    return () => {
+      axios.interceptors.request.eject(interceptor);
+    };
+  }, [selectedBrand]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -30,6 +51,12 @@ function AuthProvider({ children }) {
           rolesArray.includes('Owner') ||
           rolesArray.includes('Admin');
         setIsAdmin(isAdminUser);
+
+        // If no brand selected, and user has brands, select the first one (or 'all' for admin)
+        if (!selectedBrand && user.brands && user.brands.length > 0) {
+          // Optional: default logic here if needed
+        }
+
       } catch (err) {
         console.error("Auth check error:", err);
         // If it's a 403 error (account not approved), still set the user but not logged in
@@ -73,7 +100,20 @@ function AuthProvider({ children }) {
     setIsLoggedIn(false);
     setIsAdmin(false);
     setUser(null);
+    setSelectedBrand(null);
+    localStorage.removeItem("selectedBrand");
     setLoading(false);
+  }
+
+  function selectBrand(brand) {
+    setSelectedBrand(brand);
+    if (brand) {
+      localStorage.setItem("selectedBrand", JSON.stringify(brand));
+    } else {
+      localStorage.removeItem("selectedBrand");
+    }
+    // Optional: reload page to refresh all data immediately
+    window.location.reload();
   }
 
   return (
@@ -84,10 +124,12 @@ function AuthProvider({ children }) {
         loading,
         setLoading,
         user,
-        setUser,       // ← THIS FIXES THE ENTIRE ISSUE
+        setUser,
         login,
         logout,
-        updateUser
+        updateUser,
+        selectedBrand,
+        selectBrand
       }}
     >
       {children}

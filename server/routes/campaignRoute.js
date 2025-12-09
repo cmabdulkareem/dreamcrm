@@ -8,21 +8,27 @@ import {
 } from '../controller/campaignController.js';
 import verifyToken from '../middleware/verifyToken.js';
 
+import { applyBrandFilter } from '../middleware/brandMiddleware.js';
+
 const router = express.Router();
 
+// Apply authentication and brand filter to all routes
+router.use(verifyToken);
+router.use(applyBrandFilter);
+
 // Get all campaigns (for admin/settings page)
-router.get('/all', verifyToken, getAllCampaigns);
+router.get('/all', getAllCampaigns);
 
 // Get active campaigns only (for dropdowns)
-router.get('/active', verifyToken, getActiveCampaigns);
+router.get('/active', getActiveCampaigns);
 
 // Create new campaign
-router.post('/create', verifyToken, createCampaign);
+router.post('/create', createCampaign);
 
 // Update campaign
-router.put('/update/:id', verifyToken, updateCampaign);
+router.put('/update/:id', updateCampaign);
 
 // Delete campaign
-router.delete('/delete/:id', verifyToken, deleteCampaign);
+router.delete('/delete/:id', deleteCampaign);
 
 export default router;

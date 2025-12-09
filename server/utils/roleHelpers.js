@@ -10,22 +10,22 @@
  */
 export function hasAdminOrManagerOrCounsellorAccess(user) {
   if (!user) return false;
-  
+
   // Check isAdmin flag for backward compatibility
   if (user.isAdmin) return true;
-  
+
   // Check roles array
   const userRoles = Array.isArray(user.roles) ? user.roles : (typeof user.roles === 'string' ? [user.roles] : []);
-  
+
   // Admin roles (Owner, Admin)
   if (userRoles.includes('Owner') || userRoles.includes('Admin')) return true;
-  
+
   // Manager roles (Center Head / Manager, Manager)
   if (userRoles.includes('Center Head / Manager') || userRoles.includes('Manager')) return true;
-  
+
   // Counselor role
   if (userRoles.includes('Counsellor') || userRoles.includes('Counselor')) return true;
-  
+
   return false;
 }
 
@@ -34,15 +34,27 @@ export function hasAdminOrManagerOrCounsellorAccess(user) {
  */
 export function isAdmin(user) {
   if (!user) return false;
-  
+
   // Check isAdmin flag for backward compatibility
   if (user.isAdmin) return true;
-  
+
   // Check roles array
   const userRoles = Array.isArray(user.roles) ? user.roles : (typeof user.roles === 'string' ? [user.roles] : []);
-  
+
   // Admin roles
   return userRoles.includes('Owner') || userRoles.includes('Admin');
+}
+
+/**
+ * Check if user has owner privileges (Owner role)
+ */
+export function isOwner(user) {
+  if (!user) return false;
+
+  // Check roles array
+  const userRoles = Array.isArray(user.roles) ? user.roles : (typeof user.roles === 'string' ? [user.roles] : []);
+
+  return userRoles.includes('Owner');
 }
 
 /**
@@ -50,12 +62,12 @@ export function isAdmin(user) {
  */
 export function hasRole(user, role) {
   if (!user) return false;
-  
+
   // Check isAdmin flag for backward compatibility with Admin role
   if (user.isAdmin && (role === 'Admin' || role === 'Owner')) {
     return true;
   }
-  
+
   // Check roles array
   const userRoles = Array.isArray(user.roles) ? user.roles : (typeof user.roles === 'string' ? [user.roles] : []);
   return userRoles.includes(role);
@@ -66,12 +78,12 @@ export function hasRole(user, role) {
  */
 export function hasAnyRole(user, roles) {
   if (!user) return false;
-  
+
   // Check isAdmin flag for backward compatibility
   if (user.isAdmin && (roles.includes('Admin') || roles.includes('Owner'))) {
     return true;
   }
-  
+
   const userRoles = Array.isArray(user.roles) ? user.roles : (typeof user.roles === 'string' ? [user.roles] : []);
   return roles.some(role => userRoles.includes(role));
 }

@@ -10,32 +10,32 @@ const AnimatedAnnouncement = () => {
 
   useEffect(() => {
     fetchActiveAnnouncements();
-    
+
     // Refresh announcements every 5 minutes
     const interval = setInterval(fetchActiveAnnouncements, 5 * 60 * 1000);
-    
+
     return () => clearInterval(interval);
   }, []);
 
   // Rotate through announcements every 30 seconds (increased from 5 seconds)
   useEffect(() => {
     if (announcements.length <= 1) return;
-    
+
     const rotationInterval = setInterval(() => {
-      setCurrentAnnouncementIndex(prevIndex => 
+      setCurrentAnnouncementIndex(prevIndex =>
         (prevIndex + 1) % announcements.length
       );
     }, 30000); // 30 seconds instead of 5 seconds
-    
+
     return () => clearInterval(rotationInterval);
   }, [announcements]);
 
   const fetchActiveAnnouncements = async () => {
     try {
       // Removed: console.log("Fetching announcements from:", `${API}/announcements/active`);
-      const response = await axios.get(`${API}/announcements/active`);
+      const response = await axios.get(`${API}/announcements/active`, { withCredentials: true });
       // Removed: console.log("Announcements response:", response.data);
-      
+
       if (response.data.announcements && response.data.announcements.length > 0) {
         // Removed: console.log("Setting announcements:", response.data.announcements);
         setAnnouncements(response.data.announcements);
@@ -70,7 +70,7 @@ const AnimatedAnnouncement = () => {
   // Show animated announcements with marquee effect
   const currentAnnouncement = announcements[currentAnnouncementIndex];
   // Removed console.log("Displaying announcement:", currentAnnouncement);
-  
+
   return (
     <div className="w-full bg-white dark:bg-gray-900 text-pink-500 py-2 px-4 overflow-hidden border-b border-pink-500">
       <div className="flex items-center">

@@ -7,6 +7,7 @@ import NotificationDropdown from "../components/header/NotificationDropdown";
 import UserDropdown from "../components/header/UserDropdown";
 import AnimatedAnnouncement from "../components/header/AnimatedAnnouncement";
 import { ThemeToggleButton } from "../components/common/ThemeToggleButton";
+import { AuthContext } from "../context/AuthContext";
 
 const AppHeader = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
@@ -21,6 +22,8 @@ const AppHeader = () => {
   const inputRef = useRef(null);
   const searchRef = useRef(null);
   const navigate = useNavigate();
+
+  const { selectedBrand, selectBrand, user: currentUser } = useContext(AuthContext);
 
   // Navigation items (modules/tabs)
   const navigationItems = [
@@ -362,10 +365,36 @@ const AppHeader = () => {
           className={`${isApplicationMenuOpen ? "flex" : "hidden"
             } items-center justify-between w-full gap-4 px-5 py-4 lg:flex shadow-theme-md lg:justify-end lg:px-0 lg:shadow-none`}
         >
-                  <AnimatedAnnouncement />
+          <AnimatedAnnouncement />
           <div className="flex items-center gap-2 2xsm:gap-3">
+            {/* Brand Switcher - Only show if user has brands */}
+            {currentUser && currentUser.brands && currentUser.brands.length > 0 && (
+              <div className="relative">
+                <select
+                  className="h-10 pl-3 pr-8 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  value={selectedBrand ? selectedBrand._id : ""}
+                  onChange={(e) => {
+                    const brandId = e.target.value;
+                    if (brandId === "") {
+                      selectBrand(null); // Select All
+                    } else {
+                      const brand = currentUser.brands.find(b => b._id === brandId);
+                      selectBrand(brand);
+                    }
+                  }}
+                >
+                  <option value="">All Brands</option>
+                  {currentUser.brands.map((brand) => (
+                    <option key={brand._id} value={brand._id}>
+                      {brand.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             {/* Notification Dropdown */}
-            
+
             <NotificationDropdown />
 
             {/* Chat Notification Icon */}

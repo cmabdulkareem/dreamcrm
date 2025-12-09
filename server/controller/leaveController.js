@@ -5,7 +5,7 @@ import { hasAdminOrManagerOrCounsellorAccess } from '../utils/roleHelpers.js';
 const generateTicketNumber = async () => {
   let ticketNumber;
   let isUnique = false;
-  
+
   while (!isUnique) {
     // Generate ticket: LR + YYYYMMDD + random 6 digits
     const date = new Date();
@@ -14,28 +14,29 @@ const generateTicketNumber = async () => {
     const day = String(date.getDate()).padStart(2, '0');
     const random = Math.floor(100000 + Math.random() * 900000); // 6 digit random number
     ticketNumber = `LR${year}${month}${day}${random}`;
-    
+
     // Check if ticket number already exists
     const existing = await leaveModel.findOne({ ticketNumber });
     if (!existing) {
       isUnique = true;
     }
   }
-  
+
   return ticketNumber;
 };
 
 // Get all leaves
 export const getAllLeaves = async (req, res) => {
   try {
-    const leaves = await leaveModel.find().sort({ createdAt: -1 });
-    return res.status(200).json({ 
+    const query = { ...req.brandFilter };
+    const leaves = await leaveModel.find(query).sort({ createdAt: -1 });
+    return res.status(200).json({
       success: true,
-      leaves: leaves || [] 
+      leaves: leaves || []
     });
   } catch (error) {
     console.error("Error fetching leaves:", error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       success: false,
       message: "Internal server error",
       leaves: []
@@ -47,27 +48,27 @@ export const getAllLeaves = async (req, res) => {
 export const getLeaveById = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     // Validate MongoDB ObjectId format
     if (!id.match(/^[0-9a-fA-F]{24}$/)) {
       return res.status(400).json({ message: "Invalid leave ID format" });
     }
-    
+
     const leave = await leaveModel.findById(id);
-    
+
     if (!leave) {
       return res.status(404).json({ message: "Leave not found." });
     }
 
-    return res.status(200).json({ 
+    return res.status(200).json({
       success: true,
-      leave 
+      leave
     });
   } catch (error) {
     console.error("Error fetching leave:", error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       success: false,
-      message: "Internal server error" 
+      message: "Internal server error"
     });
   }
 };
@@ -86,15 +87,15 @@ export const createLeave = async (req, res) => {
 
     // Validate required fields
     if (!employeeName || !employeeId || !leaveType || !startDate || !endDate || !reason) {
-      return res.status(400).json({ 
-        message: "All fields are required: employeeName, employeeId, leaveType, startDate, endDate, and reason" 
+      return res.status(400).json({
+        message: "All fields are required: employeeName, employeeId, leaveType, startDate, endDate, and reason"
       });
     }
 
     // Validate dates
     const start = new Date(startDate);
     const end = new Date(endDate);
-    
+
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
       return res.status(400).json({ message: "Invalid date format" });
     }
@@ -120,30 +121,31 @@ export const createLeave = async (req, res) => {
       leaveType,
       startDate: start,
       endDate: end,
-      reason: reason.trim()
+      reason: reason.trim(),
+      brand: req.headers['x-brand-id'] || req.body.brandId || null // Try to capture brand context
     });
 
     await newLeave.save();
 
-    return res.status(201).json({ 
-      message: "Leave request submitted successfully.", 
+    return res.status(201).json({
+      message: "Leave request submitted successfully.",
       ticketNumber: newLeave.ticketNumber,
-      leave: newLeave 
+      leave: newLeave
     });
   } catch (error) {
     console.error("Create leave error:", error);
-    
+
     // Handle validation errors from mongoose
     if (error.name === 'ValidationError') {
       const errors = Object.values(error.errors).map(err => err.message);
-      return res.status(400).json({ 
-        message: "Validation error", 
-        errors 
+      return res.status(400).json({
+        message: "Validation error",
+        errors
       });
     }
-    
-    return res.status(500).json({ 
-      message: error.message || "Server error" 
+
+    return res.status(500).json({
+      message: error.message || "Server error"
     });
   }
 };
@@ -175,9 +177,9 @@ export const updateLeave = async (req, res) => {
 
     await leave.save();
 
-    return res.status(200).json({ 
-      message: "Leave updated successfully.", 
-      leave 
+    return res.status(200).json({
+      message: "Leave updated successfully.",
+      leave
     });
   } catch (error) {
     console.error("Update leave error:", error);
@@ -194,7 +196,7 @@ export const deleteLeave = async (req, res) => {
     }
 
     const { id } = req.params;
-    
+
     const leave = await leaveModel.findByIdAndDelete(id);
     if (!leave) {
       return res.status(404).json({ message: "Leave not found." });
@@ -226,9 +228,9 @@ export const updateLeaveStatus = async (req, res) => {
     leave.status = status;
     await leave.save();
 
-    return res.status(200).json({ 
-      message: `Leave ${status} successfully.`, 
-      leave 
+    return res.status(200).json({
+      message: `Leave ${status} successfully.`,
+      leave
     });
   } catch (error) {
     console.error("Update leave status error:", error);
@@ -240,25 +242,25 @@ export const updateLeaveStatus = async (req, res) => {
 export const getLeaveByTicketNumber = async (req, res) => {
   try {
     const { ticketNumber } = req.params;
-    
+
     if (!ticketNumber) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        message: "Ticket number is required" 
+        message: "Ticket number is required"
       });
     }
 
     const leave = await leaveModel.findOne({ ticketNumber });
-    
+
     if (!leave) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
-        message: "Leave request not found. Please check your ticket number." 
+        message: "Leave request not found. Please check your ticket number."
       });
     }
 
     // Return only necessary information (no sensitive data)
-    return res.status(200).json({ 
+    return res.status(200).json({
       success: true,
       leave: {
         ticketNumber: leave.ticketNumber,
@@ -275,9 +277,9 @@ export const getLeaveByTicketNumber = async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching leave by ticket number:", error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       success: false,
-      message: "Internal server error" 
+      message: "Internal server error"
     });
   }
 };

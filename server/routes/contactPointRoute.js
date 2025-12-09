@@ -8,21 +8,26 @@ import {
 } from '../controller/contactPointController.js';
 import verifyToken from '../middleware/verifyToken.js';
 
+import { applyBrandFilter } from '../middleware/brandMiddleware.js';
+
 const router = express.Router();
 
+router.use(verifyToken);
+router.use(applyBrandFilter);
+
 // Get all contact points (for admin/settings page)
-router.get('/all', verifyToken, getAllContactPoints);
+router.get('/all', getAllContactPoints);
 
 // Get active contact points only (for dropdowns)
-router.get('/active', verifyToken, getActiveContactPoints);
+router.get('/active', getActiveContactPoints);
 
 // Create new contact point
-router.post('/create', verifyToken, createContactPoint);
+router.post('/create', createContactPoint);
 
 // Update contact point
-router.put('/update/:id', verifyToken, updateContactPoint);
+router.put('/update/:id', updateContactPoint);
 
 // Delete contact point
-router.delete('/delete/:id', verifyToken, deleteContactPoint);
+router.delete('/delete/:id', deleteContactPoint);
 
 export default router;

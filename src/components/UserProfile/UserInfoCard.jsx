@@ -16,8 +16,6 @@ export default function UserInfoCard({ user }) {
   const { setUser } = useContext(AuthContext);
   const { isOpen, openModal, closeModal } = useModal();
 
-  console.log(user);
-
   // Form state
   const [instagram, setInstagram] = useState(user?.instagram || "");
   const [location, setLocation] = useState(user?.location || "");
@@ -56,6 +54,7 @@ export default function UserInfoCard({ user }) {
       }
     };
 
+    // Fetch users when modal opens or when component mounts
     if (isOpen) {
       fetchUsers();
     }
@@ -113,6 +112,10 @@ export default function UserInfoCard({ user }) {
     ...users
       .filter(u => u.id !== user?.id) // Exclude current user
       .map(u => ({ value: u.id, label: u.fullName }))
+      // Filter out duplicate user IDs to prevent key prop warnings
+      .filter((user, index, self) => 
+        index === self.findIndex(u => u.value === user.value)
+      )
   ];
 
   // Don't render the component if user data is not available
@@ -377,8 +380,8 @@ export default function UserInfoCard({ user }) {
                     <Label>Gender</Label>
                     <Select
                       options={accountGender}
-                      value={accountGender.find(g => g.value === gender)}
-                      onChange={(option) => setGender(option.value)}
+                      value={gender}
+                      onChange={setGender}
                       placeholder="Select Gender"
                     />
                   </div>

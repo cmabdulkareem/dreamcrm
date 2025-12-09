@@ -106,6 +106,10 @@ const customerSchema = new mongoose.Schema({
     type: String,
     enum: ['strongProspect', 'potentialProspect', 'weakProspect', 'notAProspect'],
     required: false // Explicitly set required to false
+  },
+  brand: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Brand'
   }
 }, {
   timestamps: true

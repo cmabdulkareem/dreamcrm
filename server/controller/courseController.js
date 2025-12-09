@@ -3,7 +3,24 @@ import courseModel from '../model/courseModel.js';
 // Get all courses
 export const getAllCourses = async (req, res) => {
   try {
-    const courses = await courseModel.find().sort({ createdAt: -1 });
+    // Check for brand filter from middleware (if authenticated) or header (if public)
+    const brandId = req.brandFilter?.brand || req.headers['x-brand-id'];
+    const query = brandId ? { brand: brandId } : {};
+
+    // Check if brandId is an object (from middleware {brand: 'xxx'}) or string
+    // middleware returns {brand: 'id'} or {brand: {$in: [...]}}
+    // so req.brandFilter is the query object itself usually?
+    // In brandMiddleware: req.brandFilter = { brand: ... }
+    // So we can merge it. But if it's public (no middleware), we construct it.
+
+    let finalQuery = {};
+    if (req.brandFilter) {
+      finalQuery = { ...req.brandFilter };
+    } else if (req.headers['x-brand-id']) {
+      finalQuery = { brand: req.headers['x-brand-id'] };
+    }
+
+    const courses = await courseModel.find(finalQuery).sort({ createdAt: -1 });
     return res.status(200).json({ courses });
   } catch (error) {
     console.error("Error fetching courses:", error);
@@ -16,7 +33,7 @@ export const getCourseById = async (req, res) => {
   try {
     const { id } = req.params;
     const course = await courseModel.findById(id);
-    
+
     if (!course) {
       return res.status(404).json({ message: "Course not found." });
     }
@@ -56,14 +73,15 @@ export const createCourse = async (req, res) => {
       mode,
       singleShotFee: parseFloat(singleShotFee),
       normalFee: parseFloat(normalFee),
-      isActive: isActive === 'true' || isActive === true
+      isActive: isActive === 'true' || isActive === true,
+      brand: req.brandFilter?.brand || req.headers['x-brand-id'] || null // Strict brand assignment
     });
 
     await newCourse.save();
 
-    return res.status(201).json({ 
-      message: "Course created successfully.", 
-      course: newCourse 
+    return res.status(201).json({
+      message: "Course created successfully.",
+      course: newCourse
     });
   } catch (error) {
     console.error("Create course error:", error);
@@ -97,9 +115,9 @@ export const updateCourse = async (req, res) => {
 
     await course.save();
 
-    return res.status(200).json({ 
-      message: "Course updated successfully.", 
-      course 
+    return res.status(200).json({
+      message: "Course updated successfully.",
+      course
     });
   } catch (error) {
     console.error("Update course error:", error);
@@ -111,7 +129,7 @@ export const updateCourse = async (req, res) => {
 export const deleteCourse = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const course = await courseModel.findByIdAndDelete(id);
     if (!course) {
       return res.status(404).json({ message: "Course not found." });
@@ -128,7 +146,7 @@ export const deleteCourse = async (req, res) => {
 export const toggleCourseStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const course = await courseModel.findById(id);
     if (!course) {
       return res.status(404).json({ message: "Course not found." });
@@ -137,9 +155,9 @@ export const toggleCourseStatus = async (req, res) => {
     course.isActive = !course.isActive;
     await course.save();
 
-    return res.status(200).json({ 
-      message: `Course ${course.isActive ? 'activated' : 'deactivated'} successfully.`, 
-      course 
+    return res.status(200).json({
+      message: `Course ${course.isActive ? 'activated' : 'deactivated'} successfully.`,
+      course
     });
   } catch (error) {
     console.error("Toggle course status error:", error);

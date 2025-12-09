@@ -3,7 +3,9 @@ import Campaign from '../model/campaignModel.js';
 // Get all campaigns
 export const getAllCampaigns = async (req, res) => {
   try {
-    const campaigns = await Campaign.find().sort({ createdAt: -1 });
+    // Apply brand filter if present
+    const query = { ...req.brandFilter };
+    const campaigns = await Campaign.find(query).sort({ createdAt: -1 });
     return res.status(200).json({ campaigns });
   } catch (error) {
     console.error('Get campaigns error:', error);
@@ -14,7 +16,8 @@ export const getAllCampaigns = async (req, res) => {
 // Get active campaigns only (for dropdowns)
 export const getActiveCampaigns = async (req, res) => {
   try {
-    const campaigns = await Campaign.find({ isActive: true }).sort({ name: 1 });
+    const query = { isActive: true, ...req.brandFilter };
+    const campaigns = await Campaign.find(query).sort({ name: 1 });
     return res.status(200).json({ campaigns });
   } catch (error) {
     console.error('Get active campaigns error:', error);
@@ -34,13 +37,16 @@ export const createCampaign = async (req, res) => {
     // Generate value from name (lowercase, replace spaces with hyphens)
     const value = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
-    // Check if campaign with same name or value exists
+    const brandId = req.brandFilter?.brand || req.headers['x-brand-id'] || null;
+
+    // Check if campaign with same name or value exists FOR THIS BRAND
     const existingCampaign = await Campaign.findOne({
-      $or: [{ name }, { value }]
+      $or: [{ name }, { value }],
+      brand: brandId
     });
 
     if (existingCampaign) {
-      return res.status(400).json({ message: 'Campaign already exists' });
+      return res.status(400).json({ message: 'Campaign with this name already exists for this brand' });
     }
 
     const campaign = new Campaign({
@@ -49,7 +55,8 @@ export const createCampaign = async (req, res) => {
       description: description || '',
       discountPercentage: discountPercentage || 0,
       cashback: cashback || 0,
-      isActive: isActive !== undefined ? isActive : true
+      isActive: isActive !== undefined ? isActive : true,
+      brand: brandId // Strict brand assignment
     });
 
     await campaign.save();
@@ -72,10 +79,14 @@ export const updateCampaign = async (req, res) => {
     }
 
     if (name && name !== campaign.name) {
-      // Check if new name already exists
-      const existingCampaign = await Campaign.findOne({ name, _id: { $ne: id } });
+      // Check if new name already exists FOR THIS BRAND
+      const existingCampaign = await Campaign.findOne({
+        name,
+        _id: { $ne: id },
+        brand: campaign.brand
+      });
       if (existingCampaign) {
-        return res.status(400).json({ message: 'Campaign name already exists' });
+        return res.status(400).json({ message: 'Campaign name already exists for this brand' });
       }
       campaign.name = name;
       // Update value when name changes

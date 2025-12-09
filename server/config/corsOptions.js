@@ -3,7 +3,7 @@ const corsOptions = {
   methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE"],
   credentials: true,
   optionsSuccessStatus: 200,
-  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedHeaders: ["Content-Type", "Authorization", "x-brand-id"],
   exposedHeaders: ["set-cookie"]
 };
 

@@ -53,6 +53,10 @@ const eventSchema = new mongoose.Schema({
   bannerImage: {
     type: String,
     default: ''
+  },
+  brand: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Brand' // Enforce strict brand context
   }
 }, {
   timestamps: true

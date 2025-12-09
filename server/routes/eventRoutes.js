@@ -1,5 +1,5 @@
 import express from 'express';
-import { 
+import {
   getAllEvents,
   getEventById,
   getEventByLink,
@@ -16,18 +16,25 @@ import verifyToken from '../middleware/verifyToken.js';
 
 const router = express.Router();
 
+import { applyBrandFilter } from '../middleware/brandMiddleware.js';
+
+// ... (other imports)
+
 // Public routes for event registration
 router.get('/public/:link', getEventByLink);
 router.post('/register/:link', registerForEvent);
 
 // Protected routes (admin only)
-router.get('/', verifyToken, getAllEvents);
-router.get('/:id', verifyToken, getEventById);
-router.get('/:id/registrations', verifyToken, getEventRegistrations);
-router.post('/create', verifyToken, createEvent);
-router.put('/update/:id', verifyToken, updateEvent);
-router.delete('/delete/:id', verifyToken, deleteEvent);
-router.patch('/toggle-status/:id', verifyToken, toggleEventStatus);
+router.use(verifyToken);
+router.use(applyBrandFilter); // Apply brand filter
+
+router.get('/', getAllEvents);
+router.get('/:id', getEventById);
+router.get('/:id/registrations', getEventRegistrations);
+router.post('/create', createEvent);
+router.put('/update/:id', updateEvent);
+router.delete('/delete/:id', deleteEvent);
+router.patch('/toggle-status/:id', toggleEventStatus);
 
 // Banner upload route
 router.post('/upload-banner/:id', verifyToken, uploadEventBannerMiddleware, uploadEventBanner);

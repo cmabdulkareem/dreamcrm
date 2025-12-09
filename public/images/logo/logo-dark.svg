@@ -14,7 +14,7 @@
       }
 
       .st2 {
-        fill: #ed1e6d;
+        fill: var(--color-brand-600, #ed1e6d);
       }
 
       .st1 {

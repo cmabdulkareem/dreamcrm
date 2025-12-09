@@ -11,11 +11,11 @@ const MultiSelect = ({
   // Use controlled mode if selectedValues is provided
   const isControlled = selectedValues !== undefined && selectedValues !== null;
   const [internalSelected, setInternalSelected] = useState(defaultSelected);
-  
-  const selectedOptions = isControlled 
+
+  const selectedOptions = isControlled
     ? selectedValues
     : internalSelected;
-  
+
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -48,18 +48,18 @@ const MultiSelect = ({
     if (!isControlled) {
       setInternalSelected(newSelectedOptions);
     }
-    
+
     // Convert to the format expected by onChange - just the values
     onChange?.(newSelectedOptions);
   };
 
   const removeOption = (value) => {
     const newSelectedOptions = selectedOptions.filter((opt) => opt !== value);
-    
+
     if (!isControlled) {
       setInternalSelected(newSelectedOptions);
     }
-    
+
     // Convert to the format expected by onChange - just the values
     onChange?.(newSelectedOptions);
   };
@@ -74,7 +74,7 @@ const MultiSelect = ({
         {label}
       </label>
 
-      <div className="relative z-20 inline-block w-full">
+      <div className={`relative inline-block w-full ${isOpen ? "z-50" : "z-20"}`}>
         <div className="relative flex flex-col items-center" ref={dropdownRef}>
           <div onClick={toggleDropdown} className="w-full">
             <div className="mb-2 flex h-11 rounded-lg border border-gray-300 py-1.5 pl-3 pr-3 shadow-theme-xs outline-hidden transition focus:border-brand-300 focus:shadow-focus-ring dark:border-gray-700 dark:bg-gray-900 dark:focus:border-brand-300">
@@ -150,7 +150,7 @@ const MultiSelect = ({
 
           {isOpen && (
             <div
-              className="absolute left-0 z-40 w-full overflow-y-auto bg-white rounded-lg shadow-sm top-full max-h-60 dark:bg-gray-900"
+              className="absolute left-0 z-40 w-full overflow-y-auto bg-white rounded-lg shadow-sm top-full max-h-96 dark:bg-gray-900"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex flex-col">
@@ -161,11 +161,10 @@ const MultiSelect = ({
                     onClick={() => handleSelect(option.value)}
                   >
                     <div
-                      className={`relative flex w-full items-center p-2 pl-2 ${
-                        selectedOptions.includes(option.value)
+                      className={`relative flex w-full items-center p-2 pl-2 ${selectedOptions.includes(option.value)
                           ? "bg-primary/10"
                           : ""
-                      }`}
+                        }`}
                     >
                       <div className="mx-2 leading-6 text-gray-800 dark:text-white/90">
                         {option.label}

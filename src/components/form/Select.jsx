@@ -15,8 +15,20 @@ const Select = ({
   
   const selectedValue = isControlled ? value : internalValue;
 
+  // Filter out duplicate options and options with invalid values to prevent key prop warnings
+  const validOptions = options.filter(option => 
+    option && 
+    option.value !== undefined && 
+    option.value !== null &&
+    option.value !== ""
+  );
+  
+  const uniqueOptions = validOptions.filter((option, index, self) => 
+    index === self.findIndex(o => o.value === option.value)
+  );
+
   // Find the selected option to get its color
-  const selectedOption = options.find(option => option.value === selectedValue);
+  const selectedOption = uniqueOptions.find(option => option.value === selectedValue);
   const selectedColor = selectedOption && selectedOption.color ? selectedOption.color : "";
 
   const handleChange = (e) => {
@@ -49,8 +61,8 @@ const Select = ({
       >
         {placeholder}
       </option>
-      {/* Map over options */}
-      {options.map((option) => (
+      {/* Map over unique options */}
+      {uniqueOptions.map((option) => (
         <option
           key={option.value}
           value={option.value}

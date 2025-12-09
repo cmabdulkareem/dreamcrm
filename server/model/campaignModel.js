@@ -4,13 +4,11 @@ const campaignSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
-    unique: true,
     trim: true
   },
   value: {
     type: String,
     required: true,
-    unique: true,
     trim: true
   },
   description: {
@@ -31,8 +29,16 @@ const campaignSchema = new mongoose.Schema({
   isActive: {
     type: Boolean,
     default: true
+  },
+  brand: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Brand'
   }
 }, { timestamps: true });
+
+// Ensure name and value are unique per brand
+campaignSchema.index({ name: 1, brand: 1 }, { unique: true });
+campaignSchema.index({ value: 1, brand: 1 }, { unique: true });
 
 const Campaign = mongoose.model('Campaign', campaignSchema);
 

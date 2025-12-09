@@ -15,7 +15,7 @@ export const createAnnouncement = async (req, res) => {
     // Validate dates
     const start = new Date(startTime);
     const end = new Date(endTime);
-    
+
     if (start >= end) {
       return res.status(400).json({ message: 'End time must be after start time' });
     }
@@ -24,8 +24,8 @@ export const createAnnouncement = async (req, res) => {
     const user = await User.findById(userId);
     const isAdmin = user.isAdmin;
     const userRoles = user.roles || [];
-    const isManager = isAdmin || userRoles.includes('Owner') || userRoles.includes('Admin') || 
-                      userRoles.includes('Center Head / Manager') || userRoles.includes('Manager');
+    const isManager = isAdmin || userRoles.includes('Owner') || userRoles.includes('Admin') ||
+      userRoles.includes('Center Head / Manager') || userRoles.includes('Manager');
 
     // Create announcement
     const announcement = new Announcement({
@@ -34,7 +34,8 @@ export const createAnnouncement = async (req, res) => {
       startTime: start,
       endTime: end,
       createdBy: userId,
-      status: isManager ? 'approved' : 'pending'
+      status: isManager ? 'approved' : 'pending',
+      brand: req.brandFilter?.brand || req.headers['x-brand-id'] || null // Strict brand assignment
     });
 
     const savedAnnouncement = await announcement.save();
@@ -57,16 +58,17 @@ export const getAnnouncements = async (req, res) => {
   try {
     const userId = req.user.id;
     const user = await User.findById(userId);
-    
+
     // Check if user has manager role
     const isAdmin = user.isAdmin;
     const userRoles = user.roles || [];
-    const isManager = isAdmin || userRoles.includes('Owner') || userRoles.includes('Admin') || 
-                      userRoles.includes('Center Head / Manager') || userRoles.includes('Manager');
+    const isManager = isAdmin || userRoles.includes('Owner') || userRoles.includes('Admin') ||
+      userRoles.includes('Center Head / Manager') || userRoles.includes('Manager');
 
     // Query based on user role
-    const query = isManager ? {} : { status: 'approved' };
-    
+    // Query based on user role and brand filter
+    const query = isManager ? { ...req.brandFilter } : { status: 'approved', ...req.brandFilter };
+
     const announcements = await Announcement.find(query)
       .populate('createdBy', 'fullName')
       .sort({ createdAt: -1 });
@@ -91,8 +93,8 @@ export const approveAnnouncement = async (req, res) => {
     const user = await User.findById(userId);
     const isAdmin = user.isAdmin;
     const userRoles = user.roles || [];
-    const isManager = isAdmin || userRoles.includes('Owner') || userRoles.includes('Admin') || 
-                      userRoles.includes('Center Head / Manager') || userRoles.includes('Manager');
+    const isManager = isAdmin || userRoles.includes('Owner') || userRoles.includes('Admin') ||
+      userRoles.includes('Center Head / Manager') || userRoles.includes('Manager');
 
     if (!isManager) {
       return res.status(403).json({ message: 'Access denied. Managers only.' });
@@ -128,8 +130,8 @@ export const rejectAnnouncement = async (req, res) => {
     const user = await User.findById(userId);
     const isAdmin = user.isAdmin;
     const userRoles = user.roles || [];
-    const isManager = isAdmin || userRoles.includes('Owner') || userRoles.includes('Admin') || 
-                      userRoles.includes('Center Head / Manager') || userRoles.includes('Manager');
+    const isManager = isAdmin || userRoles.includes('Owner') || userRoles.includes('Admin') ||
+      userRoles.includes('Center Head / Manager') || userRoles.includes('Manager');
 
     if (!isManager) {
       return res.status(403).json({ message: 'Access denied. Managers only.' });
@@ -165,7 +167,7 @@ export const updateAnnouncement = async (req, res) => {
     // Validate dates
     const start = new Date(startTime);
     const end = new Date(endTime);
-    
+
     if (start >= end) {
       return res.status(400).json({ message: 'End time must be after start time' });
     }
@@ -174,8 +176,8 @@ export const updateAnnouncement = async (req, res) => {
     const user = await User.findById(userId);
     const isAdmin = user.isAdmin;
     const userRoles = user.roles || [];
-    const isManager = isAdmin || userRoles.includes('Owner') || userRoles.includes('Admin') || 
-                      userRoles.includes('Center Head / Manager') || userRoles.includes('Manager');
+    const isManager = isAdmin || userRoles.includes('Owner') || userRoles.includes('Admin') ||
+      userRoles.includes('Center Head / Manager') || userRoles.includes('Manager');
 
     if (!isManager) {
       return res.status(403).json({ message: 'Access denied. Managers only.' });
@@ -212,14 +214,15 @@ export const updateAnnouncement = async (req, res) => {
 export const getActiveAnnouncements = async (req, res) => {
   try {
     const now = new Date();
-    
+
     const announcements = await Announcement.find({
       status: 'approved',
       startTime: { $lte: now },
-      endTime: { $gte: now }
+      endTime: { $gte: now },
+      ...req.brandFilter
     })
-    .populate('createdBy', 'fullName')
-    .sort({ createdAt: -1 });
+      .populate('createdBy', 'fullName')
+      .sort({ createdAt: -1 });
 
     res.status(200).json({
       message: 'Active announcements fetched successfully',

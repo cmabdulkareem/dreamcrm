@@ -39,6 +39,10 @@ const courseSchema = new mongoose.Schema({
   isActive: {
     type: Boolean,
     default: true
+  },
+  brand: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Brand'
   }
 }, {
   timestamps: true

@@ -20,7 +20,7 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ 
+const upload = multer({
   storage: storage,
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith("image/")) {
@@ -85,8 +85,8 @@ export const createStudent = async (req, res) => {
     }
 
     if (lead.leadStatus !== 'converted') {
-      return res.status(400).json({ 
-        message: `Only converted leads can be used to create students. Current lead status is: ${lead.leadStatus}` 
+      return res.status(400).json({
+        message: `Only converted leads can be used to create students. Current lead status is: ${lead.leadStatus}`
       });
     }
 
@@ -100,8 +100,8 @@ export const createStudent = async (req, res) => {
     let parsedAdditionalCourses = [];
     if (additionalCourses) {
       try {
-        parsedAdditionalCourses = typeof additionalCourses === 'string' 
-          ? JSON.parse(additionalCourses) 
+        parsedAdditionalCourses = typeof additionalCourses === 'string'
+          ? JSON.parse(additionalCourses)
           : additionalCourses;
       } catch (e) {
         // If parsing fails, use as-is
@@ -131,15 +131,17 @@ export const createStudent = async (req, res) => {
       discountAmount: parseFloat(discountAmount) || 0,
       finalAmount: parseFloat(finalAmount) || 0,
       enrollmentDate: new Date(enrollmentDate),
+      enrollmentDate: new Date(enrollmentDate),
       leadId,
-      createdBy: req.user.fullName || req.user.email
+      createdBy: req.user.fullName || req.user.email,
+      brand: req.brandFilter?.brand || req.headers['x-brand-id'] || null // Strict brand assignment
     });
 
     await newStudent.save();
 
-    return res.status(201).json({ 
-      message: "Student created successfully.", 
-      student: newStudent 
+    return res.status(201).json({
+      message: "Student created successfully.",
+      student: newStudent
     });
   } catch (error) {
     console.error("Create student error:", error);
@@ -150,17 +152,18 @@ export const createStudent = async (req, res) => {
 // Get all students
 export const getAllStudents = async (req, res) => {
   try {
-    const students = await studentModel.find().sort({ createdAt: -1 }).populate('leadId', 'fullName email');
+    const query = { ...req.brandFilter }; // Apply brand filter
+    const students = await studentModel.find(query).sort({ createdAt: -1 }).populate('leadId', 'fullName email');
     // Populate course details for each student
     const studentsWithCourseDetails = await Promise.all(students.map(async (student) => {
       const studentObj = student.toObject();
-      
+
       // Populate primary course details
       if (student.coursePreference) {
         const course = await courseModel.findById(student.coursePreference);
         studentObj.courseDetails = course;
       }
-      
+
       // Populate additional courses details
       if (student.additionalCourses && student.additionalCourses.length > 0) {
         studentObj.additionalCourseDetails = await Promise.all(
@@ -169,7 +172,7 @@ export const getAllStudents = async (req, res) => {
           })
         );
       }
-      
+
       return studentObj;
     }));
     return res.status(200).json({ students: studentsWithCourseDetails });
@@ -184,19 +187,19 @@ export const getStudentById = async (req, res) => {
   try {
     const { id } = req.params;
     const student = await studentModel.findById(id).populate('leadId', 'fullName email');
-    
+
     if (!student) {
       return res.status(404).json({ message: "Student not found." });
     }
 
     const studentObj = student.toObject();
-    
+
     // Populate primary course details
     if (student.coursePreference) {
       const course = await courseModel.findById(student.coursePreference);
       studentObj.courseDetails = course;
     }
-    
+
     // Populate additional courses details
     if (student.additionalCourses && student.additionalCourses.length > 0) {
       studentObj.additionalCourseDetails = await Promise.all(
@@ -235,9 +238,9 @@ export const updateStudent = async (req, res) => {
 
     await student.save();
 
-    return res.status(200).json({ 
-      message: "Student updated successfully.", 
-      student 
+    return res.status(200).json({
+      message: "Student updated successfully.",
+      student
     });
   } catch (error) {
     console.error("Update student error:", error);
@@ -249,7 +252,7 @@ export const updateStudent = async (req, res) => {
 export const deleteStudent = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const student = await studentModel.findByIdAndDelete(id);
     if (!student) {
       return res.status(404).json({ message: "Student not found." });

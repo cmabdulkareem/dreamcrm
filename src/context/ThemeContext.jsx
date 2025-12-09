@@ -1,54 +1,62 @@
-import { createContext, useState, useContext, useEffect } from "react";
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { AuthContext } from './AuthContext';
+import { generatePalette } from '../utils/themeUtils';
 
 const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState(() => {
-    // Initialize from localStorage on mount
-    if (typeof window !== 'undefined') {
-      const savedTheme = localStorage.getItem("theme");
-      return savedTheme || "light";
-    }
-    return "light";
-  });
-  const [isInitialized, setIsInitialized] = useState(false);
+  const { selectedBrand } = useContext(AuthContext);
+  const [currentThemeColor, setCurrentThemeColor] = useState('#ED1164'); // Default Hot Pink
+  const [theme, setTheme] = useState(localStorage.getItem("color-theme") || "light");
 
   useEffect(() => {
-    // Apply theme immediately on mount
+    const className = "dark";
+    const bodyClass = window.document.body.classList;
+
     if (theme === "dark") {
-      document.documentElement.classList.add("dark");
+      bodyClass.add(className);
+      document.documentElement.classList.add(className);
     } else {
-      document.documentElement.classList.remove("dark");
+      bodyClass.remove(className);
+      document.documentElement.classList.remove(className);
     }
-    setIsInitialized(true);
-  }, []);
 
-  useEffect(() => {
-    if (isInitialized) {
-      localStorage.setItem("theme", theme);
-      if (theme === "dark") {
-        document.documentElement.classList.add("dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-      }
-    }
-  }, [theme, isInitialized]);
+    localStorage.setItem("color-theme", theme);
+  }, [theme]);
 
   const toggleTheme = () => {
     setTheme((prevTheme) => (prevTheme === "light" ? "dark" : "light"));
   };
 
+  useEffect(() => {
+    // Determine the theme color
+    // If a brand is selected and has a themeColor, use it.
+    // Otherwise, fallback to default.
+    const newColor = selectedBrand?.themeColor || '#ED1164';
+    setCurrentThemeColor(newColor);
+
+    // Generate palette
+    const palette = generatePalette(newColor);
+
+    // Apply CSS variables to root
+    const root = document.documentElement;
+
+    // Map palette to CSS variables matching tailwind config in index.css
+    // We used --color-brand-* in index.css
+    Object.keys(palette).forEach(shade => {
+      root.style.setProperty(`--color-brand-${shade}`, palette[shade]);
+    });
+
+    // Also set the theme-pink-500 var if it's being used as a reference
+    root.style.setProperty('--color-theme-pink-500', newColor);
+
+  }, [selectedBrand]);
+
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ currentThemeColor, theme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );
 };
 
-export const useTheme = () => {
-  const context = useContext(ThemeContext);
-  if (context === undefined) {
-    throw new Error("useTheme must be used within a ThemeProvider");
-  }
-  return context;
-};
+export const useTheme = () => useContext(ThemeContext);

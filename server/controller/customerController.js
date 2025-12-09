@@ -62,10 +62,13 @@ export const createCustomer = async (req, res) => {
       followUpDate: followUpDate ? new Date(followUpDate) : null,
       remarks,
       leadPotential, // Added leadPotential field
+      remarks,
+      leadPotential, // Added leadPotential field
       // Automatically assign the lead to the user who created it
       assignedTo: req.user.id,
       assignedBy: req.user.id,
-      assignedAt: new Date()
+      assignedAt: new Date(),
+      brand: req.brandFilter?.brand || req.headers['x-brand-id'] || null // Strict brand assignment
     });
 
     await newCustomer.save();
@@ -79,9 +82,9 @@ export const createCustomer = async (req, res) => {
 
     console.log("Updated customer with leadPotential:", updatedCustomer.leadPotential); // Add logging
 
-    return res.status(201).json({ 
-      message: "Lead created successfully.", 
-      customer: updatedCustomer 
+    return res.status(201).json({
+      message: "Lead created successfully.",
+      customer: updatedCustomer
     });
   } catch (error) {
     console.error("Create customer error:", error);
@@ -95,26 +98,25 @@ export const getAllCustomers = async (req, res) => {
     // Check user role using role helpers
     const hasAdminAccess = isAdmin(req.user);
     const hasManagerAccess = isManager(req.user);
-    
-    let query = {};
-    
+
+    // Start with brand filter if present
+    let query = { ...req.brandFilter };
+
     // If user is not admin or manager, only show leads assigned to them
     if (!hasAdminAccess && !hasManagerAccess) {
-      query = {
-        assignedTo: req.user.id // Only leads assigned to the user
-      };
+      query.assignedTo = req.user.id; // Only leads assigned to the user
       console.log(`User ${req.user.id} is not admin/manager, filtering leads by assignedTo`);
     } else {
       console.log(`User ${req.user.id} is admin/manager, showing all leads`);
     }
-    
+
     console.log("Query:", query);
     const customers = await customerModel.find(query)
       .populate('assignedTo', 'fullName email')
       .populate('assignedBy', 'fullName email')
       .sort({ createdAt: -1 });
     console.log(`Found ${customers.length} customers`);
-    
+
     // Log the first customer's leadPotential to debug
     if (customers.length > 0) {
       console.log("First customer leadPotential:", customers[0].leadPotential);
@@ -133,9 +135,9 @@ export const getConvertedCustomers = async (req, res) => {
     // Check user role using role helpers
     const hasAdminAccess = isAdmin(req.user);
     const hasManagerAccess = isManager(req.user);
-    
+
     let query = { leadStatus: 'converted' };
-    
+
     // If user is not admin or manager, only show leads assigned to them
     if (!hasAdminAccess && !hasManagerAccess) {
       query = {
@@ -146,7 +148,7 @@ export const getConvertedCustomers = async (req, res) => {
     } else {
       console.log(`User ${req.user.id} is admin/manager, showing all converted leads`);
     }
-    
+
     console.log("Converted query:", query);
     console.log("Fetching converted customers...");
     const customers = await customerModel.find(query).sort({ createdAt: -1 });
@@ -165,7 +167,7 @@ export const getCustomerById = async (req, res) => {
     const customer = await customerModel.findById(id)
       .populate('assignedTo', 'fullName email')
       .populate('assignedBy', 'fullName email');
-    
+
     if (!customer) {
       return res.status(404).json({ message: "Customer not found." });
     }
@@ -212,9 +214,9 @@ export const updateCustomer = async (req, res) => {
 
     console.log("Updated customer with leadPotential:", updatedCustomer.leadPotential); // Add logging
 
-    return res.status(200).json({ 
-      message: "Customer updated successfully.", 
-      customer: updatedCustomer 
+    return res.status(200).json({
+      message: "Customer updated successfully.",
+      customer: updatedCustomer
     });
   } catch (error) {
     console.error("Update customer error:", error);
@@ -227,12 +229,12 @@ export const addRemark = async (req, res) => {
   try {
     const { id } = req.params;
     const { nextFollowUpDate, handledBy, remark, leadStatus } = req.body;
-  
+
     const customer = await customerModel.findById(id);
     if (!customer) {
       return res.status(404).json({ message: "Customer not found." });
     }
-  
+
     customer.remarks.push({
       updatedOn: new Date(),
       nextFollowUpDate: nextFollowUpDate ? new Date(nextFollowUpDate) : null,
@@ -240,17 +242,17 @@ export const addRemark = async (req, res) => {
       remark,
       leadStatus: leadStatus || 'new'
     });
-  
+
     // Update customer's main leadStatus field if provided
     if (leadStatus) {
       customer.leadStatus = leadStatus;
     }
-  
+
     // Update followUpDate if provided
     if (nextFollowUpDate) {
       customer.followUpDate = new Date(nextFollowUpDate);
     }
-  
+
     await customer.save();
 
     // Fetch the updated customer with all fields
@@ -258,9 +260,9 @@ export const addRemark = async (req, res) => {
       .populate('assignedTo', 'fullName email')
       .populate('assignedBy', 'fullName email');
 
-    return res.status(200).json({ 
-      message: "Remark added successfully.", 
-      customer: updatedCustomer 
+    return res.status(200).json({
+      message: "Remark added successfully.",
+      customer: updatedCustomer
     });
   } catch (error) {
     console.error("Add remark error:", error);
@@ -272,7 +274,32 @@ export const addRemark = async (req, res) => {
 export const deleteCustomer = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
+    // Strict Permission: Only Owner can delete leads
+    // Import isOwner dynamically or assume it's available if imported at top, 
+    // but better to rely on what's available. 
+    // I need to make sure isOwner is imported. 
+    // Since I can't easily add import at top without reading file again or using multi-replace (which is risky if file changed),
+    // I will check roles manually here or assume isOwner is imported if I add it.
+    // Wait, I should add the import first or use manual check.
+    // Manual check is safer if I'm not sure about imports.
+    // But I should try to use the helper.
+    // Let's check imports in customerController.js first. 
+    // It imports isAdmin, isManager. I didn't see isOwner imported.
+    // I'll stick to a manual check or update imports.
+    // Updating imports is better.
+
+    // Actually, I'll allow this step to just update the function and I'll update imports in a separate step or same step if I can see the top.
+    // I can't see the top in this replace_chunk.
+    // So I will use manual role check for safety: "Owner" role.
+
+    const userRoles = req.user.roles || [];
+    const isOwnerUser = Array.isArray(userRoles) ? userRoles.includes('Owner') : userRoles === 'Owner';
+
+    if (!isOwnerUser) {
+      return res.status(403).json({ message: "Access denied. Only the Owner can delete leads." });
+    }
+
     const customer = await customerModel.findByIdAndDelete(id);
     if (!customer) {
       return res.status(404).json({ message: "Customer not found." });
@@ -332,9 +359,9 @@ export const assignLead = async (req, res) => {
       .populate('assignedTo', 'fullName email')
       .populate('assignedBy', 'fullName email');
 
-    return res.status(200).json({ 
-      message: "Lead assigned successfully.", 
-      customer: updatedCustomer 
+    return res.status(200).json({
+      message: "Lead assigned successfully.",
+      customer: updatedCustomer
     });
   } catch (error) {
     console.error("Assign lead error:", error);
@@ -366,9 +393,9 @@ export const markRemarkAsRead = async (req, res) => {
       .populate('assignedTo', 'fullName email')
       .populate('assignedBy', 'fullName email');
 
-    return res.status(200).json({ 
-      message: "Remark marked as read.", 
-      customer: updatedCustomer 
+    return res.status(200).json({
+      message: "Remark marked as read.",
+      customer: updatedCustomer
     });
   } catch (error) {
     console.error("Mark remark as read error:", error);
@@ -381,8 +408,8 @@ export const getAllLeadsCount = async (req, res) => {
   try {
     // Count all customers/leads in the database
     const totalCount = await customerModel.countDocuments();
-    
-    return res.status(200).json({ 
+
+    return res.status(200).json({
       count: totalCount,
       message: "Total leads count retrieved successfully."
     });
@@ -397,17 +424,17 @@ export const getBrandConversionMetrics = async (req, res) => {
   try {
     // Get all customers/leads in the database (not filtered by user)
     const allCustomers = await customerModel.find();
-    
+
     // Total leads count across all users
     const totalLeads = allCustomers.length;
-    
+
     // Count converted leads across all users
     const convertedLeads = allCustomers.filter(c => c.leadStatus === 'converted').length;
-    
+
     // Calculate conversion rate
     const conversionRate = totalLeads > 0 ? ((convertedLeads / totalLeads) * 100) : 0;
-    
-    return res.status(200).json({ 
+
+    return res.status(200).json({
       totalLeads,
       convertedLeads,
       conversionRate: parseFloat(conversionRate.toFixed(2)),
@@ -427,7 +454,7 @@ export const getAllCustomersUnfiltered = async (req, res) => {
       .populate('assignedTo', 'fullName email')
       .populate('assignedBy', 'fullName email')
       .sort({ createdAt: -1 });
-    
+
     return res.status(200).json({ customers });
   } catch (error) {
     console.error("Error fetching all customers:", error);
