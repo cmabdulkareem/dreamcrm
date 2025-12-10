@@ -4,7 +4,7 @@ import { useChat } from "../../context/ChatContext";
 import { useNotifications } from "../../context/NotificationContext"; // Import useNotifications
 import UserDropdown from "./UserDropdown";
 import NotificationDropdown from "./NotificationDropdown"; // Import NotificationDropdown
-import { Link } from "react-router";
+import { Link } from "react-router-dom";
 import AnimatedAnnouncement from "./AnimatedAnnouncement";
 
 const Header = ({ onClick, onToggle }) => {
