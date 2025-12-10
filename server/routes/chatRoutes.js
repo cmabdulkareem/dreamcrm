@@ -13,11 +13,14 @@ import {
   deleteMessage
 } from '../controller/chatController.js';
 import verifyToken from "../middleware/verifyToken.js";
+import { applyBrandFilter } from "../middleware/brandMiddleware.js";
 
 const router = express.Router();
 
 // All routes require authentication
 router.use(verifyToken);
+// Apply brand filter to all routes
+router.use(applyBrandFilter);
 
 // Get or create a chat
 router.post('/get-or-create', getOrCreateChat);

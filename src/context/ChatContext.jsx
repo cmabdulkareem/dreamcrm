@@ -30,7 +30,7 @@ export const useChat = () => {
 };
 
 export const ChatProvider = ({ children }) => {
-  const { user } = useContext(AuthContext);
+  const { user, selectedBrand } = useContext(AuthContext);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [activeChat, setActiveChat] = useState(null);
   const [showContacts, setShowContacts] = useState(false);
@@ -52,11 +52,20 @@ export const ChatProvider = ({ children }) => {
   const fetchChats = useCallback(async () => {
     if (!userId) return;
 
+    // Wait for selectedBrand if needed, or just proceed if we have user
+    const brandId = selectedBrand?._id;
+
     try {
-      const response = await axios.get(`${API}/chats`, {
+      const config = {
         withCredentials: true,
         timeout: 10000
-      });
+      };
+
+      if (brandId) {
+        config.headers = { 'x-brand-id': brandId };
+      }
+
+      const response = await axios.get(`${API}/chats`, config);
 
       const serverChats = response.data.chats || [];
 
@@ -78,7 +87,7 @@ export const ChatProvider = ({ children }) => {
     } catch (error) {
       console.error('Error fetching chats:', error);
     }
-  }, [userId]);
+  }, [userId, selectedBrand]);
 
   // Load chats from server on mount
   useEffect(() => {
@@ -335,11 +344,21 @@ export const ChatProvider = ({ children }) => {
       if (isGroup) {
         // Create group chat with selected participants
         const participantIds = participants.map(p => p._id || p.id);
+
+        // Ensure brand is selected
+        if (!selectedBrand || !selectedBrand._id) {
+          console.error("No brand selected");
+          return null;
+        }
+
         const response = await axios.post(`${API}/chats/group`, {
           name: groupName,
           participantIds: participantIds
         }, {
           withCredentials: true,
+          headers: {
+            'x-brand-id': selectedBrand._id
+          },
           timeout: 10000
         });
 
@@ -361,10 +380,19 @@ export const ChatProvider = ({ children }) => {
         const participantId = participants[0]?._id || participants[0]?.id;
         if (!participantId) return null;
 
+        // Ensure brand is selected
+        if (!selectedBrand || !selectedBrand._id) {
+          console.error("No brand selected");
+          return null;
+        }
+
         const response = await axios.post(`${API}/chats/get-or-create`, {
           participantId: participantId
         }, {
           withCredentials: true,
+          headers: {
+            'x-brand-id': selectedBrand._id
+          },
           timeout: 10000
         });
 
@@ -405,10 +433,16 @@ export const ChatProvider = ({ children }) => {
     if (!chatId || !userId) return;
 
     try {
-      const response = await axios.get(`${API}/chats/${chatId}/messages`, {
+      const config = {
         withCredentials: true,
         timeout: 10000
-      });
+      };
+
+      if (selectedBrand && selectedBrand._id) {
+        config.headers = { 'x-brand-id': selectedBrand._id };
+      }
+
+      const response = await axios.get(`${API}/chats/${chatId}/messages`, config);
 
       const serverMessages = response.data.messages || [];
 
@@ -466,13 +500,19 @@ export const ChatProvider = ({ children }) => {
 
     try {
       // Send message to server
+      const config = {
+        withCredentials: true,
+        timeout: 10000
+      };
+
+      if (selectedBrand && selectedBrand._id) {
+        config.headers = { 'x-brand-id': selectedBrand._id };
+      }
+
       const response = await axios.post(`${API}/chats/message`, {
         chatId: chatId,
         text: text.trim()
-      }, {
-        withCredentials: true,
-        timeout: 10000
-      });
+      }, config);
 
       const serverMessage = response.data.message;
 

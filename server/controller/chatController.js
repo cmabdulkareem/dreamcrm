@@ -6,13 +6,19 @@ import { emitMessageToUsers, emitChatUpdateToUsers } from '../realtime/socket.js
 import { isAdmin } from '../utils/roleHelpers.js';
 
 // Get or create a chat between two users
+// Get or create a chat between two users
 export const getOrCreateChat = async (req, res) => {
   try {
     const { participantId } = req.body;
     const currentUserId = req.user.id;
+    const { 'x-brand-id': brandId } = req.headers;
 
     if (!participantId) {
       return res.status(400).json({ message: "Participant ID is required" });
+    }
+
+    if (!brandId) {
+      return res.status(400).json({ message: "Brand context is required to create a chat" });
     }
 
     if (participantId === currentUserId) {
@@ -20,9 +26,11 @@ export const getOrCreateChat = async (req, res) => {
     }
 
     // Check if chat already exists (use $all with ObjectIds)
+    // Filter by brand as well
     let chat = await Chat.findOne({
       type: 'user',
-      participants: { $all: [new mongoose.Types.ObjectId(currentUserId), new mongoose.Types.ObjectId(participantId)], $size: 2 }
+      participants: { $all: [new mongoose.Types.ObjectId(currentUserId), new mongoose.Types.ObjectId(participantId)], $size: 2 },
+      ...req.brandFilter
     }).populate('participants', 'fullName email avatar')
       .populate('lastMessage.sender', 'fullName email avatar');
 
@@ -31,6 +39,8 @@ export const getOrCreateChat = async (req, res) => {
       const userRoles = req.user.roles || [];
       const isOwnerUser = Array.isArray(userRoles) ? userRoles.includes('Owner') : userRoles === 'Owner';
 
+      // Allow if brand context is valid
+      // Note: Original logic restricted creation to Owner. keeping that check but also enforcing brand.
       if (!isOwnerUser) {
         return res.status(403).json({ message: "Access denied. Only the Owner can initiate new chats." });
       }
@@ -45,7 +55,8 @@ export const getOrCreateChat = async (req, res) => {
       chat = new Chat({
         type: 'user',
         participants: [currentUserId, participantId],
-        createdBy: currentUserId
+        createdBy: currentUserId,
+        brand: brandId // Set the brand
       });
 
       await chat.save();
@@ -60,13 +71,18 @@ export const getOrCreateChat = async (req, res) => {
 };
 
 // Get all chats for current user
+// Get all chats for current user
 export const getChats = async (req, res) => {
   try {
     const currentUserId = req.user.id;
 
-    const chats = await Chat.find({
-      participants: currentUserId
-    })
+    // Apply brand filter
+    const query = {
+      participants: currentUserId,
+      ...req.brandFilter
+    };
+
+    const chats = await Chat.find(query)
       .populate('participants', 'fullName email avatar')
       .populate('lastMessage.sender', 'fullName email avatar')
       .sort({ updatedAt: -1 });
@@ -79,15 +95,20 @@ export const getChats = async (req, res) => {
 };
 
 // Get messages for a chat
+// Get messages for a chat
 export const getMessages = async (req, res) => {
   try {
     const { chatId } = req.params;
     const currentUserId = req.user.id;
 
-    // Verify user is a participant
-    const chat = await Chat.findById(chatId);
+    // Verify user is a participant AND chat exists in current brand context
+    const chat = await Chat.findOne({
+      _id: chatId,
+      ...req.brandFilter
+    });
+
     if (!chat) {
-      return res.status(404).json({ message: "Chat not found" });
+      return res.status(404).json({ message: "Chat not found or access denied" });
     }
 
     // Convert to string for comparison
@@ -119,10 +140,14 @@ export const sendMessage = async (req, res) => {
       return res.status(400).json({ message: "Chat ID and message text are required" });
     }
 
-    // Verify chat exists and user is a participant
-    const chat = await Chat.findById(chatId);
+    // Verify chat exists and user is a participant AND chat exists in current brand context
+    const chat = await Chat.findOne({
+      _id: chatId,
+      ...req.brandFilter
+    });
+
     if (!chat) {
-      return res.status(404).json({ message: "Chat not found" });
+      return res.status(404).json({ message: "Chat not found or access denied" });
     }
 
     // Convert to string for comparison
@@ -202,10 +227,16 @@ export const sendMessage = async (req, res) => {
 };
 
 // Create a group chat
+// Create a group chat
 export const createGroupChat = async (req, res) => {
   try {
     const { name, participantIds } = req.body;
     const currentUserId = req.user.id;
+    const { 'x-brand-id': brandId } = req.headers;
+
+    if (!brandId) {
+      return res.status(400).json({ message: "Brand context is required to create a group chat" });
+    }
 
     // Check if user has owner privileges
     const userRoles = req.user.roles || [];
@@ -238,7 +269,8 @@ export const createGroupChat = async (req, res) => {
       type: 'group',
       name: name.trim(),
       participants: participants,
-      createdBy: currentUserId
+      createdBy: currentUserId,
+      brand: brandId // Set the brand
     });
 
     await chat.save();
@@ -263,9 +295,13 @@ export const addParticipantToGroup = async (req, res) => {
     }
 
     // Verify chat exists and is a group chat
-    const chat = await Chat.findById(chatId);
+    const chat = await Chat.findOne({
+      _id: chatId,
+      ...req.brandFilter
+    });
+
     if (!chat) {
-      return res.status(404).json({ message: "Chat not found" });
+      return res.status(404).json({ message: "Chat not found or access denied" });
     }
 
     if (chat.type !== 'group') {
@@ -324,9 +360,13 @@ export const removeParticipantFromGroup = async (req, res) => {
     const currentUserId = req.user.id;
 
     // Verify chat exists and is a group chat
-    const chat = await Chat.findById(chatId);
+    const chat = await Chat.findOne({
+      _id: chatId,
+      ...req.brandFilter
+    });
+
     if (!chat) {
-      return res.status(404).json({ message: "Chat not found" });
+      return res.status(404).json({ message: "Chat not found or access denied" });
     }
 
     if (chat.type !== 'group') {
@@ -384,9 +424,13 @@ export const deleteGroupChat = async (req, res) => {
     const currentUserId = req.user.id;
 
     // Verify chat exists and is a group chat
-    const chat = await Chat.findById(chatId);
+    const chat = await Chat.findOne({
+      _id: chatId,
+      ...req.brandFilter
+    });
+
     if (!chat) {
-      return res.status(404).json({ message: "Chat not found" });
+      return res.status(404).json({ message: "Chat not found or access denied" });
     }
 
     if (chat.type !== 'group') {
@@ -429,9 +473,13 @@ export const markMessagesAsRead = async (req, res) => {
     const currentUserId = req.user.id;
 
     // Verify user is a participant
-    const chat = await Chat.findById(chatId);
+    const chat = await Chat.findOne({
+      _id: chatId,
+      ...req.brandFilter
+    });
+
     if (!chat) {
-      return res.status(404).json({ message: "Chat not found" });
+      return res.status(404).json({ message: "Chat not found or access denied" });
     }
 
     // Convert to string for comparison
@@ -479,9 +527,13 @@ export const deleteChat = async (req, res) => {
     }
 
     // Verify chat exists and is a one-on-one chat
-    const chat = await Chat.findById(chatId);
+    const chat = await Chat.findOne({
+      _id: chatId,
+      ...req.brandFilter
+    });
+
     if (!chat) {
-      return res.status(404).json({ message: "Chat not found" });
+      return res.status(404).json({ message: "Chat not found or access denied" });
     }
 
     if (chat.type !== 'user') {
@@ -515,11 +567,25 @@ export const deleteMessage = async (req, res) => {
       return res.status(403).json({ message: "Access denied. Only the Owner can delete messages." });
     }
 
-    // Find and delete the message
-    const message = await Message.findByIdAndDelete(messageId);
-    if (!message) {
+    // Find the message first to check brand access via chat
+    const messageToCheck = await Message.findById(messageId);
+
+    if (!messageToCheck) {
       return res.status(404).json({ message: "Message not found" });
     }
+
+    // Verify permission via chat brand
+    const chat = await Chat.findOne({
+      _id: messageToCheck.chat,
+      ...req.brandFilter
+    });
+
+    if (!chat) {
+      return res.status(403).json({ message: "Access denied. Message belongs to a different brand." });
+    }
+
+    // Delete the message
+    await Message.findByIdAndDelete(messageId);
 
     return res.status(200).json({ message: "Message deleted successfully" });
   } catch (error) {
