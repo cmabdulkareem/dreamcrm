@@ -6,8 +6,8 @@ export default {
   ],
   safelist: [
     {
-      pattern: /(bg|text|border|ring|fill|stroke)-brand-(25|50|100|200|300|400|500|600|700|800|900|950)/,
-      variants: ['hover', 'focus', 'active', 'group-hover'],
+      pattern: /(bg|text|border|ring|fill|stroke|from|to|via|decoration|accent|caret|outline|shadow|divide|placeholder)-brand-(25|50|100|200|300|400|500|600|700|800|900|950)/,
+      variants: ['hover', 'focus', 'active', 'group-hover', 'dark', 'disabled', 'checked'],
     },
   ],
   theme: {
