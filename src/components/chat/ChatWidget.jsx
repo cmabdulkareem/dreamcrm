@@ -190,7 +190,7 @@ const ChatWidget = () => {
       const otherParticipant = chat.participants?.find(p => (p._id || p.id) !== userId);
       // Use cache-busting for profile images
       const avatar = otherParticipant?.avatar;
-      return avatar ? `${avatar.split('?')[0]}?t=${Date.now()}` : '/images/user/user-01.jpg';
+      return avatar || '/images/user/user-01.jpg';
     }
   };
 
@@ -372,7 +372,7 @@ const ChatWidget = () => {
                             >
                               <div className="relative">
                                 <img
-                                  src={contact.avatar ? `${contact.avatar.split('?')[0]}?t=${Date.now()}` : '/images/user/user-01.jpg'}
+                                  src={contact.avatar || '/images/user/user-01.jpg'}
                                   alt={contact.fullName}
                                   className="w-10 h-10 rounded-full"
                                   key={contact.avatar}
@@ -423,7 +423,7 @@ const ChatWidget = () => {
                         >
                           <div className="relative">
                             <img
-                              src={contact.avatar ? `${contact.avatar.split('?')[0]}?t=${Date.now()}` : '/images/user/user-01.jpg'}
+                              src={contact.avatar || '/images/user/user-01.jpg'}
                               alt={contact.fullName}
                               className="w-10 h-10 rounded-full"
                               key={contact.avatar}
@@ -476,7 +476,7 @@ const ChatWidget = () => {
                       >
                         {!isOwnMessage && (
                           <img
-                            src={message.sender.avatar ? `${message.sender.avatar.split('?')[0]}?t=${Date.now()}` : '/images/user/user-01.jpg'}
+                            src={message.sender.avatar || '/images/user/user-01.jpg'}
                             alt={message.sender.fullName}
                             className="w-8 h-8 rounded-full mr-2"
                             key={message.sender.avatar}

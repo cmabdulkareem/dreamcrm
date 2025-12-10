@@ -51,7 +51,7 @@ export default function UserDropdown() {
       >
         <span className="mr-3 overflow-hidden rounded-full h-11 w-11">
           <img
-            src={user?.avatar ? `${user.avatar.split('?')[0]}?t=${Date.now()}` : "/images/user/user-01.jpg"}
+            src={user?.avatar || "/images/user/user-01.jpg"}
             alt="User"
             className="w-full h-full object-cover"
             key={user?.avatar}
