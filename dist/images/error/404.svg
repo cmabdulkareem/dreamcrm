@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 472 158">
+  <!-- Generator: Adobe Illustrator 29.8.1, SVG Export Plug-In . SVG Version: 2.1.1 Build 2)  -->
+  <defs>
+    <style>
+      .st0, .st1, .st2, .st3, .st4 {
+        stroke: #ed1164;
+      }
+
+      .st0, .st3 {
+        fill: none;
+      }
+
+      .st1 {
+        stroke-width: .75px;
+      }
+
+      .st1, .st2, .st4 {
+        fill: #ed1164;
+      }
+
+      .st2 {
+        stroke-miterlimit: 10;
+      }
+
+      .st3 {
+        stroke-width: 24px;
+      }
+    </style>
+  </defs>
+  <rect class="st1" x="203.1" y="41.7" width="22.15" height="20.71" rx="2.63" ry="2.63"/>
+  <rect class="st1" x="246.75" y="41.7" width="22.15" height="20.71" rx="2.63" ry="2.63"/>
+  <rect class="st1" x="258.2" y="98.23" width="22.15" height="20.71" rx="2.63" ry="2.63"/>
+  <rect class="st1" x="191.65" y="98.23" width="22.15" height="20.71" rx="2.63" ry="2.63"/>
+  <rect class="st1" x="207.4" y="82.85" width="57.57" height="20.71" rx="2.63" ry="2.63"/>
+  <rect class="st3" x="152.77" y="15.17" width="166.46" height="130.31" rx="28" ry="28"/>
+  <rect class="st2" x=".04" y=".52" width="32.63" height="77.6" rx="6.26" ry="6.26"/>
+  <rect class="st4" x=".04" y=".52" width="32.63" height="77.6" rx="6.26" ry="6.26"/>
+  <rect class="st2" x="75.87" y="3.17" width="32.63" height="154.31" rx="6.26" ry="6.26"/>
+  <rect class="st4" x="75.87" y="3.17" width="32.63" height="154.31" rx="6.26" ry="6.26"/>
+  <rect class="st2" x="16.79" y="58.72" width="77.6" height="32.63" rx="6.26" ry="6.26"/>
+  <rect class="st4" x="16.79" y="58.72" width="77.6" height="32.63" rx="6.26" ry="6.26"/>
+  <rect class="st2" x="363.5" y=".52" width="32.63" height="77.6" rx="6.26" ry="6.26"/>
+  <rect class="st0" x="363.5" y=".52" width="32.63" height="77.6" rx="6.26" ry="6.26"/>
+  <rect class="st2" x="439.33" y="3.17" width="32.63" height="154.31" rx="6.26" ry="6.26"/>
+  <rect class="st0" x="439.33" y="3.17" width="32.63" height="154.31" rx="6.26" ry="6.26"/>
+  <rect class="st2" x="380.25" y="58.72" width="77.6" height="32.63" rx="6.26" ry="6.26"/>
+  <rect class="st0" x="380.25" y="58.72" width="77.6" height="32.63" rx="6.26" ry="6.26"/>
+</svg>
