@@ -1,5 +1,5 @@
 const corsOptions = {
-  origin: ["https://dreamcrm-two.vercel.app", "https://dreamcrm.onrender.com", "http://localhost:5173", "http://localhost:5174"],
+  origin: ["https://dreamcrm-nine.vercel.app", "https://dreamcrm.onrender.com", "http://localhost:5173", "http://localhost:5174"],
   methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE"],
   credentials: true,
   optionsSuccessStatus: 200,
