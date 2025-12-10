@@ -30,6 +30,8 @@ const Button = ({
       "bg-warning-500 text-white hover:bg-warning-600 disabled:bg-warning-300",
     text:
       "bg-transparent text-brand-500 hover:underline disabled:text-gray-400",
+    neutral:
+      "bg-gray-900 text-white hover:bg-gray-800 disabled:bg-gray-400",
   };
 
   return (

@@ -6,7 +6,7 @@ import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Button from "../ui/button/Button";
 
-const API = import.meta.env.PROD 
+const API = import.meta.env.PROD
   ? import.meta.env.VITE_API_URL_PRODUCTION || "https://dreamcrm.onrender.com/api"
   : import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
@@ -60,15 +60,15 @@ export default function ResetPasswordForm({ token }) {
       const response = await axios.post(
         `${API}/users/reset-password`,
         { token, newPassword: password },
-        { 
+        {
           withCredentials: true,
           timeout: 10000
         }
       );
-      
+
       setMessage(response.data.message);
       setSuccess(true);
-      
+
       // Redirect to sign in after a short delay
       setTimeout(() => {
         navigate("/signin");
@@ -173,10 +173,11 @@ export default function ResetPasswordForm({ token }) {
                   </div>
                 </div>
 
-                <Button 
-                  className="w-full" 
-                  size="sm" 
-                  type="submit" 
+                <Button
+                  className="w-full"
+                  size="sm"
+                  variant="neutral"
+                  type="submit"
                   disabled={loading}
                 >
                   {loading ? "Resetting..." : "Reset Password"}
@@ -190,7 +191,7 @@ export default function ResetPasswordForm({ token }) {
               Remember your password?{" "}
               <Link
                 to="/signin"
-                className="text-brand-500 hover:text-brand-600 dark:text-brand-400"
+                className="text-gray-700 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
               >
                 Sign In
               </Link>

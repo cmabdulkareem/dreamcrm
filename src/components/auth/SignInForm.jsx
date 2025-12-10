@@ -8,7 +8,7 @@ import Checkbox from "../form/input/Checkbox";
 import Button from "../ui/button/Button";
 import { AuthContext } from "../../context/AuthContext";
 
-const API = import.meta.env.PROD 
+const API = import.meta.env.PROD
   ? import.meta.env.VITE_API_URL_PRODUCTION || "https://dreamcrm.onrender.com/api"
   : import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
@@ -39,7 +39,7 @@ export default function SignInForm() {
 
     try {
       setLoading(true);
-      const { data } = await axios.post(`${API}/users/signin`, { email, password }, { 
+      const { data } = await axios.post(`${API}/users/signin`, { email, password }, {
         withCredentials: true,
         timeout: 10000
       });
@@ -130,13 +130,13 @@ export default function SignInForm() {
                 </div>
                 <Link
                   to="/forgot-password"
-                  className="text-sm text-brand-500 hover:text-brand-600 dark:text-brand-400"
+                  className="text-sm text-gray-700 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
                 >
                   Forgot password?
                 </Link>
               </div>
 
-              <Button className="w-full" size="sm" type="submit" disabled={loading}>
+              <Button className="w-full" size="sm" variant="neutral" type="submit" disabled={loading}>
                 {loading ? "Signing in..." : "Sign in"}
               </Button>
             </div>
@@ -147,7 +147,7 @@ export default function SignInForm() {
               Don&apos;t have an account?{" "}
               <Link
                 to="/signup"
-                className="text-brand-500 hover:text-brand-600 dark:text-brand-400"
+                className="text-gray-700 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
               >
                 Sign Up
               </Link>

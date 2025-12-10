@@ -221,7 +221,7 @@ export default function SignUpForm() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="flex items-center justify-center w-full px-4 py-3 text-sm font-medium text-white transition rounded-lg bg-brand-500 shadow-theme-xs hover:bg-brand-600 disabled:opacity-50"
+                    className="flex items-center justify-center w-full px-4 py-3 text-sm font-medium text-white transition rounded-lg bg-gray-900 shadow-theme-xs hover:bg-gray-800 disabled:opacity-50"
                   >
                     {loading ? "Signing up..." : "Sign Up"}
                   </button>
@@ -234,7 +234,7 @@ export default function SignUpForm() {
                 Already have an account?{" "}
                 <Link
                   to="/signin"
-                  className="text-brand-500 hover:text-brand-600 dark:text-brand-400"
+                  className="text-gray-700 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
                 >
                   Sign In
                 </Link>
@@ -283,7 +283,7 @@ export default function SignUpForm() {
               Already have an approved account?{" "}
               <Link
                 to="/signin"
-                className="font-medium text-brand-500 hover:text-brand-600 dark:text-brand-400"
+                className="font-medium text-gray-700 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
               >
                 Sign In
               </Link>
