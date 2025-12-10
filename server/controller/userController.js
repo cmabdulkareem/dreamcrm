@@ -1,5 +1,11 @@
 import userModel from "../model/userModel.js";
 import mongoose from "mongoose";
+
+// Helper to get base URL with correct protocol (checking for proxy)
+const getBaseUrl = (req) => {
+  const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+  return `${protocol}://${req.get('host')}`;
+};
 import { hashPassword } from "../helpers/hashPassword.js";
 import { comparePassword } from "../helpers/comparePassword.js";
 import { validateEmail } from "../validators/validateEmail.js";
@@ -84,7 +90,7 @@ export const getUsersForDropdown = async (req, res) => {
       _id: user._id,
       fullName: user.fullName,
       email: user.email,
-      avatar: user.avatar ? `${req.protocol}://${req.get('host')}${user.avatar}` : null,
+      avatar: user.avatar ? `${getBaseUrl(req)}${user.avatar}` : null,
       gender: user.gender,
       bloodGroup: user.bloodGroup,
       country: user.country,
@@ -148,7 +154,7 @@ export const signInUser = async (req, res) => {
         phone: user.phone,
         roles: user.roles,
         isAdmin: user.isAdmin,
-        avatar: user.avatar ? `${req.protocol}://${req.get('host')}${user.avatar}` : null,
+        avatar: user.avatar ? `${getBaseUrl(req)}${user.avatar}` : null,
         bloodGroup: user.bloodGroup,
         country: user.country,
         state: user.state,
@@ -236,7 +242,7 @@ export const authCheck = async (req, res) => {
         phone: user.phone,
         roles: user.roles,
         isAdmin: user.isAdmin,
-        avatar: user.avatar ? `${req.protocol}://${req.get('host')}${user.avatar}` : null,
+        avatar: user.avatar ? `${getBaseUrl(req)}${user.avatar}` : null,
         bloodGroup: user.bloodGroup,
         country: user.country,
         state: user.state,
@@ -285,7 +291,7 @@ export const getAllUsers = async (req, res) => {
       state: user.state,
       reportingHead: user.reportingHead,
       brands: user.brands || [], // Include brand information
-      avatar: user.avatar ? `${req.protocol}://${req.get('host')}${user.avatar}` : null,
+      avatar: user.avatar ? `${getBaseUrl(req)}${user.avatar}` : null,
       accountStatus: user.accountStatus,
       // Added missing employee fields
       employeeCode: user.employeeCode,
@@ -617,7 +623,7 @@ export const updateUser = async (req, res) => {
       employmentType: user.employmentType,
       company: user.company,
       employeeCode: user.employeeCode,
-      avatar: user.avatar ? `${req.protocol}://${req.get('host')}${user.avatar}` : null,
+      avatar: user.avatar ? `${getBaseUrl(req)}${user.avatar}` : null,
       bloodGroup: user.bloodGroup,
       country: user.country,
       state: user.state,
@@ -745,7 +751,7 @@ export const markUserOnlineStatus = async (req, res) => {
     markUserOnline(req.user.id, {
       fullName: user.fullName,
       email: user.email,
-      avatar: user.avatar ? `${req.protocol}://${req.get('host')}${user.avatar}` : null
+      avatar: user.avatar ? `${getBaseUrl(req)}${user.avatar}` : null
     });
 
     return res.status(200).json({ message: "User marked as online" });
