@@ -1,5 +1,6 @@
 import { createContext, useEffect, useState } from "react";
 import axios from "axios";
+import { updateBrandTheme } from "../utils/brandColors";
 
 const AuthContext = createContext();
 const BACKEND_URL = import.meta.env.PROD
@@ -14,7 +15,11 @@ function AuthProvider({ children }) {
   const [selectedBrand, setSelectedBrand] = useState(() => {
     // Initialize from localStorage or default to null
     const saved = localStorage.getItem("selectedBrand");
-    return saved ? JSON.parse(saved) : null;
+    const brand = saved ? JSON.parse(saved) : null;
+    if (brand && brand.themeColor) {
+      updateBrandTheme(brand.themeColor);
+    }
+    return brand;
   });
 
   // Axios interceptor to add x-brand-id header
@@ -22,6 +27,9 @@ function AuthProvider({ children }) {
     const interceptor = axios.interceptors.request.use((config) => {
       if (selectedBrand && selectedBrand._id) {
         config.headers["x-brand-id"] = selectedBrand._id;
+        if (selectedBrand.themeColor) {
+          updateBrandTheme(selectedBrand.themeColor);
+        }
       }
       return config;
     }, (error) => {

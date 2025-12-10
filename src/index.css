@@ -4,6 +4,23 @@
 
 
 
+@layer base {
+  :root {
+    --color-brand-25: 242 247 255;
+    --color-brand-50: 242 244 247;
+    --color-brand-100: 221 233 255;
+    --color-brand-200: 194 214 255;
+    --color-brand-300: 156 185 255;
+    --color-brand-400: 237 30 109;
+    --color-brand-500: 237 17 100;
+    --color-brand-600: 198 11 81;
+    --color-brand-700: 42 49 216;
+    --color-brand-800: 37 45 174;
+    --color-brand-900: 38 46 137;
+    --color-brand-950: 34 34 34;
+  }
+}
+
 @layer utilities {
   .menu-item {
     @apply relative flex items-center w-full gap-3 px-3 py-2 font-medium rounded-lg text-sm;
