@@ -1,4 +1,5 @@
 import express from 'express'
+import compression from 'compression'
 import http from 'http'
 import { config } from 'dotenv'
 import cors from 'cors'
@@ -40,6 +41,8 @@ app.use(express.static(path.join(__dirname, '../public')));
 app.use(cookieParser())
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
+// ...
+app.use(compression())
 app.use(cors(corsOptions))
 
 app.use('/api/users', routes)
@@ -72,4 +75,4 @@ const server = http.createServer(app)
 // Initialize Socket.IO
 setupSocket(server)
 
-server.listen(PORT, () => { console.log(`Server is running on port ${PORT}`)})
+server.listen(PORT, () => { console.log(`Server is running on port ${PORT}`) })
