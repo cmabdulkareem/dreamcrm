@@ -11,7 +11,7 @@ import InputField from '../../components/form/input/InputField';
 import Label from '../../components/form/Label';
 import Select from '../../components/form/Select';
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+import API from "../../config/api";
 
 const LeaveManagement = () => {
   const { isAdmin } = useContext(AuthContext);
@@ -36,11 +36,11 @@ const LeaveManagement = () => {
   const fetchLeaves = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API}/leaves`, { 
+      const response = await axios.get(`${API}/leaves`, {
         withCredentials: true,
         timeout: 10000
       });
-      
+
       if (response.data && response.data.leaves) {
         setLeaves(response.data.leaves);
       } else if (response.data && Array.isArray(response.data)) {
@@ -50,7 +50,7 @@ const LeaveManagement = () => {
       }
     } catch (error) {
       console.error('Error fetching leaves:', error);
-      
+
       if (error.response) {
         // Server responded with error status
         if (error.response.status === 401) {
@@ -67,7 +67,7 @@ const LeaveManagement = () => {
         // Something else happened
         toast.error('Failed to fetch leaves. Please try again.');
       }
-      
+
       setLeaves([]);
     } finally {
       setLoading(false);
@@ -111,13 +111,13 @@ const LeaveManagement = () => {
   // Fetch single leave for editing
   const fetchLeaveForEdit = async (leaveId) => {
     try {
-      const response = await axios.get(`${API}/leaves/${leaveId}`, { 
+      const response = await axios.get(`${API}/leaves/${leaveId}`, {
         withCredentials: true,
         timeout: 10000
       });
-      
+
       const leave = response.data?.leave || response.data;
-      
+
       if (!leave) {
         toast.error('Leave not found');
         return;
@@ -137,7 +137,7 @@ const LeaveManagement = () => {
       setShowEditForm(true);
     } catch (error) {
       console.error('Error fetching leave for edit:', error);
-      
+
       if (error.response) {
         if (error.response.status === 404) {
           toast.error('Leave not found');
@@ -162,8 +162,8 @@ const LeaveManagement = () => {
     e.preventDefault();
 
     // Client-side validation
-    if (!formData.employeeName || !formData.employeeId || !formData.leaveType || 
-        !formData.startDate || !formData.endDate || !formData.reason) {
+    if (!formData.employeeName || !formData.employeeId || !formData.leaveType ||
+      !formData.startDate || !formData.endDate || !formData.reason) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -203,20 +203,20 @@ const LeaveManagement = () => {
       } else {
         toast.success('Leave request submitted successfully!');
       }
-      
+
       resetForm();
-      
+
       // Refresh the list if we're on the management page
       if (!location.pathname.includes('/leave-management/requests')) {
         fetchLeaves();
       }
     } catch (error) {
       console.error('Error submitting leave request:', error);
-      
+
       if (error.response) {
         // Server responded with error status
-        const errorMessage = error.response.data?.message || 
-                           (error.response.data?.errors ? error.response.data.errors.join(', ') : 'Failed to submit leave request');
+        const errorMessage = error.response.data?.message ||
+          (error.response.data?.errors ? error.response.data.errors.join(', ') : 'Failed to submit leave request');
         toast.error(errorMessage);
       } else if (error.request) {
         // Request was made but no response received
@@ -239,8 +239,8 @@ const LeaveManagement = () => {
     }
 
     // Client-side validation
-    if (!formData.employeeName || !formData.employeeId || !formData.leaveType || 
-        !formData.startDate || !formData.endDate || !formData.reason) {
+    if (!formData.employeeName || !formData.employeeId || !formData.leaveType ||
+      !formData.startDate || !formData.endDate || !formData.reason) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -265,7 +265,7 @@ const LeaveManagement = () => {
         status: formData.status
       };
 
-      await axios.put(`${API}/leaves/update/${currentLeaveId}`, leaveData, { 
+      await axios.put(`${API}/leaves/update/${currentLeaveId}`, leaveData, {
         withCredentials: true,
         timeout: 10000
       });
@@ -276,7 +276,7 @@ const LeaveManagement = () => {
       fetchLeaves();
     } catch (error) {
       console.error('Error updating leave:', error);
-      
+
       if (error.response) {
         toast.error(error.response.data?.message || 'Failed to update leave');
       } else {
@@ -294,7 +294,7 @@ const LeaveManagement = () => {
     }
 
     try {
-      await axios.patch(`${API}/leaves/status/${leaveId}`, { status }, { 
+      await axios.patch(`${API}/leaves/status/${leaveId}`, { status }, {
         withCredentials: true,
         timeout: 10000
       });
@@ -302,7 +302,7 @@ const LeaveManagement = () => {
       fetchLeaves();
     } catch (error) {
       console.error(`Error ${status}ing leave:`, error);
-      
+
       if (error.response) {
         toast.error(error.response.data?.message || `Failed to ${status} leave`);
       } else {
@@ -324,7 +324,7 @@ const LeaveManagement = () => {
     }
 
     try {
-      await axios.delete(`${API}/leaves/delete/${leaveId}`, { 
+      await axios.delete(`${API}/leaves/delete/${leaveId}`, {
         withCredentials: true,
         timeout: 10000
       });
@@ -332,7 +332,7 @@ const LeaveManagement = () => {
       fetchLeaves();
     } catch (error) {
       console.error('Error deleting leave:', error);
-      
+
       if (error.response) {
         toast.error(error.response.data?.message || 'Failed to delete leave');
       } else {
@@ -633,13 +633,12 @@ const LeaveManagement = () => {
                               </div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
-                              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                leave.status === 'approved' 
-                                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' 
-                                  : leave.status === 'rejected' 
-                                    ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100' 
+                              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${leave.status === 'approved'
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
+                                  : leave.status === 'rejected'
+                                    ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
                                     : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100'
-                              }`}>
+                                }`}>
                                 {leave.status}
                               </span>
                             </td>

@@ -6,9 +6,7 @@ import Label from "../form/Label";
 import Input from "../form/input/InputField";
 import Button from "../ui/button/Button";
 
-const API = import.meta.env.PROD
-  ? import.meta.env.VITE_API_URL_PRODUCTION || "https://dreamcrm.onrender.com/api"
-  : import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+import API from "../../config/api";
 
 export default function ForgotPasswordForm() {
   const navigate = useNavigate();

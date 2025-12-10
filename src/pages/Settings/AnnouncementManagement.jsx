@@ -10,7 +10,7 @@ import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
 import { isManager } from "../../utils/roleHelpers";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+import API from "../../config/api";
 
 const AnnouncementManagement = () => {
   const { user } = useContext(AuthContext);
@@ -59,29 +59,29 @@ const AnnouncementManagement = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validate form
     if (!formData.title || !formData.message || !formData.startTime || !formData.endTime) {
       toast.error("Please fill all fields");
       return;
     }
-    
+
     if (new Date(formData.startTime) >= new Date(formData.endTime)) {
       toast.error("End time must be after start time");
       return;
     }
-    
+
     try {
       const payload = {
         ...formData,
         createdBy: user._id,
         status: canApprove ? "approved" : "pending" // Auto-approve for managers
       };
-      
+
       const response = await axios.post(`${API}/announcements/create`, payload, {
         withCredentials: true
       });
-      
+
       setAnnouncements(prev => [response.data.announcement, ...prev]);
       setShowCreateModal(false);
       setFormData({
@@ -90,9 +90,9 @@ const AnnouncementManagement = () => {
         startTime: "",
         endTime: ""
       });
-      
+
       toast.success("Announcement created successfully");
-      
+
       // If auto-approved, notify all users
       if (canApprove) {
         // In a real implementation, this would be handled by the backend
@@ -118,36 +118,36 @@ const AnnouncementManagement = () => {
 
   const handleUpdate = async (e) => {
     e.preventDefault();
-    
+
     // Validate form
     if (!formData.title || !formData.message || !formData.startTime || !formData.endTime) {
       toast.error("Please fill all fields");
       return;
     }
-    
+
     if (new Date(formData.startTime) >= new Date(formData.endTime)) {
       toast.error("End time must be after start time");
       return;
     }
-    
+
     try {
       const payload = {
         ...formData,
         status: editingAnnouncement.status // Keep the existing status
       };
-      
+
       const response = await axios.put(`${API}/announcements/${editingAnnouncement._id}`, payload, {
         withCredentials: true
       });
-      
-      setAnnouncements(prev => 
-        prev.map(announcement => 
-          announcement._id === editingAnnouncement._id 
-            ? response.data.announcement 
+
+      setAnnouncements(prev =>
+        prev.map(announcement =>
+          announcement._id === editingAnnouncement._id
+            ? response.data.announcement
             : announcement
         )
       );
-      
+
       setShowEditModal(false);
       setEditingAnnouncement(null);
       setFormData({
@@ -156,7 +156,7 @@ const AnnouncementManagement = () => {
         startTime: "",
         endTime: ""
       });
-      
+
       toast.success("Announcement updated successfully");
     } catch (error) {
       console.error("Error updating announcement:", error);
@@ -168,12 +168,12 @@ const AnnouncementManagement = () => {
     if (!window.confirm("Are you sure you want to delete this announcement?")) {
       return;
     }
-    
+
     try {
       await axios.delete(`${API}/announcements/${id}`, {
         withCredentials: true
       });
-      
+
       setAnnouncements(prev => prev.filter(announcement => announcement._id !== id));
       toast.success("Announcement deleted");
     } catch (error) {
@@ -187,17 +187,17 @@ const AnnouncementManagement = () => {
       const response = await axios.patch(`${API}/announcements/${id}/approve`, {}, {
         withCredentials: true
       });
-      
-      setAnnouncements(prev => 
-        prev.map(announcement => 
-          announcement._id === id 
-            ? { ...announcement, status: "approved" } 
+
+      setAnnouncements(prev =>
+        prev.map(announcement =>
+          announcement._id === id
+            ? { ...announcement, status: "approved" }
             : announcement
         )
       );
-      
+
       toast.success("Announcement approved");
-      
+
       // Notify all users about the new announcement
       addNotification({
         type: "announcement",
@@ -216,7 +216,7 @@ const AnnouncementManagement = () => {
       await axios.delete(`${API}/announcements/${id}`, {
         withCredentials: true
       });
-      
+
       setAnnouncements(prev => prev.filter(announcement => announcement._id !== id));
       toast.success("Announcement rejected");
     } catch (error) {
@@ -237,7 +237,7 @@ const AnnouncementManagement = () => {
   };
 
   // Filter announcements based on user role
-  const filteredAnnouncements = canApprove 
+  const filteredAnnouncements = canApprove
     ? announcements // Managers see all announcements
     : announcements.filter(a => a.status === "approved"); // Regular users see only approved
 
@@ -247,28 +247,28 @@ const AnnouncementManagement = () => {
         title="Announcement Management | DreamCRM"
         description="Create and manage system announcements"
       />
-      
+
       <div className="space-y-6">
         <div className="flex flex-col gap-2">
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white/90">
             Announcement Management
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            {canApprove 
-              ? "Create and approve system announcements" 
+            {canApprove
+              ? "Create and approve system announcements"
               : "Request new announcements (subject to approval)"}
           </p>
         </div>
-        
+
         <div className="flex justify-end">
-          <Button 
-            variant="primary" 
+          <Button
+            variant="primary"
             onClick={() => setShowCreateModal(true)}
           >
             Create Announcement
           </Button>
         </div>
-        
+
         <ComponentCard title="Announcements">
           {loading ? (
             <div className="flex justify-center items-center h-32">
@@ -277,8 +277,8 @@ const AnnouncementManagement = () => {
           ) : filteredAnnouncements.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-gray-500 dark:text-gray-400">
-                {canApprove 
-                  ? "No announcements found. Create one to get started." 
+                {canApprove
+                  ? "No announcements found. Create one to get started."
                   : "No announcements available at this time."}
               </p>
             </div>
@@ -379,22 +379,22 @@ const AnnouncementManagement = () => {
           )}
         </ComponentCard>
       </div>
-      
+
       {/* Create Announcement Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 z-[99999] overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
             <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={() => setShowCreateModal(false)}></div>
-            
+
             <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            
+
             <div className="inline-block overflow-hidden text-left align-middle transition-all transform bg-white rounded-lg shadow-xl sm:my-8 sm:max-w-lg sm:w-full dark:bg-gray-800">
               <form onSubmit={handleSubmit}>
                 <div className="px-4 pt-5 pb-4 bg-white sm:p-6 sm:pb-4 dark:bg-gray-800">
                   <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white">
                     Create New Announcement
                   </h3>
-                  
+
                   <div className="mt-4 space-y-4">
                     <div>
                       <Label>Title</Label>
@@ -407,7 +407,7 @@ const AnnouncementManagement = () => {
                         required
                       />
                     </div>
-                    
+
                     <div>
                       <Label>Message</Label>
                       <textarea
@@ -419,7 +419,7 @@ const AnnouncementManagement = () => {
                         required
                       />
                     </div>
-                    
+
                     <div>
                       <Label>Start Time</Label>
                       <input
@@ -431,7 +431,7 @@ const AnnouncementManagement = () => {
                         required
                       />
                     </div>
-                    
+
                     <div>
                       <Label>End Time</Label>
                       <input
@@ -445,7 +445,7 @@ const AnnouncementManagement = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="px-4 py-3 bg-gray-50 sm:px-6 sm:flex sm:flex-row-reverse dark:bg-gray-700">
                   <Button
                     type="submit"
@@ -468,22 +468,22 @@ const AnnouncementManagement = () => {
           </div>
         </div>
       )}
-      
+
       {/* Edit Announcement Modal */}
       {showEditModal && (
         <div className="fixed inset-0 z-[99999] overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
             <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={() => setShowEditModal(false)}></div>
-            
+
             <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            
+
             <div className="inline-block overflow-hidden text-left align-middle transition-all transform bg-white rounded-lg shadow-xl sm:my-8 sm:max-w-lg sm:w-full dark:bg-gray-800">
               <form onSubmit={handleUpdate}>
                 <div className="px-4 pt-5 pb-4 bg-white sm:p-6 sm:pb-4 dark:bg-gray-800">
                   <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white">
                     Edit Announcement
                   </h3>
-                  
+
                   <div className="mt-4 space-y-4">
                     <div>
                       <Label>Title</Label>
@@ -496,7 +496,7 @@ const AnnouncementManagement = () => {
                         required
                       />
                     </div>
-                    
+
                     <div>
                       <Label>Message</Label>
                       <textarea
@@ -508,7 +508,7 @@ const AnnouncementManagement = () => {
                         required
                       />
                     </div>
-                    
+
                     <div>
                       <Label>Start Time</Label>
                       <input
@@ -520,7 +520,7 @@ const AnnouncementManagement = () => {
                         required
                       />
                     </div>
-                    
+
                     <div>
                       <Label>End Time</Label>
                       <input
@@ -534,7 +534,7 @@ const AnnouncementManagement = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="px-4 py-3 bg-gray-50 sm:px-6 sm:flex sm:flex-row-reverse dark:bg-gray-700">
                   <Button
                     type="submit"
@@ -557,7 +557,7 @@ const AnnouncementManagement = () => {
           </div>
         </div>
       )}
-      
+
       <ToastContainer position="top-center" className="!z-[999999]" style={{ zIndex: 999999 }} />
     </>
   );

@@ -24,7 +24,7 @@ import {
   enquirerEducation,
 } from "../../data/DataSets.jsx";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+import API from "../../config/api";
 
 // Place options
 const placeOptions = [
@@ -145,7 +145,7 @@ export default function NewStudent() {
   // Calculate total course value
   const calculateTotalValue = useCallback(() => {
     let total = 0;
-    
+
     // Add primary course value
     if (coursePreference) {
       const primaryCourse = courses.find(course => course._id === coursePreference);
@@ -153,7 +153,7 @@ export default function NewStudent() {
         total += primaryCourse.normalFee || 0;
       }
     }
-    
+
     // Add additional courses values
     additionalCourses.forEach(courseId => {
       const course = courses.find(course => course._id === courseId);
@@ -161,7 +161,7 @@ export default function NewStudent() {
         total += course.normalFee || 0;
       }
     });
-    
+
     return total;
   }, [coursePreference, additionalCourses, courses]);
 
@@ -446,7 +446,7 @@ export default function NewStudent() {
         if (areToastsEnabled()) {
           toast.success("Student created successfully!");
         }
-        
+
         // Add notification
         addNotification({
           type: 'student_created',
@@ -456,7 +456,7 @@ export default function NewStudent() {
           entityName: fullName,
           module: 'Student Management',
         });
-        
+
         handleClear();
         navigate("/manage-students");
       }
@@ -547,7 +547,7 @@ export default function NewStudent() {
                       disabled={!!selectedLead}
                     />
                   </div>
-                  
+
                   <div className="w-full md:w-1/4">
                     <Label>Email *</Label>
                     <Input
@@ -560,7 +560,7 @@ export default function NewStudent() {
                       disabled={!!selectedLead}
                     />
                   </div>
-                  
+
                   {/* Photo Upload - Minimal Implementation - Top Right Corner */}
                   <div className="w-full md:w-1/4">
                     <Label>Student Photo</Label>
@@ -578,23 +578,23 @@ export default function NewStudent() {
                         className="w-20 h-20 overflow-hidden border-2 border-dashed border-gray-300 rounded-full cursor-pointer hover:border-brand-500 transition-colors flex items-center justify-center"
                       >
                         {photoPreview ? (
-                          <img 
-                            src={photoPreview} 
-                            alt="Preview" 
+                          <img
+                            src={photoPreview}
+                            alt="Preview"
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <svg 
-                            className="w-8 h-8 text-gray-400" 
-                            fill="none" 
-                            stroke="currentColor" 
-                            viewBox="0 0 24 24" 
+                          <svg
+                            className="w-8 h-8 text-gray-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
                             xmlns="http://www.w3.org/2000/svg"
                           >
-                            <path 
-                              strokeLinecap="round" 
-                              strokeLinejoin="round" 
-                              strokeWidth={2} 
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
                               d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                             />
                           </svg>
@@ -665,13 +665,13 @@ export default function NewStudent() {
                       disabled={!!selectedLead}
                     />
                   </div>
-                  
+
 
                 </div>
 
                 {/* Gender, DoB, Place */}
                 <div className="flex flex-col md:flex-row gap-4">
-                  
+
                   <div className="w-full md:w-1/4">
                     <Label>Place *</Label>
                     <Select
@@ -759,16 +759,16 @@ export default function NewStudent() {
                 <div className="flex flex-col gap-4">
                   <div className="flex justify-between items-center">
                     <Label>Additional Courses *</Label>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
                       onClick={handleAddAdditionalCourse}
                     >
                       Add Course
                     </Button>
                   </div>
-                  
+
                   {additionalCourses.map((courseId, index) => (
                     <div key={index} className="flex gap-2">
                       <div className="flex-grow">
@@ -780,10 +780,10 @@ export default function NewStudent() {
                           hint={validationErrors[`additionalCourse${index}`]}
                         />
                       </div>
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
                         onClick={() => handleRemoveAdditionalCourse(index)}
                       >
                         Remove
@@ -866,17 +866,17 @@ export default function NewStudent() {
 
         {/* Buttons */}
         <div className="flex gap-4 justify-end mt-6">
-          <Button 
-            type="button" 
-            onClick={handleClear} 
+          <Button
+            type="button"
+            onClick={handleClear}
             variant="outline"
             disabled={submitting}
           >
             Clear
           </Button>
-          <Button 
-            variant="primary" 
-            type="submit" 
+          <Button
+            variant="primary"
+            type="submit"
             disabled={submitting}
           >
             {submitting ? (

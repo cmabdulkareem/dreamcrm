@@ -5,7 +5,7 @@ import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { MoreDotIcon } from "../../icons";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+import API from "../../config/api";
 
 export default function MonthlySalesChart() {
   const [revenueData, setRevenueData] = useState([]);
@@ -22,31 +22,31 @@ export default function MonthlySalesChart() {
         `${API}/students/all`,
         { withCredentials: true }
       );
-      
+
       const students = response.data.students || [];
       const now = new Date();
       const currentYear = now.getFullYear();
       const currentMonth = now.getMonth();
-      
+
       // Get last 12 months data
       const monthlyRevenue = [];
       const monthNames = [];
-      
+
       for (let i = 11; i >= 0; i--) {
         const date = new Date(currentYear, currentMonth - i, 1);
         const monthName = date.toLocaleDateString('en-US', { month: 'short' });
         monthNames.push(monthName);
-        
+
         const monthStudents = students.filter(s => {
           const createdDate = new Date(s.createdAt);
-          return createdDate.getMonth() === date.getMonth() && 
-                 createdDate.getFullYear() === date.getFullYear();
+          return createdDate.getMonth() === date.getMonth() &&
+            createdDate.getFullYear() === date.getFullYear();
         });
-        
+
         const monthRevenue = monthStudents.reduce((sum, s) => sum + (s.finalAmount || 0), 0);
         monthlyRevenue.push(monthRevenue / 100000); // Convert to lakhs
       }
-      
+
       setRevenueData({ months: monthNames, revenue: monthlyRevenue });
       setLoading(false);
     } catch (error) {
@@ -55,8 +55,8 @@ export default function MonthlySalesChart() {
     }
   };
 
-  const maxRevenue = revenueData.revenue?.length > 0 
-    ? Math.max(...revenueData.revenue) 
+  const maxRevenue = revenueData.revenue?.length > 0
+    ? Math.max(...revenueData.revenue)
     : 10;
   const chartMax = maxRevenue > 0 ? Math.ceil(maxRevenue * 1.2) : 10;
 
@@ -106,7 +106,7 @@ export default function MonthlySalesChart() {
       max: chartMax,
       tickAmount: 4,
       labels: {
-        formatter: function(val) {
+        formatter: function (val) {
           return `₹${val.toFixed(1)}L`;
         },
         style: { colors: ["#6B7280"], fontSize: "12px" },

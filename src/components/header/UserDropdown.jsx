@@ -6,9 +6,7 @@ import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { AuthContext } from "../../context/AuthContext";
 import { useChat } from "../../context/ChatContext";
 
-const API = import.meta.env.PROD
-  ? import.meta.env.VITE_API_URL_PRODUCTION || "https://dreamcrm.onrender.com/api"
-  : import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+import API from "../../config/api";
 
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);

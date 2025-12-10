@@ -31,7 +31,7 @@ import {
 } from "../../data/DataSets.jsx";
 import Button from "../../components/ui/button/Button.jsx";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+import API from "../../config/api";
 
 export default function FormElements() {
 

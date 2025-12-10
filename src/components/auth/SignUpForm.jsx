@@ -10,7 +10,7 @@ import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const API = import.meta.env.VITE_API_URL;
+import API from "../../config/api";
 
 export default function SignUpForm() {
   const [showPassword, setShowPassword] = useState(false);

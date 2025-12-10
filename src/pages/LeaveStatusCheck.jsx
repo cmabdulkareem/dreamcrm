@@ -8,7 +8,7 @@ import PageMeta from '../components/common/PageMeta';
 import InputField from '../components/form/input/InputField';
 import Label from '../components/form/Label';
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+import API from "../config/api";
 
 const LeaveStatusCheck = () => {
   const [searchParams] = useSearchParams();
@@ -69,7 +69,7 @@ const LeaveStatusCheck = () => {
       }
     } catch (error) {
       console.error('Error fetching leave status:', error);
-      
+
       if (error.response) {
         if (error.response.status === 404) {
           toast.error(error.response.data?.message || 'Leave request not found. Please check your ticket number.');
@@ -81,7 +81,7 @@ const LeaveStatusCheck = () => {
       } else {
         toast.error('Failed to fetch leave status. Please try again.');
       }
-      
+
       setLeave(null);
     } finally {
       setLoading(false);
@@ -122,7 +122,7 @@ const LeaveStatusCheck = () => {
               <p className="text-gray-600 dark:text-gray-300 mb-6">
                 Enter your ticket number to check the status of your leave request.
               </p>
-              
+
               <form onSubmit={handleSubmit} className="mb-6">
                 <div className="flex gap-4">
                   <div className="flex-1">
@@ -155,7 +155,7 @@ const LeaveStatusCheck = () => {
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                     Leave Request Details
                   </h3>
-                  
+
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
@@ -190,20 +190,20 @@ const LeaveStatusCheck = () => {
                       <div>
                         <p className="text-sm text-gray-500 dark:text-gray-400">Start Date</p>
                         <p className="text-base font-medium text-gray-900 dark:text-white">
-                          {new Date(leave.startDate).toLocaleDateString('en-US', { 
-                            year: 'numeric', 
-                            month: 'long', 
-                            day: 'numeric' 
+                          {new Date(leave.startDate).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
                           })}
                         </p>
                       </div>
                       <div>
                         <p className="text-sm text-gray-500 dark:text-gray-400">End Date</p>
                         <p className="text-base font-medium text-gray-900 dark:text-white">
-                          {new Date(leave.endDate).toLocaleDateString('en-US', { 
-                            year: 'numeric', 
-                            month: 'long', 
-                            day: 'numeric' 
+                          {new Date(leave.endDate).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
                           })}
                         </p>
                       </div>
@@ -218,9 +218,9 @@ const LeaveStatusCheck = () => {
                       <div>
                         <p className="text-sm text-gray-500 dark:text-gray-400">Submitted On</p>
                         <p className="text-base text-gray-900 dark:text-white">
-                          {new Date(leave.createdAt).toLocaleDateString('en-US', { 
-                            year: 'numeric', 
-                            month: 'long', 
+                          {new Date(leave.createdAt).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
                             day: 'numeric',
                             hour: '2-digit',
                             minute: '2-digit'
@@ -231,9 +231,9 @@ const LeaveStatusCheck = () => {
                         <div>
                           <p className="text-sm text-gray-500 dark:text-gray-400">Last Updated</p>
                           <p className="text-base text-gray-900 dark:text-white">
-                            {new Date(leave.updatedAt).toLocaleDateString('en-US', { 
-                              year: 'numeric', 
-                              month: 'long', 
+                            {new Date(leave.updatedAt).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'long',
                               day: 'numeric',
                               hour: '2-digit',
                               minute: '2-digit'
@@ -249,8 +249,8 @@ const LeaveStatusCheck = () => {
               <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                 <p className="text-sm text-blue-800 dark:text-blue-200">
                   <strong>Note:</strong> Don't have a ticket number?{' '}
-                  <a 
-                    href="/leave-request" 
+                  <a
+                    href="/leave-request"
                     className="underline hover:text-blue-600 dark:hover:text-blue-300"
                   >
                     Submit a new leave request

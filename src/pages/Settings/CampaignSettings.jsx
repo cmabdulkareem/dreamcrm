@@ -21,7 +21,7 @@ import {
 } from "../../components/ui/table";
 import { isManager } from "../../utils/roleHelpers";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+import API from "../../config/api";
 
 export default function CampaignSettings() {
   const { user } = useContext(AuthContext);

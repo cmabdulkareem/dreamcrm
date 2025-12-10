@@ -10,7 +10,7 @@ import axios from "axios";
 import { AuthContext } from "../../context/AuthContext";
 import { useNotifications } from "../../context/NotificationContext";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+import API from "../../config/api";
 
 export default function ManageStudents() {
   const navigate = useNavigate();
@@ -32,7 +32,7 @@ export default function ManageStudents() {
         `${API}/students/all`,
         { withCredentials: true }
       );
-      
+
       setStudents(response.data.students);
       setLoading(false);
     } catch (error) {
@@ -101,19 +101,19 @@ export default function ManageStudents() {
         editFormData,
         { withCredentials: true }
       );
-      
+
       // Update the student in the local state
-      setStudents(students.map(student => 
+      setStudents(students.map(student =>
         student._id === editingStudentId ? response.data.student : student
       ));
-      
+
       setEditingStudentId(null);
       setEditFormData({});
-      
+
       if (areToastsEnabled()) {
         toast.success("Student updated successfully!");
       }
-      
+
       // Add notification
       addNotification({
         type: 'student_updated',
@@ -134,7 +134,7 @@ export default function ManageStudents() {
   const getPhotoUrl = (photoPath) => {
     if (!photoPath) return "/images/user/user-01.jpg";
     if (photoPath.startsWith('http')) return photoPath;
-    
+
     // Extract the base URL (without /api) to construct the correct photo URL
     const baseUrl = API.replace('/api', '');
     // Photo paths from the database already start with /uploads/
@@ -210,10 +210,10 @@ export default function ManageStudents() {
                       <tr key={student._id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex-shrink-0 h-10 w-10">
-                            <img 
-                              className="h-10 w-10 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700" 
-                              src={getPhotoUrl(student.photo)} 
-                              alt={student.fullName} 
+                            <img
+                              className="h-10 w-10 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700"
+                              src={getPhotoUrl(student.photo)}
+                              alt={student.fullName}
                               onError={(e) => {
                                 e.target.src = "/images/user/user-01.jpg";
                               }}
@@ -278,8 +278,8 @@ export default function ManageStudents() {
                             />
                           ) : (
                             <div>
-                              {student.courseDetails ? 
-                                `${student.courseDetails.courseCode} - ${student.courseDetails.courseName}` : 
+                              {student.courseDetails ?
+                                `${student.courseDetails.courseCode} - ${student.courseDetails.courseName}` :
                                 student.coursePreference}
                               {student.additionalCourseDetails && student.additionalCourseDetails.length > 0 && (
                                 <div className="text-xs text-gray-400 mt-1">
@@ -345,13 +345,13 @@ export default function ManageStudents() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           {editingStudentId === student._id ? (
                             <div className="flex space-x-2">
-                              <button 
+                              <button
                                 onClick={handleSaveEdit}
                                 className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
                               >
                                 Save
                               </button>
-                              <button 
+                              <button
                                 onClick={handleCancelEdit}
                                 className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
                               >
@@ -360,13 +360,13 @@ export default function ManageStudents() {
                             </div>
                           ) : (
                             <div className="flex space-x-2">
-                              <button 
+                              <button
                                 onClick={() => handleEditClick(student)}
                                 className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
                               >
                                 Edit
                               </button>
-                              <button 
+                              <button
                                 onClick={() => handleViewStudent(student.studentId)}
                                 className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
                               >

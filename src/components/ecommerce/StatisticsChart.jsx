@@ -3,7 +3,7 @@ import axios from "axios";
 import Chart from "react-apexcharts";
 import ChartTab from "../common/ChartTab";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+import API from "../../config/api";
 
 export default function StatisticsChart() {
   const [period, setPeriod] = useState("monthly");
@@ -21,7 +21,7 @@ export default function StatisticsChart() {
         `${API}/customers/all`,
         { withCredentials: true }
       );
-      
+
       const customers = response.data.customers;
       const processedData = processDataByPeriod(customers, period);
       setChartData(processedData);
@@ -35,73 +35,73 @@ export default function StatisticsChart() {
   const processDataByPeriod = (customers, selectedPeriod) => {
     const currentDate = new Date();
     const currentYear = currentDate.getFullYear();
-    
+
     if (selectedPeriod === "monthly") {
       // Last 12 months
       const months = [];
       const leads = [];
       const conversions = [];
-      
+
       for (let i = 11; i >= 0; i--) {
         const date = new Date(currentYear, currentDate.getMonth() - i, 1);
         const monthName = date.toLocaleDateString('en-US', { month: 'short' });
         months.push(monthName);
-        
+
         const monthCustomers = customers.filter(c => {
           const createdDate = new Date(c.createdAt);
-          return createdDate.getMonth() === date.getMonth() && 
-                 createdDate.getFullYear() === date.getFullYear();
+          return createdDate.getMonth() === date.getMonth() &&
+            createdDate.getFullYear() === date.getFullYear();
         });
-        
+
         leads.push(monthCustomers.length);
         conversions.push(monthCustomers.filter(c => c.leadStatus === 'converted').length);
       }
-      
+
       return { categories: months, leads, conversions };
-    } 
+    }
     else if (selectedPeriod === "quarterly") {
       // Last 8 quarters
       const quarters = [];
       const leads = [];
       const conversions = [];
-      
+
       for (let i = 7; i >= 0; i--) {
         const quarterDate = new Date(currentYear, currentDate.getMonth() - (i * 3), 1);
         const quarter = Math.floor(quarterDate.getMonth() / 3) + 1;
         const year = quarterDate.getFullYear();
         quarters.push(`Q${quarter} '${year.toString().slice(2)}`);
-        
+
         const quarterCustomers = customers.filter(c => {
           const createdDate = new Date(c.createdAt);
           const customerQuarter = Math.floor(createdDate.getMonth() / 3) + 1;
           return customerQuarter === quarter && createdDate.getFullYear() === year;
         });
-        
+
         leads.push(quarterCustomers.length);
         conversions.push(quarterCustomers.filter(c => c.leadStatus === 'converted').length);
       }
-      
+
       return { categories: quarters, leads, conversions };
-    } 
+    }
     else { // yearly
       // Last 5 years
       const years = [];
       const leads = [];
       const conversions = [];
-      
+
       for (let i = 4; i >= 0; i--) {
         const year = currentYear - i;
         years.push(year.toString());
-        
+
         const yearCustomers = customers.filter(c => {
           const createdDate = new Date(c.createdAt);
           return createdDate.getFullYear() === year;
         });
-        
+
         leads.push(yearCustomers.length);
         conversions.push(yearCustomers.filter(c => c.leadStatus === 'converted').length);
       }
-      
+
       return { categories: years, leads, conversions };
     }
   };

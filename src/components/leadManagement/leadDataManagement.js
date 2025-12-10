@@ -3,7 +3,7 @@ import { toast } from "react-toastify";
 import { courseOptions } from "../../data/DataSets.jsx";
 import { formatDate, getLeadStatusLabel, getLeadStatusColor, getLatestRemark, hasUnreadRemarks } from "./leadHelpers";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+import API from "../../config/api";
 
 // Fetch all customers/leads
 export const fetchCustomers = async (setData, setLoading) => {
@@ -12,7 +12,7 @@ export const fetchCustomers = async (setData, setLoading) => {
       `${API}/customers/all`,
       { withCredentials: true }
     );
-    
+
     if (typeof setData === 'function') {
       setData(response.data.customers);
     }
@@ -88,8 +88,8 @@ export const createNewCampaign = async (
   try {
     const response = await axios.post(
       `${API}/campaigns/create`,
-      { 
-        name: newCampaignName, 
+      {
+        name: newCampaignName,
         description: newCampaignDesc,
         discountPercentage: newCampaignDiscount ? parseFloat(newCampaignDiscount) : 0,
         cashback: newCampaignCashback ? parseFloat(newCampaignCashback) : 0,
@@ -97,19 +97,19 @@ export const createNewCampaign = async (
       },
       { withCredentials: true }
     );
-    
+
     toast.success("Campaign created successfully!");
-    
+
     // Set the newly created campaign as selected
     if (typeof setCampaign === 'function') {
       setCampaign(response.data.campaign.value);
     }
-    
+
     // Refresh campaigns list
     if (typeof fetchCampaigns === 'function') {
       await fetchCampaigns();
     }
-    
+
     // Close modal and reset fields
     if (typeof closeCampaignModal === 'function') {
       closeCampaignModal();
@@ -183,7 +183,7 @@ export const prepareLeadForEdit = (row, setters) => {
   if (typeof setEditFollowUp === 'function') {
     setEditFollowUp(row.followUpDate ? new Date(row.followUpDate).toISOString().split("T")[0] : "");
   }
-  
+
   // Populate all fields from row to match dropdown option values
   if (typeof setFullName === 'function') {
     setFullName(row.fullName);
@@ -240,7 +240,7 @@ export const prepareLeadForEdit = (row, setters) => {
     console.log("Setting leadPotential in edit form:", row.leadPotential); // Add logging
     setLeadPotential(row.leadPotential || "");
   }
-  
+
   // Map coursePreference from database to match courseOptions format
   const mappedCourses = row.coursePreference?.map(courseName => {
     // If courseName is already in the correct format (value from courseOptions), use it directly
@@ -257,7 +257,7 @@ export const prepareLeadForEdit = (row, setters) => {
     // Fallback for any other case
     return courseName;
   }) || [];
-  
+
   if (typeof setSelectedValues === 'function') {
     setSelectedValues(mappedCourses);
   }

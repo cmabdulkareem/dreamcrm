@@ -21,19 +21,19 @@ import {
 } from "../../components/ui/table";
 import { isManager } from "../../utils/roleHelpers";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+import API from "../../config/api";
 
 export default function ContactPointSettings() {
   const { user } = useContext(AuthContext);
   const { addNotification, areToastsEnabled } = useNotifications();
-  
+
   // Check if user has appropriate role (Owner, Admin, Centre Head/Manager)
   const hasAccess = isManager(user);
-  
+
   const [contactPoints, setContactPoints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedContactPoint, setSelectedContactPoint] = useState(null);
-  
+
   // Form fields
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -97,18 +97,18 @@ export default function ContactPointSettings() {
     try {
       const response = await axios.post(
         `${API}/contact-points/create`,
-        { 
-          name, 
-          description, 
-          isActive 
+        {
+          name,
+          description,
+          isActive
         },
         { withCredentials: true }
       );
-      
+
       if (areToastsEnabled()) {
         toast.success("Contact point created successfully!");
       }
-      
+
       // Add notification
       addNotification({
         type: 'contact_point_created',
@@ -118,7 +118,7 @@ export default function ContactPointSettings() {
         entityName: name,
         module: 'Contact Point Settings',
       });
-      
+
       closeAddModal();
       resetForm();
       fetchContactPoints();
@@ -144,18 +144,18 @@ export default function ContactPointSettings() {
     try {
       await axios.put(
         `${API}/contact-points/update/${selectedContactPoint._id}`,
-        { 
-          name, 
-          description, 
-          isActive 
+        {
+          name,
+          description,
+          isActive
         },
         { withCredentials: true }
       );
-      
+
       if (areToastsEnabled()) {
         toast.success("Contact point updated successfully!");
       }
-      
+
       // Add notification
       addNotification({
         type: 'contact_point_updated',
@@ -165,7 +165,7 @@ export default function ContactPointSettings() {
         entityName: name,
         module: 'Contact Point Settings',
       });
-      
+
       closeEditModal();
       resetForm();
       fetchContactPoints();
@@ -188,11 +188,11 @@ export default function ContactPointSettings() {
         `${API}/contact-points/delete/${selectedContactPoint._id}`,
         { withCredentials: true }
       );
-      
+
       if (areToastsEnabled()) {
         toast.success("Contact point deleted successfully!");
       }
-      
+
       // Add notification
       addNotification({
         type: 'contact_point_deleted',
@@ -202,7 +202,7 @@ export default function ContactPointSettings() {
         entityName: selectedContactPoint.name,
         module: 'Contact Point Settings',
       });
-      
+
       closeDeleteModal();
       resetForm();
       fetchContactPoints();
@@ -246,7 +246,7 @@ export default function ContactPointSettings() {
         title="Contact Point Settings | Manage Contact Points"
         description="Manage contact points for lead tracking"
       />
-      
+
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -335,7 +335,7 @@ export default function ContactPointSettings() {
         <h2 className="text-xl font-semibold text-gray-800 dark:text-white/90 mb-4">
           Add New Contact Point
         </h2>
-        
+
         <div className="space-y-4">
           <div>
             <Label htmlFor="contactPointName">Contact Point Name *</Label>
@@ -392,7 +392,7 @@ export default function ContactPointSettings() {
         <h2 className="text-xl font-semibold text-gray-800 dark:text-white/90 mb-4">
           Edit Contact Point
         </h2>
-        
+
         <div className="space-y-4">
           <div>
             <Label htmlFor="editContactPointName">Contact Point Name *</Label>
@@ -449,7 +449,7 @@ export default function ContactPointSettings() {
         <h2 className="text-xl font-semibold text-gray-800 dark:text-white/90 mb-4">
           Delete Contact Point
         </h2>
-        
+
         <p className="text-gray-600 dark:text-gray-400 mb-6">
           Are you sure you want to delete <strong>{selectedContactPoint?.name}</strong>? This action cannot be undone.
         </p>

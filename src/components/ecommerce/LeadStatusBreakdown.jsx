@@ -5,7 +5,7 @@ import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { MoreDotIcon } from "../../icons";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+import API from "../../config/api";
 
 export default function LeadStatusBreakdown() {
   const [statusData, setStatusData] = useState({ categories: [], values: [], colors: [] });
@@ -22,9 +22,9 @@ export default function LeadStatusBreakdown() {
         `${API}/customers/all`,
         { withCredentials: true }
       );
-      
+
       const customers = response.data.customers;
-      
+
       // Status mapping with colors
       const statusMap = {
         new: { label: "New Lead", color: "#FFA500" },
@@ -36,19 +36,19 @@ export default function LeadStatusBreakdown() {
         notInterested: { label: "Not Interested", color: "#EF4444" },
         lost: { label: "Lost", color: "#DC2626" }
       };
-      
+
       // Count leads by status
       const statusCounts = {};
       customers.forEach(customer => {
         const status = customer.leadStatus || 'new';
         statusCounts[status] = (statusCounts[status] || 0) + 1;
       });
-      
+
       // Convert to arrays for chart
       const categories = [];
       const values = [];
       const colors = [];
-      
+
       Object.entries(statusCounts)
         .sort((a, b) => b[1] - a[1]) // Sort by count descending
         .forEach(([status, count]) => {
@@ -58,7 +58,7 @@ export default function LeadStatusBreakdown() {
             colors.push(statusMap[status].color);
           }
         });
-      
+
       setStatusData({ categories, values, colors });
       setLoading(false);
     } catch (error) {

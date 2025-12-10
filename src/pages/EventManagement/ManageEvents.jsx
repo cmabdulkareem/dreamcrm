@@ -16,7 +16,7 @@ import { AuthContext } from '../../context/AuthContext';
 
 axios.defaults.withCredentials = true;
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+import API from "../../config/api";
 
 const ManageEvents = () => {
   const { isAdmin } = useContext(AuthContext);

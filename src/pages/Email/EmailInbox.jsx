@@ -13,7 +13,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+import API from "../../config/api";
 
 export default function EmailInbox() {
   const [emails, setEmails] = useState([]);
@@ -69,7 +69,7 @@ export default function EmailInbox() {
 
   const fetchEmails = async () => {
     if (!selectedAccount) return;
-    
+
     setLoading(true);
     try {
       const response = await axios.get(`${API}/email/fetch/${selectedAccount}`, { withCredentials: true });
@@ -148,7 +148,7 @@ export default function EmailInbox() {
 
   const handleMarkAsRead = async (email, e) => {
     e.stopPropagation(); // Prevent opening modal
-    
+
     if (!email.uid) {
       toast.error("Cannot mark email as read - missing UID");
       return;
@@ -160,12 +160,12 @@ export default function EmailInbox() {
         {},
         { withCredentials: true }
       );
-      
+
       // Update local state
-      setEmails(emails.map(e => 
+      setEmails(emails.map(e =>
         e.uid === email.uid ? { ...e, isRead: true } : e
       ));
-      
+
       toast.success("Marked as read");
     } catch (error) {
       console.error("Error marking as read:", error);
@@ -175,7 +175,7 @@ export default function EmailInbox() {
 
   const handleDeleteEmail = async (email, e) => {
     e.stopPropagation(); // Prevent opening modal
-    
+
     if (!email.uid) {
       toast.error("Cannot delete email - missing UID");
       return;
@@ -186,10 +186,10 @@ export default function EmailInbox() {
         `${API}/email/delete/${selectedAccount}/${email.uid}`,
         { withCredentials: true }
       );
-      
+
       // Remove from local state
       setEmails(emails.filter(e => e.uid !== email.uid));
-      
+
       toast.success("Email deleted successfully");
     } catch (error) {
       console.error("Error deleting email:", error);
@@ -257,13 +257,13 @@ export default function EmailInbox() {
     try {
       await axios.delete(`${API}/email/accounts/${accountId}`, { withCredentials: true });
       toast.success("Email account deleted successfully!");
-      
+
       // Reset selected account if it was deleted
       if (selectedAccount === accountId) {
         setSelectedAccount("");
         setEmails([]);
       }
-      
+
       fetchEmailAccounts();
     } catch (error) {
       console.error("Error deleting email account:", error);
@@ -343,11 +343,10 @@ export default function EmailInbox() {
                     {emailAccounts.map((account) => (
                       <div
                         key={account._id}
-                        className={`group w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                          selectedAccount === account._id
+                        className={`group w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${selectedAccount === account._id
                             ? "bg-brand-500 text-white"
                             : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-                        }`}
+                          }`}
                       >
                         <div onClick={() => setSelectedAccount(account._id)} className="cursor-pointer">
                           <div className="font-medium truncate">{account.name}</div>
@@ -356,21 +355,19 @@ export default function EmailInbox() {
                         <div className="flex gap-1 mt-2">
                           <button
                             onClick={() => handleEditAccount(account)}
-                            className={`flex-1 px-2 py-1 text-xs rounded transition-colors cursor-pointer ${
-                              selectedAccount === account._id
+                            className={`flex-1 px-2 py-1 text-xs rounded transition-colors cursor-pointer ${selectedAccount === account._id
                                 ? "bg-white/20 hover:bg-white/30 text-white"
                                 : "bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
-                            }`}
+                              }`}
                           >
                             Edit
                           </button>
                           <button
                             onClick={() => handleDeleteAccount(account._id)}
-                            className={`flex-1 px-2 py-1 text-xs rounded transition-colors cursor-pointer ${
-                              selectedAccount === account._id
+                            className={`flex-1 px-2 py-1 text-xs rounded transition-colors cursor-pointer ${selectedAccount === account._id
                                 ? "bg-red-500/80 hover:bg-red-600 text-white"
                                 : "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50"
-                            }`}
+                              }`}
                           >
                             Delete
                           </button>
@@ -418,11 +415,10 @@ export default function EmailInbox() {
                   <div
                     key={email.uid || index}
                     onClick={() => handleEmailClick(email)}
-                    className={`p-4 rounded-lg border cursor-pointer transition-colors ${
-                      !email.isRead
+                    className={`p-4 rounded-lg border cursor-pointer transition-colors ${!email.isRead
                         ? "border-brand-300 bg-brand-50/50 dark:bg-brand-900/10 dark:border-brand-700"
                         : "border-gray-200 dark:border-gray-700"
-                    } hover:border-brand-500 hover:bg-gray-50 dark:hover:bg-gray-800/50`}
+                      } hover:border-brand-500 hover:bg-gray-50 dark:hover:bg-gray-800/50`}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -430,11 +426,10 @@ export default function EmailInbox() {
                           <div className="w-2 h-2 bg-brand-500 rounded-full mt-2 flex-shrink-0"></div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <h3 className={`truncate ${
-                            !email.isRead
+                          <h3 className={`truncate ${!email.isRead
                               ? "font-bold text-gray-900 dark:text-white"
                               : "font-semibold text-gray-800 dark:text-white"
-                          }`}>
+                            }`}>
                             {email.subject || "(No Subject)"}
                           </h3>
                           <p className="text-sm text-gray-600 dark:text-gray-400 truncate mt-1">

@@ -2,22 +2,9 @@ import { createContext, useContext, useState, useEffect, useCallback, useRef } f
 import axios from 'axios';
 import { io } from 'socket.io-client';
 import { AuthContext } from './AuthContext';
+import API from "../config/api";
 
-const API = import.meta.env.PROD
-  ? import.meta.env.VITE_API_URL_PRODUCTION || "https://dreamcrm.onrender.com/api"
-  : import.meta.env.VITE_API_URL || "http://localhost:3000/api";
-
-// Get Socket.IO server URL (same origin as API)
-const getSocketUrl = () => {
-  if (import.meta.env.PROD) {
-    const prodUrl = import.meta.env.VITE_API_URL_PRODUCTION || "https://dreamcrm.onrender.com/api";
-    return prodUrl.replace('/api', '');
-  } else {
-    const devUrl = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
-    return devUrl.replace('/api', '');
-  }
-};
-const SOCKET_URL = getSocketUrl();
+const SOCKET_URL = API.replace('/api', '');
 
 const ChatContext = createContext();
 

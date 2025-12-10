@@ -16,7 +16,7 @@ import { isAdmin } from "../../utils/roleHelpers";
 
 import "react-toastify/dist/ReactToastify.css";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+import API from "../../config/api";
 
 const UserManagement = () => {
   const { user: currentUser } = useContext(AuthContext);
@@ -165,7 +165,7 @@ const UserManagement = () => {
       console.error("Error deleting user:", error);
       toast.error(
         error.response?.data?.message ||
-          "Failed to delete user. Please try again."
+        "Failed to delete user. Please try again."
       );
     }
   };
@@ -508,8 +508,8 @@ const UserManagement = () => {
                               user.accountStatus === "Active"
                                 ? "success"
                                 : user.accountStatus === "Pending"
-                                ? "warning"
-                                : "error"
+                                  ? "warning"
+                                  : "error"
                             }
                           >
                             {user.accountStatus}

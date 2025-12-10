@@ -12,7 +12,7 @@ import Button from "../ui/button/Button";
 import { PencilIcon, BellIcon } from "../../icons";
 import { useNavigate } from "react-router-dom";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+import API from "../../config/api";
 
 export default function LeadOverview() {
   const navigate = useNavigate();
@@ -29,12 +29,12 @@ export default function LeadOverview() {
         `${API}/customers/all`,
         { withCredentials: true }
       );
-      
+
       // Get latest 5 leads sorted by creation date
       const latestLeads = response.data.customers
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
         .slice(0, 5);
-      
+
       setLeads(latestLeads);
       setLoading(false);
     } catch (error) {
@@ -150,12 +150,12 @@ export default function LeadOverview() {
                       </TableCell>
                       <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{formatDate(row.followUpDate)}</TableCell>
                       <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          className="mr-2" 
-                          endIcon={<PencilIcon className="size-5" />} 
-                          onClick={() => handleQuickEdit(row._id)} 
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="mr-2"
+                          endIcon={<PencilIcon className="size-5" />}
+                          onClick={() => handleQuickEdit(row._id)}
                         />
                       </TableCell>
                     </TableRow>

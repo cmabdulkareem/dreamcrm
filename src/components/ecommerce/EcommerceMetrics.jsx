@@ -11,7 +11,7 @@ import {
 import Badge from "../ui/badge/Badge";
 import FlipCard from "./FlipCard";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+import API from "../../config/api";
 
 export default function EcommerceMetrics() {
   const [metrics, setMetrics] = useState({
@@ -47,85 +47,85 @@ export default function EcommerceMetrics() {
         axios.get(`${API}/customers/all`, { withCredentials: true }),
         axios.get(`${API}/students/all`, { withCredentials: true })
       ]);
-      
+
       const customers = customersResponse.data.customers;
       const students = studentsResponse.data.students || [];
       const now = new Date();
       const currentMonth = now.getMonth();
       const currentYear = now.getFullYear();
-      
+
       // Get last month's date
       const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
       const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
-      
+
       // Total leads
       const totalLeads = customers.length;
-      
+
       // Current month leads
       const currentMonthLeads = customers.filter(c => {
         const createdDate = new Date(c.createdAt);
-        return createdDate.getMonth() === currentMonth && 
-               createdDate.getFullYear() === currentYear;
+        return createdDate.getMonth() === currentMonth &&
+          createdDate.getFullYear() === currentYear;
       }).length;
-      
+
       // Last month leads
       const lastMonthLeads = customers.filter(c => {
         const createdDate = new Date(c.createdAt);
-        return createdDate.getMonth() === lastMonth && 
-               createdDate.getFullYear() === lastMonthYear;
+        return createdDate.getMonth() === lastMonth &&
+          createdDate.getFullYear() === lastMonthYear;
       }).length;
-      
+
       // Calculate growth percentage
-      const leadsGrowth = lastMonthLeads === 0 
+      const leadsGrowth = lastMonthLeads === 0
         ? (currentMonthLeads > 0 ? 100 : 0)
         : (((currentMonthLeads - lastMonthLeads) / lastMonthLeads) * 100);
-      
+
       // Conversion rate (converted leads / total leads)
       const convertedLeads = customers.filter(c => c.leadStatus === 'converted').length;
       const conversionRate = totalLeads > 0 ? ((convertedLeads / totalLeads) * 100) : 0;
-      
+
       // Revenue calculations from students
       const totalRevenue = students.reduce((sum, s) => sum + (s.finalAmount || 0), 0);
-      
+
       const currentMonthRevenue = students
         .filter(s => {
           const createdDate = new Date(s.createdAt);
-          return createdDate.getMonth() === currentMonth && 
-                 createdDate.getFullYear() === currentYear;
+          return createdDate.getMonth() === currentMonth &&
+            createdDate.getFullYear() === currentYear;
         })
         .reduce((sum, s) => sum + (s.finalAmount || 0), 0);
-      
+
       const lastMonthRevenue = students
         .filter(s => {
           const createdDate = new Date(s.createdAt);
-          return createdDate.getMonth() === lastMonth && 
-                 createdDate.getFullYear() === lastMonthYear;
+          return createdDate.getMonth() === lastMonth &&
+            createdDate.getFullYear() === lastMonthYear;
         })
         .reduce((sum, s) => sum + (s.finalAmount || 0), 0);
-      
-      const revenueGrowth = lastMonthRevenue === 0 
+
+      const revenueGrowth = lastMonthRevenue === 0
         ? (currentMonthRevenue > 0 ? 100 : 0)
         : (((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100);
-      
+
       // Students metrics
       const totalStudents = students.length;
-      
+
       const currentMonthStudents = students.filter(s => {
         const createdDate = new Date(s.createdAt);
-        return createdDate.getMonth() === currentMonth && 
-               createdDate.getFullYear() === currentYear;
+        return createdDate.getMonth() === currentMonth &&
+          createdDate.getFullYear() === currentYear;
       }).length;
-      
+
       const lastMonthStudents = students.filter(s => {
         const createdDate = new Date(s.createdAt);
-        return createdDate.getMonth() === lastMonth && 
-               createdDate.getFullYear() === lastMonthYear;
+        return createdDate.getMonth() === lastMonth &&
+          createdDate.getFullYear() === lastMonthYear;
       }).length;
-      
-      const studentsGrowth = lastMonthStudents === 0 
+
+      const studentsGrowth = lastMonthStudents === 0
         ? (currentMonthStudents > 0 ? 100 : 0)
         : (((currentMonthStudents - lastMonthStudents) / lastMonthStudents) * 100);
-      
+
       setMetrics({
         totalLeads,
         currentMonthLeads,
@@ -166,7 +166,7 @@ export default function EcommerceMetrics() {
     try {
       const response = await axios.get(`${API}/customers/brand-conversion-metrics`, { withCredentials: true });
       const { convertedLeads, conversionRate } = response.data;
-      
+
       setMetrics(prevMetrics => ({
         ...prevMetrics,
         brandConvertedLeads: convertedLeads,
@@ -285,17 +285,17 @@ export default function EcommerceMetrics() {
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 md:gap-6">
       {/* Total Leads with Flip Card */}
       <div className="h-full">
-        <FlipCard 
-          frontContent={totalLeadsFrontContent} 
-          backContent={totalLeadsBackContent} 
+        <FlipCard
+          frontContent={totalLeadsFrontContent}
+          backContent={totalLeadsBackContent}
         />
       </div>
 
       {/* Conversion Rate with Flip Card */}
       <div className="h-full">
-        <FlipCard 
-          frontContent={conversionRateFrontContent} 
-          backContent={conversionRateBackContent} 
+        <FlipCard
+          frontContent={conversionRateFrontContent}
+          backContent={conversionRateBackContent}
         />
       </div>
 

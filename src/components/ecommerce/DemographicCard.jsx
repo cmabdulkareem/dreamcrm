@@ -5,7 +5,7 @@ import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { MoreDotIcon } from "../../icons";
 import CountryMap from "./CountryMap";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+import API from "../../config/api";
 
 export default function DemographicCard() {
   const [isOpen, setIsOpen] = useState(false);
@@ -23,23 +23,23 @@ export default function DemographicCard() {
         `${API}/customers/all`,
         { withCredentials: true }
       );
-      
+
       const customers = response.data.customers;
-      
+
       // Filter for current year
       const currentYear = new Date().getFullYear();
       const thisYearCustomers = customers.filter(customer => {
         const createdYear = new Date(customer.createdAt).getFullYear();
         return createdYear === currentYear;
       });
-      
+
       // Group by place
       const placeCount = {};
       thisYearCustomers.forEach(customer => {
         const place = customer.place || customer.otherPlace || "Not Specified";
         placeCount[place] = (placeCount[place] || 0) + 1;
       });
-      
+
       // Convert to array and sort by count
       const demographicData = Object.entries(placeCount)
         .map(([place, count]) => ({
@@ -49,7 +49,7 @@ export default function DemographicCard() {
         }))
         .sort((a, b) => b.count - a.count)
         .slice(0, 7); // Top 7 locations
-      
+
       setDemographics(demographicData);
       setTotalCustomers(thisYearCustomers.length);
       setLoading(false);
@@ -135,7 +135,7 @@ export default function DemographicCard() {
 
               <div className="flex w-full max-w-[140px] items-center gap-3">
                 <div className="relative block h-2 w-full max-w-[100px] rounded-sm bg-gray-200 dark:bg-gray-800">
-                  <div 
+                  <div
                     className="absolute left-0 top-0 flex h-full items-center justify-center rounded-sm bg-brand-500 text-xs font-medium text-white"
                     style={{ width: `${demo.percentage}%` }}
                   ></div>

@@ -3,7 +3,7 @@ import axios from "axios";
 import Input from "./input/InputField";
 import { ChevronDownIcon } from "../../icons";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+import API from "../../config/api";
 
 const SearchableCourseSelect = forwardRef(({
   value,
@@ -46,7 +46,7 @@ const SearchableCourseSelect = forwardRef(({
       setFilteredCourses(courses.filter(course => course.isActive));
     } else {
       const term = searchTerm.toLowerCase();
-      const filtered = courses.filter(course => 
+      const filtered = courses.filter(course =>
         course.isActive && (
           course.courseName.toLowerCase().includes(term) ||
           course.courseCode.toLowerCase().includes(term)

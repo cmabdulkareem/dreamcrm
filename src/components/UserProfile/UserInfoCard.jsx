@@ -10,7 +10,7 @@ import { AuthContext } from "../../context/AuthContext";
 import ProfileImageUpload from "./ProfileImageUpload";
 import { bloodGroupOptions, countryOptions, stateOptions, accountGender } from "../../data/DataSets";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+import API from "../../config/api";
 
 export default function UserInfoCard({ user }) {
   const { setUser } = useContext(AuthContext);
@@ -113,7 +113,7 @@ export default function UserInfoCard({ user }) {
       .filter(u => u.id !== user?.id) // Exclude current user
       .map(u => ({ value: u.id, label: u.fullName }))
       // Filter out duplicate user IDs to prevent key prop warnings
-      .filter((user, index, self) => 
+      .filter((user, index, self) =>
         index === self.findIndex(u => u.value === user.value)
       )
   ];

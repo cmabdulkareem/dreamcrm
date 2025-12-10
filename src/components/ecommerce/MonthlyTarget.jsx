@@ -6,7 +6,7 @@ import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { MoreDotIcon, ArrowUpIcon, ArrowDownIcon } from "../../icons";
 import Badge from "../ui/badge/Badge";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+import API from "../../config/api";
 
 export default function MonthlyTarget() {
   const [metrics, setMetrics] = useState({
@@ -29,34 +29,34 @@ export default function MonthlyTarget() {
         `${API}/students/all`,
         { withCredentials: true }
       );
-      
+
       const students = response.data.students || [];
       const now = new Date();
       const currentMonth = now.getMonth();
       const currentYear = now.getFullYear();
-      
+
       // Get last month's date
       const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
       const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
-      
+
       // Current month revenue
       const currentMonthRevenue = students
         .filter(s => {
           const createdDate = new Date(s.createdAt);
-          return createdDate.getMonth() === currentMonth && 
-                 createdDate.getFullYear() === currentYear;
+          return createdDate.getMonth() === currentMonth &&
+            createdDate.getFullYear() === currentYear;
         })
         .reduce((sum, s) => sum + (s.finalAmount || 0), 0);
-      
+
       // Last month revenue
       const lastMonthRevenue = students
         .filter(s => {
           const createdDate = new Date(s.createdAt);
-          return createdDate.getMonth() === lastMonth && 
-                 createdDate.getFullYear() === lastMonthYear;
+          return createdDate.getMonth() === lastMonth &&
+            createdDate.getFullYear() === lastMonthYear;
         })
         .reduce((sum, s) => sum + (s.finalAmount || 0), 0);
-      
+
       // Today's revenue
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -67,12 +67,12 @@ export default function MonthlyTarget() {
           return createdDate.getTime() === today.getTime();
         })
         .reduce((sum, s) => sum + (s.finalAmount || 0), 0);
-      
+
       // Calculate growth
-      const revenueGrowth = lastMonthRevenue === 0 
+      const revenueGrowth = lastMonthRevenue === 0
         ? (currentMonthRevenue > 0 ? 100 : 0)
         : (((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100);
-      
+
       // Target: Use average of last 3 months * 1.2, or default 10L
       let targetRevenue = 1000000; // Default 10L
       if (students.length > 0) {
@@ -83,8 +83,8 @@ export default function MonthlyTarget() {
           const monthRevenue = students
             .filter(s => {
               const createdDate = new Date(s.createdAt);
-              return createdDate.getMonth() === month && 
-                     createdDate.getFullYear() === year;
+              return createdDate.getMonth() === month &&
+                createdDate.getFullYear() === year;
             })
             .reduce((sum, s) => sum + (s.finalAmount || 0), 0);
           last3MonthsRevenue.push(monthRevenue);
@@ -94,12 +94,12 @@ export default function MonthlyTarget() {
           targetRevenue = Math.max(avgRevenue * 1.2, 100000); // At least 1L
         }
       }
-      
+
       // Calculate percentage
-      const percentage = targetRevenue > 0 
+      const percentage = targetRevenue > 0
         ? Math.min((currentMonthRevenue / targetRevenue) * 100, 100)
         : 0;
-      
+
       setMetrics({
         currentMonthRevenue,
         lastMonthRevenue,
@@ -239,7 +239,7 @@ export default function MonthlyTarget() {
 
         {!loading && (
           <p className="mx-auto mt-10 w-full max-w-[380px] text-center text-sm text-gray-500 sm:text-base">
-            {metrics.currentMonthRevenue >= metrics.targetRevenue 
+            {metrics.currentMonthRevenue >= metrics.targetRevenue
               ? `We earned ${formatCurrency(metrics.currentMonthRevenue)} this month, exceeding our target! Great work!`
               : `We earned ${formatCurrency(metrics.currentMonthRevenue)} this month, ${formatCurrency(metrics.targetRevenue - metrics.currentMonthRevenue)} away from target. Keep up the good work!`}
           </p>

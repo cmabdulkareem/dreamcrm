@@ -5,7 +5,7 @@ import { CalenderIcon, BellIcon } from "../../icons";
 import Button from "../ui/button/Button";
 import Badge from "../ui/badge/Badge";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+import API from "../../config/api";
 
 export default function FollowUpsDue() {
   const navigate = useNavigate();
@@ -26,23 +26,23 @@ export default function FollowUpsDue() {
         `${API}/customers/all`,
         { withCredentials: true }
       );
-      
+
       const customers = response.data.customers;
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      
+
       const todayFollowUps = [];
       const upcomingFollowUps = [];
       const overdueFollowUps = [];
-      
+
       customers.forEach(customer => {
         if (customer.followUpDate) {
           const followUpDate = new Date(customer.followUpDate);
           followUpDate.setHours(0, 0, 0, 0);
-          
+
           const diffTime = followUpDate - today;
           const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          
+
           const followUpInfo = {
             _id: customer._id,
             fullName: customer.fullName,
@@ -51,7 +51,7 @@ export default function FollowUpsDue() {
             leadStatus: customer.leadStatus,
             daysDiff: diffDays
           };
-          
+
           if (diffDays === 0) {
             todayFollowUps.push(followUpInfo);
           } else if (diffDays > 0 && diffDays <= 7) {
@@ -61,12 +61,12 @@ export default function FollowUpsDue() {
           }
         }
       });
-      
+
       // Sort by date
       todayFollowUps.sort((a, b) => new Date(a.followUpDate) - new Date(b.followUpDate));
       upcomingFollowUps.sort((a, b) => new Date(a.followUpDate) - new Date(b.followUpDate));
       overdueFollowUps.sort((a, b) => new Date(a.followUpDate) - new Date(b.followUpDate));
-      
+
       setFollowUps({
         today: todayFollowUps.slice(0, 5),
         upcoming: upcomingFollowUps.slice(0, 5),
@@ -118,7 +118,7 @@ export default function FollowUpsDue() {
 
   const renderFollowUpList = (title, leads, color, icon) => {
     if (leads.length === 0) return null;
-    
+
     return (
       <div className="mb-6 last:mb-0">
         <div className="flex items-center gap-2 mb-3">
@@ -191,28 +191,28 @@ export default function FollowUpsDue() {
             "error",
             <BellIcon className="size-5 text-red-500" />
           )}
-          
+
           {followUps.today.length > 0 && renderFollowUpList(
             "Today",
             followUps.today,
             "warning",
             <CalenderIcon className="size-5 text-orange-500" />
           )}
-          
+
           {followUps.upcoming.length > 0 && renderFollowUpList(
             "Upcoming (7 days)",
             followUps.upcoming,
             "info",
             <CalenderIcon className="size-5 text-blue-500" />
           )}
-          
-          {followUps.today.length === 0 && 
-           followUps.upcoming.length === 0 && 
-           followUps.overdue.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-500">No follow-ups scheduled</p>
-            </div>
-          )}
+
+          {followUps.today.length === 0 &&
+            followUps.upcoming.length === 0 &&
+            followUps.overdue.length === 0 && (
+              <div className="text-center py-12">
+                <p className="text-gray-500">No follow-ups scheduled</p>
+              </div>
+            )}
         </div>
       )}
     </div>

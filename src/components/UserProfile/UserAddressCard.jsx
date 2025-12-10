@@ -7,12 +7,12 @@ import Label from "../form/Label";
 import axios from "axios";
 import { AuthContext } from "../../context/AuthContext";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+import API from "../../config/api";
 
 export default function UserAddressCard() {
   const { user, setUser } = useContext(AuthContext);
   const { isOpen, openModal, closeModal } = useModal();
-  
+
   // Initialize state with user data
   const [location, setLocation] = useState(user?.location || "");
 
@@ -25,13 +25,13 @@ export default function UserAddressCard() {
 
   const handleSave = async (e) => {
     e.preventDefault();
-    
+
     // Check if user exists
     if (!user || !user._id) {
       console.error("User data is not available");
       return;
     }
-    
+
     try {
       const payload = {
         location: location
@@ -122,9 +122,9 @@ export default function UserAddressCard() {
               <div className="grid grid-cols-1 gap-x-6 gap-y-5 lg:grid-cols-2">
                 <div>
                   <Label>Location</Label>
-                  <Input 
-                    type="text" 
-                    value={location} 
+                  <Input
+                    type="text"
+                    value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     placeholder="Enter your full address"
                   />

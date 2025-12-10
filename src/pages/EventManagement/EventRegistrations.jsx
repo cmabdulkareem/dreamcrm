@@ -7,7 +7,7 @@ import ComponentCard from '../../components/common/ComponentCard';
 import PageMeta from '../../components/common/PageMeta';
 import useGoBack from '../../hooks/useGoBack';
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+import API from "../../config/api";
 
 const EventRegistrations = () => {
   const [event, setEvent] = useState(null);
@@ -21,11 +21,11 @@ const EventRegistrations = () => {
   const fetchEventData = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch event details
       const eventResponse = await axios.get(`${API}/events/${id}`, { withCredentials: true });
       setEvent(eventResponse.data.event);
-      
+
       // Fetch registrations
       const regResponse = await axios.get(`${API}/events/${id}/registrations`, { withCredentials: true });
       setRegistrations(regResponse.data.registrations);
@@ -50,10 +50,10 @@ const EventRegistrations = () => {
         fullName: registrant.registrantName,
         email: registrant.registrantEmail
       };
-      
+
       // Store lead data in session storage to pre-fill the form
       sessionStorage.setItem('prefillLeadData', JSON.stringify(leadData));
-      
+
       // Navigate to new lead page
       navigate('/new-lead');
     } catch (error) {
@@ -71,19 +71,19 @@ const EventRegistrations = () => {
 
     // Create CSV content
     let csvContent = 'data:text/csv;charset=utf-8,';
-    
+
     // Add headers
     const headers = ['Name', 'Email', 'Registration Date'];
-    
+
     // Add dynamic field headers
     if (event && event.registrationFields) {
       event.registrationFields.forEach(field => {
         headers.push(field.fieldName);
       });
     }
-    
+
     csvContent += headers.join(',') + '\n';
-    
+
     // Add data rows
     registrations.forEach(reg => {
       const row = [
@@ -91,7 +91,7 @@ const EventRegistrations = () => {
         `"${reg.registrantEmail}"`,
         `"${new Date(reg.createdAt).toLocaleDateString()}"`
       ];
-      
+
       // Add dynamic field values
       if (event && event.registrationFields) {
         event.registrationFields.forEach(field => {
@@ -99,10 +99,10 @@ const EventRegistrations = () => {
           row.push(`"${fieldData ? fieldData.fieldValue : ''}"`);
         });
       }
-      
+
       csvContent += row.join(',') + '\n';
     });
-    
+
     // Create download link
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
@@ -111,7 +111,7 @@ const EventRegistrations = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
+
     toast.success('Registrations exported successfully');
   };
 
@@ -126,7 +126,7 @@ const EventRegistrations = () => {
   return (
     <>
       <PageMeta title={`Registrations - ${event?.eventName || 'Event'} - CRM`} />
-      
+
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
           <div>
@@ -168,11 +168,10 @@ const EventRegistrations = () => {
             </div>
             <div className="border rounded-lg p-4">
               <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300">Status</h3>
-              <span className={`px-2 py-1 rounded-full text-sm font-medium ${
-                event?.isActive 
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' 
+              <span className={`px-2 py-1 rounded-full text-sm font-medium ${event?.isActive
+                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
                   : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
-              }`}>
+                }`}>
                 {event?.isActive ? 'Active' : 'Inactive'}
               </span>
             </div>

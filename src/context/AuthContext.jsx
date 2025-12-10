@@ -3,9 +3,7 @@ import axios from "axios";
 import { updateBrandTheme } from "../utils/brandColors";
 
 const AuthContext = createContext();
-const BACKEND_URL = import.meta.env.PROD
-  ? import.meta.env.VITE_API_URL_PRODUCTION || "https://dreamcrm.onrender.com/api"
-  : import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+import API from "../config/api";
 
 function AuthProvider({ children }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -44,7 +42,7 @@ function AuthProvider({ children }) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await axios.get(`${BACKEND_URL}/users/auth`, {
+        const res = await axios.get(`${API}/users/auth`, {
           withCredentials: true,
           // Add timeout to prevent hanging requests
           timeout: 10000

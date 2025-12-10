@@ -10,7 +10,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+import API from "../../config/api";
 
 const CourseManagement = () => {
   const [courses, setCourses] = useState([]);
@@ -39,7 +39,7 @@ const CourseManagement = () => {
         `${API}/courses/all`,
         { withCredentials: true }
       );
-      
+
       setCourses(response.data.courses);
       setLoading(false);
     } catch (error) {
@@ -80,7 +80,7 @@ const CourseManagement = () => {
           isActive: false
         }
       ];
-      
+
       setCourses(mockCourses);
       toast.info("Using demo data for demonstration");
       setLoading(false);
@@ -104,12 +104,12 @@ const CourseManagement = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!formData.courseCode || !formData.courseName) {
       toast.error("Course Code and Course Name are required");
       return;
     }
-    
+
     try {
       if (editingCourse) {
         // Update existing course
@@ -118,8 +118,8 @@ const CourseManagement = () => {
           formData,
           { withCredentials: true }
         );
-        
-        setCourses(prev => prev.map(course => 
+
+        setCourses(prev => prev.map(course =>
           course._id === editingCourse._id ? response.data.course : course
         ));
         toast.success("Course updated successfully");
@@ -130,11 +130,11 @@ const CourseManagement = () => {
           formData,
           { withCredentials: true }
         );
-        
+
         setCourses(prev => [...prev, response.data.course]);
         toast.success("Course added successfully");
       }
-      
+
       resetForm();
     } catch (error) {
       console.error("Error saving course:", error);
@@ -178,7 +178,7 @@ const CourseManagement = () => {
         `${API}/courses/delete/${id}`,
         { withCredentials: true }
       );
-      
+
       setCourses(prev => prev.filter(course => course._id !== id));
       toast.success("Course deleted successfully");
     } catch (error) {
@@ -194,8 +194,8 @@ const CourseManagement = () => {
         {},
         { withCredentials: true }
       );
-      
-      setCourses(prev => prev.map(course => 
+
+      setCourses(prev => prev.map(course =>
         course._id === id ? response.data.course : course
       ));
       toast.success(response.data.message);
@@ -281,11 +281,10 @@ const CourseManagement = () => {
                           {course.duration}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            course.mode === "online" 
-                              ? "bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100" 
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${course.mode === "online"
+                              ? "bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100"
                               : "bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100"
-                          }`}>
+                            }`}>
                             {course.mode}
                           </span>
                         </td>
@@ -296,33 +295,31 @@ const CourseManagement = () => {
                           ₹{course.normalFee}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            course.isActive 
-                              ? "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100" 
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${course.isActive
+                              ? "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100"
                               : "bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100"
-                          }`}>
+                            }`}>
                             {course.isActive ? "Active" : "Inactive"}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex space-x-2">
-                            <button 
+                            <button
                               onClick={() => toggleCourseStatus(course._id)}
-                              className={`${
-                                course.isActive 
-                                  ? "text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300" 
+                              className={`${course.isActive
+                                  ? "text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                                   : "text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
-                              }`}
+                                }`}
                             >
                               {course.isActive ? "Deactivate" : "Activate"}
                             </button>
-                            <button 
+                            <button
                               onClick={() => handleEdit(course)}
                               className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
                             >
                               Edit
                             </button>
-                            <button 
+                            <button
                               onClick={() => handleDelete(course._id)}
                               className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                             >
@@ -351,13 +348,13 @@ const CourseManagement = () => {
         <div className="fixed inset-0 z-[9999] overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
             <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={resetForm}></div>
-            
+
             <div className="inline-block overflow-hidden text-left align-bottom transition-all transform bg-white rounded-lg shadow-xl sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full dark:bg-gray-800">
               <div className="px-4 pt-5 pb-4 bg-white sm:p-6 sm:pb-4 dark:bg-gray-800">
                 <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white">
                   {editingCourse ? "Edit Course" : "Add New Course"}
                 </h3>
-                
+
                 <form onSubmit={handleSubmit} className="mt-4 space-y-4">
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
@@ -372,7 +369,7 @@ const CourseManagement = () => {
                         disabled={!!editingCourse}
                       />
                     </div>
-                    
+
                     <div>
                       <Label htmlFor="courseName">Course Name *</Label>
                       <Input
@@ -384,7 +381,7 @@ const CourseManagement = () => {
                         placeholder="Enter course name"
                       />
                     </div>
-                    
+
                     <div className="sm:col-span-2">
                       <Label htmlFor="modules">Modules Included</Label>
                       <Input
@@ -396,7 +393,7 @@ const CourseManagement = () => {
                         placeholder="Enter modules separated by commas"
                       />
                     </div>
-                    
+
                     <div>
                       <Label htmlFor="duration">Duration (hours)</Label>
                       <Input
@@ -408,7 +405,7 @@ const CourseManagement = () => {
                         placeholder="Enter duration in hours"
                       />
                     </div>
-                    
+
                     <div>
                       <Label>Mode</Label>
                       <Select
@@ -417,7 +414,7 @@ const CourseManagement = () => {
                         onChange={(value) => handleSelectChange(value, "mode")}
                       />
                     </div>
-                    
+
                     <div>
                       <Label htmlFor="singleShotFee">Single Shot Payment Fee</Label>
                       <Input
@@ -429,7 +426,7 @@ const CourseManagement = () => {
                         placeholder="Enter fee amount"
                       />
                     </div>
-                    
+
                     <div>
                       <Label htmlFor="normalFee">Normal Fee</Label>
                       <Input
@@ -441,7 +438,7 @@ const CourseManagement = () => {
                         placeholder="Enter fee amount"
                       />
                     </div>
-                    
+
                     <div className="flex items-center">
                       <input
                         type="checkbox"
@@ -458,7 +455,7 @@ const CourseManagement = () => {
                   </div>
                 </form>
               </div>
-              
+
               <div className="px-4 py-3 bg-gray-50 sm:px-6 sm:flex sm:flex-row-reverse dark:bg-gray-700">
                 <Button
                   type="button"

@@ -151,7 +151,7 @@ const getDueDateBadgeText = (followUpDate) => {
   return formatDate(followUpDate);
 };
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+import API from "../../config/api";
 
 export default function RecentOrders() {
   const { user } = useContext(AuthContext);
