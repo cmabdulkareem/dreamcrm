@@ -1,5 +1,4 @@
 {
-  "public": "dist",
   "routes": [
     {
       "src": "/assets/(.*)\\.(svg|png|jpg|jpeg|gif|webp|ico|css|js)",
