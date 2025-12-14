@@ -8,7 +8,7 @@ import {
   toggleCourseStatus
 } from '../controller/courseController.js';
 import verifyToken from '../middleware/verifyToken.js';
-// import { applyBrandFilter } from '../middleware/brandMiddleware.js';
+import { applyBrandFilter } from '../middleware/brandMiddleware.js';
 
 const router = express.Router();
 
@@ -19,7 +19,7 @@ router.get('/:id', getCourseById);
 // Protected routes (admin only)
 // Protected routes (admin only) - Apply Brand Filter
 router.use(verifyToken);
-// router.use(applyBrandFilter);
+router.use(applyBrandFilter);
 
 router.post('/create', createCourse);
 router.put('/update/:id', updateCourse);

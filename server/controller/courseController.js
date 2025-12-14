@@ -4,8 +4,16 @@ import courseModel from '../model/courseModel.js';
 export const getAllCourses = async (req, res) => {
   try {
     // Check for brand filter from middleware (if authenticated) or header (if public)
-    // Brand Independent: Fetch all courses regardless of brand
-    const courses = await courseModel.find({}).sort({ createdAt: -1 });
+    const brandId = req.brandFilter?.brand || req.headers['x-brand-id'];
+
+    let finalQuery = {};
+    if (req.brandFilter) {
+      finalQuery = { ...req.brandFilter };
+    } else if (req.headers['x-brand-id']) {
+      finalQuery = { brand: req.headers['x-brand-id'] };
+    }
+
+    const courses = await courseModel.find(finalQuery).sort({ createdAt: -1 });
     return res.status(200).json({ courses });
   } catch (error) {
     console.error("Error fetching courses:", error);
@@ -58,8 +66,8 @@ export const createCourse = async (req, res) => {
       mode,
       singleShotFee: parseFloat(singleShotFee),
       normalFee: parseFloat(normalFee),
-      isActive: isActive === 'true' || isActive === true
-      // brand: Independent
+      isActive: isActive === 'true' || isActive === true,
+      brand: req.brandFilter?.brand || req.headers['x-brand-id'] || null
     });
 
     await newCourse.save();
