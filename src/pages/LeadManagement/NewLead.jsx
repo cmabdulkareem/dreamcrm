@@ -24,7 +24,7 @@ import {
   enquirerGender,
   enquirerStatus,
   enquirerEducation,
-  courseOptions,
+  //   courseOptions,
   contactPoints,
   campaigns,
   leadPotentialOptions // Added import
@@ -61,6 +61,7 @@ export default function FormElements() {
   const [error, setError] = useState(false);
   const [campaignOptions, setCampaignOptions] = useState([]);
   const [contactPointOptions, setContactPointOptions] = useState([]);
+  const [courseOptions, setCourseOptions] = useState([]); // Dynamic course options
 
   // Validation error states
   const [validationErrors, setValidationErrors] = useState({});
@@ -92,7 +93,28 @@ export default function FormElements() {
 
     fetchCampaigns();
     fetchContactPoints();
+    fetchCourseCategories();
   }, []);
+
+  const fetchCourseCategories = async () => {
+    try {
+      const response = await axios.get(
+        `${API}/course-categories/all`,
+        { withCredentials: true }
+      );
+      const categories = response.data.categories.filter(c => c.isActive).map(c => ({
+        value: c.name, // Using name as value to match existing data structure logic if needed, or ID
+        label: c.name
+      }));
+      setCourseOptions(categories);
+    } catch (error) {
+      console.error("Error fetching course categories:", error);
+      // Fallback
+      setCourseOptions([
+        { value: "General", label: "General" }
+      ]);
+    }
+  };
 
   const fetchCampaigns = async () => {
     try {

@@ -24,6 +24,7 @@ import eventRoutes from './routes/eventRoutes.js'
 import leaveRoutes from './routes/leaveRoutes.js'
 import announcementRoutes from './routes/announcementRoutes.js'
 import brandRoutes from './routes/brandRoutes.js'
+import courseCategoryRoutes from './routes/courseCategoryRoute.js'
 
 const app = express()
 
@@ -52,6 +53,7 @@ app.use('/api/email', emailRoutes)
 app.use('/api/profile', profileRoutes)
 app.use('/api/students', studentRoutes)
 app.use('/api/courses', courseRoutes)
+app.use('/api/course-categories', courseCategoryRoutes)
 app.use('/api/contact-points', contactPointRoutes)
 app.use('/api/chats', chatRoutes)
 app.use('/api/events', eventRoutes)
