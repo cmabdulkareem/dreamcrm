@@ -4,7 +4,6 @@ const courseCategorySchema = new mongoose.Schema({
     name: {
         type: String,
         required: true,
-        unique: true,
         trim: true
     },
     description: {
@@ -22,5 +21,8 @@ const courseCategorySchema = new mongoose.Schema({
 }, {
     timestamps: true
 });
+
+// Compound index: category name must be unique within each brand
+courseCategorySchema.index({ name: 1, brand: 1 }, { unique: true });
 
 export default mongoose.model('CourseCategory', courseCategorySchema);

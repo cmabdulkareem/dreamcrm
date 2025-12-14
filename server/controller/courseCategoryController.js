@@ -24,8 +24,13 @@ export const getAllCategories = async (req, res) => {
 export const createCategory = async (req, res) => {
     try {
         const { name, description, isActive } = req.body;
+        const brandId = req.brandFilter?.brand || req.headers['x-brand-id'] || null;
 
-        const existingCategory = await courseCategoryModel.findOne({ name });
+        // Check if category with this name already exists for this brand
+        const existingCategory = await courseCategoryModel.findOne({
+            name,
+            brand: brandId
+        });
         if (existingCategory) {
             return res.status(400).json({ message: "Category with this name already exists." });
         }
