@@ -1,73 +1,36 @@
-import { Resend } from 'resend';
-import nodemailer from 'nodemailer';
+import * as brevo from '@getbrevo/brevo';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
 /* ============================================
-   Email Service with Multiple Providers
-   Priority: Resend > SendGrid > Gmail SMTP
+   Email Service using Brevo API
+   No SMTP - Works everywhere!
 ============================================ */
 
-// Initialize Resend if API key is available
-let resend = null;
-if (process.env.RESEND_API_KEY) {
-  resend = new Resend(process.env.RESEND_API_KEY);
-  console.log('✅ Resend email service initialized');
+// Initialize Brevo
+if (!process.env.BREVO_API_KEY) {
+  console.error('❌ BREVO_API_KEY is not set! Email service will not work.');
+  console.error('   Add BREVO_API_KEY to your .env file or environment variables.');
 }
 
-/* ============================================
-   Create SMTP Transporter (Fallback)
-============================================ */
-const createTransport = () => {
-  // Check if using SendGrid
-  if (process.env.SENDGRID_API_KEY) {
-    console.log('Using SendGrid for email delivery');
-    return nodemailer.createTransport({
-      host: 'smtp.sendgrid.net',
-      port: 587,
-      secure: false,
-      auth: {
-        user: 'apikey',
-        pass: process.env.SENDGRID_API_KEY,
-      },
-    });
-  }
+const apiInstance = new brevo.TransactionalEmailsApi();
+apiInstance.setApiKey(brevo.TransactionalEmailsApiApiKeys.apiKey, process.env.BREVO_API_KEY);
 
-  // Otherwise use Gmail SMTP
-  const port = parseInt(process.env.EMAIL_PORT) || 465;
-  const secure = port === 465;
-
-  const config = {
-    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-    port: port,
-    secure: secure,
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 10000,
-    tls: {
-      rejectUnauthorized: true,
-      minVersion: 'TLSv1.2'
-    },
-    debug: process.env.NODE_ENV === 'development',
-    logger: process.env.NODE_ENV === 'development'
-  };
-
-  console.log(`Using Gmail SMTP: ${config.host}:${config.port} (secure: ${config.secure})`);
-
-  return nodemailer.createTransport(config);
-};
+console.log('✅ Brevo email service initialized');
 
 /* ============================================
    1. PASSWORD RESET EMAIL
 ============================================ */
 const sendPasswordResetEmail = async (user, resetUrl) => {
   try {
-    const emailHtml = `
+    console.log('Sending password reset email via Brevo to:', user.email);
+
+    const sendSmtpEmail = new brevo.SendSmtpEmail();
+    sendSmtpEmail.sender = { email: process.env.EMAIL_FROM, name: 'DreamCRM' };
+    sendSmtpEmail.to = [{ email: user.email, name: user.fullName }];
+    sendSmtpEmail.subject = 'Password Reset Request';
+    sendSmtpEmail.htmlContent = `
       <div style="font-family: Arial; max-width: 600px; margin: auto; background: #fff;">
         <div style="background: #7e22ce; padding: 25px; text-align: center; color: white;">
           <h2>Password Reset</h2>
@@ -98,40 +61,14 @@ const sendPasswordResetEmail = async (user, resetUrl) => {
       </div>
     `;
 
-    // Try Resend first (if available)
-    if (resend) {
-      console.log('Sending password reset email via Resend to:', user.email);
-
-      const { data, error } = await resend.emails.send({
-        from: process.env.EMAIL_FROM || 'onboarding@resend.dev',
-        to: user.email,
-        subject: 'Password Reset Request',
-        html: emailHtml,
-      });
-
-      if (error) {
-        console.error('Resend error:', error);
-        throw error;
-      }
-
-      console.log('✅ Password reset email sent via Resend. ID:', data.id);
-      return;
-    }
-
-    // Fallback to SMTP (SendGrid or Gmail)
-    const transporter = createTransport();
-    const mailOptions = {
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-      to: user.email,
-      subject: 'Password Reset Request',
-      html: emailHtml
-    };
-
-    await transporter.sendMail(mailOptions);
-    console.log('✅ Password reset email sent via SMTP to:', user.email);
+    const result = await apiInstance.sendTransacEmail(sendSmtpEmail);
+    console.log('✅ Password reset email sent via Brevo. Message ID:', result.messageId);
 
   } catch (error) {
     console.error('❌ Error sending password reset email:', error.message);
+    if (error.response?.body) {
+      console.error('Brevo error details:', JSON.stringify(error.response.body, null, 2));
+    }
     throw error;
   }
 };
@@ -141,7 +78,11 @@ const sendPasswordResetEmail = async (user, resetUrl) => {
 ============================================ */
 const sendWelcomeEmail = async (user) => {
   try {
-    const emailHtml = `
+    const sendSmtpEmail = new brevo.SendSmtpEmail();
+    sendSmtpEmail.sender = { email: process.env.EMAIL_FROM, name: 'DreamCRM' };
+    sendSmtpEmail.to = [{ email: user.email, name: user.fullName }];
+    sendSmtpEmail.subject = 'Welcome to Our CRM System!';
+    sendSmtpEmail.htmlContent = `
       <div style="font-family: Arial; max-width: 600px; margin: auto; background: #fff;">
         <div style="background: #1e3a8a; padding: 25px; text-align: center; color: white;">
           <h2>Welcome to Our CRM</h2>
@@ -166,29 +107,8 @@ const sendWelcomeEmail = async (user) => {
       </div>
     `;
 
-    // Try Resend first
-    if (resend) {
-      const { data, error } = await resend.emails.send({
-        from: process.env.EMAIL_FROM || 'onboarding@resend.dev',
-        to: user.email,
-        subject: 'Welcome to Our CRM System!',
-        html: emailHtml,
-      });
-
-      if (error) throw error;
-      console.log('✅ Welcome email sent via Resend');
-      return;
-    }
-
-    // Fallback to SMTP
-    const transporter = createTransport();
-    await transporter.sendMail({
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-      to: user.email,
-      subject: 'Welcome to Our CRM System!',
-      html: emailHtml
-    });
-    console.log('✅ Welcome email sent via SMTP');
+    await apiInstance.sendTransacEmail(sendSmtpEmail);
+    console.log('✅ Welcome email sent via Brevo');
 
   } catch (error) {
     console.error('Error sending welcome email:', error.message);
@@ -203,7 +123,11 @@ const sendNewUserNotification = async (user, adminEmails) => {
   try {
     if (!adminEmails?.length) return;
 
-    const emailHtml = `
+    const sendSmtpEmail = new brevo.SendSmtpEmail();
+    sendSmtpEmail.sender = { email: process.env.EMAIL_FROM, name: 'DreamCRM' };
+    sendSmtpEmail.to = adminEmails.map(email => ({ email }));
+    sendSmtpEmail.subject = 'New User Registration';
+    sendSmtpEmail.htmlContent = `
       <div style="font-family: Arial; max-width: 600px; margin: auto; background: #fff;">
         <div style="background: #0f766e; padding: 25px; text-align: center; color: white;">
           <h2>New User Registered</h2>
@@ -228,29 +152,8 @@ const sendNewUserNotification = async (user, adminEmails) => {
       </div>
     `;
 
-    // Try Resend first
-    if (resend) {
-      const { data, error } = await resend.emails.send({
-        from: process.env.EMAIL_FROM || 'onboarding@resend.dev',
-        to: adminEmails,
-        subject: 'New User Registration',
-        html: emailHtml,
-      });
-
-      if (error) throw error;
-      console.log('✅ Admin notification sent via Resend');
-      return;
-    }
-
-    // Fallback to SMTP
-    const transporter = createTransport();
-    await transporter.sendMail({
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-      to: adminEmails,
-      subject: 'New User Registration',
-      html: emailHtml
-    });
-    console.log('✅ Admin notification sent via SMTP');
+    await apiInstance.sendTransacEmail(sendSmtpEmail);
+    console.log('✅ Admin notification sent via Brevo');
 
   } catch (error) {
     console.error('Error sending new user notification:', error.message);
