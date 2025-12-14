@@ -5,17 +5,49 @@ dotenv.config();
 
 /* ============================================
    Create Email Transporter (Reusable)
+   Supports both Gmail SMTP and SendGrid
 ============================================ */
 const createTransport = () => {
-  return nodemailer.createTransport({
+  // Check if using SendGrid
+  if (process.env.SENDGRID_API_KEY) {
+    console.log('Using SendGrid for email delivery');
+    return nodemailer.createTransport({
+      host: 'smtp.sendgrid.net',
+      port: 587,
+      secure: false,
+      auth: {
+        user: 'apikey',
+        pass: process.env.SENDGRID_API_KEY,
+      },
+    });
+  }
+
+  // Otherwise use Gmail SMTP
+  const port = parseInt(process.env.EMAIL_PORT) || 465;
+  const secure = port === 465;
+
+  const config = {
     host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-    port: process.env.EMAIL_PORT || 587,
-    secure: false, // use true for 465
+    port: port,
+    secure: secure,
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASS,
     },
-  });
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 10000,
+    tls: {
+      rejectUnauthorized: true,
+      minVersion: 'TLSv1.2'
+    },
+    debug: process.env.NODE_ENV === 'development',
+    logger: process.env.NODE_ENV === 'development'
+  };
+
+  console.log(`Using Gmail SMTP: ${config.host}:${config.port} (secure: ${config.secure})`);
+
+  return nodemailer.createTransport(config);
 };
 
 /* ============================================
@@ -50,7 +82,7 @@ const sendPasswordResetEmail = async (user, resetUrl) => {
             <p>If the button doesn't work, copy this link:</p>
             <p>${resetUrl}</p>
 
-            <p>If you didn’t request this, ignore this message.</p>
+            <p>If you didn't request this, ignore this message.</p>
           </div>
 
           <div style="background: #0f172a; padding: 15px; text-align: center; color: #aaa;">
