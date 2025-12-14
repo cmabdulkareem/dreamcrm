@@ -10,13 +10,13 @@ export default function DatePicker({
   label,
   defaultDate,
   value, // Add value prop
-  placeholder,
+  placeholder = "dd/mm/yyyy",
   minDate, // Add minDate prop
   disablePastDates, // Add disablePastDates prop
 }) {
   // Use value if provided, otherwise use defaultDate
   const dateValue = value || defaultDate;
-  
+
   useEffect(() => {
     // Create disable configuration for past dates if needed
     const disableConfig = disablePastDates ? [
@@ -25,7 +25,7 @@ export default function DatePicker({
         to: new Date().toISOString().split('T')[0] // Use today's date instead of yesterday
       }
     ] : [];
-    
+
     const flatPickr = flatpickr(`#${id}`, {
       mode: mode || "single",
       static: true,
