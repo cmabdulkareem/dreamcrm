@@ -519,7 +519,6 @@ export default function FormElements() {
                     <DatePicker
                       id="dob"
                       label="DoB"
-                      placeholder="Select a date"
                       value={dob}
                       onChange={(date, str) => setDob(str)}
                     />
@@ -645,7 +644,6 @@ export default function FormElements() {
                     <DatePicker
                       id="followupDate"
                       label="Next Follow Up Date"
-                      placeholder="Select a date"
                       value={followUpDate}
                       disablePastDates={true} // Hide past dates completely
                       onChange={(date, str) => setFollowUpDate(str)}

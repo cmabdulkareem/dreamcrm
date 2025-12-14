@@ -417,7 +417,6 @@ const CreateEvent = () => {
                   label="Event Date *"
                   value={formData.eventDate}
                   onChange={(date, dateString) => setFormData({ ...formData, eventDate: dateString })}
-                  placeholder="Select event date"
                 />
               </div>
             </div>

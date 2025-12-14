@@ -19,7 +19,7 @@ export default function SelectInputs() {
 
   const courseOptions = [
     { value: "1", label: "Interior Design" },
-    { value: "2", label: "Fashion Design" },    
+    { value: "2", label: "Fashion Design" },
     { value: "3", label: "Graphic Design" },
     { value: "4", label: "General" },
   ];
@@ -102,7 +102,6 @@ export default function SelectInputs() {
             <DatePicker
               id="date-picker"
               label="Follow Up Date"
-              placeholder="Select a date"
               onChange={(dates, currentDateString) => {
                 console.log({ dates, currentDateString });
               }}

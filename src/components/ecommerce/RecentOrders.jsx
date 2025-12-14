@@ -1266,7 +1266,6 @@ export default function RecentOrders() {
                     <DatePicker
                       id="followupDate"
                       label="Next Follow Up Date *"
-                      placeholder="Select a date"
                       value={followUpDate}
                       disablePastDates={true} // Hide past dates completely
                       onChange={(date, str) => setFollowUpDate(str)}

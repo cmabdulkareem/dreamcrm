@@ -186,7 +186,6 @@ export default function DefaultInputs() {
             <DatePicker
               id="date-picker"
               label="DoB"
-              placeholder="Select a date"
               onChange={(dates, currentDateString) => {
                 console.log({ dates, currentDateString });
               }}
@@ -208,31 +207,31 @@ export default function DefaultInputs() {
         </div>
 
         <div className="flex flex-col md:flex-row gap-4 items-stretch">
-  <div className="flex-[0.5] flex flex-col">
-    <Label>Current Status</Label>
-    <Select
-      options={enquirerStatus}
-      placeholder="Select Status"
-      onChange={handleSelectChange}
-      className="h-12 dark:bg-dark-900"
-    />
-  </div>
+          <div className="flex-[0.5] flex flex-col">
+            <Label>Current Status</Label>
+            <Select
+              options={enquirerStatus}
+              placeholder="Select Status"
+              onChange={handleSelectChange}
+              className="h-12 dark:bg-dark-900"
+            />
+          </div>
 
-  <div className="flex-[0.5] flex flex-col">
-    <Label>Education</Label>
-    <Select
-      options={enquirerEducation}
-      placeholder="Select Status"
-      onChange={handleSelectChange}
-      className="h-12 dark:bg-dark-900"
-    />
-  </div>
+          <div className="flex-[0.5] flex flex-col">
+            <Label>Education</Label>
+            <Select
+              options={enquirerEducation}
+              placeholder="Select Status"
+              onChange={handleSelectChange}
+              className="h-12 dark:bg-dark-900"
+            />
+          </div>
 
-  <div className="flex-1 flex flex-col">
-    <Label htmlFor="remarks">Remarks</Label>
-    <Input type="text" id="remarks" className="h-12" />
-  </div>
-</div>
+          <div className="flex-1 flex flex-col">
+            <Label htmlFor="remarks">Remarks</Label>
+            <Input type="text" id="remarks" className="h-12" />
+          </div>
+        </div>
       </div>
     </ComponentCard>
   );

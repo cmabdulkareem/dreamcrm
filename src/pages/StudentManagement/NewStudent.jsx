@@ -659,7 +659,6 @@ export default function NewStudent() {
                     <DatePicker
                       id="dob"
                       label="Date of Birth"
-                      placeholder="Select a date"
                       value={dob}
                       onChange={(date, str) => setDob(str)}
                       disabled={!!selectedLead}
