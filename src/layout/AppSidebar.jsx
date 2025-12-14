@@ -383,8 +383,8 @@ const AppSidebar = () => {
             <img
               src="/images/logo/logo-icon.svg"
               alt="Logo"
-              width={32}
-              height={32}
+              width={48}
+              height={48}
             />
           )}
         </Link>
