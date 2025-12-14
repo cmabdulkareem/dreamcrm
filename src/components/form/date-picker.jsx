@@ -31,6 +31,9 @@ export default function DatePicker({
       static: true,
       monthSelectorType: "static",
       dateFormat: "Y-m-d",
+      altInput: true,
+      altFormat: "d/m/Y",
+      allowInput: true,
       defaultDate: dateValue,
       minDate: minDate || null, // Set minDate if provided
       disable: disableConfig, // Disable past dates if requested
