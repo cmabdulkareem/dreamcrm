@@ -37,12 +37,8 @@ export default function DatePicker({
   }, [dateValue]);
 
   useEffect(() => {
-    const disableConfig = disablePastDates ? [
-      {
-        from: "1900-01-01",
-        to: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().split('T')[0] // Disable up to yesterday
-      }
-    ] : [];
+    // Use minDate to restrict navigation to past months/years if disablePastDates is true
+    const effectiveMinDate = disablePastDates ? "today" : (minDate || null);
 
     // Initialize flatpickr with wrap: true to control the input manually
     fp.current = flatpickr(`#${id}-wrapper`, {
@@ -54,8 +50,8 @@ export default function DatePicker({
       allowInput: true,
       clickOpens: false,
       defaultDate: dateValue,
-      minDate: minDate || null,
-      disable: disableConfig,
+      minDate: effectiveMinDate,
+      disable: [], // disablePastDates handled via minDate now
       onChange: (selectedDates, dateStr) => {
         // When calendar picks a date, update our custom input
         if (selectedDates.length > 0) {
