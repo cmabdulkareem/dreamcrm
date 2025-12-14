@@ -1,3 +1,4 @@
+import { Resend } from 'resend';
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 
@@ -7,9 +8,13 @@ console.log('=== Email Configuration Test ===\n');
 
 // Check environment variables
 console.log('Environment Variables:');
-console.log('NODE_ENV:', process.env.NODE_ENV || 'not set');
+console.log('NODE_ENV:', process.env.NODE_ENV || 'development');
 
-if (process.env.SENDGRID_API_KEY) {
+if (process.env.RESEND_API_KEY) {
+  console.log('\n📧 Resend Configuration:');
+  console.log('RESEND_API_KEY:', process.env.RESEND_API_KEY ? '✅ SET (starts with: ' + process.env.RESEND_API_KEY.substring(0, 5) + '...)' : '❌ NOT SET');
+  console.log('EMAIL_FROM:', process.env.EMAIL_FROM || '❌ NOT SET');
+} else if (process.env.SENDGRID_API_KEY) {
   console.log('\n📧 SendGrid Configuration:');
   console.log('SENDGRID_API_KEY:', process.env.SENDGRID_API_KEY ? '✅ SET (starts with: ' + process.env.SENDGRID_API_KEY.substring(0, 5) + '...)' : '❌ NOT SET');
   console.log('EMAIL_FROM:', process.env.EMAIL_FROM || '❌ NOT SET');
@@ -27,11 +32,50 @@ console.log('\n');
 // Test email connection
 async function testEmailConnection() {
   try {
+    const testEmail = process.env.EMAIL_FROM || process.env.EMAIL_USER;
+
+    // Try Resend first
+    if (process.env.RESEND_API_KEY) {
+      console.log('🔧 Testing Resend...\n');
+
+      const resend = new Resend(process.env.RESEND_API_KEY);
+
+      const { data, error } = await resend.emails.send({
+        from: process.env.EMAIL_FROM || 'onboarding@resend.dev',
+        to: testEmail,
+        subject: 'Test Email - CRM Password Reset',
+        html: `
+          <div style="font-family: Arial; max-width: 600px; margin: auto; background: #fff;">
+            <div style="background: #7e22ce; padding: 25px; text-align: center; color: white;">
+              <h2>✅ Resend Test Successful!</h2>
+            </div>
+            <div style="padding: 25px;">
+              <h3>Configuration Working</h3>
+              <p>Your Resend email configuration is working correctly.</p>
+              <p><strong>Service:</strong> Resend</p>
+              <p><strong>Test Time:</strong> ${new Date().toLocaleString()}</p>
+            </div>
+          </div>
+        `
+      });
+
+      if (error) {
+        console.error('❌ Resend error:', error);
+        throw error;
+      }
+
+      console.log('✅ Test email sent successfully via Resend!');
+      console.log('Email ID:', data.id);
+      console.log('\n📬 Check your inbox at:', testEmail);
+      console.log('\n🎉 Resend configuration is working correctly!');
+      return;
+    }
+
+    // Fallback to SMTP testing (same as before)
     let transporter;
 
     if (process.env.SENDGRID_API_KEY) {
-      console.log('🔧 Testing SendGrid connection...\n');
-
+      console.log('🔧 Testing SendGrid...\n');
       transporter = nodemailer.createTransport({
         host: 'smtp.sendgrid.net',
         port: 587,
@@ -42,8 +86,7 @@ async function testEmailConnection() {
         },
       });
     } else {
-      console.log('🔧 Testing Gmail SMTP connection...\n');
-
+      console.log('🔧 Testing Gmail SMTP...\n');
       const port = parseInt(process.env.EMAIL_PORT) || 465;
       const secure = port === 465;
 
@@ -63,15 +106,11 @@ async function testEmailConnection() {
       console.log(`Using: ${process.env.EMAIL_HOST}:${port} (secure: ${secure})\n`);
     }
 
-    // Verify connection
     console.log('Verifying connection...');
     await transporter.verify();
     console.log('✅ Connection successful!\n');
 
-    // Send test email
     console.log('Sending test email...\n');
-    const testEmail = process.env.EMAIL_USER || process.env.EMAIL_FROM;
-
     const info = await transporter.sendMail({
       from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
       to: testEmail,
@@ -100,30 +139,22 @@ async function testEmailConnection() {
     console.error('\n❌ Email test failed!');
     console.error('Error:', error.message);
 
-    if (error.code === 'EAUTH') {
+    if (error.code === 'EAUTH' || error.statusCode === 401) {
       console.error('\n⚠️  Authentication failed. Possible issues:');
-      if (process.env.SENDGRID_API_KEY) {
+      if (process.env.RESEND_API_KEY) {
+        console.error('   1. Invalid Resend API key');
+        console.error('   2. Check your API key at: https://resend.com/api-keys');
+      } else if (process.env.SENDGRID_API_KEY) {
         console.error('   1. Invalid SendGrid API key');
-        console.error('   2. API key doesn\'t have Mail Send permission');
-        console.error('   3. Sender email not verified in SendGrid');
-        console.error('   4. Check: https://app.sendgrid.com/settings/sender_auth/senders');
+        console.error('   2. Check: https://app.sendgrid.com/settings/api_keys');
       } else {
         console.error('   1. Incorrect email or password');
-        console.error('   2. If using Gmail, you need an App Password (not your regular password)');
-        console.error('   3. Enable 2-Factor Authentication and generate an App Password');
-        console.error('   4. Visit: https://myaccount.google.com/apppasswords');
+        console.error('   2. Use Gmail App Password: https://myaccount.google.com/apppasswords');
       }
-    } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNECTION') {
-      console.error('\n⚠️  Connection failed. Possible issues:');
-      console.error('   1. Your hosting platform (Render/Heroku) might be blocking SMTP ports');
-      console.error('   2. Solution: Use SendGrid instead of Gmail SMTP');
-      console.error('   3. Sign up at: https://signup.sendgrid.com/');
-      console.error('   4. Add SENDGRID_API_KEY to your .env file');
-    } else if (error.responseCode === 403) {
-      console.error('\n⚠️  Sender not verified (SendGrid):');
-      console.error('   1. Go to: https://app.sendgrid.com/settings/sender_auth/senders');
-      console.error('   2. Verify your sender email address');
-      console.error('   3. Check your email for verification link');
+    } else if (error.statusCode === 403 || error.message?.includes('not verified')) {
+      console.error('\n⚠️  Email address not verified:');
+      console.error('   1. Verify your email domain at: https://resend.com/domains');
+      console.error('   2. Or use the default: onboarding@resend.dev');
     }
 
     console.error('\n📋 Full error details:');
