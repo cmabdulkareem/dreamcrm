@@ -40,7 +40,7 @@ export default function DatePicker({
     const disableConfig = disablePastDates ? [
       {
         from: "1900-01-01",
-        to: new Date().toISOString().split('T')[0]
+        to: new Date(new Date().setDate(new Date().getDate() - 1)).toISOString().split('T')[0] // Disable up to yesterday
       }
     ] : [];
 
@@ -152,6 +152,21 @@ export default function DatePicker({
           const isoDate = `${y}-${m}-${d}`;
           if (fp.current) {
             fp.current.setDate(isoDate, true); // true = trigger onChange
+
+            // Sync back to verify acceptance (e.g. if disabled date was typed)
+            const selected = fp.current.selectedDates[0];
+            if (selected) {
+              const dStr = String(selected.getDate()).padStart(2, "0");
+              const mStr = String(selected.getMonth() + 1).padStart(2, "0");
+              const yStr = selected.getFullYear();
+              const formatted = `${dStr}/${mStr}/${yStr}`;
+              if (formatted !== newVal) {
+                setInputValue(formatted);
+              }
+            } else {
+              // Was invalid/rejected and cleared
+              setInputValue(MASK);
+            }
           }
         }
       }
