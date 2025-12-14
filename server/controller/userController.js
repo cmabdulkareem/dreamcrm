@@ -884,22 +884,24 @@ export const forgotPassword = async (req, res) => {
     user.resetPasswordExpires = resetPasswordExpires;
     await user.save();
 
-    // Send reset email
-    try {
-      const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
-      const emailService = await import('../utils/emailService.js');
-      await emailService.default.sendPasswordResetEmail(user, resetUrl);
+    // Send response immediately to prevent timeout
+    res.status(200).json({ message: "Password reset link sent to your email." });
 
-      return res.status(200).json({ message: "Password reset link sent to your email." });
-    } catch (emailError) {
-      console.error("Failed to send password reset email:", emailError);
-      // Clear the reset token if email fails
-      user.resetPasswordToken = undefined;
-      user.resetPasswordExpires = undefined;
-      await user.save();
+    // Send email asynchronously (don't await)
+    const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+    const emailService = await import('../utils/emailService.js');
 
-      return res.status(500).json({ message: "Failed to send password reset email. Please try again." });
-    }
+    // Send email in background without blocking response
+    emailService.default.sendPasswordResetEmail(user, resetUrl)
+      .then(() => {
+        console.log('Password reset email sent successfully to:', user.email);
+      })
+      .catch((emailError) => {
+        console.error("Failed to send password reset email:", emailError);
+        // Note: We've already responded to the user, so we just log the error
+        // In production, you might want to implement a retry mechanism or queue
+      });
+
   } catch (error) {
     console.error("Forgot password error:", error);
     return res.status(500).json({ message: "Server error" });
