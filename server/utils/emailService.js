@@ -21,11 +21,9 @@ const createTransport = () => {
 /* ============================================
    1. PASSWORD RESET EMAIL
 ============================================ */
-const sendPasswordResetEmail = async (user, resetToken) => {
+const sendPasswordResetEmail = async (user, resetUrl) => {
   try {
     const transporter = createTransport();
-
-    const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
 
     const mailOptions = {
       from: process.env.EMAIL_FROM || process.env.EMAIL_USER,

@@ -13,6 +13,7 @@ import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import { isAdmin } from "../utils/roleHelpers.js";
 import crypto from "crypto";
+import { getFrontendUrl } from "../utils/urlHelper.js";
 dotenv.config();
 
 // Signup user
@@ -884,20 +885,36 @@ export const forgotPassword = async (req, res) => {
     user.resetPasswordExpires = resetPasswordExpires;
     await user.save();
 
+    console.log('Password reset token generated for user:', user.email);
+
     // Send response immediately to prevent timeout
     res.status(200).json({ message: "Password reset link sent to your email." });
 
-    // Send email asynchronously (don't await)
-    const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+    // Validate email configuration
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      console.error('ERROR: Email credentials (EMAIL_USER or EMAIL_PASS) are not configured!');
+      return;
+    }
+
+    // Get frontend URL dynamically from CORS config based on request origin
+    const frontendUrl = getFrontendUrl(req);
+    const resetUrl = `${frontendUrl}/reset-password/${resetToken}`;
+
+    console.log('Attempting to send password reset email to:', user.email);
+    console.log('Frontend URL (from CORS):', frontendUrl);
+    console.log('Reset URL:', resetUrl);
+
     const emailService = await import('../utils/emailService.js');
 
     // Send email in background without blocking response
     emailService.default.sendPasswordResetEmail(user, resetUrl)
       .then(() => {
-        console.log('Password reset email sent successfully to:', user.email);
+        console.log('✅ Password reset email sent successfully to:', user.email);
       })
       .catch((emailError) => {
-        console.error("Failed to send password reset email:", emailError);
+        console.error('❌ Failed to send password reset email to:', user.email);
+        console.error('Email error details:', emailError.message);
+        console.error('Full error:', emailError);
         // Note: We've already responded to the user, so we just log the error
         // In production, you might want to implement a retry mechanism or queue
       });
