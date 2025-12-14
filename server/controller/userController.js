@@ -148,6 +148,7 @@ export const signInUser = async (req, res) => {
 
     return res.status(200).json({
       message: "Login successful",
+      token, // Return token for debugging/fallback
       user: {
         id: user._id,
         fullName: user.fullName,

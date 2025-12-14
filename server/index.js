@@ -28,6 +28,9 @@ import courseCategoryRoutes from './routes/courseCategoryRoute.js'
 
 const app = express()
 
+// Trust proxy is required for Render/Heroku to correctly detect protocol (http vs https)
+app.set('trust proxy', 1);
+
 // Serve static files from uploads directory
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
