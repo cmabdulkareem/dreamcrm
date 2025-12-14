@@ -40,10 +40,7 @@ const courseSchema = new mongoose.Schema({
     type: Boolean,
     default: true
   },
-  brand: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Brand'
-  }
+  // brand: { type: mongoose.Schema.Types.ObjectId, ref: 'Brand' } // Removed for independence
 }, {
   timestamps: true
 });

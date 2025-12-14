@@ -16,7 +16,7 @@ router.get('/all', getAllCategories);
 
 // Protected routes (admin only)
 router.use(verifyToken);
-router.use(applyBrandFilter);
+// router.use(applyBrandFilter);
 
 router.post('/create', createCategory);
 router.put('/update/:id', updateCategory);

@@ -3,16 +3,8 @@ import courseCategoryModel from '../model/courseCategoryModel.js';
 // Get all categories
 export const getAllCategories = async (req, res) => {
     try {
-        const brandId = req.brandFilter?.brand || req.headers['x-brand-id'];
-
-        let finalQuery = {};
-        if (req.brandFilter) {
-            finalQuery = { ...req.brandFilter };
-        } else if (req.headers['x-brand-id']) {
-            finalQuery = { brand: req.headers['x-brand-id'] };
-        }
-
-        const categories = await courseCategoryModel.find(finalQuery).sort({ createdAt: -1 });
+        // Brand Independent: Fetch all categories regardless of brand
+        const categories = await courseCategoryModel.find({}).sort({ createdAt: -1 });
         return res.status(200).json({ categories });
     } catch (error) {
         console.error("Error fetching categories:", error);
@@ -33,8 +25,8 @@ export const createCategory = async (req, res) => {
         const newCategory = new courseCategoryModel({
             name,
             description,
-            isActive: isActive === 'true' || isActive === true,
-            brand: req.brandFilter?.brand || req.headers['x-brand-id'] || null
+            isActive: isActive === 'true' || isActive === true
+            // brand: Independent - removed
         });
 
         await newCategory.save();
