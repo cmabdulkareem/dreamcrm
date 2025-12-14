@@ -20,15 +20,23 @@ function AuthProvider({ children }) {
     return brand;
   });
 
-  // Axios interceptor to add x-brand-id header
+  // Axios interceptor to add x-brand-id and Authorization headers
   useEffect(() => {
     const interceptor = axios.interceptors.request.use((config) => {
+      // Add Brand ID
       if (selectedBrand && selectedBrand._id) {
         config.headers["x-brand-id"] = selectedBrand._id;
         if (selectedBrand.themeColor) {
           updateBrandTheme(selectedBrand.themeColor);
         }
       }
+
+      // Add Authorization Token (Fallback for cookies)
+      const token = localStorage.getItem("accessToken");
+      if (token) {
+        config.headers["Authorization"] = `Bearer ${token}`;
+      }
+
       return config;
     }, (error) => {
       return Promise.reject(error);
@@ -76,6 +84,10 @@ function AuthProvider({ children }) {
           setUser(null);
           setIsLoggedIn(false);
           setIsAdmin(false);
+          // Only clear token if we are sure auth failed (401)
+          if (err.response && err.response.status === 401) {
+            localStorage.removeItem("accessToken");
+          }
         }
       } finally {
         setLoading(false);
@@ -89,9 +101,15 @@ function AuthProvider({ children }) {
     setUser(userData);
   }
 
-  function login(userData, role) {
+  function login(userData, role, token) {
     setUser(userData);
     setIsLoggedIn(true);
+
+    // Save token to localStorage for fallback persistence
+    if (token) {
+      localStorage.setItem("accessToken", token);
+    }
+
     // Check if user has admin role (Owner or Admin) or isAdmin flag is true
     const userRoles = userData.roles || role || [];
     const rolesArray = Array.isArray(userRoles) ? userRoles : (typeof userRoles === 'string' ? [userRoles] : []);
@@ -108,6 +126,7 @@ function AuthProvider({ children }) {
     setUser(null);
     setSelectedBrand(null);
     localStorage.removeItem("selectedBrand");
+    localStorage.removeItem("accessToken"); // Clear token
     setLoading(false);
   }
 

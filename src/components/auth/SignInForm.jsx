@@ -42,7 +42,7 @@ export default function SignInForm() {
         timeout: 10000
       });
       console.log(data)
-      login(data.user, data.role);
+      login(data.user, data.role, data.token);
       navigate("/");
     } catch (err) {
       if (err.response && err.response.data && err.response.data.message) {
