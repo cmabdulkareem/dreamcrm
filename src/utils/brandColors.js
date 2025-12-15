@@ -6,6 +6,8 @@ import tinycolor from "tinycolor2";
  * 
  * @param {string} baseColor - The base hex color (e.g., "#ED1164")
  */
+export const ALL_BRANDS_THEME_COLOR = "#000000"; // Black theme for All Brands
+
 export const updateBrandTheme = (baseColor) => {
   if (!baseColor || !tinycolor(baseColor).isValid()) {
     return;
@@ -35,10 +37,10 @@ export const updateBrandTheme = (baseColor) => {
     // but for now we'll just set the full color string or specific format.
     // Tailwind v4 variable support is flexible, but v3 often likes `R G B` for opacity support.
     // Let's stick to standard CSS variables for now.
-    
+
     // However, the implementation plan mentioned `rgba(var(--color-brand-500), <alpha-value>)` in tailwind config.
     // To support that, we need to store just the `r g b` values.
-    
+
     const rgb = tinycolor(colorValue).toRgb();
     // Set variable --color-brand-{shade} to "r g b"
     root.style.setProperty(`--color-brand-${shade}`, `${rgb.r} ${rgb.g} ${rgb.b}`);

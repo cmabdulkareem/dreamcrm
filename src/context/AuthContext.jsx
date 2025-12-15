@@ -1,6 +1,6 @@
 import { createContext, useEffect, useState } from "react";
 import axios from "axios";
-import { updateBrandTheme } from "../utils/brandColors";
+import { updateBrandTheme, ALL_BRANDS_THEME_COLOR } from "../utils/brandColors";
 
 const AuthContext = createContext();
 import API from "../config/api";
@@ -16,6 +16,8 @@ function AuthProvider({ children }) {
     const brand = saved ? JSON.parse(saved) : null;
     if (brand && brand.themeColor) {
       updateBrandTheme(brand.themeColor);
+    } else {
+      updateBrandTheme(ALL_BRANDS_THEME_COLOR);
     }
     return brand;
   });
@@ -29,7 +31,10 @@ function AuthProvider({ children }) {
         if (selectedBrand.themeColor) {
           updateBrandTheme(selectedBrand.themeColor);
         }
+      } else {
+        updateBrandTheme(ALL_BRANDS_THEME_COLOR);
       }
+
 
       // Add Authorization Token (Fallback for cookies)
       const token = localStorage.getItem("accessToken");
@@ -136,6 +141,7 @@ function AuthProvider({ children }) {
       localStorage.setItem("selectedBrand", JSON.stringify(brand));
     } else {
       localStorage.removeItem("selectedBrand");
+      updateBrandTheme(ALL_BRANDS_THEME_COLOR);
     }
     // Optional: reload page to refresh all data immediately
     window.location.reload();
