@@ -7,6 +7,7 @@ import { ChatProvider } from "./context/ChatContext";
 import { CalendarProvider } from "./context/calendarContext";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
+import LoadingSpinner from "./components/common/LoadingSpinner";
 
 // Import pages
 import SignIn from "./pages/AuthPages/SignIn";
@@ -63,12 +64,12 @@ function App() {
                 <Routes>
                   {/* Authenticated Routes */}
                   <Route element={<ProtectedRoutes><AppLayout /></ProtectedRoutes>}>
-                    <Route index element={<Suspense fallback="Loading..."><Dashboard /></Suspense>} />
-                    <Route path="/dashboard" element={<Suspense fallback="Loading..."><Dashboard /></Suspense>} />
-                    <Route path="/ecommerce-dashboard" element={<Suspense fallback="Loading..."><EcommerceDashboard /></Suspense>} />
-                    <Route path="/calendar" element={<Suspense fallback="Loading..."><Calendar /></Suspense>} />
-                    <Route path="/email" element={<Suspense fallback="Loading..."><EmailInbox /></Suspense>} />
-                    <Route path="/blank" element={<Suspense fallback="Loading..."><Blank /></Suspense>} />
+                    <Route index element={<Suspense fallback={<LoadingSpinner />}><Dashboard /></Suspense>} />
+                    <Route path="/dashboard" element={<Suspense fallback={<LoadingSpinner />}><Dashboard /></Suspense>} />
+                    <Route path="/ecommerce-dashboard" element={<Suspense fallback={<LoadingSpinner />}><EcommerceDashboard /></Suspense>} />
+                    <Route path="/calendar" element={<Suspense fallback={<LoadingSpinner />}><Calendar /></Suspense>} />
+                    <Route path="/email" element={<Suspense fallback={<LoadingSpinner />}><EmailInbox /></Suspense>} />
+                    <Route path="/blank" element={<Suspense fallback={<LoadingSpinner />}><Blank /></Suspense>} />
 
                     {/* Settings */}
                     <Route path="/settings/campaigns" element={<ProtectedRoutes requireAdmin={true}><CampaignSettings /></ProtectedRoutes>} />

@@ -3,13 +3,14 @@ import { useChat } from '../../context/ChatContext';
 import { AuthContext } from '../../context/AuthContext';
 import { useContext } from 'react';
 import { isAdmin } from '../../utils/roleHelpers';
+import LoadingSpinner from '../common/LoadingSpinner';
 
 const GroupParticipants = ({ chat, participants, onAddParticipant, onRemoveParticipant, user }) => {
   const { contacts, deleteGroupChat } = useChat();
-  
+
   // Add safety check for chat
   if (!chat) {
-    return <div>Loading...</div>;
+    return <LoadingSpinner className="h-64" />;
   }
 
   const [{ isOver }, drop] = useDrop(() => ({
@@ -32,7 +33,7 @@ const GroupParticipants = ({ chat, participants, onAddParticipant, onRemoveParti
   };
 
   return (
-    <div 
+    <div
       ref={drop}
       className={`flex-1 overflow-y-auto p-2 ${isOver ? 'bg-blue-50 dark:bg-gray-700' : ''}`}
     >
@@ -49,17 +50,17 @@ const GroupParticipants = ({ chat, participants, onAddParticipant, onRemoveParti
           </button>
         )}
       </div>
-      
+
       {isOver && (
         <div className="text-center py-2 text-blue-500 dark:text-gray-300">
           Drop participant here to add to group
         </div>
       )}
-      
+
       <div className="space-y-2">
         {participants && participants.map((participant) => (
-          <div 
-            key={participant._id} 
+          <div
+            key={participant._id}
             className="flex items-center justify-between p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
           >
             <div className="flex items-center">
@@ -80,7 +81,7 @@ const GroupParticipants = ({ chat, participants, onAddParticipant, onRemoveParti
                 )}
               </div>
             </div>
-            
+
             {user && participant._id !== user._id && chat.participants && chat.participants.length > 2 && (
               <button
                 onClick={() => onRemoveParticipant(participant._id)}
@@ -94,7 +95,7 @@ const GroupParticipants = ({ chat, participants, onAddParticipant, onRemoveParti
           </div>
         ))}
       </div>
-      
+
       <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
         <h4 className="px-2 py-1 text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
           Add Participants

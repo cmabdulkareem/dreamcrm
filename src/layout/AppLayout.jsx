@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import LoadingSpinner from "../components/common/LoadingSpinner";
 import { SidebarProvider, useSidebar } from "../context/SidebarContext";
 import { Outlet } from "react-router-dom";
 import AppHeader from "./AppHeader";
@@ -21,7 +22,7 @@ const LayoutContent = () => {
       >
         <AppHeader />
         <div className="flex-1 p-4 md:p-6">
-          <Suspense fallback={<div className="p-4 flex justify-center text-gray-500">Loading...</div>}>
+          <Suspense fallback={<LoadingSpinner />}>
             <Outlet />
           </Suspense>
         </div>

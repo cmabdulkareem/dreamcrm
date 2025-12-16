@@ -1,4 +1,5 @@
 import { AuthContext } from "../context/AuthContext";
+import LoadingSpinner from "../components/common/LoadingSpinner";
 import { Navigate } from "react-router-dom";
 import { useContext } from "react";
 
@@ -6,7 +7,11 @@ function ProtectedRoutes({ children, requireAdmin = false }) {
     const { isLoggedIn, isAdmin, loading } = useContext(AuthContext);
 
     if (loading) {
-        return <h1>Loading...</h1>
+        return (
+            <div className="flex h-screen items-center justify-center">
+                <LoadingSpinner />
+            </div>
+        );
     }
 
     // If not logged in, redirect to signin
