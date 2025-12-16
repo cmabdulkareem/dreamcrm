@@ -64,10 +64,7 @@ app.use('/api/leaves', leaveRoutes)
 app.use('/api/announcements', announcementRoutes)
 app.use('/api/brands', brandRoutes)
 
-// Health check endpoint for self-ping
-app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
-});
+
 
 // Catch-all route to serve index.html for client-side routing
 app.use((req, res) => {
@@ -87,36 +84,4 @@ setupSocket(server)
 
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
-
-  // Self-ping to prevent Render.com free tier from sleeping
-  // Ping at random intervals between 10-14 minutes (Render free tier sleeps after 15 minutes)
-  if (process.env.NODE_ENV === 'production' && process.env.RENDER_EXTERNAL_URL) {
-    const MIN_INTERVAL = 10 * 60 * 1000; // 10 minutes in milliseconds
-    const MAX_INTERVAL = 14 * 60 * 1000; // 14 minutes in milliseconds
-
-    const schedulePing = () => {
-      // Generate random interval between MIN and MAX
-      const randomInterval = Math.floor(Math.random() * (MAX_INTERVAL - MIN_INTERVAL + 1)) + MIN_INTERVAL;
-      const minutesUntilPing = (randomInterval / 60000).toFixed(1);
-
-      setTimeout(async () => {
-        try {
-          const url = `${process.env.RENDER_EXTERNAL_URL}/api/health`;
-          const response = await fetch(url);
-          console.log(`Self-ping successful at ${new Date().toISOString()}: ${response.status}`);
-        } catch (error) {
-          console.error('Self-ping failed:', error.message);
-        }
-
-        // Schedule next ping
-        schedulePing();
-      }, randomInterval);
-
-      console.log(`Next self-ping scheduled in ${minutesUntilPing} minutes`);
-    };
-
-    // Start the ping cycle
-    schedulePing();
-    console.log('Self-ping mechanism activated (random intervals: 10-14 minutes)');
-  }
 });
