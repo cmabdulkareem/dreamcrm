@@ -2,6 +2,7 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb.jsx";
 import PageMeta from "../../components/common/PageMeta.jsx";
 import { useState, useEffect } from "react";
 import ComponentCard from "../../components/common/ComponentCard.jsx";
+import LoadingSpinner from "../../components/common/LoadingSpinner.jsx";
 import Button from "../../components/ui/button/Button.jsx";
 import Label from "../../components/form/Label.jsx";
 import Input from "../../components/form/input/InputField.jsx";
@@ -335,9 +336,7 @@ const CourseManagement = () => {
         <ComponentCard title={activeTab === 'courses' ? "Course List" : "Category List"}>
           {activeTab === 'courses' ? (
             loading ? (
-              <div className="flex justify-center items-center h-32">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>
-              </div>
+              <LoadingSpinner />
             ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -387,9 +386,7 @@ const CourseManagement = () => {
           ) : (
             // Category Table
             loadingCategories ? (
-              <div className="flex justify-center items-center h-32">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>
-              </div>
+              <LoadingSpinner />
             ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">

@@ -3,6 +3,7 @@ import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ComponentCard from '../../components/common/ComponentCard';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 import PageMeta from '../../components/common/PageMeta';
 import PageBreadcrumb from '../../components/common/PageBreadCrumb';
 import Label from '../../components/form/Label';
@@ -479,9 +480,7 @@ const ManageEvents = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-500"></div>
-      </div>
+      <LoadingSpinner />
     );
   }
 

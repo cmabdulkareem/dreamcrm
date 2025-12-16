@@ -3,6 +3,7 @@ import { AuthContext } from "../../context/AuthContext";
 import { useNotifications } from "../../context/NotificationContext";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
 import Button from "../../components/ui/button/Button";
 import Label from "../../components/form/Label";
 import { toast, ToastContainer } from "react-toastify";
@@ -271,9 +272,7 @@ const AnnouncementManagement = () => {
 
         <ComponentCard title="Announcements">
           {loading ? (
-            <div className="flex justify-center items-center h-32">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>
-            </div>
+            <LoadingSpinner />
           ) : filteredAnnouncements.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-gray-500 dark:text-gray-400">

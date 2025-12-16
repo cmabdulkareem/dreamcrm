@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ComponentCard from '../components/common/ComponentCard';
+import LoadingSpinner from '../components/common/LoadingSpinner';
 
 import API from "../config/api";
 
@@ -115,7 +116,7 @@ const EventRegistration = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <LoadingSpinner />
       </div>
     );
   }

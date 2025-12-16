@@ -10,6 +10,7 @@ import DatePicker from "../../components/form/date-picker.jsx";
 import SearchableCourseSelect from "../../components/form/SearchableCourseSelect.jsx";
 import SearchableLeadSelect from "../../components/form/SearchableLeadSelect.jsx";
 import Button from "../../components/ui/button/Button.jsx";
+import LoadingSpinner from "../../components/common/LoadingSpinner.jsx";
 import { AuthContext } from "../../context/AuthContext";
 import { useNotifications } from "../../context/NotificationContext";
 import axios from "axios";
@@ -520,7 +521,7 @@ export default function NewStudent() {
                     <Label>Select Converted Lead *</Label>
                     {loading ? (
                       <div className="flex items-center justify-center h-10 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-900 dark:border-white"></div>
+                        <LoadingSpinner className="" size="h-5 w-5" />
                         <span className="ml-2 text-gray-500 dark:text-gray-400">Loading converted leads...</span>
                       </div>
                     ) : (

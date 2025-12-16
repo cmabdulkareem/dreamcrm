@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, forwardRef } from "react";
 import Input from "./input/InputField";
+import LoadingSpinner from "../common/LoadingSpinner";
 import { ChevronDownIcon } from "../../icons";
 
 const SearchableLeadSelect = forwardRef(({
@@ -23,7 +24,7 @@ const SearchableLeadSelect = forwardRef(({
       setFilteredLeads(leads);
     } else {
       const term = searchTerm.toLowerCase();
-      const filtered = leads.filter(lead => 
+      const filtered = leads.filter(lead =>
         lead.fullName.toLowerCase().includes(term) ||
         lead.email.toLowerCase().includes(term) ||
         lead.phone1.includes(term)
@@ -105,7 +106,7 @@ const SearchableLeadSelect = forwardRef(({
         />
         <div className="absolute inset-y-0 right-0 flex items-center pr-3">
           {loading ? (
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900 dark:border-white"></div>
+            <LoadingSpinner className="" size="h-4 w-4" />
           ) : (
             <>
               <div className="flex items-center pr-2 border-r border-gray-300 dark:border-gray-700 mr-2">

@@ -11,6 +11,7 @@ import Label from "../../components/form/Label.jsx";
 import Input from "../../components/form/input/InputField.jsx";
 import Select from "../../components/form/Select.jsx";
 import MultiSelect from "../../components/form/MultiSelect";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
 import { AuthContext } from "../../context/AuthContext";
 import { isAdmin } from "../../utils/roleHelpers";
 
@@ -405,9 +406,7 @@ const UserManagement = () => {
       <div className="space-y-6">
         <ComponentCard title="User List">
           {loading ? (
-            <div className="flex justify-center items-center h-32">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>
-            </div>
+            <LoadingSpinner />
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">

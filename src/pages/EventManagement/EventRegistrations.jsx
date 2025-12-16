@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ComponentCard from '../../components/common/ComponentCard';
+import LoadingSpinner from '../../components/common/LoadingSpinner';
 import PageMeta from '../../components/common/PageMeta';
 import useGoBack from '../../hooks/useGoBack';
 
@@ -117,9 +118,7 @@ const EventRegistrations = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-brand-500"></div>
-      </div>
+      <LoadingSpinner />
     );
   }
 
@@ -169,8 +168,8 @@ const EventRegistrations = () => {
             <div className="border rounded-lg p-4">
               <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300">Status</h3>
               <span className={`px-2 py-1 rounded-full text-sm font-medium ${event?.isActive
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
-                  : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
+                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
+                : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
                 }`}>
                 {event?.isActive ? 'Active' : 'Inactive'}
               </span>

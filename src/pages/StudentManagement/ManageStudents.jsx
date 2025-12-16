@@ -2,6 +2,7 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb.jsx";
 import PageMeta from "../../components/common/PageMeta.jsx";
 import { useState, useEffect, useContext } from "react";
 import ComponentCard from "../../components/common/ComponentCard.jsx";
+import LoadingSpinner from "../../components/common/LoadingSpinner.jsx";
 import Button from "../../components/ui/button/Button.jsx";
 import { useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
@@ -158,9 +159,7 @@ export default function ManageStudents() {
 
         <ComponentCard title="Student List">
           {loading ? (
-            <div className="flex justify-center items-center h-32">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>
-            </div>
+            <LoadingSpinner />
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">

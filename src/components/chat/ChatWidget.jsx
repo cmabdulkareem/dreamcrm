@@ -4,6 +4,7 @@ import { AuthContext } from '../../context/AuthContext';
 import { useContext } from 'react';
 import DraggableParticipant from './DraggableParticipant';
 import GroupParticipants from './GroupParticipants';
+import LoadingSpinner from '../common/LoadingSpinner';
 import Badge from '../ui/badge/Badge'; // Import Badge component
 import { ChatIcon } from '../../icons'; // Import ChatIcon
 import { isAdmin, isOwner } from '../../utils/roleHelpers'; // Add this import
@@ -342,9 +343,7 @@ const ChatWidget = () => {
                     </div>
                   </div>
                   {loading ? (
-                    <div className="flex justify-center items-center h-20">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-500"></div>
-                    </div>
+                    <LoadingSpinner className="h-20" size="h-6 w-6" />
                   ) : (() => {
                     const userId = user ? (user._id || user.id) : null;
                     return onlineUsers.filter(contact => (contact._id || contact.id) !== userId).length === 0;
@@ -399,9 +398,7 @@ const ChatWidget = () => {
                 <div className="p-2 border-t border-gray-200 dark:border-gray-700">
                   <h4 className="px-2 py-1 text-sm font-medium text-gray-500 dark:text-gray-400">All Contacts</h4>
                   {loading ? (
-                    <div className="flex justify-center items-center h-20">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-500"></div>
-                    </div>
+                    <LoadingSpinner className="h-20" size="h-6 w-6" />
                   ) : contacts.length === 0 ? (
                     <div className="px-2 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                       No contacts available

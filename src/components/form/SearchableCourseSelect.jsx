@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, forwardRef } from "react";
 import axios from "axios";
 import Input from "./input/InputField";
+import LoadingSpinner from "../common/LoadingSpinner";
 import { ChevronDownIcon } from "../../icons";
 
 import API from "../../config/api";
@@ -130,7 +131,7 @@ const SearchableCourseSelect = forwardRef(({
         />
         <div className="absolute inset-y-0 right-0 flex items-center pr-3">
           {loading ? (
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900 dark:border-white"></div>
+            <LoadingSpinner className="" size="h-4 w-4" />
           ) : (
             <>
               <div className="flex items-center pr-2 border-r border-gray-300 dark:border-gray-700 mr-2">
