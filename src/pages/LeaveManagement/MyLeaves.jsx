@@ -45,10 +45,8 @@ const MyLeaves = () => {
                 const userId = user._id || user.id;
 
                 const myLeaves = fetchedLeaves.filter(leave =>
-                    (employeeCode && leave.employeeId === employeeCode) ||
-                    (userId && leave.employeeId === userId) ||
-                    (leave.userId === userId)
-                    // Also check if employeeId matches roughly (sometimes strict string diffs fail on generic IDs)
+                    (employeeCode && (leave.employeeCode === employeeCode || leave.employeeId === employeeCode)) ||
+                    (userId && (leave.userId === userId || leave.userId?._id === userId || leave.employeeId === userId))
                 );
 
                 setLeaves(myLeaves);

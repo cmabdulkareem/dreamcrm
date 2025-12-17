@@ -83,7 +83,7 @@ const ApplyLeave = () => {
             setLoading(true);
             const leaveData = {
                 employeeName: user.fullName || 'Unknown',
-                employeeId: user.employeeCode || 'N/A', // Fallback to N/A instead of internal ID
+                employeeCode: user.employeeCode || 'N/A', // Use correct key
                 leaveType: formData.leaveType,
                 startDate: startDate.toISOString(),
                 endDate: endDate.toISOString(),

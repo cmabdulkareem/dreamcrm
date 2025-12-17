@@ -12,7 +12,7 @@ const leaveSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  employeeId: {
+  employeeCode: {
     type: String,
     required: true,
     trim: true

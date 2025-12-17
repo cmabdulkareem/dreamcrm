@@ -80,7 +80,7 @@ export const createLeave = async (req, res) => {
   try {
     const {
       employeeName,
-      employeeId,
+      employeeCode,
       leaveType,
       startDate,
       endDate,
@@ -88,9 +88,9 @@ export const createLeave = async (req, res) => {
     } = req.body;
 
     // Validate required fields
-    if (!employeeName || !employeeId || !leaveType || !startDate || !endDate || !reason) {
+    if (!employeeName || !employeeCode || !leaveType || !startDate || !endDate || !reason) {
       return res.status(400).json({
-        message: "All fields are required: employeeName, employeeId, leaveType, startDate, endDate, and reason"
+        message: "All fields are required: employeeName, employeeCode, leaveType, startDate, endDate, and reason"
       });
     }
 
@@ -119,7 +119,7 @@ export const createLeave = async (req, res) => {
     const newLeave = new leaveModel({
       ticketNumber,
       employeeName: employeeName.trim(),
-      employeeId: employeeId.trim(),
+      employeeCode: employeeCode.trim(),
       leaveType,
       startDate: start,
       endDate: end,
