@@ -202,7 +202,11 @@ const AppSidebar = () => {
       "Brand Management",
       "Edit Profile",
       "Sign In", // If present
-      "Sign Up"  // If present
+      "Sign Up",  // If present
+      "Dashboard",
+      "Leads & Conversions",
+      "Student Performance (beta)",
+      "Revenue Snapshot (beta)"
     ];
     return globalModules.includes(name);
   };
