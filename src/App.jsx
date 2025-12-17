@@ -90,12 +90,12 @@ function App() {
                     <Route path="/events/:id/registrations" element={<ProtectedRoutes requireAdmin={true}><EventRegistrations /></ProtectedRoutes>} />
 
                     {/* Leave Management */}
-                    <Route path="/leave-management" element={<ProtectedRoutes><LeaveManagement /></ProtectedRoutes>}>
-                      <Route index element={<LeaveManagement />} />
-                      <Route path="apply" element={<ApplyLeave />} />
-                      <Route path="my-leaves" element={<MyLeaves />} />
-                      {/* Maintain 'requests' for backward compatibility or admin specific view if needed, but 'index' covers Manage Leaves */}
-                      <Route path="requests" element={<LeaveManagement />} />
+                    {/* Leave Management */}
+                    <Route path="/leave-management">
+                      <Route index element={<ProtectedRoutes><LeaveManagement /></ProtectedRoutes>} />
+                      <Route path="apply" element={<ProtectedRoutes><ApplyLeave /></ProtectedRoutes>} />
+                      <Route path="my-leaves" element={<ProtectedRoutes><MyLeaves /></ProtectedRoutes>} />
+                      <Route path="requests" element={<ProtectedRoutes><LeaveManagement /></ProtectedRoutes>} />
                     </Route>
 
                     {/* Forms */}
