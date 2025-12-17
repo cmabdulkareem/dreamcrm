@@ -4,6 +4,7 @@ import { updateBrandTheme, ALL_BRANDS_THEME_COLOR } from "../utils/brandColors";
 
 const AuthContext = createContext();
 import API from "../config/api";
+import { hasRole, isManager, isOwner } from "../utils/roleHelpers";
 
 function AuthProvider({ children }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -142,9 +143,15 @@ function AuthProvider({ children }) {
         if (defaultBrand.themeColor) {
           updateBrandTheme(defaultBrand.themeColor);
         }
-        // Force hard navigation to ensure clean state
-        window.location.href = '/course-curriculum';
-        return;
+
+        // Redirect to course-curriculum ONLY for strict Faculty users
+        const isFaculty = hasRole(userData, "Faculty / Trainers") && !isManager(userData) && !userData.isAdmin && !isOwner(userData);
+
+        if (isFaculty) {
+          // Force hard navigation to ensure clean state
+          window.location.href = '/course-curriculum';
+          return;
+        }
       }
     }
 
