@@ -1,7 +1,8 @@
-import { lazy, Suspense } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { lazy, Suspense, useContext } from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoutes from "./routes/ProtectedRoutes";
-import AuthProvider from "./context/AuthContext";
+import { AuthContext } from "./context/AuthContext";
+import { hasRole, isManager } from "./utils/roleHelpers";
 import { NotificationProvider } from "./context/NotificationContext";
 import { ChatProvider } from "./context/ChatContext";
 import { CalendarProvider } from "./context/calendarContext";
@@ -56,6 +57,8 @@ import ChatWidget from "./components/chat/ChatWidget";
 import BrandManagement from "./components/brandManagement/BrandManagement";
 
 function App() {
+  const { user } = useContext(AuthContext);
+  const isFaculty = user && hasRole(user, "Faculty / Trainers") && !isManager(user);
   return (
     <>
       <NotificationProvider>
@@ -66,8 +69,8 @@ function App() {
                 <Routes>
                   {/* Authenticated Routes */}
                   <Route element={<ProtectedRoutes><AppLayout /></ProtectedRoutes>}>
-                    <Route index element={<Suspense fallback={<LoadingSpinner />}><Dashboard /></Suspense>} />
-                    <Route path="/dashboard" element={<Suspense fallback={<LoadingSpinner />}><Dashboard /></Suspense>} />
+                    <Route index element={isFaculty ? <Navigate to="/calendar" replace /> : <Suspense fallback={<LoadingSpinner />}><Dashboard /></Suspense>} />
+                    <Route path="/dashboard" element={isFaculty ? <Navigate to="/calendar" replace /> : <Suspense fallback={<LoadingSpinner />}><Dashboard /></Suspense>} />
                     <Route path="/ecommerce-dashboard" element={<Suspense fallback={<LoadingSpinner />}><EcommerceDashboard /></Suspense>} />
                     <Route path="/calendar" element={<Suspense fallback={<LoadingSpinner />}><Calendar /></Suspense>} />
                     <Route path="/email" element={<Suspense fallback={<LoadingSpinner />}><EmailInbox /></Suspense>} />
