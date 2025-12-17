@@ -24,7 +24,7 @@ import {
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import SidebarWidget from "./SidebarWidget";
-import { isManager } from "../utils/roleHelpers";
+import { isManager, hasRole } from "../utils/roleHelpers";
 
 const navItems = [
   {
@@ -212,6 +212,11 @@ const AppSidebar = () => {
         // Determine if this item or any of its subitems are enabled
         // If it's a parent menu (like Settings), checks if it has AT LEAST ONE enabled child or is itself global
         const isParentEnabled = selectedBrand || isGlobalItem(nav.name) || (nav.subItems && nav.subItems.some(sub => isGlobalItem(sub.name)));
+
+        // Hide Lead Management for Faculty / Trainers
+        if (nav.name === "Lead Management" && hasRole(user, "Faculty / Trainers")) {
+          return null;
+        }
 
         // Disable style
         const itemDisabledClass = !isParentEnabled ? "opacity-40 cursor-not-allowed pointer-events-none" : "";
