@@ -29,7 +29,9 @@ const generateTicketNumber = async () => {
 export const getAllLeaves = async (req, res) => {
   try {
     const query = { ...req.brandFilter };
-    const leaves = await leaveModel.find(query).sort({ createdAt: -1 });
+    const leaves = await leaveModel.find(query)
+      .populate('userId', 'fullName employeeCode')
+      .sort({ createdAt: -1 });
     return res.status(200).json({
       success: true,
       leaves: leaves || []
@@ -122,7 +124,10 @@ export const createLeave = async (req, res) => {
       startDate: start,
       endDate: end,
       reason: reason.trim(),
-      brand: req.headers['x-brand-id'] || req.body.brandId || null // Try to capture brand context
+      endDate: end,
+      reason: reason.trim(),
+      brand: req.headers['x-brand-id'] || req.body.brandId || null, // Try to capture brand context
+      userId: req.user ? req.user._id : null
     });
 
     await newLeave.save();
