@@ -73,19 +73,9 @@ function AuthProvider({ children }) {
         setIsAdmin(isAdminUser);
 
         // If no brand selected, and user has brands, select the first one (or 'all' for admin)
-        // If no brand selected, and user has brands, select the first one
-        if (!selectedBrand && user.brands && user.brands.length > 0) {
-          // For non-admins/owners, FORCE selection of the first brand if none selected
-          // This prevents them from being stuck in "All Brands" mode which they might not have access to
-          if (!isAdminUser) {
-            const defaultBrand = user.brands[0];
-            setSelectedBrand(defaultBrand);
-            localStorage.setItem("selectedBrand", JSON.stringify(defaultBrand));
-            if (defaultBrand.themeColor) {
-              updateBrandTheme(defaultBrand.themeColor);
-            }
-          }
-        }
+        // If no brand selected, and user has brands, select the first one (or 'all' for admin)
+        // Logic removed to allow "All Brands" (null) for all users
+
 
       } catch (err) {
         console.error("Auth check error:", err);
@@ -135,25 +125,15 @@ function AuthProvider({ children }) {
     setIsAdmin(isAdminUser);
 
     // Auto-select brand for non-admin users if none selected
+    // Auto-select brand logic removed to allow "All Brands" by default
+    /*
     if (!selectedBrand && userData.brands && userData.brands.length > 0) {
       if (!isAdminUser) {
-        const defaultBrand = userData.brands[0];
-        setSelectedBrand(defaultBrand);
-        localStorage.setItem("selectedBrand", JSON.stringify(defaultBrand));
-        if (defaultBrand.themeColor) {
-          updateBrandTheme(defaultBrand.themeColor);
-        }
-
-        // Redirect to course-curriculum ONLY for strict Faculty users
-        const isFaculty = hasRole(userData, "Faculty / Trainers") && !isManager(userData) && !userData.isAdmin && !isOwner(userData);
-
-        if (isFaculty) {
-          // Force hard navigation to ensure clean state
-          window.location.href = '/course-curriculum';
-          return;
-        }
+         // ... previously forced selection
       }
     }
+    */
+
 
     setLoading(false);
   }

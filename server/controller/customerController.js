@@ -136,7 +136,7 @@ export const getConvertedCustomers = async (req, res) => {
     const hasAdminAccess = isAdmin(req.user);
     const hasManagerAccess = isManager(req.user);
 
-    let query = { leadStatus: 'converted' };
+    let query = { ...req.brandFilter, leadStatus: 'converted' };
 
     // If user is not admin or manager, only show leads assigned to them
     if (!hasAdminAccess && !hasManagerAccess) {
@@ -406,8 +406,8 @@ export const markRemarkAsRead = async (req, res) => {
 // Get total leads count across all users
 export const getAllLeadsCount = async (req, res) => {
   try {
-    // Count all customers/leads in the database
-    const totalCount = await customerModel.countDocuments();
+    // Count customers/leads based on brand filter
+    const totalCount = await customerModel.countDocuments(req.brandFilter || {});
 
     return res.status(200).json({
       count: totalCount,
@@ -422,8 +422,8 @@ export const getAllLeadsCount = async (req, res) => {
 // Get brand-wide conversion metrics
 export const getBrandConversionMetrics = async (req, res) => {
   try {
-    // Get all customers/leads in the database (not filtered by user)
-    const allCustomers = await customerModel.find();
+    // Get customers/leads based on brand filter
+    const allCustomers = await customerModel.find(req.brandFilter || {});
 
     // Total leads count across all users
     const totalLeads = allCustomers.length;
@@ -449,8 +449,8 @@ export const getBrandConversionMetrics = async (req, res) => {
 // Get all customers without user filtering (for brand-wide metrics)
 export const getAllCustomersUnfiltered = async (req, res) => {
   try {
-    // Get all customers/leads in the database without any user filtering
-    const customers = await customerModel.find()
+    // Get customers/leads based on brand filter (but not filtered by assignedTo)
+    const customers = await customerModel.find(req.brandFilter || {})
       .populate('assignedTo', 'fullName email')
       .populate('assignedBy', 'fullName email')
       .sort({ createdAt: -1 });

@@ -384,7 +384,7 @@ const AppHeader = () => {
                     }
                   }}
                 >
-                  {isAdmin(currentUser) && <option value="">All Brands</option>}
+                  {(isAdmin(currentUser) || currentUser.brands.length > 1) && <option value="">All Brands</option>}
                   {currentUser.brands.map((brand) => (
                     <option key={brand._id} value={brand._id}>
                       {brand.name}
