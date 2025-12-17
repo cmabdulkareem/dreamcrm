@@ -167,6 +167,8 @@ export const signInUser = async (req, res) => {
         dob: user.dob,
         designation: user.designation,
         accountStatus: user.accountStatus,
+        accountStatus: user.accountStatus,
+        employeeCode: user.employeeCode, // Include employeeCode
         brands: user.brands || [] // Include brands in login response
       },
       role: user.roles
@@ -254,7 +256,9 @@ export const authCheck = async (req, res) => {
         gender: user.gender,
         dob: user.dob,
         designation: user.designation,
+        designation: user.designation,
         accountStatus: user.accountStatus,
+        employeeCode: user.employeeCode, // Include employeeCode
         brands: user.brands || [] // Include brand information
       },
       role: user.roles
