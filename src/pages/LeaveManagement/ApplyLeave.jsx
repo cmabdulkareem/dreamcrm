@@ -82,8 +82,8 @@ const ApplyLeave = () => {
         try {
             setLoading(true);
             const leaveData = {
-                employeeName: user.name || user.username || 'Unknown', // Fallback
-                employeeId: user.employeeId || user.id || user._id, // Fallback
+                employeeName: user.fullName || 'Unknown',
+                employeeId: user.employeeCode || 'N/A', // Fallback to N/A instead of internal ID
                 leaveType: formData.leaveType,
                 startDate: startDate.toISOString(),
                 endDate: endDate.toISOString(),
@@ -138,13 +138,13 @@ const ApplyLeave = () => {
                                 <div>
                                     <Label>Employee Name</Label>
                                     <div className="px-4 py-2.5 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-600 dark:text-gray-400">
-                                        {user?.name || user?.username || 'Loading...'}
+                                        {user?.fullName || 'Loading...'}
                                     </div>
                                 </div>
                                 <div>
                                     <Label>Employee ID</Label>
                                     <div className="px-4 py-2.5 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-600 dark:text-gray-400">
-                                        {user?.employeeId || user?.id || user?._id || 'Loading...'}
+                                        {user?.employeeCode || 'Not Assigned'}
                                     </div>
                                 </div>
                             </div>
