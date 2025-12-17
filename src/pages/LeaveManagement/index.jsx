@@ -17,6 +17,7 @@ import API from "../../config/api";
 const LeaveManagement = () => {
   const { user, isAdmin } = useContext(AuthContext);
   const [leaves, setLeaves] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [showEditForm, setShowEditForm] = useState(false);
   const [currentLeaveId, setCurrentLeaveId] = useState(null);
@@ -614,6 +615,15 @@ const LeaveManagement = () => {
           ) : (
             <ComponentCard title="Manage Leave Requests">
               <div className="container mx-auto px-4 py-8">
+                <div className="mb-6">
+                  <input
+                    type="text"
+                    placeholder="Search by Name or Brand..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300"
+                  />
+                </div>
                 {loading ? (
                   <div className="text-center py-12">
                     <p className="text-gray-500 dark:text-gray-400">Loading leave requests...</p>
@@ -636,7 +646,12 @@ const LeaveManagement = () => {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-900 dark:divide-gray-700">
-                        {leaves.map((leave) => (
+                        {leaves.filter(leave => {
+                          const term = searchTerm.toLowerCase();
+                          const name = leave.userId?.fullName || leave.employeeName || '';
+                          const brandName = leave.brand?.name || '';
+                          return name.toLowerCase().includes(term) || brandName.toLowerCase().includes(term);
+                        }).map((leave) => (
                           <tr key={leave._id}>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="text-sm font-medium text-gray-900 dark:text-white">{leave.userId?.fullName || leave.employeeName}</div>

@@ -31,6 +31,7 @@ export const getAllLeaves = async (req, res) => {
     const query = { ...req.brandFilter };
     const leaves = await leaveModel.find(query)
       .populate('userId', 'fullName employeeCode')
+      .populate('brand', 'name')
       .sort({ createdAt: -1 });
     return res.status(200).json({
       success: true,
