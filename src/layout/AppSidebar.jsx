@@ -68,8 +68,9 @@ const navItems = [
     icon: <GroupIcon />,
     name: "Leave Management",
     subItems: [
+      { name: "Apply Leave", path: "/leave-management/apply", pro: false },
+      { name: "My Leaves", path: "/leave-management/my-leaves", pro: false },
       { name: "Manage Leaves", path: "/leave-management", pro: false },
-      { name: "Leave Requests", path: "/leave-management/requests", pro: false }
     ]
   },
   { icon: <MailIcon />, name: "Email", path: "/email" },

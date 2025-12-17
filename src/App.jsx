@@ -50,6 +50,8 @@ const BarChart = lazy(() => import("./pages/Charts/BarChart"));
 const EventRegistration = lazy(() => import("./pages/EventRegistration"));
 const LeaveRequestPortal = lazy(() => import("./pages/LeaveRequestPortal"));
 const LeaveStatusCheck = lazy(() => import("./pages/LeaveStatusCheck"));
+const ApplyLeave = lazy(() => import("./pages/LeaveManagement/ApplyLeave"));
+const MyLeaves = lazy(() => import("./pages/LeaveManagement/MyLeaves"));
 import ChatWidget from "./components/chat/ChatWidget";
 import BrandManagement from "./components/brandManagement/BrandManagement";
 
@@ -88,8 +90,11 @@ function App() {
                     <Route path="/events/:id/registrations" element={<ProtectedRoutes requireAdmin={true}><EventRegistrations /></ProtectedRoutes>} />
 
                     {/* Leave Management */}
-                    <Route path="/leave-management" element={<ProtectedRoutes requireAdmin={true}><LeaveManagement /></ProtectedRoutes>}>
+                    <Route path="/leave-management" element={<ProtectedRoutes><LeaveManagement /></ProtectedRoutes>}>
                       <Route index element={<LeaveManagement />} />
+                      <Route path="apply" element={<ApplyLeave />} />
+                      <Route path="my-leaves" element={<MyLeaves />} />
+                      {/* Maintain 'requests' for backward compatibility or admin specific view if needed, but 'index' covers Manage Leaves */}
                       <Route path="requests" element={<LeaveManagement />} />
                     </Route>
 
@@ -130,8 +135,6 @@ function App() {
 
                   {/* Public Routes */}
                   <Route path="/event-registration/:link" element={<EventRegistration />} />
-                  <Route path="/leave-request" element={<LeaveRequestPortal />} />
-                  <Route path="/leave-status-check" element={<LeaveStatusCheck />} />
                 </Routes>
               </Router>
               <ChatWidget />
