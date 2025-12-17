@@ -132,6 +132,19 @@ function AuthProvider({ children }) {
       rolesArray.includes('Owner') ||
       rolesArray.includes('Admin');
     setIsAdmin(isAdminUser);
+
+    // Auto-select brand for non-admin users if none selected
+    if (!selectedBrand && userData.brands && userData.brands.length > 0) {
+      if (!isAdminUser) {
+        const defaultBrand = userData.brands[0];
+        setSelectedBrand(defaultBrand);
+        localStorage.setItem("selectedBrand", JSON.stringify(defaultBrand));
+        if (defaultBrand.themeColor) {
+          updateBrandTheme(defaultBrand.themeColor);
+        }
+      }
+    }
+
     setLoading(false);
   }
 
