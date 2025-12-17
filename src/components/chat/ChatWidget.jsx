@@ -260,7 +260,7 @@ const ChatWidget = () => {
           onClick={toggleChat}
           className="flex items-center justify-center w-14 h-14 rounded-full bg-brand-600 text-white shadow-lg hover:bg-brand-700 transition-all"
         >
-          <ChatIcon className="h-6 w-6" />
+          <ChatBubbleLeftRightIcon className="h-6 w-6" />
           {/* Show notification badge if there are unread messages */}
           {hasUnreadMessages && (
             <span className="absolute -top-1 -right-1 flex h-5 w-5">
