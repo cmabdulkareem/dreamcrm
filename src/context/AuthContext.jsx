@@ -142,6 +142,9 @@ function AuthProvider({ children }) {
         if (defaultBrand.themeColor) {
           updateBrandTheme(defaultBrand.themeColor);
         }
+        // Force hard navigation to ensure clean state
+        window.location.href = '/';
+        return;
       }
     }
 
