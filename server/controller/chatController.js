@@ -2,7 +2,7 @@ import Chat from '../model/chatModel.js';
 import Message from '../model/messageModel.js';
 import User from '../model/userModel.js';
 import mongoose from 'mongoose';
-import { emitMessageToUsers, emitChatUpdateToUsers } from '../realtime/socket.js';
+import { emitMessageToUsers, emitChatUpdateToUsers, emitMessageUpdate, emitMessageDelete } from '../realtime/socket.js';
 import { isAdmin } from '../utils/roleHelpers.js';
 
 // Get or create a chat between two users
@@ -133,7 +133,7 @@ export const getMessages = async (req, res) => {
 // Send a message
 export const sendMessage = async (req, res) => {
   try {
-    const { chatId, text } = req.body;
+    const { chatId, text, replyTo, mentions } = req.body;
     const currentUserId = req.user.id;
 
     if (!chatId || !text || !text.trim()) {
@@ -161,6 +161,8 @@ export const sendMessage = async (req, res) => {
       chat: chatId,
       sender: currentUserId,
       text: text.trim(),
+      replyTo: replyTo || null,
+      mentions: mentions || [],
       readBy: [{
         user: currentUserId,
         readAt: new Date()
@@ -168,8 +170,17 @@ export const sendMessage = async (req, res) => {
     });
 
     await message.save();
-    // Populate sender with avatar field
-    await message.populate('sender', 'fullName email avatar');
+    // Populate sender, replyTo, and mentions
+    await message.populate([
+      { path: 'sender', select: 'fullName email avatar' },
+      { path: 'replyTo', select: 'text sender' },
+      { path: 'mentions', select: 'fullName email avatar' }
+    ]);
+
+    // Also populate sender inside replyTo
+    if (message.replyTo) {
+      await message.populate('replyTo.sender', 'fullName email avatar');
+    }
 
     // Update chat's last message
     chat.lastMessage = {
@@ -196,9 +207,16 @@ export const sendMessage = async (req, res) => {
         id: message.sender._id.toString(),
         fullName: message.sender.fullName,
         email: message.sender.email,
-        // Include avatar in the sender data
         avatar: message.sender.avatar || null
-      }
+      },
+      replyTo: message.replyTo ? {
+        _id: message.replyTo._id,
+        text: message.replyTo.text,
+        sender: message.replyTo.sender
+      } : null,
+      mentions: message.mentions || [],
+      isEdited: message.isEdited,
+      editedAt: message.editedAt
     };
 
     // Emit message to recipients via Socket.IO
@@ -394,7 +412,7 @@ export const removeParticipantFromGroup = async (req, res) => {
     await chat.save();
     await chat.populate('participants', 'fullName email avatar');
 
-    // Emit chat update to all participants
+    // Emit chat update to REMAINING participants
     const chatUpdateData = {
       _id: chat._id.toString(),
       id: chat._id.toString(),
@@ -409,6 +427,15 @@ export const removeParticipantFromGroup = async (req, res) => {
       }))
     };
     emitChatUpdateToUsers(chat.participants.map(p => p.toString()), chatUpdateData);
+
+    // Emit chat update/removal to the REMOVED participant
+    // We send the same "deleted" signal or a special "removed" signal
+    const chatRemovedData = {
+      _id: chat._id.toString(),
+      id: chat._id.toString(),
+      type: 'deleted' // Using deleted type forces the client to remove it
+    };
+    emitChatUpdateToUsers([participantId], chatRemovedData);
 
     return res.status(200).json({ chat });
   } catch (error) {
@@ -585,11 +612,98 @@ export const deleteMessage = async (req, res) => {
     }
 
     // Delete the message
-    await Message.findByIdAndDelete(messageId);
+    // Emit message deletion to all participants
+    // We need the chat participants to know who to send the event to
+    const participantIds = chat.participants.map(p => p.toString());
+    emitMessageDelete(participantIds, messageId, messageToCheck.chat.toString());
 
     return res.status(200).json({ message: "Message deleted successfully" });
   } catch (error) {
     console.error("Error deleting message:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Update a message
+export const updateMessage = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { text } = req.body;
+    const currentUserId = req.user.id;
+
+    if (!text || !text.trim()) {
+      return res.status(400).json({ message: "Message text is required" });
+    }
+
+    // Find message
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ message: "Message not found" });
+    }
+
+    // Verify ownership
+    if (message.sender.toString() !== currentUserId) {
+      return res.status(403).json({ message: "Access denied. You can only edit your own messages." });
+    }
+
+    // Verify permission via chat brand
+    const chat = await Chat.findOne({
+      _id: message.chat,
+      ...req.brandFilter
+    });
+
+    if (!chat) {
+      return res.status(403).json({ message: "Access denied or chat not found" });
+    }
+
+    // Update message
+    message.text = text.trim();
+    message.isEdited = true;
+    message.editedAt = new Date();
+    await message.save();
+
+    // Populate necessary fields for frontend
+    await message.populate([
+      { path: 'sender', select: 'fullName email avatar' },
+      { path: 'replyTo', select: 'text sender' },
+      { path: 'mentions', select: 'fullName email avatar' }
+    ]);
+
+    if (message.replyTo) {
+      await message.populate('replyTo.sender', 'fullName email avatar');
+    }
+
+    // Format message for Socket.IO
+    const messageData = {
+      _id: message._id.toString(),
+      id: message._id.toString(),
+      chatId: message.chat.toString(),
+      text: message.text,
+      createdAt: message.createdAt,
+      sender: {
+        _id: message.sender._id.toString(),
+        id: message.sender._id.toString(),
+        fullName: message.sender.fullName,
+        email: message.sender.email,
+        avatar: message.sender.avatar || null
+      },
+      replyTo: message.replyTo ? {
+        _id: message.replyTo._id,
+        text: message.replyTo.text,
+        sender: message.replyTo.sender
+      } : null,
+      mentions: message.mentions || [],
+      isEdited: message.isEdited,
+      editedAt: message.editedAt
+    };
+
+    // Emit update to all participants
+    const participantIds = chat.participants.map(p => p.toString());
+    emitMessageUpdate(participantIds, messageData);
+
+    return res.status(200).json({ message });
+  } catch (error) {
+    console.error("Error updating message:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };

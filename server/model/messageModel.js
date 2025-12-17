@@ -27,7 +27,24 @@ const messageSchema = new mongoose.Schema(
         type: Date,
         default: Date.now
       }
-    }]
+    }],
+    replyTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Message',
+      default: null
+    },
+    mentions: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }],
+    isEdited: {
+      type: Boolean,
+      default: false
+    },
+    editedAt: {
+      type: Date,
+      default: null
+    }
   },
   {
     timestamps: true

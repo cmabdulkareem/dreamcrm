@@ -6,7 +6,22 @@ import DraggableParticipant from './DraggableParticipant';
 import GroupParticipants from './GroupParticipants';
 import LoadingSpinner from '../common/LoadingSpinner';
 import Badge from '../ui/badge/Badge'; // Import Badge component
-import { ChatIcon } from '../../icons'; // Import ChatIcon
+import {
+  ChatBubbleLeftRightIcon,
+  XMarkIcon,
+  PaperAirplaneIcon,
+  UserGroupIcon,
+  UserIcon,
+  EllipsisVerticalIcon,
+  PhoneIcon,
+  VideoCameraIcon,
+  MagnifyingGlassIcon,
+  PlusIcon,
+  ArrowLeftIcon,
+  TrashIcon,
+  PencilIcon, // Edit icon
+  ArrowUturnLeftIcon // Reply icon
+} from "@heroicons/react/24/outline"; // Replaced ChatIcon with Heroicons
 import { isAdmin, isOwner } from '../../utils/roleHelpers'; // Add this import
 
 const ChatWidget = () => {
@@ -33,6 +48,7 @@ const ChatWidget = () => {
     deleteGroupChat,
     deleteChat,
     deleteMessage,
+    editMessage,
     fetchUsers,
     setShowContacts,
     setShowGroupParticipants,
@@ -44,6 +60,8 @@ const ChatWidget = () => {
   const messagesEndRef = useRef(null);
   const [selectedParticipants, setSelectedParticipants] = useState([]);
   const [isSelectingParticipants, setIsSelectingParticipants] = useState(false);
+  const [replyingTo, setReplyingTo] = useState(null); // Message object being replied to
+  const [editingMessage, setEditingMessage] = useState(null); // Message object being edited
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -68,15 +86,40 @@ const ChatWidget = () => {
 
   const handleSendMessage = (e) => {
     e.preventDefault();
-    if (newMessage.trim() && activeChat) {
-      sendMessage(activeChat.id, newMessage);
-      setNewMessage('');
+    if (!newMessage.trim()) return;
 
-      // Scroll to bottom after sending message
-      setTimeout(() => {
-        scrollToBottom();
-      }, 100);
+    if (editingMessage) {
+      editMessage(editingMessage.id, activeChat.id, newMessage);
+      setEditingMessage(null);
+    } else {
+      sendMessage(activeChat.id, newMessage, replyingTo ? replyingTo.id : null);
+      setReplyingTo(null);
     }
+
+    setMessageText("");
+    setTimeout(() => {
+      scrollToBottom();
+    }, 100);
+  };
+
+  const startReply = (message) => {
+    setReplyingTo(message);
+    setEditingMessage(null);
+    // setMessageMenuOpen(null); // Assuming this state exists elsewhere
+    // Focus input
+  };
+
+  const startEdit = (message) => {
+    setEditingMessage(message);
+    setReplyingTo(null);
+    setMessageText(message.text);
+    setNewMessage(message.text);
+  };
+
+  const cancelAction = () => {
+    setReplyingTo(null);
+    setEditingMessage(null);
+    setNewMessage("");
   };
 
   const handleStartChat = async (contact) => {
@@ -479,62 +522,111 @@ const ChatWidget = () => {
                             key={message.sender.avatar}
                           />
                         )}
-                        <div
-                          className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${isOwnMessage
-                            ? 'bg-gray-700 text-white rounded-br-none'
-                            : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-bl-none'
-                            }`}
-                        >
-                          {!isOwnMessage && (
-                            <p className="text-xs font-medium">{message.sender.fullName}</p>
+                        <div className={`flex flex-col ${isOwnMessage ? 'items-end' : 'items-start'} max-w-[70%]`}>
+                          {/* Reply Context */}
+                          {message.replyTo && (
+                            <div className={`text-xs mb-1 p-2 rounded border-l-2 w-full ${isOwnMessage ? 'bg-indigo-50 border-indigo-300 text-indigo-800' : 'bg-gray-50 border-gray-300 text-gray-600'}`}>
+                              <p className="font-bold">{message.replyTo.sender?.fullName || 'Unknown'}</p>
+                              <p className="truncate line-clamp-1">{message.replyTo.text}</p>
+                            </div>
                           )}
-                          <p>{message.text}</p>
-                          <p className={`text-xs mt-1 ${isOwnMessage ? 'text-gray-300' : 'text-gray-500 dark:text-gray-300'}`}>
-                            {formatTime(message.timestamp)}
-                          </p>
-                        </div>
-                        {/* Delete button (Owner only, visible on hover) */}
-                        {isOwner(user) && (
-                          <button
-                            onClick={() => {
-                              if (confirm('Delete this message?')) {
-                                deleteMessage(message.id, activeChat.id).catch(err => {
-                                  alert('Failed: ' + (err.response?.data?.message || err.message));
-                                });
-                              }
-                            }}
-                            className="ml-2 opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 transition-opacity"
-                            title="Delete message"
+
+                          <div
+                            className={`relative px-4 py-2 rounded-lg break-words text-sm w-full ${isOwnMessage
+                              ? 'bg-gray-700 text-white rounded-br-none'
+                              : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-bl-none'
+                              }`}
                           >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                            </svg>
-                          </button>
-                        )}
+                            {!isOwnMessage && (
+                              <p className="text-xs font-medium mb-1">{message.sender.fullName}</p>
+                            )}
+                            <p>{message.text}</p>
+                            <div className="flex items-center justify-end gap-1 mt-1">
+                              {message.isEdited && <span className="text-[10px] opacity-70">(edited)</span>}
+                              <p className={`text-[10px] ${isOwnMessage ? 'text-gray-300' : 'text-gray-500 dark:text-gray-300'}`}>
+                                {formatTime(message.timestamp)}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Message Actions */}
+                          <div className={`flex items-center gap-1 mt-1 opacity-0 group-hover:opacity-100 transition-opacity px-1`}>
+                            <button
+                              onClick={() => startReply(message)}
+                              className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500"
+                              title="Reply"
+                            >
+                              <ArrowUturnLeftIcon className="h-4 w-4" />
+                            </button>
+
+                            {isOwnMessage && (
+                              <>
+                                <button
+                                  onClick={() => startEdit(message)}
+                                  className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-500"
+                                  title="Edit"
+                                >
+                                  <PencilIcon className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if (confirm('Delete this message?')) {
+                                      deleteMessage(message.id, activeChat.id).catch(err => {
+                                        alert('Failed: ' + (err.response?.data?.message || err.message));
+                                      });
+                                    }
+                                  }}
+                                  className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 text-red-500"
+                                  title="Delete"
+                                >
+                                  <TrashIcon className="h-4 w-4" />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     );
                   })}
                   <div ref={messagesEndRef} />
                 </div>
-                <form onSubmit={handleSendMessage} className="border-t border-gray-200 dark:border-gray-700 p-2">
-                  <div className="flex">
-                    <input
-                      type="text"
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      placeholder="Type a message..."
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-gray-400 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    />
-                    <button
-                      type="submit"
-                      className="bg-brand-600 text-white px-4 py-2 rounded-r-lg hover:bg-brand-700 focus:outline-none"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-                      </svg>
-                    </button>
-                  </div>
-                </form>
+                <div className="relative">
+                  {/* Replying/Editing Banner */}
+                  {(replyingTo || editingMessage) && (
+                    <div className="absolute bottom-full left-0 right-0 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-2 flex justify-between items-center z-10 shadow-md">
+                      <div className="flex flex-col max-w-[90%]">
+                        <span className="text-xs font-bold text-brand-600 dark:text-brand-400">
+                          {editingMessage ? 'Editing Message' : `Replying to ${replyingTo?.sender?.fullName || 'Unknown'}`}
+                        </span>
+                        <span className="text-xs text-gray-500 truncate">
+                          {editingMessage ? editingMessage.text : replyingTo?.text}
+                        </span>
+                      </div>
+                      <button onClick={cancelAction} className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+                        <XMarkIcon className="h-4 w-4 text-gray-500" />
+                      </button>
+                    </div>
+                  )}
+                  <form onSubmit={handleSendMessage} className="border-t border-gray-200 dark:border-gray-700 p-2 relative bg-white dark:bg-gray-800">
+                    <div className="flex">
+                      <input
+                        type="text"
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        placeholder="Type a message..."
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-gray-400 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      />
+                      <button
+                        type="submit"
+                        className="bg-brand-600 text-white px-4 py-2 rounded-r-lg hover:bg-brand-700 focus:outline-none"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                        </svg>
+                      </button>
+                    </div>
+                  </form>
+                </div>
               </>
             ) : (
               // Chat List

@@ -10,7 +10,8 @@ import {
   removeParticipantFromGroup,
   deleteGroupChat,
   deleteChat,
-  deleteMessage
+  deleteMessage,
+  updateMessage
 } from '../controller/chatController.js';
 import verifyToken from "../middleware/verifyToken.js";
 import { applyBrandFilter } from "../middleware/brandMiddleware.js";
@@ -50,7 +51,8 @@ router.delete('/:chatId/participants/:participantId', removeParticipantFromGroup
 router.put('/:chatId/read', markMessagesAsRead);
 
 // Delete message (Owner only) - must be before /:chatId to avoid conflict
-router.delete('/messages/:messageId', deleteMessage);
+router.delete('/messages/:messageId', verifyToken, deleteMessage);
+router.put('/messages/:messageId', verifyToken, updateMessage);
 
 // Delete one-on-one chat (Owner only)
 router.delete('/:chatId', deleteChat);

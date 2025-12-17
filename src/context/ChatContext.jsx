@@ -247,19 +247,81 @@ export const ChatProvider = ({ children }) => {
       }
 
       setChats(prev => {
+        // Check if current user is still a participant
+        const isParticipant = chatData.participants && chatData.participants.some(p => (p._id || p.id) === userId);
+
+        if (!isParticipant) {
+          // If not a participant anymore, remove the chat
+          // If active, close it
+          if (activeChat && activeChat.id === chatData.id) {
+            closeChat();
+          }
+          return prev.filter(c => c.id !== chatData.id);
+        }
+
         const existingChatIndex = prev.findIndex(c => c.id === chatData.id);
         if (existingChatIndex >= 0) {
           // Update existing chat
-          return prev.map((c, idx) =>
+          const updatedChats = prev.map((c, idx) =>
             idx === existingChatIndex
-              ? { ...c, lastMessage: chatData.lastMessage, participants: chatData.participants || c.participants }
+              ? { ...c, lastMessage: chatData.lastMessage, participants: chatData.participants || c.participants, name: chatData.name || c.name }
               : c
           );
+
+          // Also update active chat if it match
+          if (activeChat && activeChat.id === chatData.id) {
+            setActiveChat(prevActive => ({
+              ...prevActive,
+              participants: chatData.participants || prevActive.participants,
+              name: chatData.name || prevActive.name
+            }));
+          }
+          return updatedChats;
         } else {
-          // This shouldn't happen often, but refresh chats if needed
-          fetchChats();
-          return prev;
+          // New chat where I am added
+          // We need to format it like other chats structure
+          const newChat = {
+            id: chatData.id,
+            type: chatData.type,
+            name: chatData.name,
+            participants: chatData.participants || [],
+            lastMessage: chatData.lastMessage,
+            // We might lack createdBy/createdAt but those are less critical for list view
+          };
+          return [newChat, ...prev];
         }
+      });
+    });
+
+    // Listen for message updates (edits)
+    socket.on('messageUpdated', (messageData) => {
+      setMessages(prev => {
+        const chatMessages = prev[messageData.chatId] || [];
+        return {
+          ...prev,
+          [messageData.chatId]: chatMessages.map(msg =>
+            msg.id === messageData.id ? { ...msg, ...messageData } : msg
+          )
+        };
+      });
+
+      // Update last message if it was the last one
+      setChats(prev => prev.map(c => {
+        if (c.id === messageData.chatId && c.lastMessage && c.lastMessage.timestamp === messageData.createdAt) {
+          return { ...c, lastMessage: { ...c.lastMessage, text: messageData.text } };
+        }
+        return c;
+      }));
+    });
+
+    // Listen for message deletion
+    socket.on('messageDeleted', ({ messageId, chatId }) => {
+      setMessages(prev => {
+        const chatMessages = prev[chatId] || [];
+        return {
+          ...prev,
+          [chatId]: chatMessages.filter(msg => msg.id !== messageId)
+        };
       });
     });
 
@@ -482,7 +544,7 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
-  const sendMessage = async (chatId, text) => {
+  const sendMessage = async (chatId, text, replyTo = null, mentions = []) => {
     if (!text.trim() || !user || !userId) return;
 
     try {
@@ -498,7 +560,9 @@ export const ChatProvider = ({ children }) => {
 
       const response = await axios.post(`${API}/chats/message`, {
         chatId: chatId,
-        text: text.trim()
+        text: text.trim(),
+        replyTo,
+        mentions
       }, config);
 
       const serverMessage = response.data.message;
@@ -696,14 +760,27 @@ export const ChatProvider = ({ children }) => {
         withCredentials: true,
         timeout: 10000
       });
-
-      // Remove message from state
-      setMessages(prev => ({
-        ...prev,
-        [chatId]: (prev[chatId] || []).filter(msg => msg.id !== messageId)
-      }));
+      // State update will happen via socket listener 'messageDeleted'
     } catch (error) {
       console.error('Error deleting message:', error);
+      throw error;
+    }
+  };
+
+  // Edit a message
+  const editMessage = async (messageId, chatId, newText) => {
+    if (!messageId || !chatId || !newText.trim()) return;
+
+    try {
+      await axios.put(`${API}/chats/messages/${messageId}`, {
+        text: newText.trim()
+      }, {
+        withCredentials: true,
+        timeout: 10000
+      });
+      // State update will happen via socket listener 'messageUpdated'
+    } catch (error) {
+      console.error('Error editing message:', error);
       throw error;
     }
   };
@@ -835,6 +912,7 @@ export const ChatProvider = ({ children }) => {
         setShowGroupParticipants,
         setUserOffline,
         isUserOnline,
+        editMessage,
       }}
     >
       {children}
