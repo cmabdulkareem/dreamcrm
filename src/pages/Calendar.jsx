@@ -1,4 +1,6 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useContext } from "react";
+import { AuthContext } from "../context/AuthContext";
+import { hasRole } from "../utils/roleHelpers";
 import { useNavigate } from "react-router-dom";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
@@ -19,6 +21,16 @@ const Calendar = () => {
   const [eventLevel, setEventLevel] = useState("");
   const calendarRef = useRef(null);
   const { isOpen, openModal, closeModal } = useModal();
+  const { user } = useContext(AuthContext);
+
+  // Filter events for specific roles
+  const filteredEvents = events.filter(event => {
+    // Hide leads for Faculty / Trainers
+    if (hasRole(user, "Faculty / Trainers") && event.extendedProps?.leadId) {
+      return false;
+    }
+    return true;
+  });
 
   const calendarsEvents = {
     Danger: "danger",
@@ -93,7 +105,7 @@ const Calendar = () => {
               center: "title",
               right: "dayGridMonth,timeGridWeek,timeGridDay",
             }}
-            events={events}
+            events={filteredEvents}
             selectable={true}
             select={handleDateSelect}
             eventClick={handleEventClick}
