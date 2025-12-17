@@ -247,21 +247,24 @@ export const ChatProvider = ({ children }) => {
       }
 
       setChats(prev => {
-        // Check if current user is still a participant
-        // Ensure userId and participant IDs are strings for comparison
-        const currentUserIdStr = String(userId);
-        const isParticipant = chatData.participants && chatData.participants.some(p => {
-          const pId = p._id || p.id || p; // Handle populated object or ID string
-          return String(pId) === currentUserIdStr;
-        });
+        // Only verify participation if the update includes the participants list
+        if (chatData.participants) {
+          // Check if current user is still a participant
+          // Ensure userId and participant IDs are strings for comparison
+          const currentUserIdStr = String(userId);
+          const isParticipant = chatData.participants.some(p => {
+            const pId = p._id || p.id || p; // Handle populated object or ID string
+            return String(pId) === currentUserIdStr;
+          });
 
-        if (!isParticipant) {
-          // If not a participant anymore, remove the chat
-          // If active, close it
-          if (activeChat && activeChat.id === chatData.id) {
-            closeChat();
+          if (!isParticipant) {
+            // If not a participant anymore, remove the chat
+            // If active, close it
+            if (activeChat && activeChat.id === chatData.id) {
+              closeChat();
+            }
+            return prev.filter(c => c.id !== chatData.id);
           }
-          return prev.filter(c => c.id !== chatData.id);
         }
 
         const existingChatIndex = prev.findIndex(c => c.id === chatData.id);
@@ -341,7 +344,7 @@ export const ChatProvider = ({ children }) => {
         socket.disconnect();
       }
     };
-  }, [userId, user, activeChat, fetchChats]);
+  }, [userId, user, fetchChats]);
 
   // Set user as online when they log in and maintain heartbeat
   useEffect(() => {
