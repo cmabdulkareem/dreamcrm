@@ -248,7 +248,12 @@ export const ChatProvider = ({ children }) => {
 
       setChats(prev => {
         // Check if current user is still a participant
-        const isParticipant = chatData.participants && chatData.participants.some(p => (p._id || p.id) === userId);
+        // Ensure userId and participant IDs are strings for comparison
+        const currentUserIdStr = String(userId);
+        const isParticipant = chatData.participants && chatData.participants.some(p => {
+          const pId = p._id || p.id || p; // Handle populated object or ID string
+          return String(pId) === currentUserIdStr;
+        });
 
         if (!isParticipant) {
           // If not a participant anymore, remove the chat
