@@ -2,7 +2,7 @@ import { lazy, Suspense, useContext } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoutes from "./routes/ProtectedRoutes";
 import { AuthContext } from "./context/AuthContext";
-import { hasRole, isManager } from "./utils/roleHelpers";
+import { hasRole, isManager, isOwner } from "./utils/roleHelpers";
 import { NotificationProvider } from "./context/NotificationContext";
 import { ChatProvider } from "./context/ChatContext";
 import { CalendarProvider } from "./context/calendarContext";
@@ -59,9 +59,7 @@ import BrandManagement from "./components/brandManagement/BrandManagement";
 
 function App() {
   const { user } = useContext(AuthContext);
-  // Redirect ONLY if user is Faculty and NOT a Manager/Admin
-  // This ensures that if a user has both roles (e.g. Manager & Faculty), they are NOT redirected.
-  const isFaculty = user && hasRole(user, "Faculty / Trainers")
+  const isFaculty = user && hasRole(user, "Faculty / Trainers") && !isManager(user) && !user.isAdmin && !isOwner(user);
   return (
     <>
       <NotificationProvider>

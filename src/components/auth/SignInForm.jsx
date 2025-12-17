@@ -9,6 +9,7 @@ import Button from "../ui/button/Button";
 import { AuthContext } from "../../context/AuthContext";
 
 import API from "../../config/api";
+import { hasRole, isManager, isOwner } from "../../utils/roleHelpers";
 
 export default function SignInForm() {
 
@@ -43,7 +44,15 @@ export default function SignInForm() {
       });
       console.log(data)
       login(data.user, data.role, data.token);
-      navigate("/");
+
+      // Strict redirect for Faculty (NOT Managers/Admins/Owners)
+      const isFaculty = data.user && hasRole(data.user, "Faculty / Trainers") && !isManager(data.user) && !data.user.isAdmin && !isOwner(data.user);
+
+      if (isFaculty) {
+        navigate("/calendar");
+      } else {
+        navigate("/");
+      }
     } catch (err) {
       if (err.response && err.response.data && err.response.data.message) {
         setError(err.response.data.message);
