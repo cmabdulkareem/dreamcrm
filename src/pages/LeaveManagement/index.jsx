@@ -639,7 +639,7 @@ const LeaveManagement = () => {
                           <tr key={leave._id}>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="text-sm font-medium text-gray-900 dark:text-white">{leave.employeeName}</div>
-                              <div className="text-sm text-gray-500 dark:text-gray-400">ID: {leave.employeeId}</div>
+                              <div className="text-sm text-gray-500 dark:text-gray-400">Code: {leave.employeeId}</div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="text-sm text-gray-900 dark:text-white capitalize">{leave.leaveType}</div>

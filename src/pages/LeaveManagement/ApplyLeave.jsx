@@ -134,20 +134,7 @@ const ApplyLeave = () => {
                         <div className="space-y-6">
 
                             {/* Employee Details (Auto-filled) */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <Label>Employee Name</Label>
-                                    <div className="px-4 py-2.5 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-600 dark:text-gray-400">
-                                        {user?.fullName || 'Loading...'}
-                                    </div>
-                                </div>
-                                <div>
-                                    <Label>Employee ID</Label>
-                                    <div className="px-4 py-2.5 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-gray-600 dark:text-gray-400">
-                                        {user?.employeeCode || 'Not Assigned'}
-                                    </div>
-                                </div>
-                            </div>
+
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
