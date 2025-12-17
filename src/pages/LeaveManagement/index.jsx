@@ -628,6 +628,7 @@ const LeaveManagement = () => {
                       <thead className="bg-gray-50 dark:bg-gray-800">
                         <tr>
                           <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Employee</th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Applied On</th>
                           <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Leave Type</th>
                           <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Dates</th>
                           <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
@@ -640,6 +641,10 @@ const LeaveManagement = () => {
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="text-sm font-medium text-gray-900 dark:text-white">{leave.userId?.fullName || leave.employeeName}</div>
                               <div className="text-sm text-gray-500 dark:text-gray-400">Code: {leave.userId?.employeeCode || leave.employeeCode}</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900 dark:text-white">{new Date(leave.createdAt).toLocaleDateString()}</div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">{new Date(leave.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="text-sm text-gray-900 dark:text-white capitalize">{leave.leaveType}</div>
