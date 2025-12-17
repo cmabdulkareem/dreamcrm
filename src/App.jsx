@@ -56,9 +56,12 @@ const MyLeaves = lazy(() => import("./pages/LeaveManagement/MyLeaves"));
 import ChatWidget from "./components/chat/ChatWidget";
 import BrandManagement from "./components/brandManagement/BrandManagement";
 
+
 function App() {
   const { user } = useContext(AuthContext);
-  const isFaculty = user && hasRole(user, "Faculty / Trainers") && !isManager(user);
+  // Redirect ONLY if user is Faculty and NOT a Manager/Admin
+  // This ensures that if a user has both roles (e.g. Manager & Faculty), they are NOT redirected.
+  const isFaculty = user && hasRole(user, "Faculty / Trainers") && !isManager(user) && !user.isAdmin;
   return (
     <>
       <NotificationProvider>
