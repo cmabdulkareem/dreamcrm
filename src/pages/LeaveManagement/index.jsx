@@ -11,10 +11,11 @@ import InputField from '../../components/form/input/InputField';
 import Label from '../../components/form/Label';
 import Select from '../../components/form/Select';
 
+import { hasRole } from '../../utils/roleHelpers';
 import API from "../../config/api";
 
 const LeaveManagement = () => {
-  const { isAdmin } = useContext(AuthContext);
+  const { user, isAdmin } = useContext(AuthContext);
   const [leaves, setLeaves] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showEditForm, setShowEditForm] = useState(false);
@@ -34,6 +35,22 @@ const LeaveManagement = () => {
 
   // Fetch all leave requests
   const fetchLeaves = async () => {
+    // Only Owner, HR, Manager can view all leaves
+    if (!(hasRole(user, 'Owner') || hasRole(user, 'HR') || hasRole(user, 'Manager'))) {
+      // If user is not authorized, maybe they shouldn't even be here, or we show empty.
+      // But since this component handles both "Manage" and "Requests" (legacy), we should be careful.
+      // Actually, "Requests" route seems to be the public one? No, earlier I saw it uses this component for authenticated apply?
+      // Wait, "Apply Leave" is a separate component now. "My Leaves" is separate.
+      // So this component `LeaveManagement` is ONLY for "Manage Leaves" (Admin view) based on my previous refactor plan.
+      // Let's verify routes in App.jsx.
+      // Yes: <Route index element={<LeaveManagement />} /> handles "Manage Leaves".
+      // So we can enforce strict check.
+      // However, isAdmin might be true for some roles. Let's trust role check.
+
+      // If not authorized, don't fetch.
+      return;
+    }
+
     try {
       setLoading(true);
       const response = await axios.get(`${API}/leaves`, {
@@ -232,9 +249,9 @@ const LeaveManagement = () => {
   const handleUpdateLeave = async (e) => {
     e.preventDefault();
 
-    // Check if user is admin
-    if (!isAdmin) {
-      toast.error('Access denied. Admin privileges required.');
+    // Check if user is authorized (Owner or HR)
+    if (!(hasRole(user, 'Owner') || hasRole(user, 'HR'))) {
+      toast.error('Access denied. Owner or HR privileges required.');
       return;
     }
 
@@ -287,9 +304,9 @@ const LeaveManagement = () => {
 
   // Update leave status
   const updateLeaveStatus = async (leaveId, status) => {
-    // Check if user is admin
-    if (!isAdmin) {
-      toast.error('Access denied. Admin privileges required.');
+    // Check if user is authorized (Owner or HR)
+    if (!(hasRole(user, 'Owner') || hasRole(user, 'HR'))) {
+      toast.error('Access denied. Owner or HR privileges required.');
       return;
     }
 
@@ -313,9 +330,9 @@ const LeaveManagement = () => {
 
   // Delete leave
   const deleteLeave = async (leaveId) => {
-    // Check if user is admin
-    if (!isAdmin) {
-      toast.error('Access denied. Admin privileges required.');
+    // Check if user is authorized (Owner or HR)
+    if (!(hasRole(user, 'Owner') || hasRole(user, 'HR'))) {
+      toast.error('Access denied. Owner or HR privileges required.');
       return;
     }
 
@@ -634,16 +651,16 @@ const LeaveManagement = () => {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${leave.status === 'approved'
-                                  ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
-                                  : leave.status === 'rejected'
-                                    ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
-                                    : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100'
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
+                                : leave.status === 'rejected'
+                                  ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
+                                  : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100'
                                 }`}>
                                 {leave.status}
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                              {isAdmin && (
+                              {(hasRole(user, 'Owner') || hasRole(user, 'HR')) && (
                                 <>
                                   <button
                                     onClick={() => handleEditLeave(leave._id)}

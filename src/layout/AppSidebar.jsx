@@ -228,6 +228,22 @@ const AppSidebar = () => {
           return null;
         }
 
+        // Special handling for Leave Management sub-items
+        if (nav.name === "Leave Management" && nav.subItems) {
+          const filteredSubItems = nav.subItems.filter(subItem => {
+            if (subItem.name === "Manage Leaves") {
+              // Only Owner, HR, Manager can see Manage Leaves
+              return hasRole(user, "Owner") || hasRole(user, "HR") || hasRole(user, "Manager");
+            }
+            return true;
+          });
+
+          // If no sub-items remain (unlikely for regular users who see Apply/My Leaves), hide parent? 
+          // Better to just map and render only allowed ones.
+          // But here we are iterating items. We can modify the map callback to handle subItems filtering?
+          // Actually, the rendering logic below iterates nav.subItems. We should modify that iteration.
+        }
+
         // Disable style
         const itemDisabledClass = !isParentEnabled ? "opacity-40 cursor-not-allowed pointer-events-none" : "";
 
@@ -245,6 +261,8 @@ const AppSidebar = () => {
                     : "lg:justify-start"
                   }`}
               >
+                {/* ... rest of button ... */}
+
                 <span
                   className={`menu-item-icon-size  ${openSubmenu?.type === menuType &&
                     openSubmenu?.index === index
@@ -311,6 +329,11 @@ const AppSidebar = () => {
                     // Only show Campaigns, Contact Points, Course Management, and User Management to managers
                     if ((subItem.name === "Campaigns" || subItem.name === "Contact Points" ||
                       subItem.name === "Course Management" || subItem.name === "User Management") && !hasManagerAccess) {
+                      return null;
+                    }
+
+                    // RESTRICTION: Only Owner, HR, Manager can see "Manage Leaves"
+                    if (subItem.name === "Manage Leaves" && !(hasRole(user, "Owner") || hasRole(user, "HR") || hasRole(user, "Manager"))) {
                       return null;
                     }
 
