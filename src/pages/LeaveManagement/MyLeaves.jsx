@@ -41,10 +41,13 @@ const MyLeaves = () => {
 
                 // Filter for current user if response doesn't seem to be already filtered (simple heuristic or strict filter)
                 // Adjust referencing user.id or user.employeeId based on what matches the record
-                const employeeIdToMatch = user.employeeId || user.id || user._id;
+                const employeeCode = user.employeeCode;
+                const userId = user._id || user.id;
 
                 const myLeaves = fetchedLeaves.filter(leave =>
-                    leave.employeeId === employeeIdToMatch || leave.userId === user._id
+                    (employeeCode && leave.employeeId === employeeCode) ||
+                    (userId && leave.employeeId === userId) ||
+                    (leave.userId === userId)
                     // Also check if employeeId matches roughly (sometimes strict string diffs fail on generic IDs)
                 );
 
