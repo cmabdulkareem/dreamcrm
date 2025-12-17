@@ -72,8 +72,18 @@ function AuthProvider({ children }) {
         setIsAdmin(isAdminUser);
 
         // If no brand selected, and user has brands, select the first one (or 'all' for admin)
+        // If no brand selected, and user has brands, select the first one
         if (!selectedBrand && user.brands && user.brands.length > 0) {
-          // Optional: default logic here if needed
+          // For non-admins/owners, FORCE selection of the first brand if none selected
+          // This prevents them from being stuck in "All Brands" mode which they might not have access to
+          if (!isAdminUser) {
+            const defaultBrand = user.brands[0];
+            setSelectedBrand(defaultBrand);
+            localStorage.setItem("selectedBrand", JSON.stringify(defaultBrand));
+            if (defaultBrand.themeColor) {
+              updateBrandTheme(defaultBrand.themeColor);
+            }
+          }
         }
 
       } catch (err) {
