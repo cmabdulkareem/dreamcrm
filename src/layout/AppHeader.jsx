@@ -8,6 +8,7 @@ import UserDropdown from "../components/header/UserDropdown";
 import AnimatedAnnouncement from "../components/header/AnimatedAnnouncement";
 import { ThemeToggleButton } from "../components/common/ThemeToggleButton";
 import { AuthContext } from "../context/AuthContext";
+import { isAdmin } from "../utils/roleHelpers";
 
 const AppHeader = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
@@ -383,7 +384,7 @@ const AppHeader = () => {
                     }
                   }}
                 >
-                  <option value="">All Brands</option>
+                  {isAdmin(currentUser) && <option value="">All Brands</option>}
                   {currentUser.brands.map((brand) => (
                     <option key={brand._id} value={brand._id}>
                       {brand.name}
