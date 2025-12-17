@@ -213,8 +213,17 @@ const AppSidebar = () => {
         // If it's a parent menu (like Settings), checks if it has AT LEAST ONE enabled child or is itself global
         const isParentEnabled = selectedBrand || isGlobalItem(nav.name) || (nav.subItems && nav.subItems.some(sub => isGlobalItem(sub.name)));
 
-        // Hide Lead Management for Faculty / Trainers
-        if (nav.name === "Lead Management" && hasRole(user, "Faculty / Trainers")) {
+        // Restricted items for Faculty / Trainers
+        const restrictedItemsForFaculty = [
+          "Dashboard",
+          "Lead Management",
+          "Student Management",
+          "Operations",
+          "Marketing Materials",
+          "UI Elements"
+        ];
+
+        if (restrictedItemsForFaculty.includes(nav.name) && hasRole(user, "Faculty / Trainers")) {
           return null;
         }
 
