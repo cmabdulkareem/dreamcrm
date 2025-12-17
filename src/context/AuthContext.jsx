@@ -143,7 +143,7 @@ function AuthProvider({ children }) {
           updateBrandTheme(defaultBrand.themeColor);
         }
         // Force hard navigation to ensure clean state
-        window.location.href = '/';
+        window.location.href = '/course-curriculum';
         return;
       }
     }
