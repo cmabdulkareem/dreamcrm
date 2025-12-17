@@ -48,6 +48,10 @@ const leaveSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: false // Optional for backward compatibility, but recommended
+  },
+  actionBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   }
 }, {
   timestamps: true

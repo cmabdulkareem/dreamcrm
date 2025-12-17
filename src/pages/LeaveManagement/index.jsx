@@ -678,6 +678,11 @@ const LeaveManagement = () => {
                                 }`}>
                                 {leave.status}
                               </span>
+                              {leave.actionBy && (
+                                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                  By: {leave.actionBy.fullName}
+                                </div>
+                              )}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                               {(hasRole(user, 'Owner') || hasRole(user, 'HR')) && (

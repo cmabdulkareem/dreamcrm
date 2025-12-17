@@ -133,6 +133,11 @@ const MyLeaves = () => {
                                                 <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(leave.status)}`}>
                                                     {leave.status}
                                                 </span>
+                                                {leave.actionBy && (
+                                                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                        By: {leave.actionBy.fullName}
+                                                    </div>
+                                                )}
                                             </td>
                                         </tr>
                                     ))}

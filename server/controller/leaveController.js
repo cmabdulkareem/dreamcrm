@@ -32,6 +32,7 @@ export const getAllLeaves = async (req, res) => {
     const leaves = await leaveModel.find(query)
       .populate('userId', 'fullName employeeCode')
       .populate('brand', 'name')
+      .populate('actionBy', 'fullName')
       .sort({ createdAt: -1 });
     return res.status(200).json({
       success: true,
@@ -232,6 +233,7 @@ export const updateLeaveStatus = async (req, res) => {
     }
 
     leave.status = status;
+    leave.actionBy = req.user._id; // Track who performed the action
     await leave.save();
 
     return res.status(200).json({
