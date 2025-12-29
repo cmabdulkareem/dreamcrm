@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 const PhoneInput = ({
   countries,
@@ -7,9 +7,11 @@ const PhoneInput = ({
   onChange,
   selectPosition = "start",
   disabled, // Add disabled prop
+  defaultCountryCode = "+91", // Default country code to prefill
 }) => {
   const [selectedCountry, setSelectedCountry] = useState("IN");
   const [internalValue, setInternalValue] = useState(value);
+  const inputRef = useRef(null);
 
   // Map from code string to country
   const codeToCountry = countries.reduce(
@@ -60,6 +62,18 @@ const PhoneInput = ({
     }
   };
 
+  const handleFocus = (e) => {
+    // Prefill with defaultCountryCode if field is empty
+    if (!internalValue && defaultCountryCode) {
+      setInternalValue(defaultCountryCode);
+      onChange?.(defaultCountryCode);
+      // Set cursor position after the country code
+      setTimeout(() => {
+        e.target.setSelectionRange(defaultCountryCode.length, defaultCountryCode.length);
+      }, 0);
+    }
+  };
+
   return (
     <div className="relative flex">
       {selectPosition === "start" && (
@@ -81,8 +95,10 @@ const PhoneInput = ({
 
       <input
         type="tel"
+        ref={inputRef}
         value={internalValue}
         onChange={handlePhoneNumberChange}
+        onFocus={handleFocus}
         placeholder={placeholder}
         className={`h-11 w-full ${
           selectPosition === "start" ? "pl-[84px]" : "pr-[84px]"
