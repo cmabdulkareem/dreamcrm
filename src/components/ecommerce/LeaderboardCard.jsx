@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import ComponentCard from "../common/ComponentCard";
 import { getAvatarUrl } from "../../utils/imageHelper";
-import { UserGroupIcon, ShootingStarIcon } from "../../icons";
+import { GroupIcon, ShootingStarIcon } from "../../icons";
 import Badge from "../ui/badge/Badge";
 
 import API from "../../config/api";
@@ -68,7 +68,7 @@ export default function LeaderboardCard() {
             }`}
           >
             <div className="flex items-center gap-2">
-              <UserGroupIcon className="size-4" />
+              <GroupIcon className="size-4" />
               Most Leads
             </div>
           </button>
