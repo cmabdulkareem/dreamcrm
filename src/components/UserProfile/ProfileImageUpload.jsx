@@ -6,6 +6,7 @@ import Button from "../ui/button/Button";
 import ReactCrop from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { AuthContext } from "../../context/AuthContext";
+import { getAvatarUrl } from "../../utils/imageHelper";
 
 import API from "../../config/api";
 
@@ -147,25 +148,23 @@ export default function ProfileImageUpload({ user, updateAvatar }) {
 
       console.log("Avatar upload response:", response.data); // Debug log
 
-      // Add timestamp to avatar URL for cache busting
-      const avatarUrlWithTimestamp = `${response.data.avatar}?t=${Date.now()}`;
+      // Use the avatar path from response (relative path)
+      const avatarPath = response.data.avatar;
 
       // Update user context/state
       if (updateAvatar && typeof updateAvatar === 'function') {
         // Update the full user object with the new avatar
         const updatedUser = {
           ...user,
-          avatar: avatarUrlWithTimestamp
+          avatar: avatarPath
         };
-        console.log("Updating user with:", updatedUser); // Debug log
         updateAvatar(updatedUser);
       } else if (updateUser && typeof updateUser === 'function') {
         // Fallback to updateUser from AuthContext
         const updatedUser = {
           ...user,
-          avatar: avatarUrlWithTimestamp
+          avatar: avatarPath
         };
-        console.log("Updating user with fallback:", updatedUser); // Debug log
         updateUser(updatedUser);
       }
 
@@ -209,13 +208,13 @@ export default function ProfileImageUpload({ user, updateAvatar }) {
       >
         <img
           key={`${user?.avatar || 'default-avatar'}-${avatarKey}`}
-          src={
-            user?.avatar
-              ? `${user.avatar.split('?')[0]}?t=${avatarKey}`
-              : "/images/user/user-01.jpg"
-          }
+          src={`${getAvatarUrl(user?.avatar)}?t=${avatarKey}`}
           alt="Profile"
           className="w-full h-full object-cover"
+          onError={(e) => {
+            // Fallback to default avatar if image fails to load
+            e.target.src = "/images/user/user-01.jpg";
+          }}
         />
       </button>
 

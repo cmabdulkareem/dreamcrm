@@ -4,6 +4,7 @@ import { AuthContext } from '../../context/AuthContext';
 import { useContext } from 'react';
 import { isAdmin } from '../../utils/roleHelpers';
 import LoadingSpinner from '../common/LoadingSpinner';
+import { getAvatarUrl } from '../../utils/imageHelper';
 
 const GroupParticipants = ({ chat, participants, onAddParticipant, onRemoveParticipant, user }) => {
   const { contacts, deleteGroupChat } = useChat();
@@ -65,9 +66,12 @@ const GroupParticipants = ({ chat, participants, onAddParticipant, onRemoveParti
           >
             <div className="flex items-center">
               <img
-                src={participant.avatar || '/images/user/user-01.jpg'}
+                src={getAvatarUrl(participant.avatar)}
                 alt={participant.fullName}
                 className="w-8 h-8 rounded-full"
+                onError={(e) => {
+                  e.target.src = '/images/user/user-01.jpg';
+                }}
               />
               <div className="ml-3">
                 <p className="text-sm font-medium text-gray-900 dark:text-white">
@@ -110,9 +114,12 @@ const GroupParticipants = ({ chat, participants, onAddParticipant, onRemoveParti
                 className="flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer"
               >
                 <img
-                  src={contact.avatar || '/images/user/user-01.jpg'}
+                  src={getAvatarUrl(contact.avatar)}
                   alt={contact.fullName}
                   className="w-8 h-8 rounded-full"
+                  onError={(e) => {
+                    e.target.src = '/images/user/user-01.jpg';
+                  }}
                 />
                 <div className="ml-3">
                   <p className="text-sm font-medium text-gray-900 dark:text-white">

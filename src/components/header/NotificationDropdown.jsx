@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNotifications } from "../../context/NotificationContext";
 import { Dropdown } from "../ui/dropdown/Dropdown";
+import { getAvatarUrl } from "../../utils/imageHelper";
 
 const NotificationDropdown = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -92,9 +93,12 @@ const NotificationDropdown = () => {
                       <div className="flex-shrink-0">
                         {notification.avatar ? (
                           <img 
-                            src={notification.avatar} 
+                            src={getAvatarUrl(notification.avatar)} 
                             alt={notification.userName} 
                             className="h-10 w-10 rounded-full object-cover"
+                            onError={(e) => {
+                              e.target.src = '/images/user/user-01.jpg';
+                            }}
                           />
                         ) : (
                           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200">

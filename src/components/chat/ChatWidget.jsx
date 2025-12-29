@@ -6,6 +6,7 @@ import DraggableParticipant from './DraggableParticipant';
 import GroupParticipants from './GroupParticipants';
 import LoadingSpinner from '../common/LoadingSpinner';
 import Badge from '../ui/badge/Badge'; // Import Badge component
+import { getAvatarUrl } from '../../utils/imageHelper';
 import {
   ChatBubbleLeftRightIcon,
   XMarkIcon,
@@ -232,9 +233,7 @@ const ChatWidget = () => {
     } else {
       const userId = user ? (user._id || user.id) : null;
       const otherParticipant = chat.participants?.find(p => (p._id || p.id) !== userId);
-      // Use cache-busting for profile images
-      const avatar = otherParticipant?.avatar;
-      return avatar || '/images/user/user-01.jpg';
+      return getAvatarUrl(otherParticipant?.avatar);
     }
   };
 
@@ -414,10 +413,13 @@ const ChatWidget = () => {
                             >
                               <div className="relative">
                                 <img
-                                  src={contact.avatar || '/images/user/user-01.jpg'}
+                                  src={getAvatarUrl(contact.avatar)}
                                   alt={contact.fullName}
                                   className="w-10 h-10 rounded-full"
                                   key={contact.avatar}
+                                  onError={(e) => {
+                                    e.target.src = '/images/user/user-01.jpg';
+                                  }}
                                 />
                                 <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-white dark:ring-gray-800"></span>
                                 {isSelectingParticipants && selectedParticipants.some(p => p._id === contact._id) && (
@@ -516,7 +518,10 @@ const ChatWidget = () => {
                       >
                         {!isOwnMessage && (
                           <img
-                            src={message.sender.avatar || '/images/user/user-01.jpg'}
+                            src={getAvatarUrl(message.sender.avatar)}
+                            onError={(e) => {
+                              e.target.src = '/images/user/user-01.jpg';
+                            }}
                             alt={message.sender.fullName}
                             className="w-8 h-8 rounded-full mr-2"
                             key={message.sender.avatar}

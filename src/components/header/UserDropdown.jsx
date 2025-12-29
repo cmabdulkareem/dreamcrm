@@ -5,6 +5,7 @@ import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { AuthContext } from "../../context/AuthContext";
 import { useChat } from "../../context/ChatContext";
+import { getAvatarUrl } from "../../utils/imageHelper";
 
 import API from "../../config/api";
 
@@ -51,10 +52,13 @@ export default function UserDropdown() {
       >
         <span className="mr-3 overflow-hidden rounded-full h-11 w-11">
           <img
-            src={user?.avatar || "/images/user/user-01.jpg"}
+            src={getAvatarUrl(user?.avatar)}
             alt="User"
             className="w-full h-full object-cover"
             key={user?.avatar}
+            onError={(e) => {
+              e.target.src = "/images/user/user-01.jpg";
+            }}
           />
         </span>
         <span className="block mr-1 font-medium text-theme-sm">{user?.fullName}</span>
