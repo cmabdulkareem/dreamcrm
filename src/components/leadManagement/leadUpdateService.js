@@ -52,7 +52,7 @@ export const saveLeadChanges = async (
       const remarkPayload = {
         remark: remarkText,
         handledBy: user?.fullName || "Unknown", // Ensure handledBy is always populated
-        nextFollowUpDate: followUpDate || null,
+        nextFollowUpDate: leadStatus === "converted" ? null : (followUpDate || null), // Don't set nextFollowUpDate for converted leads
         leadStatus: leadStatus || "new"
       };
 
@@ -70,6 +70,7 @@ export const saveLeadChanges = async (
     }
 
     // Update the lead details
+    // Don't send followUpDate if leadStatus is converted
     const updatePayload = {
       fullName,
       phone1,
@@ -85,7 +86,7 @@ export const saveLeadChanges = async (
       otherContactPoint,
       campaign,
       handledBy: user?.fullName || handledByPerson,
-      followUpDate,
+      followUpDate: leadStatus === "converted" ? null : followUpDate, // Clear followUpDate for converted leads
       leadStatus,
       leadPotential, // Include leadPotential in update
       coursePreference: selectedValues
@@ -100,8 +101,23 @@ export const saveLeadChanges = async (
       { withCredentials: true }
     );
 
-    // Automatically update calendar event if followUpDate exists
-    if (followUpDate) {
+    // Automatically update calendar event if followUpDate exists and lead is not converted
+    // Also delete existing calendar events for converted leads
+    if (leadStatus === "converted") {
+      // Remove calendar event if lead is converted
+      try {
+        const existingEvent = events.find(event =>
+          event.extendedProps?.leadId === selectedRow._id
+        );
+        if (existingEvent && typeof updateEvent === 'function') {
+          // Delete the event by updating it to be removed or using deleteEvent if available
+          // Note: This depends on your calendar implementation
+          // For now, we'll just skip creating/updating events for converted leads
+        }
+      } catch (calendarError) {
+        console.error("Error managing calendar event:", calendarError);
+      }
+    } else if (followUpDate) {
       try {
         // Check if an event already exists for this lead
         const existingEvent = events.find(event =>

@@ -203,6 +203,11 @@ export const updateCustomer = async (req, res) => {
       }
     });
 
+    // Clear followUpDate if leadStatus is set to converted
+    if (updateData.leadStatus === 'converted') {
+      customer.followUpDate = null;
+    }
+
     await customer.save();
 
     console.log("Customer updated with leadPotential:", customer.leadPotential); // Add logging
@@ -246,10 +251,14 @@ export const addRemark = async (req, res) => {
     // Update customer's main leadStatus field if provided
     if (leadStatus) {
       customer.leadStatus = leadStatus;
+      // Clear followUpDate if status is converted
+      if (leadStatus === 'converted') {
+        customer.followUpDate = null;
+      }
     }
 
-    // Update followUpDate if provided
-    if (nextFollowUpDate) {
+    // Update followUpDate if provided and status is not converted
+    if (nextFollowUpDate && leadStatus !== 'converted') {
       customer.followUpDate = new Date(nextFollowUpDate);
     }
 

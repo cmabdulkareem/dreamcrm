@@ -552,7 +552,8 @@ export default function RecentOrders() {
       return;
     }
 
-    if (!followUpDate) {
+    // Follow up date is not required when status is converted
+    if (leadStatus !== "converted" && !followUpDate) {
       toast.error("Next Follow Up Date is required");
       return;
     }
@@ -580,7 +581,7 @@ export default function RecentOrders() {
       contactPoint,
       otherContactPoint,
       campaign,
-      followUpDate,
+      leadStatus === "converted" ? null : followUpDate, // Don't send followUpDate for converted leads
       selectedValues,
       user,
       handledByPerson,
@@ -1249,7 +1250,13 @@ export default function RecentOrders() {
                       label="Lead Status"
                       options={leadStatusOptions}
                       value={leadStatus}
-                      onChange={setLeadStatus}
+                      onChange={(value) => {
+                        setLeadStatus(value);
+                        // Clear followUpDate when status changes to converted
+                        if (value === "converted") {
+                          setFollowUpDate("");
+                        }
+                      }}
                       required
                     />
                   </div>
@@ -1262,15 +1269,17 @@ export default function RecentOrders() {
                       onChange={setLeadPotential}
                     />
                   </div>
-                  <div className="w-full md:w-1/4">
-                    <DatePicker
-                      id="followupDate"
-                      label="Next Follow Up Date *"
-                      value={followUpDate}
-                      disablePastDates={true} // Hide past dates completely
-                      onChange={(date, str) => setFollowUpDate(str)}
-                    />
-                  </div>
+                  {leadStatus !== "converted" && (
+                    <div className="w-full md:w-1/4">
+                      <DatePicker
+                        id="followupDate"
+                        label="Next Follow Up Date *"
+                        value={followUpDate}
+                        disablePastDates={true} // Hide past dates completely
+                        onChange={(date, str) => setFollowUpDate(str)}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex flex-col md:flex-row gap-4 items-stretch">
