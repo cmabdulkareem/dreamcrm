@@ -30,8 +30,8 @@ export const createCustomer = async (req, res) => {
     console.log("Creating customer with leadPotential:", leadPotential); // Add logging
 
     // Validation
-    if (!fullName || !email || !phone1) {
-      return res.status(400).json({ message: "Full name, email, and phone are required." });
+    if (!fullName || !phone1) {
+      return res.status(400).json({ message: "Full name and phone are required." });
     }
 
     // Create initial remark if leadRemarks exists

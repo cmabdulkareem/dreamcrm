@@ -173,6 +173,11 @@ export default function FormElements() {
   };
 
   const validateEmail = (value) => {
+    // If email is empty, it's valid (optional field)
+    if (!value || !value.trim()) {
+      setError(false);
+      return true;
+    }
     const isValidEmail =
       /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value);
     setError(!isValidEmail);
@@ -285,9 +290,8 @@ export default function FormElements() {
       errors.fullName = "Full Name is required";
     }
 
-    if (!email.trim()) {
-      errors.email = "Email is required";
-    } else if (!validateEmail(email)) {
+    // Email is optional, but if provided, it must be valid
+    if (email.trim() && !validateEmail(email)) {
       errors.email = "Please enter a valid email address";
     }
 
@@ -372,7 +376,7 @@ export default function FormElements() {
 
     const formData = {
       fullName,
-      email,
+      email: email.trim() || null, // Send null if email is empty
       phone1,
       phone2,
       gender,
@@ -488,13 +492,13 @@ export default function FormElements() {
                     />
                   </div>
                   <div className="w-full md:w-1/2">
-                    <Label>Email *</Label>
+                    <Label>Email</Label>
                     <Input
                       type="email"
                       value={email}
                       error={error || !!validationErrors.email}
                       onChange={handleEmailChange}
-                      placeholder="Enter your email"
+                      placeholder="Enter your email (optional)"
                       hint={validationErrors.email || (error ? "This is an invalid email address." : "")}
                     />
                   </div>
