@@ -6,6 +6,7 @@ import LeadOverview from "../../components/ecommerce/LeadOverview";
 import DemographicCard from "../../components/ecommerce/DemographicCard";
 import LeadStatusBreakdown from "../../components/ecommerce/LeadStatusBreakdown";
 import FollowUpsDue from "../../components/ecommerce/FollowUpsDue";
+import LeaderboardCard from "../../components/ecommerce/LeaderboardCard";
 import PageMeta from "../../components/common/PageMeta";
 
 export default function Home() {
@@ -47,6 +48,9 @@ export default function Home() {
 
             {/* Follow-ups Due */}
             <FollowUpsDue />
+
+            {/* Leaderboard */}
+            <LeaderboardCard />
           </div>
 
           {/* Bottom Row - Status and Demographics */}

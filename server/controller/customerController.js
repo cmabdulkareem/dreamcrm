@@ -470,3 +470,102 @@ export const getAllCustomersUnfiltered = async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
+// Get leaderboard data (brand specific)
+export const getLeaderboard = async (req, res) => {
+  try {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    // Start with brand filter
+    const brandQuery = req.brandFilter || {};
+
+    // Get all leads (brand specific) with remarks to track conversions
+    const allLeads = await customerModel.find(brandQuery)
+      .populate('assignedTo', 'fullName email avatar')
+      .select('assignedTo leadStatus createdAt remarks');
+
+    // Group by assignedTo user
+    const userStats = {};
+
+    allLeads.forEach(lead => {
+      if (!lead.assignedTo) return; // Skip if no assigned user
+
+      const userId = lead.assignedTo._id.toString();
+      
+      if (!userStats[userId]) {
+        userStats[userId] = {
+          userId,
+          fullName: lead.assignedTo.fullName,
+          email: lead.assignedTo.email,
+          avatar: lead.assignedTo.avatar,
+          totalLeads: 0,
+          conversions: 0
+        };
+      }
+
+      // Check if lead was created this month
+      if (lead.createdAt) {
+        const createdDate = new Date(lead.createdAt);
+        if (createdDate.getMonth() === currentMonth &&
+            createdDate.getFullYear() === currentYear) {
+          userStats[userId].totalLeads++;
+        }
+      }
+
+      // Check if lead was converted this month (by checking remarks)
+      if (lead.remarks && lead.remarks.length > 0) {
+        // Find the remark where status was changed to 'converted' this month
+        const conversionRemark = lead.remarks.find(remark => {
+          if (remark.leadStatus === 'converted' && remark.updatedOn) {
+            const updatedDate = new Date(remark.updatedOn);
+            return updatedDate.getMonth() === currentMonth &&
+                   updatedDate.getFullYear() === currentYear;
+          }
+          return false;
+        });
+
+        if (conversionRemark) {
+          userStats[userId].conversions++;
+        }
+      }
+    });
+
+    // Convert to array and calculate conversion rates
+    const leaderboardData = Object.values(userStats)
+      .filter(user => user.totalLeads > 0 || user.conversions > 0) // Only include users with activity
+      .map(user => ({
+        ...user,
+        conversionRate: user.totalLeads > 0 
+          ? parseFloat(((user.conversions / user.totalLeads) * 100).toFixed(2))
+          : 0
+      }));
+
+    // Get top performers
+    const topByLeads = [...leaderboardData]
+      .sort((a, b) => b.totalLeads - a.totalLeads)
+      .slice(0, 5);
+
+    const topByConversions = [...leaderboardData]
+      .filter(user => user.conversions > 0) // Only show users with conversions
+      .sort((a, b) => {
+        // Sort by conversions first, then by conversion rate
+        if (b.conversions !== a.conversions) {
+          return b.conversions - a.conversions;
+        }
+        return b.conversionRate - a.conversionRate;
+      })
+      .slice(0, 5);
+
+    return res.status(200).json({
+      leaderboard: leaderboardData,
+      topByLeads,
+      topByConversions,
+      message: "Leaderboard data retrieved successfully."
+    });
+  } catch (error) {
+    console.error("Error fetching leaderboard:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
