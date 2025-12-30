@@ -357,7 +357,11 @@ const CourseManagement = () => {
                         <tr key={course._id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{course.courseCode}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{course.courseName}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{course.modules}</td>
+                          <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                            {course.modules?.split(',').map((mod, idx) => (
+                              <div key={idx} className="whitespace-nowrap">{mod.trim()}</div>
+                            ))}
+                          </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 capitalize">{course.mode}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">₹{course.normalFee}</td>
                           <td className="px-6 py-4 whitespace-nowrap">
