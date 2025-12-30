@@ -22,7 +22,7 @@ const BrandManagement = () => {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    website: "",
+    code: "",
     themeColor: "#ED1164",
     isActive: true
   });
@@ -85,7 +85,8 @@ const BrandManagement = () => {
       setFormData({
         name: "",
         description: "",
-        website: "",
+        code: "",
+        themeColor: "#ED1164",
         isActive: true
       });
     } catch (error) {
@@ -99,7 +100,7 @@ const BrandManagement = () => {
     setFormData({
       name: brand.name || "",
       description: brand.description || "",
-      website: brand.website || "",
+      code: brand.code || "",
       themeColor: brand.themeColor || "#ED1164",
       isActive: brand.isActive !== undefined ? brand.isActive : true
     });
@@ -138,7 +139,7 @@ const BrandManagement = () => {
     setFormData({
       name: "",
       description: "",
-      website: "",
+      code: "",
       themeColor: "#ED1164",
       isActive: true
     });
@@ -176,7 +177,7 @@ const BrandManagement = () => {
                     Description
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Website
+                    Code
                   </th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Theme Color
@@ -210,17 +211,8 @@ const BrandManagement = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900 dark:text-white">
-                          {brand.website ? (
-                            <a
-                              href={brand.website}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-brand-600 hover:text-brand-900 dark:text-brand-400 dark:hover:text-brand-300"
-                            >
-                              {brand.website}
-                            </a>
-                          ) : "-"}
+                        <div className="text-sm font-mono text-gray-900 dark:text-white">
+                          {brand.code || "-"}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -307,15 +299,18 @@ const BrandManagement = () => {
                     </div>
 
                     <div>
-                      <Label htmlFor="website">Website</Label>
+                      <Label htmlFor="code">Brand Code *</Label>
                       <Input
-                        id="website"
-                        name="website"
-                        type="url"
-                        value={formData.website}
+                        id="code"
+                        name="code"
+                        type="text"
+                        value={formData.code}
                         onChange={handleInputChange}
-                        placeholder="https://example.com"
+                        placeholder="ABC"
+                        required
+                        style={{ textTransform: 'uppercase' }}
                       />
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Enter a unique brand code (e.g., ABC, XYZ). Will be converted to uppercase.</p>
                     </div>
 
                     <div>

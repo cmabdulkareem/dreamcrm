@@ -5,7 +5,8 @@ import {
   getAllStudents,
   getStudentById,
   updateStudent,
-  deleteStudent
+  deleteStudent,
+  getNextStudentId
 } from '../controller/studentController.js';
 import verifyToken from "../middleware/verifyToken.js";
 import { applyBrandFilter } from "../middleware/brandMiddleware.js";
@@ -16,8 +17,8 @@ const router = express.Router();
 router.use(verifyToken);
 router.use(applyBrandFilter);
 
-router.post('/create', uploadStudentPhoto, createStudent);
 router.get('/all', verifyToken, getAllStudents);
+router.get('/get-next-id', verifyToken, getNextStudentId);
 router.get('/:id', verifyToken, getStudentById);
 router.put('/update/:id', verifyToken, updateStudent);
 router.delete('/delete/:id', verifyToken, deleteStudent);

@@ -66,6 +66,8 @@ export default function NewStudent() {
   const [emailError, setEmailError] = useState(false);
   const [convertedLeads, setConvertedLeads] = useState([]);
   const [courses, setCourses] = useState([]); // Course data from API
+  const [brands, setBrands] = useState([]); // Brand data from API
+  const [selectedBrand, setSelectedBrand] = useState(""); // Selected brand
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -79,6 +81,7 @@ export default function NewStudent() {
   useEffect(() => {
     fetchConvertedLeads();
     fetchCourses(); // Fetch courses for value calculation
+    fetchBrands(); // Fetch brands for selection
   }, []);
 
   const fetchCourses = useCallback(async () => {
@@ -132,6 +135,16 @@ export default function NewStudent() {
       }
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  const fetchBrands = useCallback(async () => {
+    try {
+      const response = await axios.get(`${API}/brands`, { withCredentials: true });
+      setBrands(response.data.brands || []);
+    } catch (error) {
+      console.error("Error fetching brands:", error);
+      toast.error("Failed to fetch brands");
     }
   }, []);
 
@@ -239,6 +252,33 @@ export default function NewStudent() {
     }
   }, [convertedLeads]);
 
+  // Handle enrollment date change and auto-generate student ID
+  const handleEnrollmentDateChange = (date, str) => {
+    setEnrollmentDate(str);
+  };
+
+  // Auto-generate student ID when brand or enrollment date changes
+  useEffect(() => {
+    const fetchNextStudentId = async () => {
+      if (selectedBrand && enrollmentDate) {
+        try {
+          const response = await axios.get(
+            `${API}/students/get-next-id?brandId=${selectedBrand}&enrollmentDate=${enrollmentDate}`,
+            { withCredentials: true }
+          );
+          setStudentId(response.data.nextStudentId);
+        } catch (error) {
+          console.error("Error fetching next student ID:", error);
+          // Don't toast here to avoid spamming while typing/selecting
+        }
+      } else {
+        setStudentId("");
+      }
+    };
+
+    fetchNextStudentId();
+  }, [selectedBrand, enrollmentDate]);
+
   const validateEmail = useCallback((value) => {
     const isValidEmail =
       /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value);
@@ -304,6 +344,7 @@ export default function NewStudent() {
     setDiscountPercentage("");
     setEnrollmentDate("");
     setStudentId("");
+    setSelectedBrand("");
     setEmailError(false);
     setValidationErrors({});
   }, []);
@@ -326,69 +367,69 @@ export default function NewStudent() {
       errors.fullName = "Full Name is required";
     }
 
+    if (!selectedBrand) {
+      errors.selectedBrand = "Please select a brand";
+    }
+
     if (!email.trim()) {
-      errors.email = "Email is required";
-    } else if (!validateEmail(email)) {
-      errors.email = "Please enter a valid email address";
-    }
 
-    if (!phone1.trim()) {
-      errors.phone1 = "Phone is required";
-    }
-
-    if (!place) {
-      errors.place = "Place is required";
-    } else if (place === "Other" && !otherPlace.trim()) {
-      errors.otherPlace = "Please specify the place";
-    }
-
-    if (!address.trim()) {
-      errors.address = "Address is required";
-    }
-
-    if (!aadharCardNumber.trim()) {
-      errors.aadharCardNumber = "Aadhar Card Number is required";
-    } else if (!/^\d{12}$/.test(aadharCardNumber)) {
-      errors.aadharCardNumber = "Aadhar Card Number must be 12 digits";
-    }
-
-    if (!coursePreference) {
-      errors.coursePreference = "Primary course is required. Please select a course from the course management database.";
-    }
-
-    // Validate additional courses
-    additionalCourses.forEach((courseId, index) => {
-      if (!courseId) {
-        errors[`additionalCourse${index}`] = `Additional course ${index + 1} is required`;
+      if (!phone1.trim()) {
+        errors.phone1 = "Phone is required";
       }
-    });
 
-    if (!enrollmentDate) {
-      errors.enrollmentDate = "Enrollment date is required";
-    }
+      if (!place) {
+        errors.place = "Place is required";
+      } else if (place === "Other" && !otherPlace.trim()) {
+        errors.otherPlace = "Please specify the place";
+      }
 
-    if (!studentId.trim()) {
-      errors.studentId = "Student ID is required";
-    }
+      if (!address.trim()) {
+        errors.address = "Address is required";
+      }
 
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  }, [
-    selectedLead,
-    fullName,
-    email,
-    phone1,
-    place,
-    otherPlace,
-    address,
-    aadharCardNumber,
-    coursePreference,
-    additionalCourses,
-    enrollmentDate,
-    studentId,
-    convertedLeads,
-    validateEmail
-  ]);
+      if (!aadharCardNumber.trim()) {
+        errors.aadharCardNumber = "Aadhar Card Number is required";
+      } else if (!/^\d{12}$/.test(aadharCardNumber)) {
+        errors.aadharCardNumber = "Aadhar Card Number must be 12 digits";
+      }
+
+      if (!coursePreference) {
+        errors.coursePreference = "Primary course is required. Please select a course from the course management database.";
+      }
+
+      // Validate additional courses
+      additionalCourses.forEach((courseId, index) => {
+        if (!courseId) {
+          errors[`additionalCourse${index}`] = `Additional course ${index + 1} is required`;
+        }
+      });
+
+      if (!enrollmentDate) {
+        errors.enrollmentDate = "Enrollment date is required";
+      }
+
+      if (!studentId.trim()) {
+        errors.studentId = "Student ID is required";
+      }
+
+      setValidationErrors(errors);
+      return Object.keys(errors).length === 0;
+    }, [
+      selectedLead,
+      fullName,
+      email,
+      phone1,
+      place,
+      otherPlace,
+      address,
+      aadharCardNumber,
+      coursePreference,
+      additionalCourses,
+      enrollmentDate,
+      studentId,
+      convertedLeads,
+      validateEmail
+    ]);
 
   // Handle submit
   const handleSubmit = useCallback(async (e) => {
@@ -428,6 +469,7 @@ export default function NewStudent() {
       formData.append("finalAmount", calculateFinalAmount());
       formData.append("enrollmentDate", enrollmentDate);
       formData.append("leadId", selectedLead);
+      formData.append("brandId", selectedBrand);
       if (photo) {
         formData.append("photo", photo);
       }
@@ -496,6 +538,7 @@ export default function NewStudent() {
     calculateFinalAmount,
     enrollmentDate,
     selectedLead,
+    selectedBrand,
     photo,
     handleClear,
     navigate,
@@ -546,6 +589,17 @@ export default function NewStudent() {
                       error={!!validationErrors.fullName}
                       hint={validationErrors.fullName}
                       disabled={!!selectedLead}
+                    />
+                  </div>
+
+                  <div className="w-full md:w-1/4">
+                    <Label htmlFor="brand">Brand *</Label>
+                    <Select
+                      options={brands.map(b => ({ value: b._id, label: `${b.name} (${b.code})` }))}
+                      value={selectedBrand}
+                      placeholder="Select Brand"
+                      onChange={setSelectedBrand}
+                      error={!!validationErrors.selectedBrand}
                     />
                   </div>
 
@@ -842,18 +896,20 @@ export default function NewStudent() {
                       label="Enrollment Date"
                       placeholder="Select a date"
                       value={enrollmentDate}
-                      onChange={(date, str) => setEnrollmentDate(str)}
+                      onChange={handleEnrollmentDateChange}
                       error={!!validationErrors.enrollmentDate}
                       hint={validationErrors.enrollmentDate}
                     />
                   </div>
                   <div className="w-full md:w-1/2">
-                    <Label htmlFor="studentId">Student ID *</Label>
+                    <Label htmlFor="studentId">Student ID (Auto-generated)</Label>
                     <Input
                       type="text"
                       id="studentId"
                       value={studentId}
-                      onChange={(e) => setStudentId(e.target.value)}
+                      readOnly
+                      placeholder="Select Brand & Date"
+                      className="bg-gray-100 dark:bg-gray-700 font-mono"
                       error={!!validationErrors.studentId}
                       hint={validationErrors.studentId}
                     />

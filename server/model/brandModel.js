@@ -19,9 +19,12 @@ const brandSchema = new mongoose.Schema({
     type: String,
     default: null
   },
-  website: {
+  code: {
     type: String,
-    default: ""
+    required: true,
+    unique: true,
+    uppercase: true,
+    trim: true
   },
   isActive: {
     type: Boolean,

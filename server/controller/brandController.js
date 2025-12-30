@@ -12,11 +12,15 @@ export const createBrand = async (req, res) => {
       });
     }
 
-    const { name, description, website } = req.body;
+    const { name, description, code } = req.body;
 
     // Validate required fields
     if (!name) {
       return res.status(400).json({ message: "Brand name is required." });
+    }
+
+    if (!code) {
+      return res.status(400).json({ message: "Brand code is required." });
     }
 
     // Check if brand already exists
@@ -25,11 +29,17 @@ export const createBrand = async (req, res) => {
       return res.status(400).json({ message: "A brand with this name already exists." });
     }
 
+    // Check if brand code already exists
+    const existingCode = await Brand.findOne({ code: code.toUpperCase() });
+    if (existingCode) {
+      return res.status(400).json({ message: "A brand with this code already exists." });
+    }
+
     // Create new brand
     const newBrand = new Brand({
       name,
       description: description || "",
-      website: website || "",
+      code: code.toUpperCase(),
       themeColor: req.body.themeColor || "#ED1164",
       createdBy: req.user.id
     });
@@ -96,7 +106,7 @@ export const updateBrand = async (req, res) => {
     }
 
     const { id } = req.params;
-    const { name, description, website, isActive } = req.body;
+    const { name, description, code, isActive } = req.body;
 
     // Validate ID
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -123,9 +133,22 @@ export const updateBrand = async (req, res) => {
       brand.name = name;
     }
 
+    // Check if another brand with the same code exists
+    if (code && code.toUpperCase() !== brand.code) {
+      const existingCode = await Brand.findOne({
+        code: code.toUpperCase(),
+        _id: { $ne: id }
+      });
+
+      if (existingCode) {
+        return res.status(400).json({ message: "A brand with this code already exists." });
+      }
+
+      brand.code = code.toUpperCase();
+    }
+
     // Update fields
     if (description !== undefined) brand.description = description;
-    if (website !== undefined) brand.website = website;
     if (req.body.themeColor !== undefined) brand.themeColor = req.body.themeColor;
     if (isActive !== undefined) brand.isActive = isActive;
     brand.updatedAt = Date.now();

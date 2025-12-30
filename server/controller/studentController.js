@@ -1,6 +1,7 @@
 import studentModel from "../model/studentModel.js";
 import customerModel from "../model/customerModel.js";
 import courseModel from "../model/courseModel.js";
+import { generateStudentId } from "../helpers/studentIdGenerator.js";
 import multer from "multer";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -39,7 +40,6 @@ export const createStudent = async (req, res) => {
   try {
     // Handle form data fields
     const {
-      studentId,
       fullName,
       email,
       phone1,
@@ -59,23 +59,18 @@ export const createStudent = async (req, res) => {
       discountAmount,
       finalAmount,
       enrollmentDate,
-      leadId
+      leadId,
+      brandId
     } = req.body;
 
     // Validation
-    if (!studentId || !fullName || !email || !phone1 || !address || !aadharCardNumber || !coursePreference || !enrollmentDate || !leadId) {
+    if (!fullName || !email || !phone1 || !address || !aadharCardNumber || !coursePreference || !enrollmentDate || !leadId || !brandId) {
       return res.status(400).json({ message: "All required fields must be provided." });
     }
 
     // Validate Aadhar card number
     if (!/^\d{12}$/.test(aadharCardNumber)) {
       return res.status(400).json({ message: "Aadhar Card Number must be 12 digits." });
-    }
-
-    // Check if student ID already exists
-    const existingStudent = await studentModel.findOne({ studentId });
-    if (existingStudent) {
-      return res.status(400).json({ message: "Student with this ID already exists." });
     }
 
     // Check if lead exists and is converted
@@ -88,6 +83,15 @@ export const createStudent = async (req, res) => {
       return res.status(400).json({
         message: `Only converted leads can be used to create students. Current lead status is: ${lead.leadStatus}`
       });
+    }
+
+    // Generate Student ID automatically
+    const studentId = await generateStudentId(brandId, enrollmentDate);
+
+    // Check if generated student ID already exists (edge case)
+    const existingStudent = await studentModel.findOne({ studentId });
+    if (existingStudent) {
+      return res.status(400).json({ message: "Generated Student ID already exists. Please try again." });
     }
 
     // Handle photo upload
@@ -131,10 +135,9 @@ export const createStudent = async (req, res) => {
       discountAmount: parseFloat(discountAmount) || 0,
       finalAmount: parseFloat(finalAmount) || 0,
       enrollmentDate: new Date(enrollmentDate),
-      enrollmentDate: new Date(enrollmentDate),
       leadId,
       createdBy: req.user.fullName || req.user.email,
-      brand: req.brandFilter?.brand || req.headers['x-brand-id'] || null // Strict brand assignment
+      brand: brandId
     });
 
     await newStudent.save();
@@ -145,7 +148,7 @@ export const createStudent = async (req, res) => {
     });
   } catch (error) {
     console.error("Create student error:", error);
-    return res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: error.message || "Server error" });
   }
 };
 
@@ -248,19 +251,30 @@ export const updateStudent = async (req, res) => {
   }
 };
 
-// Delete student
-export const deleteStudent = async (req, res) => {
+// Get next student ID for preview
+export const getNextStudentId = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { brandId, enrollmentDate } = req.query;
 
-    const student = await studentModel.findByIdAndDelete(id);
-    if (!student) {
-      return res.status(404).json({ message: "Student not found." });
+    if (!brandId || !enrollmentDate) {
+      return res.status(400).json({ message: "Brand ID and Enrollment Date are required." });
     }
 
-    return res.status(200).json({ message: "Student deleted successfully." });
+    const nextStudentId = await generateStudentId(brandId, enrollmentDate);
+
+    return res.status(200).json({ nextStudentId });
   } catch (error) {
-    console.error("Delete student error:", error);
-    return res.status(500).json({ message: "Server error" });
+    console.error("Error generating next student ID:", error);
+    return res.status(500).json({ message: error.message || "Server error" });
   }
+};
+
+export default {
+  uploadStudentPhoto,
+  createStudent,
+  getAllStudents,
+  getStudentById,
+  updateStudent,
+  deleteStudent,
+  getNextStudentId
 };
