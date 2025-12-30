@@ -160,6 +160,25 @@ function AuthProvider({ children }) {
     window.location.reload();
   }
 
+  // Mark tutorial as seen
+  const markTutorialSeen = async () => {
+    try {
+      await axios.put(`${API}/users/tutorial-complete`, {}, {
+        withCredentials: true
+      });
+
+      // Update local user state
+      if (user) {
+        setUser({
+          ...user,
+          hasSeenCounsellorTutorial: true
+        });
+      }
+    } catch (error) {
+      console.error("Error marking tutorial as seen:", error);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -173,7 +192,8 @@ function AuthProvider({ children }) {
         logout,
         updateUser,
         selectedBrand,
-        selectBrand
+        selectBrand,
+        markTutorialSeen
       }}
     >
       {children}

@@ -6,6 +6,7 @@ import AppHeader from "./AppHeader";
 import Backdrop from "./Backdrop";
 import AppSidebar from "./AppSidebar";
 import Footer from "../components/common/Footer";
+import CounsellorTutorial from "../components/tutorial/CounsellorTutorial";
 
 const LayoutContent = () => {
   const { isExpanded, isHovered, isMobileOpen } = useSidebar();
@@ -28,6 +29,7 @@ const LayoutContent = () => {
         </div>
         <Footer />
       </div>
+      <CounsellorTutorial />
     </div>
   );
 };

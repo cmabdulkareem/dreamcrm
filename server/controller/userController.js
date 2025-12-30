@@ -929,3 +929,21 @@ export const forgotPassword = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+
+// Mark counsellor tutorial as seen
+export const completeTutorial = async (req, res) => {
+  try {
+    const user = await userModel.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.hasSeenCounsellorTutorial = true;
+    await user.save();
+
+    return res.status(200).json({ message: "Tutorial marked as seen" });
+  } catch (error) {
+    console.error("Complete tutorial error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};

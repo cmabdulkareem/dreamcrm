@@ -33,9 +33,9 @@ const userSchema = new mongoose.Schema(
     consent: { type: Boolean, required: true },
     accountStatus: { type: String, enum: ["Pending", "Active", "Suspended", "Deactivated"], default: "Pending" },
     isAdmin: { type: Boolean, default: false },
-    
+
     // Role-based access control
-    roles: { 
+    roles: {
       type: [{
         type: String,
         enum: [
@@ -61,32 +61,35 @@ const userSchema = new mongoose.Schema(
           'Placement', // Keep for backward compatibility
           'General'
         ]
-      }], 
-      default: ['General'] 
+      }],
+      default: ['General']
     },
-    
+
     // Added missing fields
     dob: { type: Date, default: null },
     joiningDate: { type: Date, default: null }, // new field added
     company: { type: String, default: "" },
     location: { type: String, default: "DreamZone, Kasaragod" },
     avatar: { type: String, default: null },
-    
+
     // Brand associations - which brands this user can access
     brands: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Brand'
     }],
-    
+
     // New profile fields
     bloodGroup: { type: String, default: "" },
     country: { type: String, default: "" },
     state: { type: String, default: "" },
     reportingHead: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
-    
+
     // Password reset fields
     resetPasswordToken: { type: String },
-    resetPasswordExpires: { type: Date }
+    resetPasswordExpires: { type: Date },
+
+    // Tutorial completion status
+    hasSeenCounsellorTutorial: { type: Boolean, default: false }
   },
   {
     timestamps: true, // enable both createdAt and updatedAt
@@ -94,12 +97,12 @@ const userSchema = new mongoose.Schema(
 );
 
 // Pre-save middleware to handle first user as Owner
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', async function (next) {
   // Check if this is a new user
   if (this.isNew) {
     // Count existing users
     const userCount = await mongoose.model('User').countDocuments();
-    
+
     // If this is the first user, make them Owner
     if (userCount === 0) {
       this.isAdmin = true;

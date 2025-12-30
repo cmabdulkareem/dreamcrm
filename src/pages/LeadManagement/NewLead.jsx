@@ -501,6 +501,7 @@ export default function FormElements() {
                     <Label>Email</Label>
                     <Input
                       type="email"
+                      id="new-lead-email"
                       value={email}
                       error={error || !!validationErrors.email}
                       onChange={handleEmailChange}
@@ -515,6 +516,7 @@ export default function FormElements() {
                   <div className="w-full md:w-1/2">
                     <Label>Phone *</Label>
                     <PhoneInput
+                      id="new-lead-phone"
                       selectPosition="end"
                       countries={countries}
                       placeholder="+91 98765 43210"
@@ -626,6 +628,7 @@ export default function FormElements() {
                 <div>
                   <MultiSelect
                     label="Course Preference"
+                    id="new-lead-course-preference"
                     options={courseOptions}
                     selectedValues={selectedValues}
                     onChange={setSelectedValues}
@@ -664,6 +667,7 @@ export default function FormElements() {
                       options={campaignOptions}
                       value={campaign}
                       placeholder="Campaigns"
+                      id="new-lead-campaign"
                       onChange={handleCampaignChange}
                       error={!!validationErrors.campaign}
                       hint={validationErrors.campaign}
@@ -714,7 +718,7 @@ export default function FormElements() {
         {/* Buttons */}
         <div className="flex gap-4 justify-end mt-6">
           <Button type="button" onClick={handleClear} variant="outline" disabled={saving}>Clear</Button>
-          <Button variant="primary" type="submit" disabled={saving}>
+          <Button variant="primary" type="submit" disabled={saving} id="new-lead-submit-btn">
             {saving ? (
               <span className="flex items-center gap-2">
                 <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

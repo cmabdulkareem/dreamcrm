@@ -5,6 +5,7 @@ import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { AuthContext } from "../../context/AuthContext";
 import { useChat } from "../../context/ChatContext";
+import { useTutorial } from "../../context/TutorialContext";
 import { getAvatarUrl } from "../../utils/imageHelper";
 
 import API from "../../config/api";
@@ -13,6 +14,7 @@ export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const { user, logout } = useContext(AuthContext);
   const { setUserOffline } = useChat();
+  const { startTutorial } = useTutorial();
   const navigate = useNavigate();
 
   function toggleDropdown() {
@@ -47,6 +49,7 @@ export default function UserDropdown() {
   return (
     <div className="relative">
       <button
+        id="header-profile"
         onClick={toggleDropdown}
         className="flex items-center text-gray-700 dropdown-toggle dark:text-gray-400"
       >
@@ -171,6 +174,35 @@ export default function UserDropdown() {
               Support
             </DropdownItem>
           </li>
+          {/* Show Start Tutorial for Counsellors */}
+          {(user?.roles?.includes('Counsellor') || user?.role?.includes('Counsellor')) && (
+            <li>
+              <button
+                onClick={() => {
+                  startTutorial();
+                  closeDropdown();
+                }}
+                className="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300 w-full text-left"
+              >
+                <svg
+                  className="fill-gray-500 group-hover:fill-gray-700 dark:fill-gray-400 dark:group-hover:fill-gray-300"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    fillRule="evenodd"
+                    clipRule="evenodd"
+                    d="M12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2ZM12 6C12.5523 6 13 6.44772 13 7V11H17C17.5523 11 18 11.4477 18 12C18 12.5523 17.5523 13 17 13H13V17C13 17.5523 12.5523 18 12 18C11.4477 18 11 17.5523 11 17V13H7C6.44772 13 6 12.5523 6 12C6 11.4477 6.44772 11 7 11H11V7C11 6.44772 11.4477 6 12 6Z"
+                    fill=""
+                  />
+                </svg>
+                Start Tutorial
+              </button>
+            </li>
+          )}
         </ul>
 
         <button

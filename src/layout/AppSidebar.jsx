@@ -277,6 +277,7 @@ const AppSidebar = () => {
                     ? "lg:justify-center"
                     : "lg:justify-start"
                   }`}
+                id={`sidebar-item-${nav.name.replace(/\s+/g, '-').toLowerCase()}`}
               >
                 {/* ... rest of button ... */}
 
@@ -311,6 +312,7 @@ const AppSidebar = () => {
                     ? "menu-item-active"
                     : "menu-item-inactive"
                     }`}
+                  id={`sidebar-item-${nav.name.replace(/\s+/g, '-').toLowerCase()}`}
                 >
                   <span
                     className={`menu-item-icon-size ${isActive(nav.path)
@@ -363,6 +365,7 @@ const AppSidebar = () => {
                             ? "menu-dropdown-item-active"
                             : "menu-dropdown-item-inactive"
                             }`}
+                          id={`sidebar-subitem-${subItem.name.replace(/\s+/g, '-').toLowerCase()}`}
                         >
                           {subItem.name}
                           <span className="flex items-center gap-1 ml-auto">
