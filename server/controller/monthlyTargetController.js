@@ -16,16 +16,30 @@ export const getMonthlyTargets = async (req, res) => {
 
       const query = {
         year,
-        month,
-        ...(req.brandFilter?.brand ? { brand: req.brandFilter.brand } : { brand: null })
+        month
       };
 
-      const target = await monthlyTargetModel.findOne(query);
+      if (req.brandFilter) {
+        // If brand filter is present, apply it
+        // If brand filter is {}, it matches all brands
+        // If brand filter is { brand: ID }, matches that brand
+        // If brand filter is { brand: { $in: [] } }, matches those
+        Object.assign(query, req.brandFilter);
+      }
+
+      const matchingTargets = await monthlyTargetModel.find(query);
+      const totalRevenue = matchingTargets.reduce((sum, t) => sum + (t.targetRevenue || 0), 0);
+
+      // If we have mixed targets, we can't easily return a single _id for editing.
+      // If there is exactly one target, we return its _id.
+      // Otherwise null (which means check frontend behavior for editing).
+      const singleId = matchingTargets.length === 1 ? matchingTargets[0]._id : null;
+
       targets.push({
         year,
         month,
-        targetRevenue: target?.targetRevenue || null,
-        _id: target?._id || null
+        targetRevenue: matchingTargets.length > 0 ? totalRevenue : null, // If no targets found, return null so frontend defaults
+        _id: singleId
       });
     }
 
@@ -46,15 +60,29 @@ export const getTargetByMonth = async (req, res) => {
 
     const query = {
       year: parseInt(year),
-      month: parseInt(month),
-      ...(req.brandFilter?.brand ? { brand: req.brandFilter.brand } : { brand: null })
+      month: parseInt(month)
     };
 
-    const target = await monthlyTargetModel.findOne(query);
+    if (req.brandFilter) {
+      Object.assign(query, req.brandFilter);
+    }
 
-    if (!target) {
+    const matchingTargets = await monthlyTargetModel.find(query);
+
+    if (matchingTargets.length === 0) {
       return res.status(404).json({ message: "Target not found for this month." });
     }
+
+    const totalRevenue = matchingTargets.reduce((sum, t) => sum + (t.targetRevenue || 0), 0);
+    const singleId = matchingTargets.length === 1 ? matchingTargets[0]._id : null;
+
+    // Construct a composite target object
+    const target = {
+      year: parseInt(year),
+      month: parseInt(month),
+      targetRevenue: totalRevenue,
+      _id: singleId
+    };
 
     return res.status(200).json({
       target,
