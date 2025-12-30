@@ -269,12 +269,19 @@ export const getNextStudentId = async (req, res) => {
   }
 };
 
-export default {
-  uploadStudentPhoto,
-  createStudent,
-  getAllStudents,
-  getStudentById,
-  updateStudent,
-  deleteStudent,
-  getNextStudentId
+// Delete student
+export const deleteStudent = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const student = await studentModel.findByIdAndDelete(id);
+    if (!student) {
+      return res.status(404).json({ message: "Student not found." });
+    }
+
+    return res.status(200).json({ message: "Student deleted successfully." });
+  } catch (error) {
+    console.error("Delete student error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
 };
