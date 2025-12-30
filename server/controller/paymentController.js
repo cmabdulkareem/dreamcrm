@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Payment from '../model/paymentModel.js';
 import Student from '../model/studentModel.js';
 import Customer from '../model/customerModel.js';
@@ -145,7 +146,16 @@ export const getPaymentStats = async (req, res) => {
         // Current state context
         let brandQuery = {};
         if (req.brandFilter) {
-            brandQuery = req.brandFilter;
+            brandQuery = { ...req.brandFilter };
+
+            // Aggregation $match needs explicit ObjectId casting (unlike find)
+            if (brandQuery.brand) {
+                if (typeof brandQuery.brand === 'string') {
+                    brandQuery.brand = new mongoose.Types.ObjectId(brandQuery.brand);
+                } else if (brandQuery.brand.$in) {
+                    brandQuery.brand.$in = brandQuery.brand.$in.map(id => new mongoose.Types.ObjectId(id));
+                }
+            }
         }
 
         // 1. Current Month Revenue (UTC)

@@ -27,8 +27,8 @@ function AuthProvider({ children }) {
   useEffect(() => {
     const interceptor = axios.interceptors.request.use((config) => {
       // Add Brand ID
-      if (selectedBrand && selectedBrand._id) {
-        config.headers["x-brand-id"] = selectedBrand._id;
+      if (selectedBrand && (selectedBrand._id || selectedBrand.id)) {
+        config.headers["x-brand-id"] = selectedBrand._id || selectedBrand.id;
         if (selectedBrand.themeColor) {
           updateBrandTheme(selectedBrand.themeColor);
         }
