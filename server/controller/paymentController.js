@@ -148,18 +148,19 @@ export const getPaymentStats = async (req, res) => {
             brandQuery = req.brandFilter;
         }
 
-        // 1. Current Month Revenue
+        // 1. Current Month Revenue (UTC)
         const now = new Date();
-        const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+        const currentMonthStart = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
+        const currentMonthEnd = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999));
 
-        // 2. Last Month Revenue
-        const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+        // 2. Last Month Revenue (UTC)
+        const lastMonthStart = new Date(Date.UTC(now.getFullYear(), now.getMonth() - 1, 1));
+        const lastMonthEnd = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999));
 
-        // 3. Today Revenue
-        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+        // 3. Today Revenue (UTC)
+        // Adjust for potential timezone offset if needed, but assuming daily stats are UTC based
+        const todayStart = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+        const todayEnd = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999));
 
         // Helper to sum
         const sumAmount = async (start, end) => {
@@ -191,9 +192,9 @@ export const getPaymentStats = async (req, res) => {
 
         // Iterate last 12 months
         for (let i = 11; i >= 0; i--) {
-            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-            const mStart = new Date(d.getFullYear(), d.getMonth(), 1);
-            const mEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59);
+            const d = new Date(Date.UTC(now.getFullYear(), now.getMonth() - i, 1));
+            const mStart = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
+            const mEnd = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0, 23, 59, 59, 999));
 
             const mRevenue = await sumAmount(mStart, mEnd);
 
