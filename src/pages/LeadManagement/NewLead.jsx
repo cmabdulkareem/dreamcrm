@@ -40,6 +40,7 @@ export default function FormElements() {
   const navigate = useNavigate();
   const { addNotification, areToastsEnabled } = useNotifications();
   // Controlled states
+  const [saving, setSaving] = useState(false);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone1, setPhone1] = useState("");
@@ -368,11 +369,15 @@ export default function FormElements() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (saving) return; // Prevent double submission
+
     // Validate form before submission
     if (!validateForm()) {
       toast.error("Please fill in all required fields");
       return;
     }
+
+    setSaving(true); // Start loading
 
     const formData = {
       fullName,
@@ -395,8 +400,6 @@ export default function FormElements() {
       followUpDate,
       leadPotential, // Added lead potential to form data
     };
-
-    console.log("Sending formData with leadPotential:", formData); // Add logging
 
     try {
       const response = await axios.post(
@@ -462,6 +465,8 @@ export default function FormElements() {
       } else {
         toast.error(error.response?.data?.message || "Failed to create lead. Please try again.");
       }
+    } finally {
+      setSaving(false); // Stop loading
     }
   };
 
@@ -476,6 +481,7 @@ export default function FormElements() {
 
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+          {/* ... existing form content ... */}
           <div className="space-y-6">
             <ComponentCard title="Basic Details">
               <div className="space-y-6">
@@ -707,8 +713,18 @@ export default function FormElements() {
 
         {/* Buttons */}
         <div className="flex gap-4 justify-end mt-6">
-          <Button type="button" onClick={handleClear} variant="outline">Clear</Button>
-          <Button variant="primary" type="submit">Save</Button>
+          <Button type="button" onClick={handleClear} variant="outline" disabled={saving}>Clear</Button>
+          <Button variant="primary" type="submit" disabled={saving}>
+            {saving ? (
+              <span className="flex items-center gap-2">
+                <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Saving...
+              </span>
+            ) : "Save"}
+          </Button>
         </div>
       </form>
 
