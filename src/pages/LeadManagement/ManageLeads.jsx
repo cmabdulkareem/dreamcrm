@@ -7,7 +7,7 @@ export default function Blank() {
     <div>
       <PageMeta
         title="Manage Leads | DreamCRM, You can manage enquiries here"
-        description="This is React.js Blank Dashboard page for TailAdmin - React.js Tailwind CSS Admin Dashboard Template"
+        description="This is where we manage enquiries"
       />
       <PageBreadcrumb pageTitle="Manage Your Leads Here" />
       <RecentOrders />

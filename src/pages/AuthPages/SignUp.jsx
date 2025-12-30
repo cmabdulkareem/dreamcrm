@@ -7,7 +7,7 @@ export default function SignUp() {
     <>
       <PageMeta
         title="SignUp for Dream CRM | Take your first step to lead your business"
-        description="This is React.js SignUp Tables Dashboard page for TailAdmin - React.js Tailwind CSS Admin Dashboard Template"
+        description="Sign up for DreamCRM"
       />
       <AuthLayout>
         <SignUpForm />

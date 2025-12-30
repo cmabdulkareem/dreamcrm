@@ -158,7 +158,7 @@ export default function RecentOrders() {
   const { addEvent, events, updateEvent } = useCalendar();
   const { addNotification, areToastsEnabled } = useNotifications();
   const [search, setSearch] = useState("");
-  const [sortOrder, setSortOrder] = useState("asc");
+  const [sortOrder, setSortOrder] = useState("desc");
   const [statusFilter, setStatusFilter] = useState(""); // Added for status filter
   const [leadStatusFilter, setLeadStatusFilter] = useState(""); // Filter by lead status
   const [leadPotentialFilter, setLeadPotentialFilter] = useState(""); // Filter by lead potential

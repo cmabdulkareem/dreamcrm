@@ -16,7 +16,7 @@ export default function FormElements() {
     <div>
       <PageMeta
         title="Manage Leads | DreamCRM, You can manage enquiries here"
-        description="This is React.js Form Elements  Dashboard page for TailAdmin - React.js Tailwind CSS Admin Dashboard Template"
+        description="Manage your leads and enquiries here"
       />
       <PageBreadcrumb pageTitle="Manage Your Leads Here" />
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">

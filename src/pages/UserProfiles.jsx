@@ -7,19 +7,19 @@ import { AuthContext } from "../context/AuthContext";
 export default function UserProfiles() {
   const { user } = useContext(AuthContext);
   const [refreshKey, setRefreshKey] = useState(0);
-  
+
   // Listen for user data updates and trigger a refresh
   useEffect(() => {
     if (user) {
       setRefreshKey(prev => prev + 1);
     }
   }, [user]);
-  
+
   return (
     <>
       <PageMeta
         title="DreamCRM, a cutomer management app | Built by Dreamzone Kasaragod"
-        description="This is React.js Profile Dashboard page for TailAdmin - React.js Tailwind CSS Admin Dashboard Template"
+        description="This is User Profile page for DreamCRM"
       />
       <PageBreadcrumb pageTitle="Profile" />
       <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] lg:p-6">
