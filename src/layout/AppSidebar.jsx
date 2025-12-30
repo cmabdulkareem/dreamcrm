@@ -25,7 +25,7 @@ import {
 import { useSidebar } from "../context/SidebarContext";
 import SidebarWidget from "./SidebarWidget";
 import { isManager, hasRole, isAccountant } from "../utils/roleHelpers";
-import { TableIcon } from "../icons";
+
 
 const navItems = [
   {
