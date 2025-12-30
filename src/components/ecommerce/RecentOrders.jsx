@@ -666,6 +666,12 @@ export default function RecentOrders() {
   const openAssignModal = (row) => {
     setSelectedRow(row);
     setIsAssignModalOpen(true);
+    // Fetch users filtered by the lead's brand
+    if (row.brand) {
+      fetchAvailableUsers(row.brand._id || row.brand);
+    } else {
+      fetchAvailableUsers();
+    }
   };
 
   // Close assignment modal
@@ -676,9 +682,12 @@ export default function RecentOrders() {
   };
 
   // Fetch available users for assignment
-  const fetchAvailableUsers = async () => {
+  const fetchAvailableUsers = async (brandId = null) => {
     try {
-      const response = await axios.get(`${API}/users/dropdown`, { withCredentials: true });
+      const url = brandId
+        ? `${API}/users/dropdown?brandId=${brandId}`
+        : `${API}/users/dropdown`;
+      const response = await axios.get(url, { withCredentials: true });
       setAvailableUsers(response.data.users);
     } catch (error) {
       console.error("Error fetching users:", error);

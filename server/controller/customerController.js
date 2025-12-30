@@ -346,6 +346,18 @@ export const assignLead = async (req, res) => {
       return res.status(404).json({ message: "Customer not found." });
     }
 
+    // Brand validation: Ensure the assigned user belongs to the same brand as the lead
+    if (customer.brand) {
+      const leadBrandId = customer.brand.toString();
+      const userBrandIds = (assignedUser.brands || []).map(b => b.toString());
+
+      if (!userBrandIds.includes(leadBrandId)) {
+        return res.status(403).json({
+          message: "Cannot assign lead to user from a different brand. Lead assignment is restricted to users within the same brand."
+        });
+      }
+    }
+
     // Update assignment fields
     customer.assignedTo = assignedTo;
     customer.assignedBy = assignedBy;
@@ -493,7 +505,7 @@ export const getLeaderboard = async (req, res) => {
       if (!lead.assignedTo) return; // Skip if no assigned user
 
       const userId = lead.assignedTo._id.toString();
-      
+
       if (!userStats[userId]) {
         userStats[userId] = {
           userId,
@@ -509,7 +521,7 @@ export const getLeaderboard = async (req, res) => {
       if (lead.createdAt) {
         const createdDate = new Date(lead.createdAt);
         if (createdDate.getMonth() === currentMonth &&
-            createdDate.getFullYear() === currentYear) {
+          createdDate.getFullYear() === currentYear) {
           userStats[userId].totalLeads++;
         }
       }
@@ -521,7 +533,7 @@ export const getLeaderboard = async (req, res) => {
           if (remark.leadStatus === 'converted' && remark.updatedOn) {
             const updatedDate = new Date(remark.updatedOn);
             return updatedDate.getMonth() === currentMonth &&
-                   updatedDate.getFullYear() === currentYear;
+              updatedDate.getFullYear() === currentYear;
           }
           return false;
         });
@@ -537,7 +549,7 @@ export const getLeaderboard = async (req, res) => {
       .filter(user => user.totalLeads > 0 || user.conversions > 0) // Only include users with activity
       .map(user => ({
         ...user,
-        conversionRate: user.totalLeads > 0 
+        conversionRate: user.totalLeads > 0
           ? parseFloat(((user.conversions / user.totalLeads) * 100).toFixed(2))
           : 0
       }));

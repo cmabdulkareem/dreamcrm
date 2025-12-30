@@ -68,6 +68,8 @@ export const signUpUser = async (req, res) => {
 
 export const getUsersForDropdown = async (req, res) => {
   try {
+    const { brandId } = req.query;
+
     // Fetch only necessary user information for dropdown
     const users = await userModel.find({}, {
       _id: 1,
@@ -86,8 +88,17 @@ export const getUsersForDropdown = async (req, res) => {
       brands: 1 // Include brands in the projection
     });
 
+    // Filter users by brand if brandId is provided
+    let filteredUsers = users;
+    if (brandId) {
+      filteredUsers = users.filter(user => {
+        const userBrandIds = (user.brands || []).map(b => b.toString());
+        return userBrandIds.includes(brandId);
+      });
+    }
+
     // Format avatar URLs if they exist
-    const formattedUsers = users.map(user => ({
+    const formattedUsers = filteredUsers.map(user => ({
       _id: user._id,
       fullName: user.fullName,
       email: user.email,
