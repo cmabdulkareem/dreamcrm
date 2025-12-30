@@ -24,7 +24,8 @@ import {
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import SidebarWidget from "./SidebarWidget";
-import { isManager, hasRole } from "../utils/roleHelpers";
+import { isManager, hasRole, isAccountant } from "../utils/roleHelpers";
+import { TableIcon } from "../icons";
 
 const navItems = [
   {
@@ -50,6 +51,13 @@ const navItems = [
       { name: "New Student (beta)", path: "/new-student", pro: false },
       { name: "Manage Students (beta)", path: "/manage-students", pro: false },
     ],
+  },
+  {
+    name: "Finance",
+    icon: <TableIcon />,
+    subItems: [
+      { name: "Collect Payment", path: "/finance/collect-payment", pro: false },
+    ]
   },
   {
     icon: <CalendarIcon />,
@@ -246,6 +254,11 @@ const AppSidebar = () => {
           // Better to just map and render only allowed ones.
           // But here we are iterating items. We can modify the map callback to handle subItems filtering?
           // Actually, the rendering logic below iterates nav.subItems. We should modify that iteration.
+        }
+
+        // Special handling for Finance
+        if (nav.name === "Finance" && !isAccountant(user)) {
+          return null;
         }
 
         // Disable style
