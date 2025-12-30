@@ -9,6 +9,9 @@ const ADMIN_ROLES = ['Owner', 'Admin'];
 // Managerial roles (can manage teams and resources)
 const MANAGER_ROLES = ['Owner', 'Admin', 'Center Head / Manager', 'Manager'];
 
+// Finance roles
+const ACCOUNTANT_ROLES = ['Owner', 'Admin', 'Accounts Executive', 'Finance', 'Manager', 'Center Head / Manager'];
+
 /**
  * Check if user has a specific role
  */
@@ -101,4 +104,18 @@ export function getUserRoles(user) {
 
   const userRoles = user.roles || [];
   return Array.isArray(userRoles) ? userRoles : (typeof userRoles === 'string' ? [userRoles] : []);
+}
+
+/**
+ * Check if user has accountant privileges
+ */
+export function isAccountant(user) {
+  if (!user) return false;
+
+  // Admins are also accountants in this context
+  if (isAdmin(user)) return true;
+
+  const userRoles = user.roles || [];
+  const rolesArray = Array.isArray(userRoles) ? userRoles : (typeof userRoles === 'string' ? [userRoles] : []);
+  return rolesArray.some(role => ACCOUNTANT_ROLES.includes(role));
 }

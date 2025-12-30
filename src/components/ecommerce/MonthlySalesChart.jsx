@@ -19,35 +19,13 @@ export default function MonthlySalesChart() {
   const fetchRevenueData = async () => {
     try {
       const response = await axios.get(
-        `${API}/students/all`,
+        `${API}/payments/stats/monthly-revenue`,
         { withCredentials: true }
       );
 
-      const students = response.data.students || [];
-      const now = new Date();
-      const currentYear = now.getFullYear();
-      const currentMonth = now.getMonth();
+      const { revenueGraph } = response.data;
 
-      // Get last 12 months data
-      const monthlyRevenue = [];
-      const monthNames = [];
-
-      for (let i = 11; i >= 0; i--) {
-        const date = new Date(currentYear, currentMonth - i, 1);
-        const monthName = date.toLocaleDateString('en-US', { month: 'short' });
-        monthNames.push(monthName);
-
-        const monthStudents = students.filter(s => {
-          const createdDate = new Date(s.createdAt);
-          return createdDate.getMonth() === date.getMonth() &&
-            createdDate.getFullYear() === date.getFullYear();
-        });
-
-        const monthRevenue = monthStudents.reduce((sum, s) => sum + (s.finalAmount || 0), 0);
-        monthlyRevenue.push(monthRevenue / 100000); // Convert to lakhs
-      }
-
-      setRevenueData({ months: monthNames, revenue: monthlyRevenue });
+      setRevenueData(revenueGraph);
       setLoading(false);
     } catch (error) {
       console.error("Error fetching revenue data:", error);

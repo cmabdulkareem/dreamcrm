@@ -53,6 +53,7 @@ const LeaveRequestPortal = lazy(() => import("./pages/LeaveRequestPortal"));
 const LeaveStatusCheck = lazy(() => import("./pages/LeaveStatusCheck"));
 const ApplyLeave = lazy(() => import("./pages/LeaveManagement/ApplyLeave"));
 const MyLeaves = lazy(() => import("./pages/LeaveManagement/MyLeaves"));
+const CollectPayment = lazy(() => import("./pages/Finance/CollectPayment"));
 import ChatWidget from "./components/chat/ChatWidget";
 import BrandManagement from "./components/brandManagement/BrandManagement";
 
@@ -84,6 +85,9 @@ function App() {
                     <Route path="/settings/users" element={<ProtectedRoutes requireAdmin={true}><UserManagement /></ProtectedRoutes>} />
                     <Route path="/settings/brands" element={<ProtectedRoutes requireAdmin={true}><BrandManagement /></ProtectedRoutes>} />
                     <Route path="/settings/announcements" element={<ProtectedRoutes requireAdmin={false}><AnnouncementManagement /></ProtectedRoutes>} />
+
+                    {/* Finance */}
+                    <Route path="/finance/collect-payment" element={<ProtectedRoutes requireAccountant={true}><CollectPayment /></ProtectedRoutes>} />
 
                     {/* Profile */}
                     <Route path="/profile" element={<ProtectedRoutes><UserProfiles /></ProtectedRoutes>} />

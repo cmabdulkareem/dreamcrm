@@ -23,7 +23,7 @@ const monthNames = [
 export default function MonthlyTarget() {
   const { user } = useContext(AuthContext);
   const canEditTargets = isAdmin(user) || isOwner(user);
-  
+
   const [metrics, setMetrics] = useState({
     currentMonthRevenue: 0,
     lastMonthRevenue: 0,
@@ -34,7 +34,7 @@ export default function MonthlyTarget() {
   });
   const [targets, setTargets] = useState([]); // Targets for current + next 3 months
   const [loading, setLoading] = useState(true);
-  
+
   // Edit modal states
   const { isOpen: isEditModalOpen, openModal: openEditModal, closeModal: closeEditModal } = useModal();
   const [editTargets, setEditTargets] = useState([]);
@@ -59,80 +59,27 @@ export default function MonthlyTarget() {
 
   const fetchRevenueData = async () => {
     try {
-      const response = await axios.get(
-        `${API}/students/all`,
+      // Fetch Monthly Targets for fallback logic if needed, but we rely on stats endpoint now
+      const statsResponse = await axios.get(
+        `${API}/payments/stats/monthly-revenue`,
         { withCredentials: true }
       );
 
-      const students = response.data.students || [];
-      const now = new Date();
-      const currentMonth = now.getMonth();
-      const currentYear = now.getFullYear();
-
-      // Get last month's date
-      const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
-      const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
-
-      // Current month revenue
-      const currentMonthRevenue = students
-        .filter(s => {
-          const createdDate = new Date(s.createdAt);
-          return createdDate.getMonth() === currentMonth &&
-            createdDate.getFullYear() === currentYear;
-        })
-        .reduce((sum, s) => sum + (s.finalAmount || 0), 0);
-
-      // Last month revenue
-      const lastMonthRevenue = students
-        .filter(s => {
-          const createdDate = new Date(s.createdAt);
-          return createdDate.getMonth() === lastMonth &&
-            createdDate.getFullYear() === lastMonthYear;
-        })
-        .reduce((sum, s) => sum + (s.finalAmount || 0), 0);
-
-      // Today's revenue
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const todayRevenue = students
-        .filter(s => {
-          const createdDate = new Date(s.createdAt);
-          createdDate.setHours(0, 0, 0, 0);
-          return createdDate.getTime() === today.getTime();
-        })
-        .reduce((sum, s) => sum + (s.finalAmount || 0), 0);
+      const { currentMonthRevenue, lastMonthRevenue, todayRevenue } = statsResponse.data;
 
       // Calculate growth
       const revenueGrowth = lastMonthRevenue === 0
         ? (currentMonthRevenue > 0 ? 100 : 0)
         : (((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100);
 
-      // Get target from API or use calculated default
+      // Get target from API
+      // Since we already fetched targets in separate call, we find the current one
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+
       const currentTarget = targets.find(t => t.month === currentMonth && t.year === currentYear);
       let targetRevenue = currentTarget?.targetRevenue || 1000000; // Default 10L
-      
-      // If no target set, calculate default
-      if (!currentTarget?.targetRevenue) {
-        if (students.length > 0) {
-          const last3MonthsRevenue = [];
-          for (let i = 1; i <= 3; i++) {
-            const month = currentMonth - i < 0 ? 12 + (currentMonth - i) : currentMonth - i;
-            const year = currentMonth - i < 0 ? currentYear - 1 : currentYear;
-            const monthRevenue = students
-              .filter(s => {
-                const createdDate = new Date(s.createdAt);
-                return createdDate.getMonth() === month &&
-                  createdDate.getFullYear() === year;
-              })
-              .reduce((sum, s) => sum + (s.finalAmount || 0), 0);
-            last3MonthsRevenue.push(monthRevenue);
-          }
-          if (last3MonthsRevenue.length > 0) {
-            const avgRevenue = last3MonthsRevenue.reduce((a, b) => a + b, 0) / last3MonthsRevenue.length;
-            targetRevenue = Math.max(avgRevenue * 1.2, 100000); // At least 1L
-          }
-        }
-      }
 
       // Calculate percentage
       const percentage = targetRevenue > 0
@@ -166,13 +113,13 @@ export default function MonthlyTarget() {
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
-    
+
     const editTargetsData = [];
     for (let i = 0; i < 4; i++) {
       const month = (currentMonth + i) % 12;
       const year = currentMonth + i >= 12 ? currentYear + 1 : currentYear;
       const existingTarget = targets.find(t => t.month === month && t.year === year);
-      
+
       editTargetsData.push({
         year,
         month,
@@ -199,7 +146,7 @@ export default function MonthlyTarget() {
         if (!target.targetRevenue || target.targetRevenue <= 0) {
           return; // Skip empty targets
         }
-        
+
         await axios.post(
           `${API}/monthly-targets/set`,
           {
@@ -212,7 +159,7 @@ export default function MonthlyTarget() {
       });
 
       await Promise.all(savePromises);
-      
+
       toast.success("Monthly targets updated successfully!");
       await fetchMonthlyTargets();
       closeEditModal();

@@ -26,6 +26,7 @@ import announcementRoutes from './routes/announcementRoutes.js'
 import brandRoutes from './routes/brandRoutes.js'
 import courseCategoryRoutes from './routes/courseCategoryRoute.js'
 import monthlyTargetRoutes from './routes/monthlyTargetRoutes.js'
+import paymentRoutes from './routes/paymentRoutes.js'
 
 const app = express()
 
@@ -65,6 +66,7 @@ app.use('/api/leaves', leaveRoutes)
 app.use('/api/announcements', announcementRoutes)
 app.use('/api/brands', brandRoutes)
 app.use('/api/monthly-targets', monthlyTargetRoutes)
+app.use('/api/payments', paymentRoutes)
 
 
 
