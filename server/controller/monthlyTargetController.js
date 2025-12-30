@@ -128,10 +128,19 @@ export const setMonthlyTarget = async (req, res) => {
       });
     }
 
+    // Validate Brand context
+    if (!req.brandFilter || !req.brandFilter.brand || typeof req.brandFilter.brand !== 'string') {
+      return res.status(400).json({
+        message: "Targets must be set for a specific brand. Please select a brand first."
+      });
+    }
+
+    const brandId = req.brandFilter.brand;
+
     const query = {
       year: parseInt(year),
       month: parseInt(month),
-      ...(req.brandFilter?.brand ? { brand: req.brandFilter.brand } : { brand: null })
+      brand: brandId
     };
 
     // Find existing target or create new one
@@ -153,7 +162,7 @@ export const setMonthlyTarget = async (req, res) => {
         year: parseInt(year),
         month: parseInt(month),
         targetRevenue,
-        brand: req.brandFilter?.brand || null,
+        brand: brandId,
         createdBy: req.user.id,
         updatedBy: req.user.id
       });

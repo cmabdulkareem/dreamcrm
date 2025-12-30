@@ -21,8 +21,8 @@ const monthNames = [
 ];
 
 export default function MonthlyTarget() {
-  const { user } = useContext(AuthContext);
-  const canEditTargets = isAdmin(user) || isOwner(user);
+  const { user, selectedBrand } = useContext(AuthContext);
+  const canEditTargets = (isAdmin(user) || isOwner(user)) && selectedBrand;
 
   const [metrics, setMetrics] = useState({
     currentMonthRevenue: 0,
