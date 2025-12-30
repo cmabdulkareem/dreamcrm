@@ -369,7 +369,15 @@ const UserManagement = () => {
     if (!brands || brands.length === 0) return "No brands assigned";
 
     if (brands[0] && brands[0]._id) {
-      return brands.map((brand) => brand.name).join(", ");
+      return (
+        <div className="flex flex-col gap-1">
+          {brands.map((brand, index) => (
+            <span key={index} className="text-sm">
+              {brand.name}
+            </span>
+          ))}
+        </div>
+      );
     }
 
     return "Brands assigned";
