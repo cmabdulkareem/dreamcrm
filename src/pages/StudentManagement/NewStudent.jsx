@@ -372,64 +372,69 @@ export default function NewStudent() {
     }
 
     if (!email.trim()) {
+      errors.email = "Email is required";
+    } else if (!validateEmail(email)) {
+      errors.email = "Please enter a valid email address";
+    }
 
-      if (!phone1.trim()) {
-        errors.phone1 = "Phone is required";
+    if (!phone1.trim()) {
+      errors.phone1 = "Phone is required";
+    }
+
+    if (!place) {
+      errors.place = "Place is required";
+    } else if (place === "Other" && !otherPlace.trim()) {
+      errors.otherPlace = "Please specify the place";
+    }
+
+    if (!address.trim()) {
+      errors.address = "Address is required";
+    }
+
+    if (!aadharCardNumber.trim()) {
+      errors.aadharCardNumber = "Aadhar Card Number is required";
+    } else if (!/^\d{12}$/.test(aadharCardNumber)) {
+      errors.aadharCardNumber = "Aadhar Card Number must be 12 digits";
+    }
+
+    if (!coursePreference) {
+      errors.coursePreference = "Primary course is required. Please select a course from the course management database.";
+    }
+
+    // Validate additional courses
+    additionalCourses.forEach((courseId, index) => {
+      if (!courseId) {
+        errors[`additionalCourse${index}`] = `Additional course ${index + 1} is required`;
       }
+    });
 
-      if (!place) {
-        errors.place = "Place is required";
-      } else if (place === "Other" && !otherPlace.trim()) {
-        errors.otherPlace = "Please specify the place";
-      }
+    if (!enrollmentDate) {
+      errors.enrollmentDate = "Enrollment date is required";
+    }
 
-      if (!address.trim()) {
-        errors.address = "Address is required";
-      }
+    if (!studentId.trim()) {
+      errors.studentId = "Student ID is required";
+    }
 
-      if (!aadharCardNumber.trim()) {
-        errors.aadharCardNumber = "Aadhar Card Number is required";
-      } else if (!/^\d{12}$/.test(aadharCardNumber)) {
-        errors.aadharCardNumber = "Aadhar Card Number must be 12 digits";
-      }
-
-      if (!coursePreference) {
-        errors.coursePreference = "Primary course is required. Please select a course from the course management database.";
-      }
-
-      // Validate additional courses
-      additionalCourses.forEach((courseId, index) => {
-        if (!courseId) {
-          errors[`additionalCourse${index}`] = `Additional course ${index + 1} is required`;
-        }
-      });
-
-      if (!enrollmentDate) {
-        errors.enrollmentDate = "Enrollment date is required";
-      }
-
-      if (!studentId.trim()) {
-        errors.studentId = "Student ID is required";
-      }
-
-      setValidationErrors(errors);
-      return Object.keys(errors).length === 0;
-    }, [
-      selectedLead,
-      fullName,
-      email,
-      phone1,
-      place,
-      otherPlace,
-      address,
-      aadharCardNumber,
-      coursePreference,
-      additionalCourses,
-      enrollmentDate,
-      studentId,
-      convertedLeads,
-      validateEmail
-    ]);
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  }, [
+    selectedLead,
+    fullName,
+    selectedBrand,
+    email,
+    phone1,
+    place,
+    otherPlace,
+    address,
+    aadharCardNumber,
+    coursePreference,
+    additionalCourses,
+    enrollmentDate,
+    studentId,
+    convertedLeads,
+    validateEmail
+  ]);
 
   // Handle submit
   const handleSubmit = useCallback(async (e) => {
