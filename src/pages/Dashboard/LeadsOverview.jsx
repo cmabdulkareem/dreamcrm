@@ -32,34 +32,30 @@ export default function Home() {
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-12 gap-4 md:gap-6">
-          {/* Left Column - Charts */}
+          {/* Left Column - Charts & detailed lists */}
           <div className="col-span-12 space-y-6 xl:col-span-8">
             {/* Monthly Revenue Chart */}
             <MonthlySalesChart />
 
             {/* Lead vs Conversion Chart */}
             <StatisticsChart />
+
+            {/* Follow-ups Due - moved here to balance height */}
+            <FollowUpsDue />
           </div>
 
-          {/* Right Column - Targets and Follow-ups */}
+          {/* Right Column - Targets, Leaderboard & Stats */}
           <div className="col-span-12 space-y-6 xl:col-span-4">
             {/* Monthly Target */}
             <MonthlyTarget />
 
-            {/* Follow-ups Due */}
-            <FollowUpsDue />
-
             {/* Leaderboard */}
             <LeaderboardCard />
-          </div>
 
-          {/* Bottom Row - Status and Demographics */}
-          <div className="col-span-12 lg:col-span-6">
+            {/* Lead Status Breakdown */}
             <LeadStatusBreakdown />
-          </div>
 
-          {/* Demographics */}
-          <div className="col-span-12 lg:col-span-6">
+            {/* Demographics */}
             <DemographicCard />
           </div>
 

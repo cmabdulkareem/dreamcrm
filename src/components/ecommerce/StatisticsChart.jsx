@@ -173,7 +173,7 @@ export default function StatisticsChart() {
       </div>
 
       <div className="max-w-full overflow-x-auto custom-scrollbar">
-        <div className="min-w-[1000px] xl:min-w-full">
+        <div className="w-full">
           {loading ? (
             <div className="text-center py-20">
               <p className="text-gray-500">Loading chart data...</p>
