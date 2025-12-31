@@ -981,7 +981,7 @@ export default function RecentOrders() {
                     const styles = getLeadPotentialStyles(row.leadPotential);
 
                     return (
-                      <TableRow key={row._id} className="group overflow-hidden transition-colors hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
+                      <TableRow key={row._id} className="group overflow-hidden transition-colors even:bg-gray-50/40 even:dark:bg-white/[0.01] hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
                         <TableCell className="py-4 pl-8 relative">
                           {/* Vertical Status Strip */}
                           <div className={`absolute left-0 top-0 bottom-0 w-[6px] ${styles.bar}`} />
@@ -1021,7 +1021,16 @@ export default function RecentOrders() {
                             </p>
                           </div>
                         </TableCell>
-                        <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{row.contactPoint || "N/A"}</TableCell>
+                        <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
+                          <div className="flex flex-col gap-0.5">
+                            <p>{row.contactPoint || "N/A"}</p>
+                            {row.contactPoint?.toLowerCase() === "other" && row.otherContactPoint && (
+                              <p className="text-gray-400 text-xs truncate max-w-[150px]">
+                                {row.otherContactPoint}
+                              </p>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{row.campaign || "N/A"}</TableCell>
                         <TableCell className="py-3">
                           <div className="flex flex-col gap-1.5">
@@ -1063,7 +1072,7 @@ export default function RecentOrders() {
                             </Badge>
                             {row.assignedTo && (
                               <p className="text-gray-400 text-xs truncate max-w-[180px]">
-                                Assigned to:&nbsp;{row.assignedTo.fullName}
+                                Assigned To:&nbsp;{row.assignedTo.fullName}
                               </p>
                             )}
                           </div>
