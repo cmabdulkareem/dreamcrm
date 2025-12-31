@@ -1572,7 +1572,12 @@ export default function RecentOrders() {
                     className="bg-white dark:bg-gray-900"
                     onClick={() => {
                       const headers = ["Full Name", "Phone", "Email", "Place", "Education", "Course Preference", "Contact Point", "Campaign", "Next Follow Up Date", "Remarks", "Lead Potential"];
-                      const csvContent = "data:text/csv;charset=utf-8," + headers.join(",");
+                      const sampleData = [
+                        ["John Doe", "9876543210", "john@example.com", "New York", "Bachelor's", "Python;Java", "Website", "Summer 2024", "2024-07-15", "Interested in backend", "strongProspect"],
+                        ["Jane Smith", "9123456789", "jane@test.com", "London", "Master's", "AWS", "LinkedIn", "Winter Sale", "2024-07-20", "Wants to switch career", "potentialProspect"]
+                      ];
+                      const csvContent = "data:text/csv;charset=utf-8," +
+                        [headers, ...sampleData].map(e => e.join(",")).join("\n");
                       const encodedUri = encodeURI(csvContent);
                       const link = document.createElement("a");
                       link.setAttribute("href", encodedUri);
