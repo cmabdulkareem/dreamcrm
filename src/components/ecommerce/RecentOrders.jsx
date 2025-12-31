@@ -85,21 +85,58 @@ const getRowBackgroundColor = (followUpDate) => {
   return ""; // No background color for other cases
 };
 
-// Helper function to determine lead potential background color
+// Helper function to get initials from name
+const getInitials = (name) => {
+  if (!name) return "??";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return name.trim().slice(0, 2).toUpperCase();
+};
+
+// Helper function to determine lead potential colors and styles
+const getLeadPotentialStyles = (leadPotential) => {
+  switch (leadPotential) {
+    case "strongProspect":
+      return {
+        bar: "bg-green-500",
+        avatar: "bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400"
+      };
+    case "potentialProspect":
+      return {
+        bar: "bg-brand-500",
+        avatar: "bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400"
+      };
+    case "weakProspect":
+      return {
+        bar: "bg-yellow-500",
+        avatar: "bg-yellow-50 text-yellow-600 dark:bg-yellow-500/10 dark:text-yellow-400"
+      };
+    case "notAProspect":
+      return {
+        bar: "bg-gray-400",
+        avatar: "bg-gray-100 text-gray-500 dark:bg-gray-500/10 dark:text-gray-400"
+      };
+    default:
+      return {
+        bar: "bg-transparent",
+        avatar: "bg-gray-100 text-gray-500 dark:bg-gray-500/10 dark:text-gray-400"
+      };
+  }
+};
+
+// Helper function to determine lead potential background color (kept for backward compatibility if needed, but not used in v3.0)
 const getLeadPotentialBackgroundColor = (leadPotential) => {
   switch (leadPotential) {
     case "strongProspect":
-      return "bg-green-100 dark:bg-green-800";
-
+      return "bg-green-50/30 dark:bg-green-500/5";
     case "potentialProspect":
-      return "bg-blue-100 dark:bg-blue-800";
-
+      return "bg-brand-50/30 dark:bg-brand-500/5";
     case "weakProspect":
-      return "bg-yellow-200 dark:bg-yellow-800";
-
+      return "bg-yellow-50/30 dark:bg-yellow-500/5";
     case "notAProspect":
-      return "bg-gray-300 dark:bg-gray-700"; // Neutral grey for NOT a prospect
-
+      return "bg-gray-50/30 dark:bg-gray-500/5";
     default:
       return "";
   }
@@ -904,7 +941,7 @@ export default function RecentOrders() {
             <Table className="min-w-[1200px]">
               <TableHeader className="border-gray-100 dark:border-gray-800 border-y">
                 <TableRow>
-                  <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
+                  <TableCell isHeader className="py-3 pl-5 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
                     <input
                       type="checkbox"
                       checked={filteredData.length > 0 && selectedLeads.length === filteredData.length}
@@ -936,27 +973,36 @@ export default function RecentOrders() {
                     const latestRemark = getLatestRemark(row.remarks);
                     const hasUnread = hasUnreadRemarks(row.remarks);
 
+                    const styles = getLeadPotentialStyles(row.leadPotential);
+
                     return (
-                      <TableRow key={row._id}>
-                        <TableCell className={`py-3 relative ${getLeadPotentialBackgroundColor(row.leadPotential)}`}>
-                          <div className="flex items-center justify-center">
-                            <input
-                              type="checkbox"
-                              checked={selectedLeads.includes(row._id)}
-                              onChange={() => handleSelectLead(row._id)}
-                              className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500 bg-white dark:bg-gray-900"
-                            />
-                            {hasUnread && (
-                              <span className="absolute top-1 right-1 size-2 rounded-full bg-red-500 border border-white dark:border-gray-900 shadow-sm" title="New Remark" />
-                            )}
-                          </div>
+                      <TableRow key={row._id} className="group relative overflow-hidden transition-colors hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
+                        {/* Vertical Status Strip */}
+                        <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${styles.bar}`} />
+
+                        <TableCell className="py-4 pl-5">
+                          <input
+                            type="checkbox"
+                            checked={selectedLeads.includes(row._id)}
+                            onChange={() => handleSelectLead(row._id)}
+                            className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+                          />
                         </TableCell>
-                        <TableCell className={`py-3`}>
+
+                        <TableCell className="py-4">
                           <div className="flex items-center gap-3">
-                            <div className="relative">
-                              <p className="font-medium text-gray-800 text-theme-sm dark:text-white/90">&nbsp;{row.fullName}</p>
-                              <p className="text-gray-400 text-xs whitespace-pre-wrap break-words">
-                                &nbsp;{row.coursePreference?.join(", ") || "N/A"}
+                            <div className="relative shrink-0">
+                              <div className={`size-10 rounded-full flex items-center justify-center text-xs font-bold ${styles.avatar} border border-white/50 dark:border-gray-800 shadow-sm`}>
+                                {getInitials(row.fullName)}
+                              </div>
+                              {hasUnread && (
+                                <span className="absolute -top-0.5 -right-0.5 size-3 rounded-full bg-red-500 border-2 border-white dark:border-gray-900 shadow-sm" />
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-semibold text-gray-800 text-theme-sm dark:text-white/90 truncate">{row.fullName}</p>
+                              <p className="text-gray-400 text-xs truncate max-w-[180px]">
+                                {row.coursePreference?.join(", ") || "N/A"}
                               </p>
                             </div>
                           </div>
