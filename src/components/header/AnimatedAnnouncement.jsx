@@ -72,13 +72,13 @@ const AnimatedAnnouncement = () => {
   // Removed console.log("Displaying announcement:", currentAnnouncement);
 
   return (
-    <div className="w-full bg-white dark:bg-gray-900 text-pink-500 py-2 px-4 overflow-hidden border-b border-pink-500">
-      <div className="flex items-center">
+    <div className="w-full min-w-0 bg-white dark:bg-gray-900 text-pink-500 py-2 px-4 overflow-hidden border-b border-pink-500">
+      <div className="flex items-center min-w-0">
         <svg className="w-4 h-4 mr-2 flex-shrink-0 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
         </svg>
-        <div className="flex-1 min-w-0 overflow-hidden">
-          <div className="animate-marquee whitespace-nowrap">
+        <div className="flex-1 min-w-0 overflow-hidden relative h-5">
+          <div className="animate-marquee whitespace-nowrap absolute top-0 left-0">
             <span className="font-bold mr-2">{currentAnnouncement.title}:</span>
             <span>{currentAnnouncement.message}</span>
           </div>
