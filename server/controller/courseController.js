@@ -52,10 +52,19 @@ export const createCourse = async (req, res) => {
       isActive
     } = req.body;
 
-    // Check if course code already exists
-    const existingCourse = await courseModel.findOne({ courseCode });
+    const brandId = req.brandFilter?.brand || req.headers['x-brand-id'] || null;
+
+    // Check if course code or name already exists FOR THIS BRAND
+    const existingCourse = await courseModel.findOne({
+      $or: [{ courseCode }, { courseName }],
+      brand: brandId
+    });
+
     if (existingCourse) {
-      return res.status(400).json({ message: "Course with this code already exists." });
+      if (existingCourse.courseCode === courseCode) {
+        return res.status(400).json({ message: "Course with this code already exists for this brand." });
+      }
+      return res.status(400).json({ message: "Course with this name already exists for this brand." });
     }
 
     const newCourse = new courseModel({
@@ -94,17 +103,30 @@ export const updateCourse = async (req, res) => {
     }
 
     // Update fields
-    Object.keys(updateData).forEach(key => {
-      if (key === 'duration') {
+    for (const key of Object.keys(updateData)) {
+      if (key === 'courseCode' || key === 'courseName') {
+        const query = {
+          _id: { $ne: id },
+          brand: course.brand,
+          [key]: updateData[key]
+        };
+        const existing = await courseModel.findOne(query);
+        if (existing) {
+          return res.status(400).json({
+            message: `Course with this ${key === 'courseCode' ? 'code' : 'name'} already exists for this brand.`
+          });
+        }
+        course[key] = updateData[key];
+      } else if (key === 'duration') {
         course[key] = parseInt(updateData[key]);
       } else if (key === 'singleShotFee' || key === 'normalFee') {
         course[key] = parseFloat(updateData[key]);
       } else if (key === 'isActive') {
         course[key] = updateData[key] === 'true' || updateData[key] === true;
-      } else if (key !== '_id' && key !== '__v') {
+      } else if (key !== '_id' && key !== '__v' && key !== 'brand') {
         course[key] = updateData[key];
       }
-    });
+    }
 
     await course.save();
 

@@ -4,7 +4,6 @@ const courseSchema = new mongoose.Schema({
   courseCode: {
     type: String,
     required: true,
-    unique: true,
     trim: true
   },
   courseName: {
@@ -42,10 +41,16 @@ const courseSchema = new mongoose.Schema({
   },
   brand: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Brand'
+    ref: 'Brand',
+    required: true
   }
 }, {
   timestamps: true
 });
+
+// Compound index: courseCode must be unique within each brand
+courseSchema.index({ courseCode: 1, brand: 1 }, { unique: true });
+// Compound index: courseName must be unique within each brand
+courseSchema.index({ courseName: 1, brand: 1 }, { unique: true });
 
 export default mongoose.model('Course', courseSchema);

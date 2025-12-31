@@ -66,7 +66,17 @@ export const updateCategory = async (req, res) => {
         }
 
         // Update fields
-        if (updateData.name) category.name = updateData.name;
+        if (updateData.name && updateData.name !== category.name) {
+            const existingCategory = await courseCategoryModel.findOne({
+                name: updateData.name,
+                brand: category.brand,
+                _id: { $ne: id }
+            });
+            if (existingCategory) {
+                return res.status(400).json({ message: "Category with this name already exists for this brand." });
+            }
+            category.name = updateData.name;
+        }
         if (updateData.description !== undefined) category.description = updateData.description;
         if (updateData.isActive !== undefined) category.isActive = updateData.isActive === 'true' || updateData.isActive === true;
 
