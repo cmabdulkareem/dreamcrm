@@ -22,6 +22,7 @@ import { ReactComponent as DollarLineIcon } from "./dollar-line.svg?react";
 import { ReactComponent as SettingsIcon } from "./settings.svg?react";
 import { ReactComponent as ChevronLeftIcon } from "./chevron-left.svg?react";
 import { ReactComponent as ChevronDownIcon } from "./chevron-down.svg?react";
+import { ReactComponent as ChevronUpIcon } from "./chevron-up.svg?react";
 import { ReactComponent as EyeIcon } from "./eye.svg?react";
 import { ReactComponent as EyeCloseIcon } from "./eye-close.svg?react";
 import { ReactComponent as TimeIcon } from "./time.svg?react";
@@ -90,4 +91,5 @@ export {
   MailIcon,
   ChatIcon,
   CalendarIcon,
+  ChevronUpIcon,
 };

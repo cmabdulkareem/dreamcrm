@@ -9,7 +9,7 @@ import Badge from "../ui/badge/Badge";
 import { useState, useEffect, useContext, useRef } from "react";
 import axios from "axios";
 import Button from "../../components/ui/button/Button";
-import { DownloadIcon, PencilIcon, CloseIcon, BellIcon } from "../../icons";
+import { DownloadIcon, PencilIcon, CloseIcon, BellIcon, ChevronDownIcon, ChevronUpIcon } from "../../icons";
 import ComponentCard from "../common/ComponentCard.jsx";
 import Input from "../form/input/InputField";
 import PhoneInput from "../form/group-input/PhoneInput.jsx";
@@ -164,6 +164,7 @@ export default function RecentOrders() {
   const [leadStatusFilter, setLeadStatusFilter] = useState(""); // Filter by lead status
   const [leadPotentialFilter, setLeadPotentialFilter] = useState(""); // Filter by lead potential
   const [assignedUserFilter, setAssignedUserFilter] = useState(""); // Filter by assigned user
+  const [showFilters, setShowFilters] = useState(false); // Toggle for filter panel
 
   // Get initial date range (current month)
   const getInitialMonthRange = () => {
@@ -813,6 +814,14 @@ export default function RecentOrders() {
                 <Button
                   size="sm"
                   variant="outline"
+                  onClick={() => setShowFilters(!showFilters)}
+                  startIcon={showFilters ? <ChevronUpIcon className="size-5" /> : <ChevronDownIcon className="size-5" />}
+                >
+                  {showFilters ? "Hide Filters" : "Show Filters"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
                   onClick={downloadPDF}
                   endIcon={<DownloadIcon className="size-5" />}
                   disabled={selectedLeads.length === 0}
@@ -822,72 +831,76 @@ export default function RecentOrders() {
               </div>
             </div>
 
-            {/* Primary Filters Row */}
-            <div className="flex flex-col lg:flex-row gap-4">
-              <div className="flex-1 min-w-0">
-                <Input
-                  type="text"
-                  placeholder="Search by name or phone..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
-                />
-              </div>
-              <div className="w-full lg:w-72">
-                <RangeDatePicker
-                  id="leadDateFilter"
-                  value={dateRange}
-                  onChange={(dates) => setDateRange(dates)}
-                  placeholder="Filter by date range"
-                />
-              </div>
-            </div>
+            {showFilters && (
+              <>
+                {/* Primary Filters Row */}
+                <div className="flex flex-col lg:flex-row gap-4">
+                  <div className="flex-1 min-w-0">
+                    <Input
+                      type="text"
+                      placeholder="Search by name or phone..."
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                    />
+                  </div>
+                  <div className="w-full lg:w-72">
+                    <RangeDatePicker
+                      id="leadDateFilter"
+                      value={dateRange}
+                      onChange={(dates) => setDateRange(dates)}
+                      placeholder="Filter by date range"
+                    />
+                  </div>
+                </div>
 
-            {/* Advanced Filters Row */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 bg-gray-50/50 dark:bg-white/[0.02] p-3 rounded-xl border border-gray-100 dark:border-gray-800">
-              <Select
-                options={sortOrderList}
-                value={sortOrder}
-                placeholder="Sort by date"
-                onChange={(value) => setSortOrder(value)}
-              />
+                {/* Advanced Filters Row */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 bg-gray-50/50 dark:bg-white/[0.02] p-3 rounded-xl border border-gray-100 dark:border-gray-800">
+                  <Select
+                    options={sortOrderList}
+                    value={sortOrder}
+                    placeholder="Sort by date"
+                    onChange={(value) => setSortOrder(value)}
+                  />
 
-              <Select
-                options={[
-                  { value: "", label: "All Lead Statuses" },
-                  ...leadStatusOptions
-                ]}
-                value={leadStatusFilter}
-                placeholder="Filter by lead status"
-                onChange={(value) => setLeadStatusFilter(value)}
-              />
+                  <Select
+                    options={[
+                      { value: "", label: "All Lead Statuses" },
+                      ...leadStatusOptions
+                    ]}
+                    value={leadStatusFilter}
+                    placeholder="Filter by lead status"
+                    onChange={(value) => setLeadStatusFilter(value)}
+                  />
 
-              <Select
-                options={[
-                  { value: "", label: "All Lead Potentials" },
-                  ...leadPotentialOptions
-                ]}
-                value={leadPotentialFilter}
-                placeholder="Filter by lead potential"
-                onChange={(value) => setLeadPotentialFilter(value)}
-              />
+                  <Select
+                    options={[
+                      { value: "", label: "All Lead Potentials" },
+                      ...leadPotentialOptions
+                    ]}
+                    value={leadPotentialFilter}
+                    placeholder="Filter by lead potential"
+                    onChange={(value) => setLeadPotentialFilter(value)}
+                  />
 
-              {canAssignLeads && (
-                <Select
-                  options={[
-                    { value: "", label: "All Users" },
-                    { value: "unassigned", label: "Unassigned" },
-                    ...availableUsers.map(user => ({
-                      value: user._id,
-                      label: user.fullName
-                    }))
-                  ]}
-                  value={assignedUserFilter}
-                  placeholder="Filter by assigned user"
-                  onChange={(value) => setAssignedUserFilter(value)}
-                />
-              )}
-            </div>
+                  {canAssignLeads && (
+                    <Select
+                      options={[
+                        { value: "", label: "All Users" },
+                        { value: "unassigned", label: "Unassigned" },
+                        ...availableUsers.map(user => ({
+                          value: user._id,
+                          label: user.fullName
+                        }))
+                      ]}
+                      value={assignedUserFilter}
+                      placeholder="Filter by assigned user"
+                      onChange={(value) => setAssignedUserFilter(value)}
+                    />
+                  )}
+                </div>
+              </>
+            )}
           </div>
 
           {/* Table */}
