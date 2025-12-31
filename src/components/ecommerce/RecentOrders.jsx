@@ -85,9 +85,20 @@ const getRowBackgroundColor = (followUpDate) => {
   return ""; // No background color for other cases
 };
 
-// Helper function to determine lead potential background color for the name cell
-const getNameCellBackgroundColor = (leadPotential) => {
-  return getLeadPotentialBackgroundColor(leadPotential);
+// Helper function to determined lead potential color accent
+const getLeadPotentialAccent = (leadPotential) => {
+  switch (leadPotential) {
+    case "strongProspect":
+      return "bg-green-500";
+    case "potentialProspect":
+      return "bg-blue-500";
+    case "weakProspect":
+      return "bg-yellow-500";
+    case "notAProspect":
+      return "bg-gray-400";
+    default:
+      return "bg-transparent";
+  }
 };
 
 // Helper function to determine lead potential background color
@@ -917,7 +928,7 @@ export default function RecentOrders() {
                       className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
                     />
                   </TableCell>
-                  <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">&nbsp;&nbsp;&nbsp;Alert</TableCell>
+                  <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400 w-8"></TableCell>
                   <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Name</TableCell>
                   <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Date Added</TableCell>
                   <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Mobile</TableCell>
@@ -952,15 +963,16 @@ export default function RecentOrders() {
                             className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
                           />
                         </TableCell>
-                        <TableCell className={`py-3 ${getNameCellBackgroundColor(row.leadPotential)}`}>
-                          {hasUnread && (
-                            <div className="flex justify-center">
-                              <span className="relative flex h-3 w-3">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                              </span>
-                            </div>
-                          )}
+                        <TableCell className="py-3 px-0 w-8">
+                          <div className="flex items-center gap-2">
+                            {/* Potential Indicator Bar */}
+                            <div className={`w-1 h-6 rounded-r-full ${getLeadPotentialAccent(row.leadPotential)}`} />
+
+                            {/* Unread Indicator Dot */}
+                            {hasUnread && (
+                              <div className="size-2 rounded-full bg-red-500 shadow-sm" title="New Remark" />
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell className={`py-3`}>
                           <div className="flex items-center gap-3">
