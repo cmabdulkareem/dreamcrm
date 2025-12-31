@@ -1013,7 +1013,14 @@ export default function RecentOrders() {
                             </p>
                           </div>
                         </TableCell>
-                        <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{formatDate(row.createdAt)}</TableCell>
+                        <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
+                          <div className="flex flex-col gap-0.5">
+                            <p>{formatDate(row.createdAt)}</p>
+                            <p className="text-[10px] text-gray-400 font-medium">
+                              Added by: <span className="text-gray-500/80">{row.handledBy || "N/A"}</span>
+                            </p>
+                          </div>
+                        </TableCell>
                         <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{row.contactPoint || "N/A"}</TableCell>
                         <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{row.campaign || "N/A"}</TableCell>
                         <TableCell className="py-3">
@@ -1043,14 +1050,11 @@ export default function RecentOrders() {
                               )}
                             </div>
 
-                            <div className="flex flex-col gap-0.5">
-                              <p className="text-[10px] text-gray-400">Agent: {row.handledBy || "N/A"}</p>
-                            </div>
                           </div>
                         </TableCell>
 
                         <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
-                          <div className="flex flex-col gap-1">
+                          <div className="flex flex-col gap-1 items-start">
                             <Badge
                               size="sm"
                               color={getDueDateBadgeColor(row.followUpDate)}
@@ -1058,7 +1062,7 @@ export default function RecentOrders() {
                               {getDueDateBadgeText(row.followUpDate)}
                             </Badge>
                             {row.assignedTo && (
-                              <p className="text-[10px] text-gray-400 font-medium">
+                              <p className="text-[10px] text-gray-400 font-medium whitespace-nowrap">
                                 Assigned to: <span className="text-brand-500/80 italic">{row.assignedTo.fullName}</span>
                               </p>
                             )}
