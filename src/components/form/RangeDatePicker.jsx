@@ -16,7 +16,7 @@ export default function RangeDatePicker({
     useEffect(() => {
         fp.current = flatpickr(`#${id}-wrapper`, {
             mode: "range",
-            static: true,
+            appendTo: window.document.body,
             monthSelectorType: "static",
             dateFormat: "Y-m-d",
             wrap: true,
