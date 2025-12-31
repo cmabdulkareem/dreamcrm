@@ -19,6 +19,20 @@
     --color-brand-900: 38 46 137;
     --color-brand-950: 34 34 34;
   }
+
+  html {
+    zoom: 90%;
+  }
+
+  /* Fallback for browsers not supporting zoom (like Firefox) */
+  @supports not (zoom: 90%) {
+    html {
+      transform: scale(0.9);
+      transform-origin: top left;
+      width: 111.11%;
+      height: 111.11%;
+    }
+  }
 }
 
 @layer utilities {
