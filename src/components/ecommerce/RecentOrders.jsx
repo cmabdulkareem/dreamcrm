@@ -966,12 +966,19 @@ export default function RecentOrders() {
                         <div className={`absolute left-0 top-0 bottom-0 w-[6px] ${styles.bar}`} />
 
                         <TableCell className="py-4 pl-5">
-                          <input
-                            type="checkbox"
-                            checked={selectedLeads.includes(row._id)}
-                            onChange={() => handleSelectLead(row._id)}
-                            className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
-                          />
+                          <div className="flex items-center gap-3">
+                            <input
+                              type="checkbox"
+                              checked={selectedLeads.includes(row._id)}
+                              onChange={() => handleSelectLead(row._id)}
+                              className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+                            />
+                            {hasUnread && (
+                              <div className="size-6 shrink-0 rounded-full bg-red-600 flex items-center justify-center shadow-md" title="New Remark">
+                                <BellIcon className="size-3.5 text-white" />
+                              </div>
+                            )}
+                          </div>
                         </TableCell>
 
                         <TableCell className="py-4">
@@ -987,19 +994,12 @@ export default function RecentOrders() {
                         <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{row.contactPoint || "N/A"}</TableCell>
                         <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{row.campaign || "N/A"}</TableCell>
                         <TableCell className="py-3">
-                          <div className="flex items-center gap-2">
-                            <Badge
-                              size="sm"
-                              color={getLeadStatusColor(row.leadStatus)}
-                            >
-                              {getLeadStatusLabel(row.leadStatus)}
-                            </Badge>
-                            {hasUnread && (
-                              <div className="size-6 shrink-0 rounded-full bg-red-600 flex items-center justify-center shadow-lg animate-pulse" title="New Remark">
-                                <BellIcon className="size-3.5 text-white" />
-                              </div>
-                            )}
-                          </div>
+                          <Badge
+                            size="sm"
+                            color={getLeadStatusColor(row.leadStatus)}
+                          >
+                            {getLeadStatusLabel(row.leadStatus)}
+                          </Badge>
                           <p className="text-gray-400 text-xs mt-1">Agent: {row.handledBy || "N/A"}</p>
                           {row.assignedTo && (
                             <p className="text-gray-400 text-xs mt-1">Assigned to: {row.assignedTo.fullName}</p>
