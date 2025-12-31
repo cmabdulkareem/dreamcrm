@@ -960,8 +960,7 @@ export default function RecentOrders() {
                   <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Date Added</TableCell>
                   <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Contact Point</TableCell>
                   <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Campaign</TableCell>
-                  <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Lead Status</TableCell>
-                  <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Latest Remark</TableCell>
+                  <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Status & Remark</TableCell>
                   <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Next Follow-up</TableCell>
                   <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Actions</TableCell>
                 </TableRow>
@@ -970,7 +969,7 @@ export default function RecentOrders() {
               <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
                 {filteredData.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={11} className="py-8 text-center text-gray-500">
+                    <TableCell colSpan={10} className="py-8 text-center text-gray-500">
                       {isRegularUser ? "No leads assigned to you." : "No leads found. Create your first lead!"}
                     </TableCell>
                   </TableRow>
@@ -1018,30 +1017,38 @@ export default function RecentOrders() {
                         <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{row.contactPoint || "N/A"}</TableCell>
                         <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{row.campaign || "N/A"}</TableCell>
                         <TableCell className="py-3">
-                          <Badge
-                            size="sm"
-                            color={getLeadStatusColor(row.leadStatus)}
-                          >
-                            {getLeadStatusLabel(row.leadStatus)}
-                          </Badge>
-                          <p className="text-gray-400 text-xs mt-1">Agent: {row.handledBy || "N/A"}</p>
-                          {row.assignedTo && (
-                            <p className="text-gray-400 text-xs mt-1">Assigned to: {row.assignedTo.fullName}</p>
-                          )}
-                        </TableCell>
-                        <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
-                          <div
-                            className="relative"
-                            data-row-id={row._id}
-                            onMouseEnter={(e) => handleTooltipEnter(e, row)}
-                            onMouseLeave={handleTooltipLeave}
-                          >
-                            <p className="text-xs max-w-[200px] truncate cursor-help">{latestRemark}</p>
-                            {row.assignmentRemark && (
-                              <p className="text-xs text-red-500 dark:text-red-400 mt-1 truncate animate-pulse duration-100">
-                                Suggestion: {row.assignmentRemark}
+                          <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center gap-2">
+                              <Badge
+                                size="sm"
+                                color={getLeadStatusColor(row.leadStatus)}
+                              >
+                                {getLeadStatusLabel(row.leadStatus)}
+                              </Badge>
+                            </div>
+
+                            <div
+                              className="relative group/remark"
+                              data-row-id={row._id}
+                              onMouseEnter={(e) => handleTooltipEnter(e, row)}
+                              onMouseLeave={handleTooltipLeave}
+                            >
+                              <p className="text-[11px] text-gray-500 dark:text-gray-400 max-w-[180px] truncate cursor-help leading-relaxed">
+                                {latestRemark || "No remarks yet"}
                               </p>
-                            )}
+                              {row.assignmentRemark && (
+                                <p className="text-[10px] text-red-500 dark:text-red-400 mt-0.5 truncate animate-pulse duration-100">
+                                  Suggestion: {row.assignmentRemark}
+                                </p>
+                              )}
+                            </div>
+
+                            <div className="flex flex-col gap-0.5">
+                              <p className="text-[10px] text-gray-400">Agent: {row.handledBy || "N/A"}</p>
+                              {row.assignedTo && (
+                                <p className="text-[10px] text-brand-500/70 font-medium italic">Assigned to: {row.assignedTo.fullName}</p>
+                              )}
+                            </div>
                           </div>
                         </TableCell>
 
