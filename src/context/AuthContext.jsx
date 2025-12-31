@@ -72,9 +72,13 @@ function AuthProvider({ children }) {
           rolesArray.includes('Admin');
         setIsAdmin(isAdminUser);
 
-        // If no brand selected, and user has brands, select the first one (or 'all' for admin)
-        // If no brand selected, and user has brands, select the first one (or 'all' for admin)
-        // Logic removed to allow "All Brands" (null) for all users
+        // Auto-select brand for single-brand users if none selected
+        if (!selectedBrand && user.brands && user.brands.length === 1) {
+          const firstBrand = user.brands[0];
+          setSelectedBrand(firstBrand);
+          localStorage.setItem("selectedBrand", JSON.stringify(firstBrand));
+          updateBrandTheme(firstBrand.themeColor);
+        }
 
 
       } catch (err) {
@@ -124,15 +128,13 @@ function AuthProvider({ children }) {
       rolesArray.includes('Admin');
     setIsAdmin(isAdminUser);
 
-    // Auto-select brand for non-admin users if none selected
-    // Auto-select brand logic removed to allow "All Brands" by default
-    /*
-    if (!selectedBrand && userData.brands && userData.brands.length > 0) {
-      if (!isAdminUser) {
-         // ... previously forced selection
-      }
+    // Auto-select brand for users with only one brand if none selected
+    if (!selectedBrand && userData.brands && userData.brands.length === 1) {
+      const firstBrand = userData.brands[0];
+      setSelectedBrand(firstBrand);
+      localStorage.setItem("selectedBrand", JSON.stringify(firstBrand));
+      updateBrandTheme(firstBrand.themeColor);
     }
-    */
 
 
     setLoading(false);
