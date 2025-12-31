@@ -470,11 +470,6 @@ const UserManagement = () => {
                       >
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <div className="flex-shrink-0 h-10 w-10 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
-                              <span className="text-gray-700 dark:text-gray-300 font-medium">
-                                {user.fullName.charAt(0).toUpperCase()}
-                              </span>
-                            </div>
                             <div className="ml-4">
                               <div className="text-sm font-medium text-gray-900 dark:text:white dark:text-white">
                                 {user.fullName}
