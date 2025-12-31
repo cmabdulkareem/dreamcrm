@@ -9,7 +9,7 @@ import Badge from "../ui/badge/Badge";
 import { useState, useEffect, useContext, useRef } from "react";
 import axios from "axios";
 import Button from "../../components/ui/button/Button";
-import { DownloadIcon, PencilIcon, CloseIcon, BellIcon, ChevronDownIcon, ChevronUpIcon, FileIcon } from "../../icons";
+import { DownloadIcon, PencilIcon, CloseIcon, BoltIcon, ChevronDownIcon, ChevronUpIcon, FileIcon } from "../../icons";
 import ComponentCard from "../common/ComponentCard.jsx";
 import Input from "../form/input/InputField";
 import PhoneInput from "../form/group-input/PhoneInput.jsx";
@@ -926,13 +926,17 @@ export default function RecentOrders() {
             <Table className="min-w-[1200px]">
               <TableHeader className="border-gray-100 dark:border-gray-800 border-y">
                 <TableRow>
-                  <TableCell isHeader className="py-3 pl-5 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
-                    <input
-                      type="checkbox"
-                      checked={filteredData.length > 0 && selectedLeads.length === filteredData.length}
-                      onChange={handleSelectAll}
-                      className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
-                    />
+                  <TableCell isHeader className="py-3 pl-8 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        checked={filteredData.length > 0 && selectedLeads.length === filteredData.length}
+                        onChange={handleSelectAll}
+                        className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+                      />
+                      {/* Placeholder to match body row alert badge width */}
+                      <div className="size-6 invisible shrink-0" />
+                    </div>
                   </TableCell>
                   <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Name</TableCell>
                   <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Date Added</TableCell>
@@ -965,7 +969,7 @@ export default function RecentOrders() {
                         {/* Vertical Status Strip */}
                         <div className={`absolute left-0 top-0 bottom-0 w-[6px] ${styles.bar}`} />
 
-                        <TableCell className="py-4 pl-5">
+                        <TableCell className="py-4 pl-8">
                           <div className="flex items-center gap-3">
                             <input
                               type="checkbox"
@@ -973,10 +977,12 @@ export default function RecentOrders() {
                               onChange={() => handleSelectLead(row._id)}
                               className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
                             />
-                            {hasUnread && (
+                            {hasUnread ? (
                               <div className="size-6 shrink-0 rounded-full bg-red-600 flex items-center justify-center shadow-md" title="New Remark">
-                                <BellIcon className="size-3.5 text-white" />
+                                <BoltIcon className="size-3.5 text-white" />
                               </div>
+                            ) : (
+                              <div className="size-6 invisible shrink-0" />
                             )}
                           </div>
                         </TableCell>
