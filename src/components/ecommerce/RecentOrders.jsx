@@ -15,6 +15,7 @@ import Input from "../form/input/InputField";
 import PhoneInput from "../form/group-input/PhoneInput.jsx";
 import DatePicker from "../form/date-picker.jsx";
 import MultiSelect from "../form/MultiSelect.jsx";
+import RangeDatePicker from "../form/RangeDatePicker.jsx";
 import Label from "../form/Label";
 import Select from "../form/Select";
 import { Modal } from "../ui/modal";
@@ -163,6 +164,16 @@ export default function RecentOrders() {
   const [leadStatusFilter, setLeadStatusFilter] = useState(""); // Filter by lead status
   const [leadPotentialFilter, setLeadPotentialFilter] = useState(""); // Filter by lead potential
   const [assignedUserFilter, setAssignedUserFilter] = useState(""); // Filter by assigned user
+
+  // Get initial date range (current month)
+  const getInitialMonthRange = () => {
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return [firstDay, lastDay];
+  };
+
+  const [dateRange, setDateRange] = useState(getInitialMonthRange());
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedRow, setSelectedRow] = useState(null);
@@ -420,7 +431,26 @@ export default function RecentOrders() {
         }
       }
 
-      return matchesSearch && matchesStatus && matchesLeadStatus && matchesLeadPotential && matchesAssignedUser && isUserLead;
+      // --- Date range filter ---
+      let matchesDateRange = true;
+      if (dateRange && dateRange.length > 0) {
+        const itemDate = new Date(item.createdAt);
+        itemDate.setHours(0, 0, 0, 0);
+
+        if (dateRange.length === 2) {
+          const startDate = new Date(dateRange[0]);
+          const endDate = new Date(dateRange[1]);
+          startDate.setHours(0, 0, 0, 0);
+          endDate.setHours(0, 0, 0, 0);
+          matchesDateRange = itemDate >= startDate && itemDate <= endDate;
+        } else if (dateRange.length === 1) {
+          const filterDate = new Date(dateRange[0]);
+          filterDate.setHours(0, 0, 0, 0);
+          matchesDateRange = itemDate.getTime() === filterDate.getTime();
+        }
+      }
+
+      return matchesSearch && matchesStatus && matchesLeadStatus && matchesLeadPotential && matchesAssignedUser && isUserLead && matchesDateRange;
     })
     .sort((a, b) => {
       if (sortOrder === "followup_latest" || sortOrder === "followup_oldest") {
@@ -772,7 +802,15 @@ export default function RecentOrders() {
                 </p>
               )}
             </div>
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-end">
+              <div className="w-full sm:w-64">
+                <RangeDatePicker
+                  id="leadDateFilter"
+                  value={dateRange}
+                  onChange={(dates) => setDateRange(dates)}
+                  placeholder="Filter by date range"
+                />
+              </div>
               <Input
                 type="text"
                 placeholder="Search by name or phone..."
