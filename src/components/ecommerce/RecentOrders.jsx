@@ -1033,7 +1033,7 @@ export default function RecentOrders() {
                               onMouseEnter={(e) => handleTooltipEnter(e, row)}
                               onMouseLeave={handleTooltipLeave}
                             >
-                              <p className="text-[11px] text-gray-500 dark:text-gray-400 max-w-[180px] truncate cursor-help leading-relaxed">
+                              <p className="text-xs text-gray-600 dark:text-gray-400 max-w-[180px] truncate cursor-help leading-relaxed">
                                 {latestRemark || "No remarks yet"}
                               </p>
                               {row.assignmentRemark && (
@@ -1045,20 +1045,24 @@ export default function RecentOrders() {
 
                             <div className="flex flex-col gap-0.5">
                               <p className="text-[10px] text-gray-400">Agent: {row.handledBy || "N/A"}</p>
-                              {row.assignedTo && (
-                                <p className="text-[10px] text-brand-500/70 font-medium italic">Assigned to: {row.assignedTo.fullName}</p>
-                              )}
                             </div>
                           </div>
                         </TableCell>
 
                         <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
-                          <Badge
-                            size="sm"
-                            color={getDueDateBadgeColor(row.followUpDate)}
-                          >
-                            {getDueDateBadgeText(row.followUpDate)}
-                          </Badge>
+                          <div className="flex flex-col gap-1">
+                            <Badge
+                              size="sm"
+                              color={getDueDateBadgeColor(row.followUpDate)}
+                            >
+                              {getDueDateBadgeText(row.followUpDate)}
+                            </Badge>
+                            {row.assignedTo && (
+                              <p className="text-[10px] text-gray-400 font-medium">
+                                Assigned to: <span className="text-brand-500/80 italic">{row.assignedTo.fullName}</span>
+                              </p>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                           <div className="flex items-center">
