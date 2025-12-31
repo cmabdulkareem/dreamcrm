@@ -4,13 +4,11 @@ const contactPointSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
-    unique: true,
     trim: true
   },
   value: {
     type: String,
     required: true,
-    unique: true,
     trim: true
   },
   description: {
@@ -23,9 +21,14 @@ const contactPointSchema = new mongoose.Schema({
   },
   brand: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Brand'
+    ref: 'Brand',
+    required: true
   }
 }, { timestamps: true });
+
+// Compound indices for brand-scoped uniqueness
+contactPointSchema.index({ brand: 1, name: 1 }, { unique: true });
+contactPointSchema.index({ brand: 1, value: 1 }, { unique: true });
 
 const ContactPoint = mongoose.model('ContactPoint', contactPointSchema);
 

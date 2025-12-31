@@ -41,13 +41,16 @@ export const createContactPoint = async (req, res) => {
       return res.status(400).json({ message: 'Contact point name must contain at least one alphanumeric character' });
     }
 
-    // Check if contact point with same name or value exists
+    const brandId = req.brandFilter?.brand || req.headers['x-brand-id'] || null;
+
+    // Check if contact point with same name or value exists within the same brand
     const existingContactPoint = await ContactPoint.findOne({
+      brand: brandId,
       $or: [{ name: name.trim() }, { value }]
     });
 
     if (existingContactPoint) {
-      return res.status(400).json({ message: 'Contact point already exists' });
+      return res.status(400).json({ message: 'Contact point already exists for this brand' });
     }
 
     const contactPoint = new ContactPoint({
@@ -55,7 +58,7 @@ export const createContactPoint = async (req, res) => {
       value,
       description: description ? description.trim() : '',
       isActive: isActive !== undefined ? isActive : true,
-      brand: req.brandFilter?.brand || req.headers['x-brand-id'] || null // Strict brand assignment
+      brand: brandId // Strict brand assignment
     });
 
     await contactPoint.save();
@@ -108,14 +111,15 @@ export const updateContactPoint = async (req, res) => {
           return res.status(400).json({ message: 'Contact point name must contain at least one alphanumeric character' });
         }
 
-        // Check if new name or value already exists
+        // Check if new name or value already exists within the same brand
         const existingContactPoint = await ContactPoint.findOne({
+          brand: contactPoint.brand,
           _id: { $ne: id },
           $or: [{ name: trimmedName }, { value: newValue }]
         });
 
         if (existingContactPoint) {
-          return res.status(400).json({ message: 'Contact point with this name or value already exists' });
+          return res.status(400).json({ message: 'Contact point with this name or value already exists for this brand' });
         }
 
         contactPoint.name = trimmedName;
