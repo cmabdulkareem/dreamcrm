@@ -106,8 +106,10 @@
 }
 
 .no-scrollbar {
-  -ms-overflow-style: none; /* IE and Edge */
-  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
 }
 
 .custom-scrollbar::-webkit-scrollbar {
@@ -153,6 +155,7 @@
 }
 
 @layer components {
+
   /* third-party libraries CSS */
   .apexcharts-legend-text {
     @apply !text-gray-700 dark:text-gray-400;
@@ -221,7 +224,7 @@
   }
 
   .jvectormap-region.jvectormap-element {
-    @apply !fill-gray-300 hover:!fill-brand-500 dark:fill-gray-700 dark:hover:!fill-gray-600;
+    @apply !fill-gray-300 hover: !fill-brand-500 dark:fill-gray-700 dark:hover: !fill-gray-600;
   }
 
   .jvectormap-marker.jvectormap-element {
@@ -239,6 +242,7 @@
 }
 
 @layer components {
+
   .stocks-slider-outer .swiper-button-next:after,
   .stocks-slider-outer .swiper-button-prev:after {
     @apply hidden;
@@ -246,7 +250,7 @@
 
   .stocks-slider-outer .swiper-button-next,
   .stocks-slider-outer .swiper-button-prev {
-    @apply static !mt-0 h-8 w-9 rounded-full border dark:hover:bg-white/[0.05] border-gray-200 !text-gray-700 transition hover:bg-gray-100 dark:border-white/[0.03] dark:bg-gray-800 dark:text-gray-400 dark:hover:!text-white/90;
+    @apply static !mt-0 h-8 w-9 rounded-full border dark:hover:bg-white/[0.05] border-gray-200 !text-gray-700 transition hover:bg-gray-100 dark:border-white/[0.03] dark:bg-gray-800 dark:text-gray-400 dark:hover: !text-white/90;
   }
 
   .stocks-slider-outer .swiper-button-next.swiper-button-disabled,
@@ -301,7 +305,7 @@
 }
 
 .flatpickr-day {
-  @apply !flex !items-center !text-theme-sm !font-medium !text-gray-800 dark:text-white/90 dark:hover:!border-gray-300 dark:hover:!bg-gray-900;
+  @apply !flex !items-center !text-theme-sm !font-medium !text-gray-800 dark:text-white/90 dark:hover: !border-gray-300 dark:hover: !bg-gray-900;
 }
 
 .flatpickr-day.nextMonthDay,
@@ -403,7 +407,7 @@ span.flatpickr-weekday,
 .flatpickr-day.startRange.nextMonthDay,
 .flatpickr-day.endRange.nextMonthDay {
   background: #ED1164;
-  @apply !border-brand-500 !bg-brand-500 hover:!border-brand-500 hover:!bg-brand-500;
+  @apply !border-brand-500 !bg-brand-500 hover: !border-brand-500 hover: !bg-brand-500;
 }
 
 .flatpickr-day.selected.startRange+.endRange:not(:nth-child(7n + 1)),
@@ -416,7 +420,7 @@ span.flatpickr-weekday,
 .flatpickr-months .flatpickr-next-month svg,
 .flatpickr-months .flatpickr-prev-month,
 .flatpickr-months .flatpickr-next-month {
-  @apply hover:!fill-none;
+  @apply hover: !fill-none;
 }
 
 .flatpickr-months .flatpickr-prev-month:hover svg,
@@ -454,7 +458,7 @@ span.flatpickr-weekday,
 }
 
 .fc-button-group .fc-button {
-  @apply flex h-10 w-10 items-center justify-center !rounded-lg border border-gray-200 bg-transparent hover:border-gray-200 hover:bg-gray-50 focus:shadow-none active:!border-gray-200 active:!bg-transparent active:!shadow-none dark:border-gray-800 dark:hover:border-gray-800 dark:hover:bg-gray-900 dark:active:border-gray-800;
+  @apply flex h-10 w-10 items-center justify-center !rounded-lg border border-gray-200 bg-transparent hover:border-gray-200 hover:bg-gray-50 focus:shadow-none active: !border-gray-200 active: !bg-transparent active: !shadow-none dark:border-gray-800 dark:hover:border-gray-800 dark:hover:bg-gray-900 dark:active:border-gray-800;
 }
 
 .fc-button-group .fc-button.fc-prev-button:before {
@@ -480,7 +484,7 @@ span.flatpickr-weekday,
 }
 
 .fc-addEventButton-button {
-  @apply !rounded-lg !border-0 !bg-brand-500 !px-4 !py-2.5 !text-sm !font-medium hover:!bg-brand-600 focus:!shadow-none;
+  @apply !rounded-lg !border-0 !bg-brand-500 !px-4 !py-2.5 !text-sm !font-medium hover: !bg-brand-600 focus: !shadow-none;
 }
 
 .fc-toolbar-title {
@@ -492,7 +496,7 @@ span.flatpickr-weekday,
 }
 
 .fc-header-toolbar.fc-toolbar .fc-toolbar-chunk:last-child .fc-button {
-  @apply !h-auto !w-auto rounded-md !border-0 bg-transparent !px-5 !py-2 text-sm font-medium text-gray-500 hover:text-gray-700 focus:!shadow-none dark:text-gray-400;
+  @apply !h-auto !w-auto rounded-md !border-0 bg-transparent !px-5 !py-2 text-sm font-medium text-gray-500 hover:text-gray-700 focus: !shadow-none dark:text-gray-400;
 }
 
 .fc-header-toolbar.fc-toolbar .fc-toolbar-chunk:last-child .fc-button.fc-button-active {
@@ -714,6 +718,7 @@ span.flatpickr-weekday,
 }
 
 @layer utilities {
+
   /* Animation for announcement component */
   @keyframes marquee {
     0% {
@@ -727,11 +732,12 @@ span.flatpickr-weekday,
 
   .animate-marquee {
     display: inline-block;
-    animation: marquee 5s linear infinite;
+    animation: marquee 20s linear infinite;
   }
 }
 
 @layer utilities {
+
   /* Flip card styles */
   .perspective-1000 {
     perspective: 1000px;
