@@ -430,12 +430,6 @@ const UserManagement = () => {
                       scope="col"
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
                     >
-                      Email
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                    >
                       Roles
                     </th>
                     <th
@@ -485,15 +479,13 @@ const UserManagement = () => {
                               <div className="text-sm font-medium text-gray-900 dark:text:white dark:text-white">
                                 {user.fullName}
                               </div>
-                              <div className="text-sm text-gray-500 dark:text-gray-400">
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
                                 {user.designation || "No designation"}
                               </div>
+                              <div className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">
+                                {user.email}
+                              </div>
                             </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900 dark:text-white">
-                            {user.email}
                           </div>
                         </td>
                         <td className="px-6 py-4">
