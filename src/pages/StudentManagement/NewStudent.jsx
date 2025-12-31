@@ -38,7 +38,7 @@ const placeOptions = [
 ];
 
 export default function NewStudent() {
-  const { user } = useContext(AuthContext);
+  const { user, selectedBrand: globalSelectedBrand } = useContext(AuthContext);
   const navigate = useNavigate();
   const { addNotification, areToastsEnabled } = useNotifications();
 
@@ -61,13 +61,13 @@ export default function NewStudent() {
   const [coursePreference, setCoursePreference] = useState(""); // Primary course
   const [additionalCourses, setAdditionalCourses] = useState([]); // Additional courses
   const [discountPercentage, setDiscountPercentage] = useState(""); // Discount percentage
-  const [enrollmentDate, setEnrollmentDate] = useState("");
+  const [enrollmentDate, setEnrollmentDate] = useState(new Date().toISOString().split('T')[0]);
   const [studentId, setStudentId] = useState("");
   const [emailError, setEmailError] = useState(false);
   const [convertedLeads, setConvertedLeads] = useState([]);
   const [courses, setCourses] = useState([]); // Course data from API
   const [brands, setBrands] = useState([]); // Brand data from API
-  const [selectedBrand, setSelectedBrand] = useState(""); // Selected brand
+  const [selectedBrand, setSelectedBrand] = useState(globalSelectedBrand?._id || ""); // Selected brand
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -83,6 +83,13 @@ export default function NewStudent() {
     fetchCourses(); // Fetch courses for value calculation
     fetchBrands(); // Fetch brands for selection
   }, []);
+
+  // Sync with global selected brand if it changes or initializes
+  useEffect(() => {
+    if (globalSelectedBrand?._id && !selectedBrand) {
+      setSelectedBrand(globalSelectedBrand._id);
+    }
+  }, [globalSelectedBrand, selectedBrand]);
 
   const fetchCourses = useCallback(async () => {
     try {
