@@ -978,7 +978,7 @@ export default function RecentOrders() {
                     return (
                       <TableRow key={row._id} className="group relative overflow-hidden transition-colors hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
                         {/* Vertical Status Strip */}
-                        <div className={`absolute left-0 top-0 bottom-0 w-[3px] ${styles.bar}`} />
+                        <div className={`absolute left-0 top-0 bottom-0 w-[6px] ${styles.bar}`} />
 
                         <TableCell className="py-4 pl-5">
                           <input
