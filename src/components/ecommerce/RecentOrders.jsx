@@ -9,7 +9,7 @@ import Badge from "../ui/badge/Badge";
 import { useState, useEffect, useContext, useRef } from "react";
 import axios from "axios";
 import Button from "../../components/ui/button/Button";
-import { DownloadIcon, PencilIcon, CloseIcon, BellIcon, ChevronDownIcon, ChevronUpIcon } from "../../icons";
+import { DownloadIcon, PencilIcon, CloseIcon, BellIcon, ChevronDownIcon, ChevronUpIcon, FileIcon } from "../../icons";
 import ComponentCard from "../common/ComponentCard.jsx";
 import Input from "../form/input/InputField";
 import PhoneInput from "../form/group-input/PhoneInput.jsx";
