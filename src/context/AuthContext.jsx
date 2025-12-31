@@ -75,9 +75,8 @@ function AuthProvider({ children }) {
         // Auto-select brand for single-brand users if none selected
         if (!selectedBrand && user.brands && user.brands.length === 1) {
           const firstBrand = user.brands[0];
-          setSelectedBrand(firstBrand);
-          localStorage.setItem("selectedBrand", JSON.stringify(firstBrand));
-          updateBrandTheme(firstBrand.themeColor);
+          // Use selectBrand to ensure indices/themes/reload are handled
+          selectBrand(firstBrand);
         }
 
 
@@ -131,9 +130,9 @@ function AuthProvider({ children }) {
     // Auto-select brand for users with only one brand if none selected
     if (!selectedBrand && userData.brands && userData.brands.length === 1) {
       const firstBrand = userData.brands[0];
-      setSelectedBrand(firstBrand);
-      localStorage.setItem("selectedBrand", JSON.stringify(firstBrand));
-      updateBrandTheme(firstBrand.themeColor);
+      // We must ensure the token is saved BEFORE selectBrand reloads the page
+      selectBrand(firstBrand);
+      return; // selectBrand will handle the reload
     }
 
 
