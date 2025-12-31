@@ -85,43 +85,28 @@ const getRowBackgroundColor = (followUpDate) => {
   return ""; // No background color for other cases
 };
 
-// Helper function to get initials from name
-const getInitials = (name) => {
-  if (!name) return "??";
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  }
-  return name.trim().slice(0, 2).toUpperCase();
-};
-
 // Helper function to determine lead potential colors and styles
 const getLeadPotentialStyles = (leadPotential) => {
   switch (leadPotential) {
     case "strongProspect":
       return {
-        bar: "bg-green-500",
-        avatar: "bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400"
+        bar: "bg-green-500"
       };
     case "potentialProspect":
       return {
-        bar: "bg-brand-500",
-        avatar: "bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400"
+        bar: "bg-brand-500"
       };
     case "weakProspect":
       return {
-        bar: "bg-yellow-500",
-        avatar: "bg-yellow-50 text-yellow-600 dark:bg-yellow-500/10 dark:text-yellow-400"
+        bar: "bg-yellow-500"
       };
     case "notAProspect":
       return {
-        bar: "bg-gray-400",
-        avatar: "bg-gray-100 text-gray-500 dark:bg-gray-500/10 dark:text-gray-400"
+        bar: "bg-gray-400"
       };
     default:
       return {
-        bar: "bg-transparent",
-        avatar: "bg-gray-100 text-gray-500 dark:bg-gray-500/10 dark:text-gray-400"
+        bar: "bg-transparent"
       };
   }
 };
@@ -844,7 +829,7 @@ export default function RecentOrders() {
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-3">
-                <div className="w-full sm:w-72">
+                <div className="w-full sm:w-56">
                   <RangeDatePicker
                     id="leadDateFilter"
                     value={dateRange}
@@ -990,21 +975,11 @@ export default function RecentOrders() {
                         </TableCell>
 
                         <TableCell className="py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="relative shrink-0">
-                              <div className={`size-10 rounded-full flex items-center justify-center text-xs font-bold ${styles.avatar} border border-white/50 dark:border-gray-800 shadow-sm`}>
-                                {getInitials(row.fullName)}
-                              </div>
-                              {hasUnread && (
-                                <span className="absolute -top-0.5 -right-0.5 size-3 rounded-full bg-red-500 border-2 border-white dark:border-gray-900 shadow-sm" />
-                              )}
-                            </div>
-                            <div className="min-w-0">
-                              <p className="font-semibold text-gray-800 text-theme-sm dark:text-white/90 truncate">{row.fullName}</p>
-                              <p className="text-gray-400 text-xs truncate max-w-[180px]">
-                                {row.coursePreference?.join(", ") || "N/A"}
-                              </p>
-                            </div>
+                          <div className="flex flex-col min-w-0">
+                            <p className="font-semibold text-gray-800 text-theme-sm dark:text-white/90 truncate">{row.fullName}</p>
+                            <p className="text-gray-400 text-xs truncate max-w-[180px]">
+                              {row.coursePreference?.join(", ") || "N/A"}
+                            </p>
                           </div>
                         </TableCell>
                         <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{formatDate(row.createdAt)}</TableCell>
@@ -1012,12 +987,19 @@ export default function RecentOrders() {
                         <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{row.contactPoint || "N/A"}</TableCell>
                         <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{row.campaign || "N/A"}</TableCell>
                         <TableCell className="py-3">
-                          <Badge
-                            size="sm"
-                            color={getLeadStatusColor(row.leadStatus)}
-                          >
-                            {getLeadStatusLabel(row.leadStatus)}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge
+                              size="sm"
+                              color={getLeadStatusColor(row.leadStatus)}
+                            >
+                              {getLeadStatusLabel(row.leadStatus)}
+                            </Badge>
+                            {hasUnread && (
+                              <div className="size-6 shrink-0 rounded-full bg-red-600 flex items-center justify-center shadow-lg animate-pulse" title="New Remark">
+                                <BellIcon className="size-3.5 text-white" />
+                              </div>
+                            )}
+                          </div>
                           <p className="text-gray-400 text-xs mt-1">Agent: {row.handledBy || "N/A"}</p>
                           {row.assignedTo && (
                             <p className="text-gray-400 text-xs mt-1">Assigned to: {row.assignedTo.fullName}</p>
