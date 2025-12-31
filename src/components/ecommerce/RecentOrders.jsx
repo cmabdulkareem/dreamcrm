@@ -1016,8 +1016,8 @@ export default function RecentOrders() {
                         <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                           <div className="flex flex-col gap-0.5">
                             <p>{formatDate(row.createdAt)}</p>
-                            <p className="text-gray-400 font-medium">
-                              By: <span className="text-gray-500/80">{row.handledBy || "N/A"}</span>
+                            <p className="text-gray-400 text-xs truncate max-w-[180px]">
+                              By:{row.handledBy || "N/A"}
                             </p>
                           </div>
                         </TableCell>
