@@ -337,6 +337,10 @@ export default function FormElements() {
       errors.leadRemarks = "Remarks are required";
     }
 
+    if (!leadPotential) {
+      errors.leadPotential = "Lead Potential is required";
+    }
+
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -569,7 +573,7 @@ export default function FormElements() {
                     />
                   </div>
                   <div className="w-full md:w-1/4">
-                    <Label htmlFor="otherPlace">Specify other</Label>
+                    <Label htmlFor="otherPlace">Specify other *</Label>
                     <Input
                       type="text"
                       id="otherPlace"
@@ -594,7 +598,7 @@ export default function FormElements() {
                     />
                   </div>
                   <div className="w-full md:w-1/3">
-                    <Label>Education</Label>
+                    <Label>Education *</Label>
                     <Select
                       options={enquirerEducation}
                       value={education}
@@ -605,7 +609,7 @@ export default function FormElements() {
                     />
                   </div>
                   <div className="w-full md:w-1/3">
-                    <Label htmlFor="otherEducation">Specify other</Label>
+                    <Label htmlFor="otherEducation">Specify other *</Label>
                     <Input
                       type="text"
                       id="otherEducation"
@@ -627,7 +631,7 @@ export default function FormElements() {
               <div className="space-y-6">
                 <div>
                   <MultiSelect
-                    label="Course Preference"
+                    label="Course Preference *"
                     id="new-lead-course-preference"
                     options={courseOptions}
                     selectedValues={selectedValues}
@@ -650,7 +654,7 @@ export default function FormElements() {
                     />
                   </div>
                   <div className="w-full">
-                    <Label htmlFor="otherContactPoint">Specify other</Label>
+                    <Label htmlFor="otherContactPoint">Specify other *</Label>
                     <Input
                       type="text"
                       id="otherContactPoint"
@@ -679,7 +683,7 @@ export default function FormElements() {
                   <div className="w-full md:w-1/3">
                     <DatePicker
                       id="followupDate"
-                      label="Next Follow Up Date"
+                      label="Next Follow Up Date *"
                       value={followUpDate}
                       disablePastDates={true} // Hide past dates completely
                       onChange={(date, str) => setFollowUpDate(str)}
@@ -701,12 +705,14 @@ export default function FormElements() {
                 </div>
                 <div className="flex flex-col md:flex-row gap-4">
                   <div className="w-full">
-                    <Label>Lead Potential</Label>
+                    <Label>Lead Potential *</Label>
                     <Select
                       options={leadPotentialOptions}
                       value={leadPotential}
                       placeholder="Select Lead Potential"
                       onChange={setLeadPotential}
+                      error={!!validationErrors.leadPotential}
+                      hint={validationErrors.leadPotential}
                     />
                   </div>
                 </div>

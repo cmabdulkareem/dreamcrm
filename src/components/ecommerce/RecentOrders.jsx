@@ -1089,7 +1089,7 @@ export default function RecentOrders() {
                 {/* Name + Email */}
                 <div className="flex flex-col md:flex-row gap-4">
                   <div className="w-full md:w-1/2">
-                    <Label htmlFor="firstName">Full Name</Label>
+                    <Label htmlFor="firstName">Full Name *</Label>
                     <Input
                       type="text"
                       id="firstName"
@@ -1124,7 +1124,7 @@ export default function RecentOrders() {
 
                 <div className="flex flex-col md:flex-row gap-4">
                   <div className="w-full md:w-1/2">
-                    <Label>Phone</Label>
+                    <Label>Phone *</Label>
                     <PhoneInput
                       selectPosition="end"
                       countries={countries}
@@ -1171,7 +1171,7 @@ export default function RecentOrders() {
                     />
                   </div>
                   <div className="w-full md:w-1/4">
-                    <Label>Place</Label>
+                    <Label>Place *</Label>
                     <Select
                       options={placeOptions}
                       value={place}
@@ -1203,7 +1203,7 @@ export default function RecentOrders() {
                     />
                   </div>
                   <div className="w-full md:w-1/4">
-                    <Label>Education</Label>
+                    <Label>Education *</Label>
                     <Select
                       options={enquirerEducation}
                       value={education}

@@ -718,7 +718,7 @@ const UserManagement = () => {
                     ) : (
                       <div className="space-y-4">
                         <div>
-                          <Label>Roles</Label>
+                          <Label>Roles *</Label>
                           <MultiSelect
                             label=""
                             options={roleOptions}
@@ -729,7 +729,7 @@ const UserManagement = () => {
 
                         {isAdmin(currentUser) && (
                           <div className="mt-4">
-                            <Label>Assigned Brands</Label>
+                            <Label>Assigned Brands *</Label>
                             <MultiSelect
                               label=""
                               options={brands.map((brand) => ({

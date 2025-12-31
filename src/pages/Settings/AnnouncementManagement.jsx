@@ -396,7 +396,7 @@ const AnnouncementManagement = () => {
 
                   <div className="mt-4 space-y-4">
                     <div>
-                      <Label>Title</Label>
+                      <Label>Title *</Label>
                       <input
                         type="text"
                         name="title"
@@ -408,7 +408,7 @@ const AnnouncementManagement = () => {
                     </div>
 
                     <div>
-                      <Label>Message</Label>
+                      <Label>Message *</Label>
                       <textarea
                         name="message"
                         value={formData.message}
@@ -420,7 +420,7 @@ const AnnouncementManagement = () => {
                     </div>
 
                     <div>
-                      <Label>Start Time</Label>
+                      <Label>Start Time *</Label>
                       <input
                         type="datetime-local"
                         name="startTime"
@@ -432,7 +432,7 @@ const AnnouncementManagement = () => {
                     </div>
 
                     <div>
-                      <Label>End Time</Label>
+                      <Label>End Time *</Label>
                       <input
                         type="datetime-local"
                         name="endTime"
@@ -485,7 +485,7 @@ const AnnouncementManagement = () => {
 
                   <div className="mt-4 space-y-4">
                     <div>
-                      <Label>Title</Label>
+                      <Label>Title *</Label>
                       <input
                         type="text"
                         name="title"
@@ -497,7 +497,7 @@ const AnnouncementManagement = () => {
                     </div>
 
                     <div>
-                      <Label>Message</Label>
+                      <Label>Message *</Label>
                       <textarea
                         name="message"
                         value={formData.message}
@@ -509,7 +509,7 @@ const AnnouncementManagement = () => {
                     </div>
 
                     <div>
-                      <Label>Start Time</Label>
+                      <Label>Start Time *</Label>
                       <input
                         type="datetime-local"
                         name="startTime"
@@ -521,7 +521,7 @@ const AnnouncementManagement = () => {
                     </div>
 
                     <div>
-                      <Label>End Time</Label>
+                      <Label>End Time *</Label>
                       <input
                         type="datetime-local"
                         name="endTime"

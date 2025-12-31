@@ -750,7 +750,7 @@ export default function NewStudent() {
                     />
                   </div>
                   <div className="w-full md:w-1/4">
-                    <Label htmlFor="otherPlace">Specify other</Label>
+                    <Label htmlFor="otherPlace">Specify other *</Label>
                     <Input
                       type="text"
                       id="otherPlace"

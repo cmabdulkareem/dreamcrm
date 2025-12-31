@@ -448,10 +448,10 @@ const CourseManagement = () => {
                     <div><Label htmlFor="courseCode">Course Code *</Label><Input id="courseCode" name="courseCode" value={formData.courseCode} onChange={handleInputChange} disabled={!!editingCourse} /></div>
                     <div><Label htmlFor="courseName">Course Name *</Label><Input id="courseName" name="courseName" value={formData.courseName} onChange={handleInputChange} /></div>
                     <div className="sm:col-span-2"><Label htmlFor="modules">Modules</Label><Input id="modules" name="modules" value={formData.modules} onChange={handleInputChange} /></div>
-                    <div><Label htmlFor="duration">Duration (hrs)</Label><Input type="number" id="duration" name="duration" value={formData.duration} onChange={handleInputChange} /></div>
+                    <div><Label htmlFor="duration">Duration (hrs) *</Label><Input type="number" id="duration" name="duration" value={formData.duration} onChange={handleInputChange} /></div>
                     <div><Label>Mode</Label><Select options={modeOptions} value={formData.mode} onChange={(val) => handleSelectChange(val, "mode")} /></div>
-                    <div><Label htmlFor="singleShotFee">Single Shot Fee</Label><Input type="number" id="singleShotFee" name="singleShotFee" value={formData.singleShotFee} onChange={handleInputChange} /></div>
-                    <div><Label htmlFor="normalFee">Normal Fee</Label><Input type="number" id="normalFee" name="normalFee" value={formData.normalFee} onChange={handleInputChange} /></div>
+                    <div><Label htmlFor="singleShotFee">Single Shot Fee *</Label><Input type="number" id="singleShotFee" name="singleShotFee" value={formData.singleShotFee} onChange={handleInputChange} /></div>
+                    <div><Label htmlFor="normalFee">Normal Fee *</Label><Input type="number" id="normalFee" name="normalFee" value={formData.normalFee} onChange={handleInputChange} /></div>
                     <div className="flex items-center"><input type="checkbox" id="isActive" checked={formData.isActive} onChange={(e) => setFormData(prev => ({ ...prev, isActive: e.target.checked }))} className="w-4 h-4 text-indigo-600 border-gray-300 rounded" /><Label htmlFor="isActive" className="ml-2 mb-0">Active Course</Label></div>
                   </div>
                   <div className="flex justify-end gap-3 mt-4">
