@@ -191,6 +191,7 @@ export default function RecentOrders() {
   const { isOpen: isDeleteOpen, openModal: openDeleteModal, closeModal: closeDeleteModal } = useModal();
   const { isOpen: isAlarmOpen, openModal: openAlarmModal, closeModal: closeAlarmModal } = useModal();
   const { isOpen: isCampaignModalOpen, openModal: openCampaignModal, closeModal: closeCampaignModal } = useModal();
+  const { isOpen: isImportOpen, openModal: openImportModal, closeModal: closeImportModal } = useModal();
 
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
@@ -826,6 +827,14 @@ export default function RecentOrders() {
                   startIcon={showFilters ? <ChevronUpIcon className="size-5" /> : <ChevronDownIcon className="size-5" />}
                 >
                   {showFilters ? "Hide Filters" : "Show Filters"}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={openImportModal}
+                  startIcon={<FileIcon className="size-5" />}
+                >
+                  Import
                 </Button>
                 <Button
                   size="sm"
@@ -1484,7 +1493,7 @@ export default function RecentOrders() {
                   onChange={(e) => setNewCampaignDesc(e.target.value)}
                   placeholder="Campaign description (optional)"
                   rows={3}
-                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:ring focus:ring-blue-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:ring focus:ring-blue-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 shadow-theme-xs"
                 />
               </div>
 
@@ -1514,26 +1523,133 @@ export default function RecentOrders() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="newCampaignActive"
-                  checked={newCampaignActive}
-                  onChange={(e) => setNewCampaignActive(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
-                />
-                <Label htmlFor="newCampaignActive" className="mb-0">Mark as Active</Label>
+              <div>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    id="newCampaignActive"
+                    checked={newCampaignActive}
+                    onChange={(e) => setNewCampaignActive(e.target.checked)}
+                    className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+                  />
+                  <Label htmlFor="newCampaignActive" className="mb-0">Active</Label>
+                </div>
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Only active campaigns will appear in dropdowns</p>
 
-              <div className="flex justify-end gap-3 mt-6">
-                <Button variant="outline" onClick={closeCampaignModal}>
-                  Cancel
-                </Button>
-                <Button onClick={createNewCampaignHandler}>
-                  Create Campaign
-                </Button>
+              <div className="flex gap-3 justify-end mt-2">
+                <Button variant="outline" onClick={closeCampaignModal}>Cancel</Button>
+                <Button variant="primary" onClick={createNewCampaignHandler}>Create Campaign</Button>
               </div>
+            </div>
+          </Modal>
+
+          {/* Import Leads Modal */}
+          <Modal
+            isOpen={isImportOpen}
+            onClose={closeImportModal}
+            className="max-w-xl p-0 overflow-hidden"
+          >
+            <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-white/90">
+                Import Leads
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Upload a CSV file to bulk import your leads into the system.
+              </p>
+            </div>
+
+            <div className="p-6">
+              <div className="space-y-6">
+                {/* Step 1: Download Template */}
+                <div className="bg-brand-50/50 dark:bg-brand-500/5 p-4 rounded-xl border border-brand-100 dark:border-brand-500/20 flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-semibold text-brand-700 dark:text-brand-400">Step 1: Get the template</h4>
+                    <p className="text-xs text-brand-600/80 dark:text-brand-400/60 mt-0.5">Use our CSV template to ensure correct data formatting.</p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="bg-white dark:bg-gray-900"
+                    onClick={() => {
+                      const headers = ["Full Name", "Phone", "Email", "Place", "Education", "Course Preference", "Contact Point", "Campaign", "Next Follow Up Date", "Remarks", "Lead Potential"];
+                      const csvContent = "data:text/csv;charset=utf-8," + headers.join(",");
+                      const encodedUri = encodeURI(csvContent);
+                      const link = document.createElement("a");
+                      link.setAttribute("href", encodedUri);
+                      link.setAttribute("download", "lead_import_template.csv");
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    }}
+                  >
+                    Download Sample
+                  </Button>
+                </div>
+
+                {/* Step 2: Upload File */}
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Step 2: Upload your file</h4>
+                  <div
+                    className="border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl p-10 flex flex-col items-center justify-center text-center hover:border-brand-300 dark:hover:border-brand-800 transition-colors cursor-pointer group"
+                    onClick={() => document.getElementById('csv-upload').click()}
+                  >
+                    <div className="size-12 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center mb-4 group-hover:bg-brand-50 dark:group-hover:bg-brand-500/10 transition-colors">
+                      <DownloadIcon className="size-6 text-gray-400 group-hover:text-brand-500 rotate-180" />
+                    </div>
+                    <p className="text-sm font-medium text-gray-800 dark:text-white/90">Click to upload or drag and drop</p>
+                    <p className="text-xs text-gray-400 mt-1">Only CSV files are supported (max 5MB)</p>
+                    <input
+                      type="file"
+                      id="csv-upload"
+                      className="hidden"
+                      accept=".csv"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          if (file.type !== "text/csv" && !file.name.endsWith('.csv')) {
+                            toast.error("Please upload a valid CSV file");
+                            return;
+                          }
+                          // Mock processing
+                          toast.info(`Processing ${file.name}...`);
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Note Section */}
+                <div className="flex gap-3 p-4 bg-gray-50 dark:bg-white/[0.02] rounded-xl border border-gray-100 dark:border-gray-800">
+                  <div className="size-5 rounded-full bg-blue-500 flex items-center justify-center shrink-0 mt-0.5">
+                    <span className="text-[10px] text-white font-bold">i</span>
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                    <p className="font-semibold text-gray-700 dark:text-gray-300 mb-1">Important Notes:</p>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>Ensure dates are in YYYY-MM-DD format.</li>
+                      <li>"Full Name" and "Phone" are required fields.</li>
+                      <li>"Course Preference" can be multiple items separated by semi-colons.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 bg-gray-50 dark:bg-white/[0.02] border-t border-gray-100 dark:border-gray-800 flex items-center justify-end gap-3">
+              <Button variant="outline" onClick={closeImportModal}>
+                Cancel
+              </Button>
+              <Button variant="primary" onClick={() => {
+                const fileInput = document.getElementById('csv-upload');
+                if (fileInput.files.length === 0) {
+                  toast.error("Please select a file first");
+                  return;
+                }
+                toast.success("Lead import started! This may take a few moments.");
+                closeImportModal();
+              }}>
+                Confirm Import
+              </Button>
             </div>
           </Modal>
 
@@ -1581,9 +1697,10 @@ export default function RecentOrders() {
             </div>
           </Modal>
         </>
-      )}
+      )
+      }
       <ToastContainer position="top-center" className="!z-[999999]" style={{ zIndex: 999999 }} />
-    </div>
+    </div >
   );
 }
 
