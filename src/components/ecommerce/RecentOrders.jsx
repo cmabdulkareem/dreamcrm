@@ -953,7 +953,6 @@ export default function RecentOrders() {
                         onChange={handleSelectAll}
                         className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
                       />
-                      {/* Placeholder to match body row alert badge width */}
                       <div className="size-6 invisible shrink-0" />
                     </div>
                   </TableCell>
@@ -984,11 +983,10 @@ export default function RecentOrders() {
                     const styles = getLeadPotentialStyles(row.leadPotential);
 
                     return (
-                      <TableRow key={row._id} className="group relative overflow-hidden transition-colors hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
-                        {/* Vertical Status Strip */}
-                        <div className={`absolute left-0 top-0 bottom-0 w-[6px] ${styles.bar}`} />
-
-                        <TableCell className="py-4 pl-8">
+                      <TableRow key={row._id} className="group overflow-hidden transition-colors hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
+                        <TableCell className="py-4 pl-8 relative">
+                          {/* Vertical Status Strip */}
+                          <div className={`absolute left-0 top-0 bottom-0 w-[6px] ${styles.bar}`} />
                           <div className="flex items-center gap-3">
                             <input
                               type="checkbox"
