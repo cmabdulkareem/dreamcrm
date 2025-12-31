@@ -158,7 +158,7 @@ export default function RecentOrders() {
   const { addEvent, events, updateEvent } = useCalendar();
   const { addNotification, areToastsEnabled } = useNotifications();
   const [search, setSearch] = useState("");
-  const [sortOrder, setSortOrder] = useState("desc");
+  const [sortOrder, setSortOrder] = useState("followup_latest");
   const [statusFilter, setStatusFilter] = useState(""); // Added for status filter
   const [leadStatusFilter, setLeadStatusFilter] = useState(""); // Filter by lead status
   const [leadPotentialFilter, setLeadPotentialFilter] = useState(""); // Filter by lead potential
@@ -423,6 +423,17 @@ export default function RecentOrders() {
       return matchesSearch && matchesStatus && matchesLeadStatus && matchesLeadPotential && matchesAssignedUser && isUserLead;
     })
     .sort((a, b) => {
+      if (sortOrder === "followup_latest" || sortOrder === "followup_oldest") {
+        const dateA = a.followUpDate ? new Date(a.followUpDate) : null;
+        const dateB = b.followUpDate ? new Date(b.followUpDate) : null;
+
+        if (!dateA && !dateB) return 0;
+        if (!dateA) return 1; // Put leads without follow-up date last
+        if (!dateB) return -1;
+
+        return sortOrder === "followup_latest" ? dateB - dateA : dateA - dateB;
+      }
+
       const dateA = new Date(a.createdAt);
       const dateB = new Date(b.createdAt);
       return sortOrder === "asc" ? dateA - dateB : dateB - dateA;

@@ -1,10 +1,10 @@
 const placeOptions = [
-    { value: "Manjeshwar", label: "Manjeshwar" },
-    { value: "Kasaragod", label: "Kasaragod" },
-    { value: "Uduma", label: "Uduma" },
-    { value: "Kanjangad", label: "Kanjangad" },
-    { value: "Trikarippur", label: "Trikarippur" },
-    { value: "Other", label: "Other" },
+  { value: "Manjeshwar", label: "Manjeshwar" },
+  { value: "Kasaragod", label: "Kasaragod" },
+  { value: "Uduma", label: "Uduma" },
+  { value: "Kanjangad", label: "Kanjangad" },
+  { value: "Trikarippur", label: "Trikarippur" },
+  { value: "Other", label: "Other" },
 ];
 
 const bloodGroupOptions = [
@@ -96,11 +96,11 @@ const stateOptions = [
   { value: "Delhi", label: "Delhi" }
 ];
 
-  const enquirerGender = [
-    { value: "male", label: "Male" },
-    { value: "female", label: "Female" },
-    { value: "other", label: "Other" },
-  ];
+const enquirerGender = [
+  { value: "male", label: "Male" },
+  { value: "female", label: "Female" },
+  { value: "other", label: "Other" },
+];
 
 const accountGender = [
   { value: "male", label: "Male" },
@@ -122,13 +122,13 @@ const departments = [
   { value: "graphic", label: "Graphic Design Department" },
   { value: "other", label: "Other" },
 ];
-  
-  const accountStatus = [
-    { value: "Pending", label: "Pending" },
-    { value: "Active", label: "Active" },
-    { value: "Suspended", label: "Suspended" },
-    { value: "Deactivated", label: "Deactivated" }
-  ];
+
+const accountStatus = [
+  { value: "Pending", label: "Pending" },
+  { value: "Active", label: "Active" },
+  { value: "Suspended", label: "Suspended" },
+  { value: "Deactivated", label: "Deactivated" }
+];
 
 const employmentType = [
   { value: "fullTime", label: "Full Time" },
@@ -142,132 +142,134 @@ const employmentType = [
 ];
 
 
-  
-  const enquirerStatus = [
-    { value: "studying", label: "Studying" },
-    { value: "working", label: "Working" },
-    { value: "selfEmployed", label: "Self Employed" },
-    { value: "freelancer", label: "Freelancer" },
-    { value: "homeMaker", label: "Homemaker" },
-    { value: "jobSeeker", label: "Job Seeker" },
-    { value: "doingNothing", label: "Not Engaged" },
-  ];
 
-  const enquirerEducation = [
-    { value: "below10th", label: "Below 10th" },
-    { value: "10th", label: "10th" },
-    { value: "12th", label: "12th" },
-    { value: "diploma", label: "Diploma" },
-    { value: "graduate", label: "Graduate" },
-    { value: "postGraduate", label: "Post Graduate" },
-    { value: "Other", label: "Other" },
-  ];
+const enquirerStatus = [
+  { value: "studying", label: "Studying" },
+  { value: "working", label: "Working" },
+  { value: "selfEmployed", label: "Self Employed" },
+  { value: "freelancer", label: "Freelancer" },
+  { value: "homeMaker", label: "Homemaker" },
+  { value: "jobSeeker", label: "Job Seeker" },
+  { value: "doingNothing", label: "Not Engaged" },
+];
 
-  // Data with Date objects and unique enquiryStatus
-  const tableData = [
-    {
-      id: 1,
-      name: "Zahid Mohammed",
-      course: "Interior Design",
-      phone: "+91 9876543210",
-      email: "cmabdulkareem@gmail.com",
-      enquiryStatus: "Converted",
-      date: new Date("2025-09-01"),
-      contactPoint: "Walk-In",
-      campaign: "Campaign 1",
-      followUpDate: new Date("2025-09-27"),
-      handledBy: "John Doe",
-    },
-    {
-      id: 2,
-      name: "Athira Rajeevan",
-      course: "Graphic Design",
-      phone: "+91 9123456780",
-      email: "kareemchala@gmail.com",
-      enquiryStatus: "Call Back Later",
-      date: new Date("2025-09-20"),
-      contactPoint: "Tele Call",
-      campaign: "Campaign 2",
-      followUpDate: new Date("2025-09-25"),
-      handledBy: "Alex Antony",
-    },
-  ];
+const enquirerEducation = [
+  { value: "below10th", label: "Below 10th" },
+  { value: "10th", label: "10th" },
+  { value: "12th", label: "12th" },
+  { value: "diploma", label: "Diploma" },
+  { value: "graduate", label: "Graduate" },
+  { value: "postGraduate", label: "Post Graduate" },
+  { value: "Other", label: "Other" },
+];
+
+// Data with Date objects and unique enquiryStatus
+const tableData = [
+  {
+    id: 1,
+    name: "Zahid Mohammed",
+    course: "Interior Design",
+    phone: "+91 9876543210",
+    email: "cmabdulkareem@gmail.com",
+    enquiryStatus: "Converted",
+    date: new Date("2025-09-01"),
+    contactPoint: "Walk-In",
+    campaign: "Campaign 1",
+    followUpDate: new Date("2025-09-27"),
+    handledBy: "John Doe",
+  },
+  {
+    id: 2,
+    name: "Athira Rajeevan",
+    course: "Graphic Design",
+    phone: "+91 9123456780",
+    email: "kareemchala@gmail.com",
+    enquiryStatus: "Call Back Later",
+    date: new Date("2025-09-20"),
+    contactPoint: "Tele Call",
+    campaign: "Campaign 2",
+    followUpDate: new Date("2025-09-25"),
+    handledBy: "Alex Antony",
+  },
+];
 
 
-    const sortOrderList = [
-    { value: "desc", label: "Newest First" },
-    { value: "asc", label: "Oldest First" },
-  ];
+const sortOrderList = [
+  { value: "followup_latest", label: "Follow-up Date (Latest First)" },
+  { value: "followup_oldest", label: "Follow-up Date (Oldest First)" },
+  { value: "desc", label: "Newest First" },
+  { value: "asc", label: "Oldest First" },
+];
 
-  const statusOptions = [
-    { value: "", label: "All Status" },
-    { value: "Converted", label: "Converted" },
-    { value: "Call Back Later", label: "Call Back Later" },
-    { value: "Pending", label: "Pending" },
-  ];
+const statusOptions = [
+  { value: "", label: "All Status" },
+  { value: "Converted", label: "Converted" },
+  { value: "Call Back Later", label: "Call Back Later" },
+  { value: "Pending", label: "Pending" },
+];
 
-  const courseOptions = [
-    { value: "Interior", label: "Interior Design" },
-    { value: "Fashion", label: "Fashion Design" },
-    { value: "Graphics", label: "Graphic Design" },
-    { value: "General", label: "General" },
-  ];
+const courseOptions = [
+  { value: "Interior", label: "Interior Design" },
+  { value: "Fashion", label: "Fashion Design" },
+  { value: "Graphics", label: "Graphic Design" },
+  { value: "General", label: "General" },
+];
 
-  
-  const rolesOptions = [
-    { value: "Leads", label: "Leads" },
-    { value: "Students", label: "Students" },
-    { value: "Finance", label: "Finance" },
-    { value: "Marketing", label: "Marketing" },
-  ];
 
-  // Options
-  const contactPoints = [
-    { value: "walkIn", label: "Walk-In" },
-    { value: "teleCall", label: "Tele Call" },
-    { value: "other", label: "Other" },
-  ];
+const rolesOptions = [
+  { value: "Leads", label: "Leads" },
+  { value: "Students", label: "Students" },
+  { value: "Finance", label: "Finance" },
+  { value: "Marketing", label: "Marketing" },
+];
 
-  const campaigns = [
-    { value: "campaign1", label: "Campaign 1" },
-    { value: "campaign2", label: "Campaign 2" },
-    { value: "campaign3", label: "Campaign 3" },
-  ];
+// Options
+const contactPoints = [
+  { value: "walkIn", label: "Walk-In" },
+  { value: "teleCall", label: "Tele Call" },
+  { value: "other", label: "Other" },
+];
 
-  const handledBy = [
-    { value: "counselor1", label: "Counselor 1" },
-    { value: "counselor2", label: "Counselor 2" },
-    { value: "counselor3", label: "Counselor 3" },
-  ];
+const campaigns = [
+  { value: "campaign1", label: "Campaign 1" },
+  { value: "campaign2", label: "Campaign 2" },
+  { value: "campaign3", label: "Campaign 3" },
+];
 
-  const leadStatusOptions = [
-    { value: "new", label: "Pending" },
-    { value: "contacted", label: "Contacted" },
-    { value: "qualified", label: "Qualified" },
-    { value: "negotiation", label: "In Negotiation" },
-    { value: "converted", label: "Converted" },
-    { value: "callBackLater", label: "Call Back Later" },
-    { value: "notInterested", label: "Not Interested" },
-    { value: "lost", label: "Lost" },
-  ];
+const handledBy = [
+  { value: "counselor1", label: "Counselor 1" },
+  { value: "counselor2", label: "Counselor 2" },
+  { value: "counselor3", label: "Counselor 3" },
+];
 
-  // Lead Potential options
-  const leadPotentialOptions = [
-    { value: "strongProspect", label: "Strong Prospect", color: "text-green-600 bg-green-100" },
-    { value: "potentialProspect", label: "Potential Prospect", color: "text-blue-600 bg-blue-100" },
-    { value: "weakProspect", label: "Weak Prospect", color: "text-yellow-600 bg-yellow-100" },
-    { value: "notAProspect", label: "Not a Prospect", color: "text-red-600 bg-red-100" },
-  ];
+const leadStatusOptions = [
+  { value: "new", label: "Pending" },
+  { value: "contacted", label: "Contacted" },
+  { value: "qualified", label: "Qualified" },
+  { value: "negotiation", label: "In Negotiation" },
+  { value: "converted", label: "Converted" },
+  { value: "callBackLater", label: "Call Back Later" },
+  { value: "notInterested", label: "Not Interested" },
+  { value: "lost", label: "Lost" },
+];
 
-export { 
-  placeOptions, 
+// Lead Potential options
+const leadPotentialOptions = [
+  { value: "strongProspect", label: "Strong Prospect", color: "text-green-600 bg-green-100" },
+  { value: "potentialProspect", label: "Potential Prospect", color: "text-blue-600 bg-blue-100" },
+  { value: "weakProspect", label: "Weak Prospect", color: "text-yellow-600 bg-yellow-100" },
+  { value: "notAProspect", label: "Not a Prospect", color: "text-red-600 bg-red-100" },
+];
+
+export {
+  placeOptions,
   bloodGroupOptions,
-  countries, 
+  countries,
   countryOptions,
   stateOptions,
-  enquirerGender, 
-  enquirerStatus, 
-  enquirerEducation, 
+  enquirerGender,
+  enquirerStatus,
+  enquirerEducation,
   tableData,
   sortOrderList,
   statusOptions,
