@@ -39,7 +39,7 @@ export const createCategory = async (req, res) => {
             name,
             description,
             isActive: isActive === 'true' || isActive === true,
-            brand: req.brandFilter?.brand || req.headers['x-brand-id'] || null
+            brand: brandId
         });
 
         await newCategory.save();

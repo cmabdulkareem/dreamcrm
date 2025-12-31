@@ -76,7 +76,7 @@ export const createCourse = async (req, res) => {
       singleShotFee: parseFloat(singleShotFee),
       normalFee: parseFloat(normalFee),
       isActive: isActive === 'true' || isActive === true,
-      brand: req.brandFilter?.brand || req.headers['x-brand-id'] || null
+      brand: brandId
     });
 
     await newCourse.save();

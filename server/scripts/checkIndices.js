@@ -1,6 +1,8 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import ContactPoint from '../model/contactPointModel.js';
+import Course from '../model/courseModel.js';
+import CourseCategory from '../model/courseCategoryModel.js';
 
 dotenv.config();
 
@@ -11,8 +13,14 @@ async function checkIndices() {
         await mongoose.connect(mongoURI);
         console.log('Connected to MongoDB');
 
-        const indices = await ContactPoint.collection.getIndexes();
-        console.log('Current Indices:', JSON.stringify(indices, null, 2));
+        console.log('\n--- ContactPoint Indices ---');
+        console.log(JSON.stringify(await ContactPoint.collection.getIndexes(), null, 2));
+
+        console.log('\n--- Course Indices ---');
+        console.log(JSON.stringify(await Course.collection.getIndexes(), null, 2));
+
+        console.log('\n--- CourseCategory Indices ---');
+        console.log(JSON.stringify(await CourseCategory.collection.getIndexes(), null, 2));
 
     } catch (error) {
         console.error('Error checking indices:', error);
