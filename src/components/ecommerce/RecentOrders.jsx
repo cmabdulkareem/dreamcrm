@@ -1017,7 +1017,7 @@ export default function RecentOrders() {
                           <div className="flex flex-col gap-0.5">
                             <p>{formatDate(row.createdAt)}</p>
                             <p className="text-gray-400 text-xs truncate max-w-[180px]">
-                              By:{row.handledBy || "N/A"}
+                              By:&nbsp;{row.handledBy || "N/A"}
                             </p>
                           </div>
                         </TableCell>
@@ -1062,8 +1062,8 @@ export default function RecentOrders() {
                               {getDueDateBadgeText(row.followUpDate)}
                             </Badge>
                             {row.assignedTo && (
-                              <p className="text-[10px] text-gray-400 font-medium whitespace-nowrap">
-                                Assigned to: <span className="text-brand-500/80 italic">{row.assignedTo.fullName}</span>
+                              <p className="text-gray-400 text-xs truncate max-w-[180px]">
+                                Assigned to:&nbsp;{row.assignedTo.fullName}
                               </p>
                             )}
                           </div>
