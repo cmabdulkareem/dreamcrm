@@ -825,7 +825,7 @@ export default function RecentOrders() {
                   onClick={() => setShowFilters(!showFilters)}
                   startIcon={showFilters ? <ChevronUpIcon className="size-5" /> : <ChevronDownIcon className="size-5" />}
                 >
-                  {showFilters ? "Hide Filters" : "Advanced Filters"}
+                  {showFilters ? "Hide Filters" : "Show Filters"}
                 </Button>
                 <Button
                   size="sm"
