@@ -827,6 +827,25 @@ export default function RecentOrders() {
                     Total: {filteredData.length} records
                   </p>
                 </div>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800/60">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Lead Potential:</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="size-2 rounded-full bg-green-500" />
+                    <span className="text-xs text-gray-600 dark:text-gray-400">Strong</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="size-2 rounded-full bg-brand-500" />
+                    <span className="text-xs text-gray-600 dark:text-gray-400">Potential</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="size-2 rounded-full bg-yellow-500" />
+                    <span className="text-xs text-gray-600 dark:text-gray-400">Weak</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="size-2 rounded-full bg-gray-400" />
+                    <span className="text-xs text-gray-600 dark:text-gray-400">Not Interest</span>
+                  </div>
+                </div>
               </div>
               <div className="flex flex-wrap items-center gap-3">
                 <div className="w-full sm:w-56">
@@ -1051,7 +1070,7 @@ export default function RecentOrders() {
                                 Assign
                               </Button>
                             )}
-                            <Button size="sm" variant="outline" className="text-yellow-500" endIcon={<BellIcon className="size-5" />} onClick={() => handleAlarm(row)} />
+                            <Button size="sm" variant="outline" className="text-yellow-500" title="Follow-up Alarm" endIcon={<BoltIcon className="size-5" />} onClick={() => handleAlarm(row)} />
                           </div>
                         </TableCell>
                       </TableRow>
