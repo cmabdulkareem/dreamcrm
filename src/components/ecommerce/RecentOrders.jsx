@@ -35,7 +35,7 @@ import {
   tableData,
   sortOrderList,
   statusOptions,
-  courseOptions,
+  // courseOptions,
   contactPoints,
   campaigns,
   leadStatusOptions,
@@ -94,15 +94,15 @@ const getLeadPotentialStyles = (leadPotential) => {
       };
     case "potentialProspect":
       return {
-        bar: "bg-brand-500"
+        bar: "bg-blue-500"
       };
     case "weakProspect":
       return {
-        bar: "bg-yellow-500"
+        bar: "bg-amber-500"
       };
     case "notAProspect":
       return {
-        bar: "bg-gray-400"
+        bar: "bg-red-500"
       };
     default:
       return {
@@ -117,11 +117,11 @@ const getLeadPotentialBackgroundColor = (leadPotential) => {
     case "strongProspect":
       return "bg-green-50/30 dark:bg-green-500/5";
     case "potentialProspect":
-      return "bg-brand-50/30 dark:bg-brand-500/5";
+      return "bg-blue-50/30 dark:bg-blue-500/5";
     case "weakProspect":
-      return "bg-yellow-50/30 dark:bg-yellow-500/5";
+      return "bg-amber-50/30 dark:bg-amber-500/5";
     case "notAProspect":
-      return "bg-gray-50/30 dark:bg-gray-500/5";
+      return "bg-red-50/30 dark:bg-red-500/5";
     default:
       return "";
   }
@@ -176,7 +176,7 @@ export default function RecentOrders() {
   const { addEvent, events, updateEvent } = useCalendar();
   const { addNotification, areToastsEnabled } = useNotifications();
   const [search, setSearch] = useState("");
-  const [sortOrder, setSortOrder] = useState("followup_latest");
+  const [sortOrder, setSortOrder] = useState("followup_oldest");
   const [statusFilter, setStatusFilter] = useState(""); // Added for status filter
   const [leadStatusFilter, setLeadStatusFilter] = useState(""); // Filter by lead status
   const [leadPotentialFilter, setLeadPotentialFilter] = useState(""); // Filter by lead potential
@@ -196,6 +196,7 @@ export default function RecentOrders() {
   const [loading, setLoading] = useState(true);
   const [selectedRow, setSelectedRow] = useState(null);
   const [campaignOptions, setCampaignOptions] = useState([]);
+  const [courseOptions, setCourseOptions] = useState([]); // Dynamic course options
   const [selectedLeads, setSelectedLeads] = useState([]);
   const [hoveredRemarkRow, setHoveredRemarkRow] = useState(null);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0, arrowLeft: 0 });
@@ -249,6 +250,7 @@ export default function RecentOrders() {
   useEffect(() => {
     fetchCustomers(setData, setLoading);
     fetchCampaigns(setCampaignOptions, campaigns);
+    fetchCourseCategories();
   }, []);
 
   // Fetch available users for admins/managers
@@ -290,6 +292,7 @@ export default function RecentOrders() {
     const tooltipWidth = 384; // w-96 = 384px
     const tooltipMaxHeight = window.innerHeight * 0.8; // 80vh
     const padding = 20;
+    const headerHeight = 90; // Height of the sticky header to avoid
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
 
@@ -312,26 +315,18 @@ export default function RecentOrders() {
       arrowLeft = Math.max(20, Math.min(tooltipWidth - 20, arrowLeft));
     }
 
-    // Calculate vertical position (above the cell)
-    const spaceAbove = rect.top;
-    const spaceBelow = viewportHeight - rect.bottom;
+    // Calculate vertical position
+    const spaceAbove = rect.top - headerHeight;
+    const spaceBelow = viewportHeight - rect.bottom - padding;
     const estimatedTooltipHeight = Math.min(tooltipMaxHeight, 400); // Estimate height
 
     let top = rect.top;
-    let transform = 'translateY(-100%)';
+    let transform = 'translateY(-100%) translateY(-10px)';
 
-    // If not enough space above, show below
-    if (spaceAbove < estimatedTooltipHeight + 50 && spaceBelow > spaceAbove) {
+    // If not enough space above or it would clip header, show below
+    if ((spaceAbove < estimatedTooltipHeight) && spaceBelow > spaceAbove) {
       top = rect.bottom;
       transform = 'translateY(10px)';
-    } else {
-      top = rect.top;
-      transform = 'translateY(-100%)';
-    }
-
-    // Ensure tooltip doesn't go off top
-    if (top < padding) {
-      top = padding;
     }
 
     return { top, left, arrowLeft, transform };
@@ -453,19 +448,30 @@ export default function RecentOrders() {
       // --- Date range filter ---
       let matchesDateRange = true;
       if (dateRange && dateRange.length > 0) {
-        const itemDate = new Date(item.createdAt);
-        itemDate.setHours(0, 0, 0, 0);
+        const createdAtDate = new Date(item.createdAt);
+        createdAtDate.setHours(0, 0, 0, 0);
+
+        const followUpDateVal = item.followUpDate ? new Date(item.followUpDate) : null;
+        if (followUpDateVal) followUpDateVal.setHours(0, 0, 0, 0);
 
         if (dateRange.length === 2) {
           const startDate = new Date(dateRange[0]);
           const endDate = new Date(dateRange[1]);
           startDate.setHours(0, 0, 0, 0);
           endDate.setHours(0, 0, 0, 0);
-          matchesDateRange = itemDate >= startDate && itemDate <= endDate;
+
+          const createdInRange = createdAtDate >= startDate && createdAtDate <= endDate;
+          const followUpInRange = followUpDateVal && followUpDateVal >= startDate && followUpDateVal <= endDate;
+
+          matchesDateRange = createdInRange || followUpInRange;
         } else if (dateRange.length === 1) {
           const filterDate = new Date(dateRange[0]);
           filterDate.setHours(0, 0, 0, 0);
-          matchesDateRange = itemDate.getTime() === filterDate.getTime();
+
+          const createdMatches = createdAtDate.getTime() === filterDate.getTime();
+          const followUpMatches = followUpDateVal && followUpDateVal.getTime() === filterDate.getTime();
+
+          matchesDateRange = createdMatches || followUpMatches;
         }
       }
 
@@ -577,7 +583,7 @@ export default function RecentOrders() {
       setSelectedValues
     };
 
-    prepareLeadForEdit(row, setters);
+    prepareLeadForEdit(row, setters, courseOptions);
     openEditModal();
   };
 
@@ -716,6 +722,26 @@ export default function RecentOrders() {
     setEditFollowUp("");
   };
 
+  const fetchCourseCategories = async () => {
+    try {
+      const response = await axios.get(
+        `${API}/course-categories/all`,
+        { withCredentials: true }
+      );
+      const categories = response.data.categories.filter(c => c.isActive).map(c => ({
+        value: c.name,
+        label: c.name
+      }));
+      setCourseOptions(categories);
+    } catch (error) {
+      console.error("Error fetching course categories:", error);
+      // Fallback
+      setCourseOptions([
+        { value: "General", label: "General" }
+      ]);
+    }
+  };
+
   // New state for assignment modal
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [assignToUser, setAssignToUser] = useState("");
@@ -834,15 +860,15 @@ export default function RecentOrders() {
                     <span className="text-xs text-gray-600 dark:text-gray-400">Strong</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <span className="size-2 rounded-full bg-brand-500" />
+                    <span className="size-2 rounded-full bg-blue-500" />
                     <span className="text-xs text-gray-600 dark:text-gray-400">Potential</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <span className="size-2 rounded-full bg-yellow-500" />
+                    <span className="size-2 rounded-full bg-amber-500" />
                     <span className="text-xs text-gray-600 dark:text-gray-400">Weak</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <span className="size-2 rounded-full bg-gray-400" />
+                    <span className="size-2 rounded-full bg-red-500" />
                     <span className="text-xs text-gray-600 dark:text-gray-400">Not Interest</span>
                   </div>
                 </div>
@@ -1114,7 +1140,7 @@ export default function RecentOrders() {
             return (
               <div
                 ref={tooltipRef}
-                className={`fixed w-96 max-w-[90vw] max-h-[80vh] bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 z-[9999] transition-all duration-200 ${showTooltip ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+                className={`fixed w-96 max-w-[90vw] max-h-[80vh] bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 z-[100001] transition-all duration-200 ${showTooltip ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
                   }`}
                 style={{
                   top: `${tooltipPosition.top}px`,

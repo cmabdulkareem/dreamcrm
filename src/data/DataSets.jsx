@@ -195,10 +195,10 @@ const tableData = [
 
 
 const sortOrderList = [
+  { value: "followup_oldest", label: "Priority (Due Follow-ups First)" },
   { value: "followup_latest", label: "Follow-up Date (Latest First)" },
-  { value: "followup_oldest", label: "Follow-up Date (Oldest First)" },
-  { value: "desc", label: "Newest First" },
-  { value: "asc", label: "Oldest First" },
+  { value: "desc", label: "Date Added (Newest First)" },
+  { value: "asc", label: "Date Added (Oldest First)" },
 ];
 
 const statusOptions = [
@@ -257,7 +257,7 @@ const leadStatusOptions = [
 const leadPotentialOptions = [
   { value: "strongProspect", label: "Strong Prospect", color: "text-green-600 bg-green-100" },
   { value: "potentialProspect", label: "Potential Prospect", color: "text-blue-600 bg-blue-100" },
-  { value: "weakProspect", label: "Weak Prospect", color: "text-yellow-600 bg-yellow-100" },
+  { value: "weakProspect", label: "Weak Prospect", color: "text-amber-600 bg-amber-100" },
   { value: "notAProspect", label: "Not a Prospect", color: "text-red-600 bg-red-100" },
 ];
 

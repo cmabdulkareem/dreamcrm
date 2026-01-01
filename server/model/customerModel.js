@@ -60,8 +60,10 @@ const customerSchema = new mongoose.Schema({
     enum: ['studying', 'working', 'selfEmployed', 'freelancer', 'homeMaker', 'jobSeeker', 'doingNothing']
   },
   education: {
-    type: String,
-    enum: ['notEducated', 'below10th', '10th', '12th', 'diploma', 'graduate', 'postGraduate']
+    type: String
+  },
+  otherEducation: {
+    type: String
   },
   coursePreference: [{
     type: String

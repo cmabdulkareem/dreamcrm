@@ -17,6 +17,7 @@ export const createCustomer = async (req, res) => {
       otherPlace,
       status,
       education,
+      otherEducation,
       coursePreference,
       contactPoint,
       otherContactPoint,
@@ -24,7 +25,7 @@ export const createCustomer = async (req, res) => {
       handledBy,
       followUpDate,
       leadRemarks,
-      leadPotential // Added leadPotential field
+      leadPotential
     } = req.body;
 
     console.log("Creating customer with leadPotential:", leadPotential); // Add logging
@@ -54,6 +55,7 @@ export const createCustomer = async (req, res) => {
       otherPlace,
       status,
       education,
+      otherEducation,
       coursePreference,
       contactPoint,
       otherContactPoint,
@@ -61,9 +63,7 @@ export const createCustomer = async (req, res) => {
       handledBy,
       followUpDate: followUpDate ? new Date(followUpDate) : null,
       remarks,
-      leadPotential, // Added leadPotential field
-      remarks,
-      leadPotential, // Added leadPotential field
+      leadPotential,
       // Automatically assign the lead to the user who created it
       assignedTo: req.user.id,
       assignedBy: req.user.id,
@@ -198,6 +198,12 @@ export const updateCustomer = async (req, res) => {
     Object.keys(updateData).forEach(key => {
       if (key === 'dob' || key === 'followUpDate') {
         customer[key] = updateData[key] ? new Date(updateData[key]) : null;
+      } else if (key === 'place') {
+        customer[key] = updateData.place === 'Other' ? updateData.otherPlace : updateData.place;
+      } else if (key === 'education') {
+        customer[key] = updateData.education === 'Other' ? updateData.otherEducation : updateData.education;
+      } else if (key === 'contactPoint') {
+        customer[key] = updateData.contactPoint === 'other' ? updateData.otherContactPoint : updateData.contactPoint;
       } else if (key !== 'remarks') {
         customer[key] = updateData[key];
       }
