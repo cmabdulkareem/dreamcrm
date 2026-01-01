@@ -81,12 +81,12 @@ function App() {
                       <Route path="/blank" element={<Suspense fallback={<LoadingSpinner />}><Blank /></Suspense>} />
 
                       {/* Settings */}
-                      <Route path="/settings/campaigns" element={<ProtectedRoutes requireAdmin={true}><CampaignSettings /></ProtectedRoutes>} />
-                      <Route path="/settings/contact-points" element={<ProtectedRoutes requireAdmin={true}><ContactPointSettings /></ProtectedRoutes>} />
+                      <Route path="/settings/campaigns" element={<ProtectedRoutes requireManager={true}><CampaignSettings /></ProtectedRoutes>} />
+                      <Route path="/settings/contact-points" element={<ProtectedRoutes requireManager={true}><ContactPointSettings /></ProtectedRoutes>} />
                       <Route path="/settings/courses" element={<ProtectedRoutes requireManager={true}><CourseManagement /></ProtectedRoutes>} />
                       <Route path="/settings/users" element={<ProtectedRoutes requireAdmin={true}><UserManagement /></ProtectedRoutes>} />
                       <Route path="/settings/brands" element={<ProtectedRoutes requireAdmin={true}><BrandManagement /></ProtectedRoutes>} />
-                      <Route path="/settings/announcements" element={<ProtectedRoutes requireAdmin={false}><AnnouncementManagement /></ProtectedRoutes>} />
+                      <Route path="/settings/announcements" element={<ProtectedRoutes requireAdmin={true}><AnnouncementManagement /></ProtectedRoutes>} />
 
                       {/* Finance */}
                       <Route path="/finance/collect-payment" element={<ProtectedRoutes requireAccountant={true}><CollectPayment /></ProtectedRoutes>} />

@@ -24,7 +24,7 @@ import {
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import SidebarWidget from "./SidebarWidget";
-import { isManager, hasRole, isAccountant } from "../utils/roleHelpers";
+import { isManager, hasRole, isAccountant, isCounsellor, isAdmin } from "../utils/roleHelpers";
 
 
 const navItems = [
@@ -240,23 +240,38 @@ const AppSidebar = () => {
           return null;
         }
 
-        // Special handling for Leave Management sub-items
-        if (nav.name === "Leave Management" && nav.subItems) {
-          const filteredSubItems = nav.subItems.filter(subItem => {
-            if (subItem.name === "Manage Leaves") {
-              // Only Owner, HR, Manager can see Manage Leaves
-              return hasRole(user, "Owner") || hasRole(user, "HR") || hasRole(user, "Manager");
-            }
-            return true;
-          });
-
-          // If no sub-items remain (unlikely for regular users who see Apply/My Leaves), hide parent? 
-          // Better to just map and render only allowed ones.
-          // But here we are iterating items. We can modify the map callback to handle subItems filtering?
-          // Actually, the rendering logic below iterates nav.subItems. We should modify that iteration.
+        // Restricted items for Counsellors (who are not managers)
+        if (isCounsellor(user) && !isManager(user)) {
+          // Counsellors need Lead Management, but not Finance or technical/admin items
+          const hiddenForCounsellor = ["Finance", "Operations", "UI Elements"];
+          if (hiddenForCounsellor.includes(nav.name)) return null;
         }
 
-        // Special handling for Finance
+        // Restricted items for Accountants (who are not managers)
+        if (isAccountant(user) && !isManager(user)) {
+          // Accountants need Finance, but not Lead/Student management (unless for payments, which are in Finance)
+          const hiddenForAccountant = [
+            "Lead Management",
+            "Student Management",
+            "Operations",
+            "Marketing Materials",
+            "Course Curriculum",
+            "UI Elements"
+          ];
+          if (hiddenForAccountant.includes(nav.name)) return null;
+        }
+
+        // Special handling for Leave Management sub-items
+        if (nav.name === "Leave Management" && nav.subItems) {
+          // This filter logic is complex because we are iterating parents here.
+          // The subitem filtering happens in the rendering of subitems below.
+          // However, if a user has access to NO subitems, we probably shouldn't show the parent?
+          // But 'Apply Leave' and 'My Leaves' are usually available to everyone.
+          // 'Manage Leaves' is restricted.
+          // So the parent 'Leave Management' is valid for everyone.
+        }
+
+        // Special handling for Finance (hide for non-accountants/non-managers)
         if (nav.name === "Finance" && !isAccountant(user)) {
           return null;
         }
@@ -347,9 +362,14 @@ const AppSidebar = () => {
                       : (selectedBrand || isGlobalItem(subItem.name));
                     const subItemDisabledClass = !isSubItemEnabled ? "opacity-40 cursor-not-allowed pointer-events-none" : "";
 
-                    // Only show Campaigns, Contact Points, Course Management, and User Management to managers
+                    // Only show Campaigns, Contact Points, Course Management to managers
                     if ((subItem.name === "Campaigns" || subItem.name === "Contact Points" ||
-                      subItem.name === "Course Management" || subItem.name === "User Management") && !hasManagerAccess) {
+                      subItem.name === "Course Management") && !hasManagerAccess) {
+                      return null;
+                    }
+
+                    // RESTRICTION: Only Owner and Admin can see User Management, Brand Management, and Announcements
+                    if ((subItem.name === "User Management" || subItem.name === "Brand Management" || subItem.name === "Announcements") && !isAdmin(user)) {
                       return null;
                     }
 

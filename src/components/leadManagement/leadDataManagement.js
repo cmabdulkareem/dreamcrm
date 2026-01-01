@@ -267,8 +267,8 @@ export const prepareLeadForEdit = (row, setters) => {
     setHandledByPerson(row.handledBy || "");
   }
   if (typeof setFollowUpDate === 'function') {
-    // Clear followUpDate if lead status is converted
-    if (row.leadStatus === "converted") {
+    // Clear followUpDate if lead status is converted or lost
+    if (row.leadStatus === "converted" || row.leadStatus === "lost") {
       setFollowUpDate("");
     } else {
       setFollowUpDate(row.followUpDate ? new Date(row.followUpDate).toISOString().split("T")[0] : "");

@@ -48,6 +48,7 @@ import { downloadLeadsAsPDF } from "../leadManagement/leadPdfExport";
 import { fetchCustomers, fetchCampaigns, createNewCampaign, prepareLeadForEdit } from "../leadManagement/leadDataManagement";
 import { saveLeadChanges, deleteLead, setLeadReminder, markRemarkAsRead } from "../leadManagement/leadUpdateService";
 
+
 // Import role helper function
 import { isAdmin, isOwner } from "../../utils/roleHelpers";
 
@@ -98,7 +99,7 @@ const getLeadPotentialStyles = (leadPotential) => {
       };
     case "weakProspect":
       return {
-        bar: "bg-yellow-500"
+        bar: "bg-orange-500"
       };
     case "notAProspect":
       return {
@@ -117,7 +118,7 @@ const getLeadPotentialBackgroundColor = (leadPotential) => {
     case "strongProspect":
       return "bg-green-50/30 dark:bg-green-500/5";
     case "potentialProspect":
-      return "bg-brand-50/30 dark:bg-brand-500/5";
+      return "bg-blue-50/30 dark:bg-blue-500/5";
     case "weakProspect":
       return "bg-yellow-50/30 dark:bg-yellow-500/5";
     case "notAProspect":
@@ -914,16 +915,16 @@ export default function RecentOrders() {
                     <span className="text-xs text-gray-600 dark:text-gray-400">Strong</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <span className="size-2 rounded-full bg-brand-500" />
+                    <span className="size-2 rounded-full bg-blue-500" />
                     <span className="text-xs text-gray-600 dark:text-gray-400">Potential</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <span className="size-2 rounded-full bg-yellow-500" />
+                    <span className="size-2 rounded-full bg-orange-500" />
                     <span className="text-xs text-gray-600 dark:text-gray-400">Weak</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className="size-2 rounded-full bg-gray-400" />
-                    <span className="text-xs text-gray-600 dark:text-gray-400">Not Interest</span>
+                    <span className="text-xs text-gray-600 dark:text-gray-400">Not a prospect</span>
                   </div>
                 </div>
               </div>
@@ -1303,11 +1304,7 @@ export default function RecentOrders() {
                       onChange={(e) => setFullName(e.target.value)}
                       disabled={!isAdmin(user)}
                     />
-                    {!isAdmin(user) && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        Only owners can edit this field
-                      </p>
-                    )}
+
                   </div>
                   <div className="w-full md:w-1/4">
                     <Label>Email</Label>
@@ -1316,15 +1313,11 @@ export default function RecentOrders() {
                       value={email}
                       error={error}
                       onChange={handleEmailChange}
-                      placeholder="Enter your email"
+                      placeholder="Enter email"
                       hint={error ? "This is an invalid email address." : ""}
                       disabled={!isAdmin(user)}
                     />
-                    {!isAdmin(user) && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        Only owners can edit this field
-                      </p>
-                    )}
+
                   </div>
                   <div className="w-full md:w-1/4">
                     <Label>Phone *</Label>
@@ -1336,11 +1329,7 @@ export default function RecentOrders() {
                       onChange={setPhone1}
                       disabled={!isAdmin(user)}
                     />
-                    {!isAdmin(user) && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        Only owners can edit this field
-                      </p>
-                    )}
+
                   </div>
                   <div className="w-full md:w-1/4">
                     <Label>Phone (optional)</Label>
@@ -1433,11 +1422,6 @@ export default function RecentOrders() {
                       onChange={setContactPoint}
                       disabled={!isAdmin(user)}
                     />
-                    {!isAdmin(user) && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        Only owners can edit this field
-                      </p>
-                    )}
                   </div>
                   <div className="w-full md:w-1/4">
                     <Label htmlFor="otherContactPoint">Specify other</Label>
@@ -1470,11 +1454,7 @@ export default function RecentOrders() {
                       onChange={handleCampaignChange}
                       disabled={!isAdmin(user)}
                     />
-                    {!isAdmin(user) && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        Only owners can edit this field
-                      </p>
-                    )}
+
                   </div>
                   <div className="w-full md:w-1/4">
                     <Label>Lead Status *</Label>
@@ -1486,7 +1466,7 @@ export default function RecentOrders() {
                       onChange={(value) => {
                         setLeadStatus(value);
                         // Clear followUpDate when status changes to converted
-                        if (value === "converted") {
+                        if (value === "converted" || value === "lost") {
                           setFollowUpDate("");
                         }
                       }}
@@ -1502,7 +1482,7 @@ export default function RecentOrders() {
                       onChange={setLeadPotential}
                     />
                   </div>
-                  {leadStatus !== "converted" && (
+                  {leadStatus !== "converted" && leadStatus !== "lost" && (
                     <div className="w-full md:w-1/4">
                       <DatePicker
                         id="followupDate"

@@ -257,8 +257,8 @@ const leadStatusOptions = [
 const leadPotentialOptions = [
   { value: "strongProspect", label: "Strong Prospect", color: "text-green-600 bg-green-100" },
   { value: "potentialProspect", label: "Potential Prospect", color: "text-blue-600 bg-blue-100" },
-  { value: "weakProspect", label: "Weak Prospect", color: "text-yellow-600 bg-yellow-100" },
-  { value: "notAProspect", label: "Not a Prospect", color: "text-red-600 bg-red-100" },
+  { value: "weakProspect", label: "Weak Prospect", color: "text-orange-600 bg-orange-100" },
+  { value: "notAProspect", label: "Not a Prospect", color: "text-gray-600 bg-gray-100" },
 ];
 
 export {
