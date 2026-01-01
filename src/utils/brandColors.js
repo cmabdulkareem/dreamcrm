@@ -6,7 +6,7 @@ import tinycolor from "tinycolor2";
  * 
  * @param {string} baseColor - The base hex color (e.g., "#ED1164")
  */
-export const ALL_BRANDS_THEME_COLOR = "#000000"; // Black theme for All Brands
+export const ALL_BRANDS_THEME_COLOR = "#1e3a8a"; // Dark navy blue theme for All Brands
 
 export const updateBrandTheme = (baseColor) => {
   if (!baseColor || !tinycolor(baseColor).isValid()) {
