@@ -196,6 +196,7 @@ export default function RecentOrders() {
   const [loading, setLoading] = useState(true);
   const [selectedRow, setSelectedRow] = useState(null);
   const [campaignOptions, setCampaignOptions] = useState([]);
+  const [dynamicCourseOptions, setDynamicCourseOptions] = useState([]);
   const [selectedLeads, setSelectedLeads] = useState([]);
   const [hoveredRemarkRow, setHoveredRemarkRow] = useState(null);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0, arrowLeft: 0 });
@@ -227,6 +228,7 @@ export default function RecentOrders() {
   const [gender, setGender] = useState("");
   const [error, setError] = useState(false);
   const [education, setEducation] = useState("");
+  const [otherEducation, setOtherEducation] = useState("");
   const [remarks, setRemarks] = useState("");
   const [contactPoint, setContactPoint] = useState("");
   const [otherContactPoint, setOtherContactPoint] = useState("");
@@ -249,6 +251,7 @@ export default function RecentOrders() {
   useEffect(() => {
     fetchCustomers(setData, setLoading);
     fetchCampaigns(setCampaignOptions, campaigns);
+    fetchCourseCategories();
   }, []);
 
   // Fetch available users for admins/managers
@@ -620,6 +623,7 @@ export default function RecentOrders() {
       setOtherPlace,
       setStatus,
       setEducation,
+      setOtherEducation,
       setContactPoint,
       setOtherContactPoint,
       setCampaign,
@@ -628,7 +632,8 @@ export default function RecentOrders() {
       setRemarks,
       setLeadStatus,
       setLeadPotential, // Add missing lead potential setter
-      setSelectedValues
+      setSelectedValues,
+      courseOptions: dynamicCourseOptions
     };
 
     prepareLeadForEdit(row, setters);
@@ -692,6 +697,7 @@ export default function RecentOrders() {
       otherPlace,
       status,
       education,
+      otherEducation,
       contactPoint,
       otherContactPoint,
       campaign,
@@ -806,6 +812,26 @@ export default function RecentOrders() {
     } catch (error) {
       console.error("Error fetching users:", error);
       toast.error("Failed to fetch users for assignment");
+    }
+  };
+
+  const fetchCourseCategories = async () => {
+    try {
+      const response = await axios.get(
+        `${API}/course-categories/all`,
+        { withCredentials: true }
+      );
+      const categories = response.data.categories.filter(c => c.isActive).map(c => ({
+        value: c.name,
+        label: c.name
+      }));
+      setDynamicCourseOptions(categories);
+    } catch (error) {
+      console.error("Error fetching course categories:", error);
+      // Fallback
+      setDynamicCourseOptions([
+        { value: "General", label: "General" }
+      ]);
     }
   };
 
@@ -1389,6 +1415,16 @@ export default function RecentOrders() {
                     />
                   </div>
                   <div className="w-full md:w-1/4">
+                    <Label htmlFor="otherEducation">Specify other</Label>
+                    <Input
+                      type="text"
+                      id="otherEducation"
+                      value={otherEducation}
+                      onChange={(e) => setOtherEducation(e.target.value)}
+                      disabled={education !== "Other"}
+                    />
+                  </div>
+                  <div className="w-full md:w-1/4">
                     <Label>Contact Point</Label>
                     <Select
                       options={contactPoints}
@@ -1418,7 +1454,7 @@ export default function RecentOrders() {
                   <div className="w-full">
                     <MultiSelect
                       label="Course Preference"
-                      options={courseOptions}
+                      options={dynamicCourseOptions}
                       selectedValues={selectedValues}
                       onChange={setSelectedValues}
                     />

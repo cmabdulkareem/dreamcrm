@@ -393,7 +393,7 @@ export default function FormElements() {
       place: place === "Other" ? otherPlace : place,
       otherPlace: place === "Other" ? otherPlace : "",
       status,
-      education: education === "Other" ? otherEducation : education,
+      education,
       otherEducation: education === "Other" ? otherEducation : "",
       coursePreference: selectedValues,
       contactPoint,

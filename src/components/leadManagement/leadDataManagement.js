@@ -154,6 +154,7 @@ export const prepareLeadForEdit = (row, setters) => {
     setOtherPlace,
     setStatus,
     setEducation,
+    setOtherEducation,
     setContactPoint,
     setOtherContactPoint,
     setCampaign,
@@ -226,6 +227,19 @@ export const prepareLeadForEdit = (row, setters) => {
       setEducation("Other");
     }
   }
+  if (typeof setOtherEducation === 'function') {
+    console.log("Debug Edit: education=", row.education, "otherEducation=", row.otherEducation);
+    if (row.education === "Other") {
+      setOtherEducation(row.otherEducation || "");
+    } else {
+      const matchedEdu = enquirerEducation.find(opt => opt.value === row.education);
+      if (!matchedEdu && row.education) {
+        setOtherEducation(row.education);
+      } else {
+        setOtherEducation("");
+      }
+    }
+  }
   if (typeof setContactPoint === 'function') {
     const matchedCP = contactPoints.find(opt => opt.value === row.contactPoint);
     if (matchedCP || !row.contactPoint) {
@@ -235,8 +249,16 @@ export const prepareLeadForEdit = (row, setters) => {
     }
   }
   if (typeof setOtherContactPoint === 'function') {
-    const isOther = !contactPoints.some(opt => opt.value === row.contactPoint);
-    setOtherContactPoint(isOther ? row.contactPoint || "" : "");
+    if (row.contactPoint === "other") {
+      setOtherContactPoint(row.otherContactPoint || "");
+    } else {
+      const matchedCP = contactPoints.find(opt => opt.value === row.contactPoint);
+      if (!matchedCP && row.contactPoint) {
+        setOtherContactPoint(row.contactPoint);
+      } else {
+        setOtherContactPoint("");
+      }
+    }
   }
   if (typeof setCampaign === 'function') {
     setCampaign(row.campaign || "");
@@ -265,15 +287,17 @@ export const prepareLeadForEdit = (row, setters) => {
 
   // Map coursePreference from database to match courseOptions format
   const mappedCourses = row.coursePreference?.map(courseName => {
+    const optionsToUse = setters.courseOptions || courseOptions;
+
     // If courseName is already in the correct format (value from courseOptions), use it directly
     if (typeof courseName === 'string') {
       // Check if it's already a valid course option value
-      const isValidValue = courseOptions.some(opt => opt.value === courseName);
+      const isValidValue = optionsToUse.some(opt => opt.value === courseName);
       if (isValidValue) {
         return courseName;
       }
       // If not a valid value, try to find a matching option by label
-      const matchedOption = courseOptions.find(opt => opt.label === courseName);
+      const matchedOption = optionsToUse.find(opt => opt.label === courseName);
       return matchedOption ? matchedOption.value : courseName;
     }
     // Fallback for any other case
