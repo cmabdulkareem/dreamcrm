@@ -15,7 +15,7 @@ const router = express.Router();
 
 // Apply check for all routes (assuming header/active is also authenticated in CRM context)
 router.use(verifyToken);
-router.use(applyBrandFilter);
+// router.use(applyBrandFilter); // Removed to make announcements global
 
 // Public route to get active announcements for header display
 // Note: Changed to protected to respect brand context
@@ -42,7 +42,7 @@ router.post('/create-test', async (req, res) => {
       endTime: endTime,
       createdBy: req.user.id,
       status: 'approved',
-      brand: req.brandFilter?.brand || null // Strict brand assignment
+      brand: null // Common to all brands
     });
 
     const savedAnnouncement = await announcement.save();

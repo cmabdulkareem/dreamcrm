@@ -342,7 +342,9 @@ const AppSidebar = () => {
                 <ul className="mt-2 space-y-1 ml-9">
                   {nav.subItems.map((subItem) => {
                     // Check if this specific sub-item is enabled
-                    const isSubItemEnabled = selectedBrand || isGlobalItem(subItem.name);
+                    const isSubItemEnabled = subItem.name === "Announcements"
+                      ? !selectedBrand
+                      : (selectedBrand || isGlobalItem(subItem.name));
                     const subItemDisabledClass = !isSubItemEnabled ? "opacity-40 cursor-not-allowed pointer-events-none" : "";
 
                     // Only show Campaigns, Contact Points, Course Management, and User Management to managers

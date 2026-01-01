@@ -14,7 +14,7 @@ import { isManager } from "../../utils/roleHelpers";
 import API from "../../config/api";
 
 const AnnouncementManagement = () => {
-  const { user } = useContext(AuthContext);
+  const { user, selectedBrand } = useContext(AuthContext);
   const { addNotification } = useNotifications();
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -241,6 +241,20 @@ const AnnouncementManagement = () => {
   const filteredAnnouncements = canApprove
     ? announcements // Managers see all announcements
     : announcements.filter(a => a.status === "approved"); // Regular users see only approved
+
+  if (selectedBrand) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800 text-center">
+          <p className="font-medium text-lg">Access Restricted</p>
+          <p>Announcement Management is only available in the "All Brands" view.</p>
+        </div>
+        <Button variant="primary" onClick={() => window.location.href = "/"}>
+          Go to Dashboard
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <>

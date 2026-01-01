@@ -35,7 +35,7 @@ export const createAnnouncement = async (req, res) => {
       endTime: end,
       createdBy: userId,
       status: isManager ? 'approved' : 'pending',
-      brand: req.brandFilter?.brand || req.headers['x-brand-id'] || null // Strict brand assignment
+      brand: null // Common to all brands
     });
 
     const savedAnnouncement = await announcement.save();
@@ -67,7 +67,7 @@ export const getAnnouncements = async (req, res) => {
 
     // Query based on user role
     // Query based on user role and brand filter
-    const query = isManager ? { ...req.brandFilter } : { status: 'approved', ...req.brandFilter };
+    const query = isManager ? {} : { status: 'approved' };
 
     const announcements = await Announcement.find(query)
       .populate('createdBy', 'fullName')
@@ -218,8 +218,7 @@ export const getActiveAnnouncements = async (req, res) => {
     const announcements = await Announcement.find({
       status: 'approved',
       startTime: { $lte: now },
-      endTime: { $gte: now },
-      ...req.brandFilter
+      endTime: { $gte: now }
     })
       .populate('createdBy', 'fullName')
       .sort({ createdAt: -1 });
