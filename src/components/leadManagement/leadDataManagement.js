@@ -228,7 +228,6 @@ export const prepareLeadForEdit = (row, setters) => {
     }
   }
   if (typeof setOtherEducation === 'function') {
-    console.log("Debug Edit: education=", row.education, "otherEducation=", row.otherEducation);
     if (row.education === "Other") {
       setOtherEducation(row.otherEducation || "");
     } else {
@@ -281,7 +280,6 @@ export const prepareLeadForEdit = (row, setters) => {
     setLeadStatus(row.leadStatus || "");
   }
   if (typeof setLeadPotential === 'function') { // Added lead potential setter
-    console.log("Setting leadPotential in edit form:", row.leadPotential); // Add logging
     setLeadPotential(row.leadPotential || "");
   }
 

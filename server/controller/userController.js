@@ -329,8 +329,6 @@ export const getAllUsers = async (req, res) => {
 export const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    console.log("Updating user with ID:", id);
-    console.log("Request body:", req.body);
 
     // Validate ID
     if (!id) {
@@ -376,12 +374,10 @@ export const updateUser = async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: "User not found." });
     }
-    console.log("Found user:", user.email);
 
     // Check if the requesting user is an admin or updating their own profile
     const isAdminUser = req.user.isAdmin;
     const isOwnProfile = req.user.id === id;
-    console.log("isAdminUser:", isAdminUser, "isOwnProfile:", isOwnProfile);
 
     // Regular users can update their own profile information
     // Only log the fields that are actually being updated
@@ -395,7 +391,6 @@ export const updateUser = async (req, res) => {
     if (gender !== undefined) updateFields.gender = gender;
     if (dob !== undefined) updateFields.dob = dob;
 
-    console.log('Regular user updating profile:', updateFields);
     if (isOwnProfile && !isAdminUser) {
       // Update personal information fields
       if (fullName !== undefined) user.fullName = fullName;
@@ -429,7 +424,6 @@ export const updateUser = async (req, res) => {
       if (employeeCode !== undefined) user.employeeCode = employeeCode;
       if (department !== undefined) user.department = department;
       if (designation !== undefined) {
-        console.log('Updating designation from', user.designation, 'to', designation);
         user.designation = designation;
       }
       if (employmentType !== undefined) user.employmentType = employmentType;
@@ -525,7 +519,6 @@ export const updateUser = async (req, res) => {
       if (employeeCode !== undefined) user.employeeCode = employeeCode;
       if (department !== undefined) user.department = department;
       if (designation !== undefined) {
-        console.log('Admin updating designation from', user.designation, 'to', designation);
         user.designation = designation;
       }
       if (employmentType !== undefined) user.employmentType = employmentType;
@@ -556,7 +549,6 @@ export const updateUser = async (req, res) => {
       if (employeeCode !== undefined) user.employeeCode = employeeCode;
       if (department !== undefined) user.department = department;
       if (designation !== undefined) {
-        console.log('Admin updating designation from', user.designation, 'to', designation);
         user.designation = designation;
       }
       if (employmentType !== undefined) user.employmentType = employmentType;
@@ -614,9 +606,7 @@ export const updateUser = async (req, res) => {
     }
 
     // Save updated user
-    console.log("Saving user with email:", user.email);
     await user.save();
-    console.log("User saved successfully");
 
     // Populate reportingHead for the response
     await user.populate('reportingHead', 'fullName email');
@@ -647,7 +637,6 @@ export const updateUser = async (req, res) => {
       reportingHead: user.reportingHead
     };
 
-    console.log('Returning updated user with designation:', updatedUser.designation);
 
     return res.status(200).json({
       message: "User updated successfully.",
@@ -677,16 +666,7 @@ export const assignRoles = async (req, res) => {
     const { id } = req.params;
     const { roles, isAdmin: isAdminValue, accountStatus, brands } = req.body;
 
-    // Check if requesting user is admin (backward compatible)
-    if (!isAdmin(req.user)) {
-      return res.status(403).json({ message: "Access denied. Admin privileges required." });
-    }
-
-    // Find user by ID
-    const user = await userModel.findById(id);
-    if (!user) {
-      return res.status(404).json({ message: "User not found." });
-    }
+    // Check if requesting    }
 
     // Update roles and admin status
     if (roles) {
@@ -901,7 +881,6 @@ export const forgotPassword = async (req, res) => {
     user.resetPasswordExpires = resetPasswordExpires;
     await user.save();
 
-    console.log('Password reset token generated for user:', user.email);
 
     // Send response immediately to prevent timeout
     res.status(200).json({ message: "Password reset link sent to your email." });
@@ -916,16 +895,11 @@ export const forgotPassword = async (req, res) => {
     const frontendUrl = getFrontendUrl(req);
     const resetUrl = `${frontendUrl}/reset-password/${resetToken}`;
 
-    console.log('Attempting to send password reset email to:', user.email);
-    console.log('Frontend URL (from CORS):', frontendUrl);
-    console.log('Reset URL:', resetUrl);
-
     const emailService = await import('../utils/emailService.js');
 
     // Send email in background without blocking response
     emailService.default.sendPasswordResetEmail(user, resetUrl)
       .then(() => {
-        console.log('✅ Password reset email sent successfully to:', user.email);
       })
       .catch((emailError) => {
         console.error('❌ Failed to send password reset email to:', user.email);

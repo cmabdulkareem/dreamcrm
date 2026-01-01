@@ -84,7 +84,6 @@ export default function UserInfoCard({ user }) {
 
       // If no fields have been modified, don't make the request
       if (Object.keys(payload).length === 0) {
-        console.log("No fields have been modified");
         return;
       }
 

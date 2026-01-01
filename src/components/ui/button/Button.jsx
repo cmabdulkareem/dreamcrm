@@ -6,6 +6,7 @@ const Button = ({
   endIcon,
   className = "",
   disabled = false,
+  loading = false, // Added loading prop
   type = "button", // Default type is "button"
   ...props
 }) => {
@@ -37,13 +38,35 @@ const Button = ({
   return (
     <button
       type={type} // ← critical: ensures button type works
-      className={`inline-flex items-center justify-center gap-2 rounded-lg transition ${sizeClasses[size]} ${variantClasses[variant]} ${disabled ? "cursor-not-allowed opacity-50" : ""} ${className}`}
-      disabled={disabled}
+      className={`inline-flex items-center justify-center gap-2 rounded-lg transition ${sizeClasses[size]} ${variantClasses[variant]} ${disabled || loading ? "cursor-not-allowed opacity-50" : ""} ${className}`}
+      disabled={disabled || loading}
       {...props} // Pass down all other native button props
     >
-      {startIcon && <span className="flex items-center">{startIcon}</span>}
+      {loading && (
+        <svg
+          className="animate-spin -ml-1 mr-2 h-4 w-4 text-current"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          ></circle>
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="m 4 12 a 8 8 0 0 1 8 -8 v 4 a 4 4 0 0 0 -4 4 z"
+          ></path>
+        </svg>
+      )}
+      {!loading && startIcon && <span className="flex items-center">{startIcon}</span>}
       {children}
-      {endIcon && <span className="flex items-center">{endIcon}</span>}
+      {!loading && endIcon && <span className="flex items-center">{endIcon}</span>}
     </button>
   );
 };

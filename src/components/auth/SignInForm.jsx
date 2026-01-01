@@ -42,7 +42,6 @@ export default function SignInForm() {
         withCredentials: true,
         timeout: 10000
       });
-      console.log(data)
       login(data.user, data.role, data.token);
 
       // Strict redirect for Faculty (NOT Managers/Admins/Owners)

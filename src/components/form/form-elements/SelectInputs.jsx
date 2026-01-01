@@ -13,7 +13,6 @@ export default function SelectInputs() {
     { value: "development", label: "Development" },
   ];
   const handleSelectChange = (value) => {
-    console.log("Selected value:", value);
   };
   const [selectedValues, setSelectedValues] = useState([]);
 
@@ -103,7 +102,6 @@ export default function SelectInputs() {
               id="date-picker"
               label="Follow Up Date"
               onChange={(dates, currentDateString) => {
-                console.log({ dates, currentDateString });
               }}
             />
           </div>

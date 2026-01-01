@@ -6,7 +6,8 @@ import {
   TableRow,
 } from "../ui/table";
 import Badge from "../ui/badge/Badge";
-import { useState, useEffect, useContext, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useContext } from "react";
+import { createPortal } from "react-dom";
 import axios from "axios";
 import Button from "../../components/ui/button/Button";
 import { DownloadIcon, PencilIcon, CloseIcon, BoltIcon, ChevronDownIcon, ChevronUpIcon, FileIcon } from "../../icons";
@@ -50,7 +51,7 @@ import { saveLeadChanges, deleteLead, setLeadReminder, markRemarkAsRead } from "
 
 
 // Import role helper function
-import { isAdmin, isOwner } from "../../utils/roleHelpers";
+import { isAdmin, isOwner, isManager } from "../../utils/roleHelpers";
 
 // Helper function to determine row background color based on due date
 const getRowBackgroundColor = (followUpDate) => {
@@ -173,7 +174,7 @@ const getDueDateBadgeText = (followUpDate) => {
 import API from "../../config/api";
 
 export default function RecentOrders() {
-  const { user } = useContext(AuthContext);
+  const { user, selectedBrand } = useContext(AuthContext);
   const { addEvent, events, updateEvent } = useCalendar();
   const { addNotification, areToastsEnabled } = useNotifications();
   const [search, setSearch] = useState("");
@@ -199,6 +200,7 @@ export default function RecentOrders() {
   const [campaignOptions, setCampaignOptions] = useState([]);
   const [dynamicCourseOptions, setDynamicCourseOptions] = useState([]);
   const [selectedLeads, setSelectedLeads] = useState([]);
+  const [availableUsers, setAvailableUsers] = useState([]);
   const [hoveredRemarkRow, setHoveredRemarkRow] = useState(null);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0, arrowLeft: 0 });
   const [showTooltip, setShowTooltip] = useState(false);
@@ -247,6 +249,14 @@ export default function RecentOrders() {
   const [newCampaignDiscount, setNewCampaignDiscount] = useState("");
   const [newCampaignCashback, setNewCampaignCashback] = useState("");
   const [newCampaignActive, setNewCampaignActive] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Permission flags
+  const hasManagerRole = isManager(user);
+  const isCounsellor = user?.roles?.includes('Counsellor') || false;
+  const canDeleteLeads = isAdmin(user) || isManager(user);
+  const isRegularUser = !isAdmin(user) && !hasManagerRole;
+  const canAssignLeads = isAdmin(user) || isManager(user);
 
   // Fetch customers from database
   useEffect(() => {
@@ -259,16 +269,37 @@ export default function RecentOrders() {
   useEffect(() => {
     const checkAndFetchUsers = () => {
       const isAdmin = user?.isAdmin;
-      const isManager = user?.roles?.includes('Manager');
-      if (isAdmin || isManager) {
-        fetchAvailableUsers();
+      const hasManagerRole = isManager(user);
+      if (isAdmin || hasManagerRole) {
+        fetchAvailableUsers(selectedBrand?._id || selectedBrand?.id);
       }
     };
 
     if (user) {
       checkAndFetchUsers();
     }
-  }, [user]);
+  }, [user, selectedBrand]);
+
+  // Fetch available users for assignment
+  const fetchAvailableUsers = async (brandId = null) => {
+    try {
+      const url = brandId
+        ? `${API}/users/dropdown?brandId=${brandId}`
+        : `${API}/users/dropdown`;
+      const response = await axios.get(url, { withCredentials: true });
+      setAvailableUsers(response.data.users || []);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      toast.error("Failed to fetch users for assignment");
+    }
+  };
+
+  // Fetch users when component mounts or brand changes
+  useEffect(() => {
+    if (canAssignLeads && selectedBrand) {
+      fetchAvailableUsers(selectedBrand?._id || selectedBrand?.id);
+    }
+  }, [selectedBrand, canAssignLeads]);
 
   // Check if we need to open a specific lead from calendar
   useEffect(() => {
@@ -282,12 +313,7 @@ export default function RecentOrders() {
     }
   }, [data]);
 
-  // Check if user has Manager role
-  const isManager = user?.roles?.includes('Manager') || false;
-  const isCounsellor = user?.roles?.includes('Counsellor') || false;
-  const canDeleteLeads = user?.isAdmin || user?.roles?.includes('Manager');
-  const isRegularUser = !user?.isAdmin && !isManager;
-  const canAssignLeads = user?.isAdmin || user?.roles?.includes('Manager');
+
 
   // Calculate optimal tooltip position
   const calculateTooltipPosition = (rect) => {
@@ -316,26 +342,38 @@ export default function RecentOrders() {
       arrowLeft = Math.max(20, Math.min(tooltipWidth - 20, arrowLeft));
     }
 
-    // Calculate vertical position (above the cell)
+    // Calculate vertical position
     const spaceAbove = rect.top;
     const spaceBelow = viewportHeight - rect.bottom;
     const estimatedTooltipHeight = Math.min(tooltipMaxHeight, 400); // Estimate height
 
+    // We prefer showing above, but if there's not enough space AND more space below, show below
+    // Also consider the header height (roughly 80px)
+    const headerHeight = 85;
+    const effectiveSpaceAbove = spaceAbove - headerHeight;
+
     let top = rect.top;
     let transform = 'translateY(-100%)';
 
-    // If not enough space above, show below
-    if (spaceAbove < estimatedTooltipHeight + 50 && spaceBelow > spaceAbove) {
+    if (effectiveSpaceAbove < estimatedTooltipHeight && spaceBelow > effectiveSpaceAbove) {
       top = rect.bottom;
       transform = 'translateY(10px)';
     } else {
       top = rect.top;
-      transform = 'translateY(-100%)';
+      transform = 'translateY(-10px)';
     }
 
     // Ensure tooltip doesn't go off top
-    if (top < padding) {
-      top = padding;
+    if (top < padding + headerHeight && transform.includes('-100%')) {
+      // If it would hit the header, force it to show below
+      if (spaceBelow > estimatedTooltipHeight) {
+        top = rect.bottom;
+        transform = 'translateY(10px)';
+      } else {
+        // Last resort: stay at top and let it be max-height
+        top = padding + headerHeight;
+        transform = 'translateY(0)';
+      }
     }
 
     return { top, left, arrowLeft, transform };
@@ -683,39 +721,44 @@ export default function RecentOrders() {
       return;
     }
 
-    await saveLeadChanges(
-      selectedRow,
-      remarks,
-      leadStatus,
-      leadPotential, // Added lead potential
-      fullName,
-      phone1,
-      phone2,
-      email,
-      gender,
-      dob,
-      place,
-      otherPlace,
-      status,
-      education,
-      otherEducation,
-      contactPoint,
-      otherContactPoint,
-      campaign,
-      leadStatus === "converted" ? null : followUpDate, // Don't send followUpDate for converted leads
-      selectedValues,
-      user,
-      handledByPerson,
-      getLeadStatusLabel,
-      addEvent,
-      updateEvent,
-      events,
-      () => fetchCustomers(setData, setLoading), // Pass fetchCustomers with correct parameters
-      setSelectedRow,
-      setRemarks,
-      addNotification,
-      areToastsEnabled
-    );
+    setIsSubmitting(true);
+    try {
+      await saveLeadChanges(
+        selectedRow,
+        remarks,
+        leadStatus,
+        leadPotential, // Added lead potential
+        fullName,
+        phone1,
+        phone2,
+        email,
+        gender,
+        dob,
+        place,
+        otherPlace,
+        status,
+        education,
+        otherEducation,
+        contactPoint,
+        otherContactPoint,
+        campaign,
+        leadStatus === "converted" ? null : followUpDate, // Don't send followUpDate for converted leads
+        selectedValues,
+        user,
+        handledByPerson,
+        getLeadStatusLabel,
+        addEvent,
+        updateEvent,
+        events,
+        () => fetchCustomers(setData, setLoading), // Pass fetchCustomers with correct parameters
+        setSelectedRow,
+        setRemarks,
+        addNotification,
+        areToastsEnabled
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const confirmDelete = async () => {
@@ -781,7 +824,7 @@ export default function RecentOrders() {
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [assignToUser, setAssignToUser] = useState("");
   const [assignmentRemark, setAssignmentRemark] = useState("");
-  const [availableUsers, setAvailableUsers] = useState([]);
+  // const [availableUsers, setAvailableUsers] = useState([]); // Removed duplicate state
 
   // Open assignment modal
   const openAssignModal = (row) => {
@@ -802,19 +845,7 @@ export default function RecentOrders() {
     setAssignmentRemark("");
   };
 
-  // Fetch available users for assignment
-  const fetchAvailableUsers = async (brandId = null) => {
-    try {
-      const url = brandId
-        ? `${API}/users/dropdown?brandId=${brandId}`
-        : `${API}/users/dropdown`;
-      const response = await axios.get(url, { withCredentials: true });
-      setAvailableUsers(response.data.users);
-    } catch (error) {
-      console.error("Error fetching users:", error);
-      toast.error("Failed to fetch users for assignment");
-    }
-  };
+  // fetchAvailableUsers moved up to avoid duplicate and for better accessibility
 
   const fetchCourseCategories = async () => {
     try {
@@ -1185,22 +1216,22 @@ export default function RecentOrders() {
             </Table>
           </div>
 
-          {/* History Tooltip - Fixed Position Above Table */}
-          {hoveredRemarkRow && showTooltip && (() => {
+          {/* History Tooltip - Rendered via Portal at Body Level */}
+          {hoveredRemarkRow && showTooltip && createPortal((() => {
             const hoveredRow = filteredData.find(row => row._id === hoveredRemarkRow);
             if (!hoveredRow || !hoveredRow.remarks || hoveredRow.remarks.length === 0) return null;
 
-            const isAbove = tooltipPosition.transform.includes('-100%');
+            const isAbove = tooltipPosition.transform.includes('-100%') || tooltipPosition.transform === 'translateY(-10px)';
 
             return (
               <div
                 ref={tooltipRef}
-                className={`fixed w-96 max-w-[90vw] max-h-[80vh] bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 z-[9999] transition-all duration-200 ${showTooltip ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+                className={`fixed w-96 max-w-[90vw] max-h-[80vh] bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 z-[100000] transition-all duration-200 ${showTooltip ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
                   }`}
                 style={{
                   top: `${tooltipPosition.top}px`,
                   left: `${tooltipPosition.left}px`,
-                  transform: tooltipPosition.transform
+                  transform: `${tooltipPosition.transform} ${showTooltip ? 'scale(1)' : 'scale(0.95)'}`
                 }}
                 onMouseEnter={() => {
                   if (hoverTimeoutRef.current) {
@@ -1271,7 +1302,7 @@ export default function RecentOrders() {
                 </div>
               </div>
             );
-          })()}
+          })(), document.body)}
 
           {/* Edit Modal */}
           <Modal
@@ -1302,7 +1333,7 @@ export default function RecentOrders() {
                       id="firstName"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      disabled={!isAdmin(user)}
+                      disabled={!isAdmin(user) && !isManager(user)}
                     />
 
                   </div>
@@ -1315,7 +1346,7 @@ export default function RecentOrders() {
                       onChange={handleEmailChange}
                       placeholder="Enter email"
                       hint={error ? "This is an invalid email address." : ""}
-                      disabled={!isAdmin(user)}
+                      disabled={!isAdmin(user) && !isManager(user)}
                     />
 
                   </div>
@@ -1327,7 +1358,7 @@ export default function RecentOrders() {
                       placeholder="+91 98765 43210"
                       value={phone1}
                       onChange={setPhone1}
-                      disabled={!isAdmin(user)}
+                      disabled={!isAdmin(user) && !isManager(user)}
                     />
 
                   </div>
@@ -1516,6 +1547,7 @@ export default function RecentOrders() {
                   <Button
                     variant="primary"
                     onClick={saveChanges}
+                    loading={isSubmitting}
                   >
                     Update
                   </Button>

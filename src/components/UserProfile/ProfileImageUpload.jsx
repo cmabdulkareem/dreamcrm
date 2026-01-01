@@ -146,7 +146,6 @@ export default function ProfileImageUpload({ user, updateAvatar }) {
         }
       );
 
-      console.log("Avatar upload response:", response.data); // Debug log
 
       // Use the avatar path from response (relative path)
       const avatarPath = response.data.avatar;

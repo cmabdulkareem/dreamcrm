@@ -94,8 +94,6 @@ export const saveLeadChanges = async (
       coursePreference: selectedValues
     };
 
-    console.log("Sending updatePayload with leadPotential:", updatePayload); // Add logging
-    console.log("leadPotential value:", leadPotential); // Add logging
 
     const response = await axios.put(
       `${API}/customers/update/${selectedRow._id}`,

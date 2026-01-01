@@ -28,7 +28,6 @@ export const createCustomer = async (req, res) => {
       leadPotential // Added leadPotential field
     } = req.body;
 
-    console.log("Creating customer with leadPotential:", leadPotential); // Add logging
 
     // Validation
     if (!fullName || !phone1) {
@@ -92,7 +91,6 @@ export const createCustomer = async (req, res) => {
 
     await newCustomer.save();
 
-    console.log("Customer saved with leadPotential:", newCustomer.leadPotential); // Add logging
 
     // Fetch the updated customer with populated user details
     const updatedCustomer = await customerModel.findById(newCustomer._id)
@@ -124,22 +122,12 @@ export const getAllCustomers = async (req, res) => {
     // If user is not admin or manager, only show leads assigned to them
     if (!hasAdminAccess && !hasManagerAccess) {
       query.assignedTo = req.user.id; // Only leads assigned to the user
-      console.log(`User ${req.user.id} is not admin/manager, filtering leads by assignedTo`);
-    } else {
-      console.log(`User ${req.user.id} is admin/manager, showing all leads`);
     }
 
-    console.log("Query:", query);
     const customers = await customerModel.find(query)
       .populate('assignedTo', 'fullName email')
       .populate('assignedBy', 'fullName email')
       .sort({ createdAt: -1 });
-    console.log(`Found ${customers.length} customers`);
-
-    // Log the first customer's leadPotential to debug
-    if (customers.length > 0) {
-      console.log("First customer leadPotential:", customers[0].leadPotential);
-    }
 
     return res.status(200).json({ customers });
   } catch (error) {
@@ -163,15 +151,9 @@ export const getConvertedCustomers = async (req, res) => {
         leadStatus: 'converted',
         assignedTo: req.user.id // Only leads assigned to the user
       };
-      console.log(`User ${req.user.id} is not admin/manager, filtering converted leads by assignedTo`);
-    } else {
-      console.log(`User ${req.user.id} is admin/manager, showing all converted leads`);
     }
 
-    console.log("Converted query:", query);
-    console.log("Fetching converted customers...");
     const customers = await customerModel.find(query).sort({ createdAt: -1 });
-    console.log("Found converted customers:", customers.length);
     return res.status(200).json({ customers });
   } catch (error) {
     console.error("Error fetching converted customers:", error);
@@ -191,7 +173,6 @@ export const getCustomerById = async (req, res) => {
       return res.status(404).json({ message: "Customer not found." });
     }
 
-    console.log("Customer fetched with leadPotential:", customer.leadPotential); // Add logging
 
     return res.status(200).json({ customer });
   } catch (error) {
@@ -206,7 +187,6 @@ export const updateCustomer = async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
 
-    console.log("Updating customer with data:", updateData); // Add logging
 
     const customer = await customerModel.findById(id);
     if (!customer) {
@@ -229,7 +209,6 @@ export const updateCustomer = async (req, res) => {
 
     await customer.save();
 
-    console.log("Customer updated with leadPotential:", customer.leadPotential); // Add logging
 
     // Fetch the updated customer with all fields
     const updatedCustomer = await customerModel.findById(id)

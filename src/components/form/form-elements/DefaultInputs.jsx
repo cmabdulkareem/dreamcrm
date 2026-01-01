@@ -87,7 +87,6 @@ export default function DefaultInputs() {
   ];
 
   const handlePhoneNumberChange = (phoneNumber) => {
-    console.log("Updated phone number:", phoneNumber);
   };
 
   const enquirerGender = [
@@ -126,7 +125,6 @@ export default function DefaultInputs() {
   ]
 
   const handleSelectChange = (value) => {
-    console.log("Selected value:", value);
   };
 
   return (
@@ -187,7 +185,6 @@ export default function DefaultInputs() {
               id="date-picker"
               label="DoB"
               onChange={(dates, currentDateString) => {
-                console.log({ dates, currentDateString });
               }}
             />
           </div>
