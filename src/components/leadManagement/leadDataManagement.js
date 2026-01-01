@@ -1,6 +1,6 @@
 import axios from "axios";
 import { toast } from "react-toastify";
-import { courseOptions } from "../../data/DataSets.jsx";
+import { courseOptions, placeOptions, enquirerEducation, contactPoints } from "../../data/DataSets.jsx";
 import { formatDate, getLeadStatusLabel, getLeadStatusColor, getLatestRemark, hasUnreadRemarks } from "./leadHelpers";
 
 import API from "../../config/api";
@@ -204,22 +204,39 @@ export const prepareLeadForEdit = (row, setters) => {
     setDob(row.dob ? new Date(row.dob).toISOString().split("T")[0] : "");
   }
   if (typeof setPlace === 'function') {
-    setPlace(row.place || "");
+    const matchedPlace = placeOptions.find(opt => opt.value === row.place);
+    if (matchedPlace || !row.place) {
+      setPlace(row.place || "");
+    } else {
+      setPlace("Other");
+    }
   }
   if (typeof setOtherPlace === 'function') {
-    setOtherPlace(row.otherPlace || "");
+    const isOther = !placeOptions.some(opt => opt.value === row.place);
+    setOtherPlace(isOther ? row.place || "" : "");
   }
   if (typeof setStatus === 'function') {
     setStatus(row.status || "");
   }
   if (typeof setEducation === 'function') {
-    setEducation(row.education || "");
+    const matchedEdu = enquirerEducation.find(opt => opt.value === row.education);
+    if (matchedEdu || !row.education) {
+      setEducation(row.education || "");
+    } else {
+      setEducation("Other");
+    }
   }
   if (typeof setContactPoint === 'function') {
-    setContactPoint(row.contactPoint || "");
+    const matchedCP = contactPoints.find(opt => opt.value === row.contactPoint);
+    if (matchedCP || !row.contactPoint) {
+      setContactPoint(row.contactPoint || "");
+    } else {
+      setContactPoint("other");
+    }
   }
   if (typeof setOtherContactPoint === 'function') {
-    setOtherContactPoint(row.otherContactPoint || "");
+    const isOther = !contactPoints.some(opt => opt.value === row.contactPoint);
+    setOtherContactPoint(isOther ? row.contactPoint || "" : "");
   }
   if (typeof setCampaign === 'function') {
     setCampaign(row.campaign || "");

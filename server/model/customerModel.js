@@ -61,7 +61,10 @@ const customerSchema = new mongoose.Schema({
   },
   education: {
     type: String,
-    enum: ['notEducated', 'below10th', '10th', '12th', 'diploma', 'graduate', 'postGraduate']
+    enum: ['notEducated', 'below10th', '10th', '12th', 'diploma', 'graduate', 'postGraduate', 'Other']
+  },
+  otherEducation: {
+    type: String
   },
   coursePreference: [{
     type: String

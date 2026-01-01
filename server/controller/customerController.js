@@ -6,7 +6,7 @@ import { isManager } from "../middleware/roleMiddleware.js";
 // Create new customer/lead
 export const createCustomer = async (req, res) => {
   try {
-    const {
+    let {
       fullName,
       email,
       phone1,
@@ -17,6 +17,7 @@ export const createCustomer = async (req, res) => {
       otherPlace,
       status,
       education,
+      otherEducation,
       coursePreference,
       contactPoint,
       otherContactPoint,
@@ -32,6 +33,25 @@ export const createCustomer = async (req, res) => {
     // Validation
     if (!fullName || !phone1) {
       return res.status(400).json({ message: "Full name and phone are required." });
+    }
+
+    // Sanitize Gender
+    const validGenders = ['male', 'female', 'other'];
+    // If gender is empty string or invalid, set to undefined so mongoose ignores it
+    if (gender !== undefined && !validGenders.includes(gender)) {
+      gender = undefined;
+    }
+
+    // Sanitize Education
+    const validEducations = ['notEducated', 'below10th', '10th', '12th', 'diploma', 'graduate', 'postGraduate', 'Other'];
+    // If education is provided but is not in the valid list
+    if (education && !validEducations.includes(education)) {
+      // If otherEducation is not already set, use the invalid education value
+      if (!otherEducation) {
+        otherEducation = education;
+      }
+      // Set education to 'Other' to satisfy certain enum requirements
+      education = 'Other';
     }
 
     // Create initial remark if leadRemarks exists
@@ -54,14 +74,13 @@ export const createCustomer = async (req, res) => {
       otherPlace,
       status,
       education,
+      otherEducation,
       coursePreference,
       contactPoint,
       otherContactPoint,
       campaign,
       handledBy,
       followUpDate: followUpDate ? new Date(followUpDate) : null,
-      remarks,
-      leadPotential, // Added leadPotential field
       remarks,
       leadPotential, // Added leadPotential field
       // Automatically assign the lead to the user who created it

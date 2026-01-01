@@ -94,7 +94,7 @@ const getLeadPotentialStyles = (leadPotential) => {
       };
     case "potentialProspect":
       return {
-        bar: "bg-brand-500"
+        bar: "bg-blue-500"
       };
     case "weakProspect":
       return {
@@ -453,36 +453,90 @@ export default function RecentOrders() {
       // --- Date range filter ---
       let matchesDateRange = true;
       if (dateRange && dateRange.length > 0) {
-        const itemDate = new Date(item.createdAt);
-        itemDate.setHours(0, 0, 0, 0);
+        const createdAtDate = new Date(item.createdAt);
+        createdAtDate.setHours(0, 0, 0, 0);
+
+        const followUpDateVal = item.followUpDate ? new Date(item.followUpDate) : null;
+        if (followUpDateVal) followUpDateVal.setHours(0, 0, 0, 0);
 
         if (dateRange.length === 2) {
           const startDate = new Date(dateRange[0]);
           const endDate = new Date(dateRange[1]);
           startDate.setHours(0, 0, 0, 0);
           endDate.setHours(0, 0, 0, 0);
-          matchesDateRange = itemDate >= startDate && itemDate <= endDate;
+
+          const createdInRange = createdAtDate >= startDate && createdAtDate <= endDate;
+          const followUpInRange = followUpDateVal && followUpDateVal >= startDate && followUpDateVal <= endDate;
+
+          matchesDateRange = createdInRange || followUpInRange;
         } else if (dateRange.length === 1) {
           const filterDate = new Date(dateRange[0]);
           filterDate.setHours(0, 0, 0, 0);
-          matchesDateRange = itemDate.getTime() === filterDate.getTime();
+
+          const createdMatches = createdAtDate.getTime() === filterDate.getTime();
+          const followUpMatches = followUpDateVal && followUpDateVal.getTime() === filterDate.getTime();
+
+          matchesDateRange = createdMatches || followUpMatches;
         }
       }
 
       return matchesSearch && matchesStatus && matchesLeadStatus && matchesLeadPotential && matchesAssignedUser && isUserLead && matchesDateRange;
     })
     .sort((a, b) => {
+      // Helper to get potential weight (higher = more urgent)
+      const getPotentialWeight = (pot) => {
+        const weights = {
+          'strongProspect': 4,
+          'potentialProspect': 3,
+          'weakProspect': 2,
+          'notAProspect': 1
+        };
+        return weights[pot] || 0;
+      };
+
+      // Helper to get status priority (lower = more urgent)
+      const getStatusPriority = (status) => {
+        // These statuses are considered "done" or "inactive" for follow-up purposes
+        // Note: 'callBackLater' is intentionally NOT here as it implies a specific follow-up date urgency
+        const inactiveStatuses = ['converted', 'lost', 'notInterested'];
+        if (inactiveStatuses.includes(status)) return 2;
+        return 1;
+      };
+
       if (sortOrder === "followup_latest" || sortOrder === "followup_oldest") {
         const dateA = a.followUpDate ? new Date(a.followUpDate) : null;
         const dateB = b.followUpDate ? new Date(b.followUpDate) : null;
 
-        if (!dateA && !dateB) return 0;
-        if (!dateA) return 1; // Put leads without follow-up date last
-        if (!dateB) return -1;
+        if (dateA) dateA.setHours(0, 0, 0, 0);
+        if (dateB) dateB.setHours(0, 0, 0, 0);
 
-        return sortOrder === "followup_latest" ? dateB - dateA : dateA - dateB;
+        // 1. Primary Sort: Follow-up Date
+        if (dateA?.getTime() !== dateB?.getTime()) {
+          if (!dateA && !dateB) return 0;
+
+          // For "Oldest First" (Priority): Dates come before No Dates
+          // For "Latest First": Dates come before No Dates (or logic depends on pref, assuming Dates first)
+          if (!dateA) return 1; // Put leads without follow-up date last
+          if (!dateB) return -1;
+
+          return sortOrder === "followup_latest" ? dateA - dateB : dateB - dateA;
+        }
+
+        // 2. Tie-breaker 1: Status Priority (Active leads first)
+        const priorityA = getStatusPriority(a.leadStatus);
+        const priorityB = getStatusPriority(b.leadStatus);
+        if (priorityA !== priorityB) return priorityA - priorityB;
+
+        // 3. Tie-breaker 2: Lead Potential (Higher potential first)
+        const weightA = getPotentialWeight(a.leadPotential);
+        const weightB = getPotentialWeight(b.leadPotential);
+        if (weightA !== weightB) return weightB - weightA;
+
+        // 4. Tie-breaker 3: Creation Date (Newest first)
+        return new Date(b.createdAt) - new Date(a.createdAt);
       }
 
+      // Default sorts (asc/desc by createdAt)
       const dateA = new Date(a.createdAt);
       const dateB = new Date(b.createdAt);
       return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
@@ -1214,7 +1268,7 @@ export default function RecentOrders() {
               <div className="space-y-6">
                 {/* Name + Email */}
                 <div className="flex flex-col md:flex-row gap-4">
-                  <div className="w-full md:w-1/2">
+                  <div className="w-full md:w-1/4">
                     <Label htmlFor="firstName">Full Name *</Label>
                     <Input
                       type="text"
@@ -1229,7 +1283,7 @@ export default function RecentOrders() {
                       </p>
                     )}
                   </div>
-                  <div className="w-full md:w-1/2">
+                  <div className="w-full md:w-1/4">
                     <Label>Email</Label>
                     <Input
                       type="email"
@@ -1246,10 +1300,7 @@ export default function RecentOrders() {
                       </p>
                     )}
                   </div>
-                </div>
-
-                <div className="flex flex-col md:flex-row gap-4">
-                  <div className="w-full md:w-1/2">
+                  <div className="w-full md:w-1/4">
                     <Label>Phone *</Label>
                     <PhoneInput
                       selectPosition="end"
@@ -1265,7 +1316,7 @@ export default function RecentOrders() {
                       </p>
                     )}
                   </div>
-                  <div className="w-full md:w-1/2">
+                  <div className="w-full md:w-1/4">
                     <Label>Phone (optional)</Label>
                     <PhoneInput
                       selectPosition="end"
