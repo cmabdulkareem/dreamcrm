@@ -7,6 +7,7 @@ import {
   deleteContactPoint
 } from '../controller/contactPointController.js';
 import verifyToken from '../middleware/verifyToken.js';
+import { requireManager } from '../middleware/roleMiddleware.js';
 
 import { applyBrandFilter } from '../middleware/brandMiddleware.js';
 
@@ -22,12 +23,12 @@ router.get('/all', getAllContactPoints);
 router.get('/active', getActiveContactPoints);
 
 // Create new contact point
-router.post('/create', createContactPoint);
+router.post('/create', requireManager, createContactPoint);
 
 // Update contact point
-router.put('/update/:id', updateContactPoint);
+router.put('/update/:id', requireManager, updateContactPoint);
 
 // Delete contact point
-router.delete('/delete/:id', deleteContactPoint);
+router.delete('/delete/:id', requireManager, deleteContactPoint);
 
 export default router;

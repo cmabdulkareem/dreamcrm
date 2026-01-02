@@ -8,6 +8,7 @@ import {
   toggleCourseStatus
 } from '../controller/courseController.js';
 import verifyToken from '../middleware/verifyToken.js';
+import { requireManager } from '../middleware/roleMiddleware.js';
 import { applyBrandFilter } from '../middleware/brandMiddleware.js';
 
 const router = express.Router();
@@ -21,9 +22,9 @@ router.get('/:id', getCourseById);
 router.use(verifyToken);
 router.use(applyBrandFilter);
 
-router.post('/create', createCourse);
-router.put('/update/:id', updateCourse);
-router.delete('/delete/:id', deleteCourse);
-router.patch('/toggle-status/:id', toggleCourseStatus);
+router.post('/create', requireManager, createCourse);
+router.put('/update/:id', requireManager, updateCourse);
+router.delete('/delete/:id', requireManager, deleteCourse);
+router.patch('/toggle-status/:id', requireManager, toggleCourseStatus);
 
 export default router;

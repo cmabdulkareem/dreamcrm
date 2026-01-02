@@ -17,6 +17,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { isManager } from "../../utils/roleHelpers";
 
 import {
   placeOptions,
@@ -127,16 +128,21 @@ export default function FormElements() {
         value: c.value,
         label: c.name
       }));
-      // Add "Add New Campaign" option at the end
-      formattedCampaigns.push({
-        value: "__add_new__",
-        label: "+ Add New Campaign"
-      });
+      // Add "Add New Campaign" option at the end if user is manager
+      if (isManager(user)) {
+        formattedCampaigns.push({
+          value: "__add_new__",
+          label: "+ Add New Campaign"
+        });
+      }
       setCampaignOptions(formattedCampaigns);
     } catch (error) {
       console.error("Error fetching campaigns:", error);
       // Fallback to hardcoded campaigns if API fails
-      const fallbackOptions = [...campaigns, { value: "__add_new__", label: "+ Add New Campaign" }];
+      const fallbackOptions = [...campaigns];
+      if (isManager(user)) {
+        fallbackOptions.push({ value: "__add_new__", label: "+ Add New Campaign" });
+      }
       setCampaignOptions(fallbackOptions);
     }
   };
@@ -158,17 +164,22 @@ export default function FormElements() {
         label: "Other"
       });
 
-      // Add "Add New Contact Point" option at the end
-      formattedContactPoints.push({
-        value: "__add_new__",
-        label: "+ Add New Contact Point"
-      });
+      // Add "Add New Contact Point" option at the end if user is manager
+      if (isManager(user)) {
+        formattedContactPoints.push({
+          value: "__add_new__",
+          label: "+ Add New Contact Point"
+        });
+      }
 
       setContactPointOptions(formattedContactPoints);
     } catch (error) {
       console.error("Error fetching contact points:", error);
       // Fallback to hardcoded contact points if API fails
-      const fallbackOptions = [...contactPoints, { value: "__add_new__", label: "+ Add New Contact Point" }];
+      const fallbackOptions = [...contactPoints];
+      if (isManager(user)) {
+        fallbackOptions.push({ value: "__add_new__", label: "+ Add New Contact Point" });
+      }
       setContactPointOptions(fallbackOptions);
     }
   };

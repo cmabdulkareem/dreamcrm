@@ -7,6 +7,7 @@ import {
     toggleCategoryStatus
 } from '../controller/courseCategoryController.js';
 import verifyToken from '../middleware/verifyToken.js';
+import { requireManager } from '../middleware/roleMiddleware.js';
 import { applyBrandFilter } from '../middleware/brandMiddleware.js';
 
 const router = express.Router();
@@ -18,9 +19,9 @@ router.get('/all', getAllCategories);
 router.use(verifyToken);
 router.use(applyBrandFilter);
 
-router.post('/create', createCategory);
-router.put('/update/:id', updateCategory);
-router.delete('/delete/:id', deleteCategory);
-router.patch('/toggle-status/:id', toggleCategoryStatus);
+router.post('/create', requireManager, createCategory);
+router.put('/update/:id', requireManager, updateCategory);
+router.delete('/delete/:id', requireManager, deleteCategory);
+router.patch('/toggle-status/:id', requireManager, toggleCategoryStatus);
 
 export default router;

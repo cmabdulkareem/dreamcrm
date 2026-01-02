@@ -7,6 +7,7 @@ import {
   deleteCampaign
 } from '../controller/campaignController.js';
 import verifyToken from '../middleware/verifyToken.js';
+import { requireManager } from '../middleware/roleMiddleware.js';
 
 import { applyBrandFilter } from '../middleware/brandMiddleware.js';
 
@@ -23,12 +24,12 @@ router.get('/all', getAllCampaigns);
 router.get('/active', getActiveCampaigns);
 
 // Create new campaign
-router.post('/create', createCampaign);
+router.post('/create', requireManager, createCampaign);
 
 // Update campaign
-router.put('/update/:id', updateCampaign);
+router.put('/update/:id', requireManager, updateCampaign);
 
 // Delete campaign
-router.delete('/delete/:id', deleteCampaign);
+router.delete('/delete/:id', requireManager, deleteCampaign);
 
 export default router;

@@ -261,16 +261,16 @@ export default function RecentOrders() {
   // Fetch customers from database
   useEffect(() => {
     fetchCustomers(setData, setLoading);
-    fetchCampaigns(setCampaignOptions, campaigns);
+    fetchCampaigns(setCampaignOptions, campaigns, user);
     fetchCourseCategories();
-  }, []);
+  }, [user]);
 
   // Fetch available users for admins/managers
   useEffect(() => {
     const checkAndFetchUsers = () => {
-      const isAdmin = user?.isAdmin;
+      const currentUserIsAdmin = user?.isAdmin;
       const hasManagerRole = isManager(user);
-      if (isAdmin || hasManagerRole) {
+      if (currentUserIsAdmin || hasManagerRole) {
         fetchAvailableUsers(selectedBrand?._id || selectedBrand?.id);
       }
     };
@@ -789,7 +789,7 @@ export default function RecentOrders() {
       newCampaignCashback,
       newCampaignActive,
       setCampaign,
-      () => fetchCampaigns(setCampaignOptions, campaigns), // Pass fetchCampaigns with correct parameters
+      () => fetchCampaigns(setCampaignOptions, campaigns, user), // Pass fetchCampaigns with correct parameters
       closeCampaignModal,
       setNewCampaignName,
       setNewCampaignDesc,
@@ -1437,11 +1437,10 @@ export default function RecentOrders() {
                   <div className="w-full md:w-1/4">
                     <Label>Contact Point</Label>
                     <Select
-                      options={contactPoints}
+                      options={isManager(user) ? contactPoints : contactPoints.filter(cp => cp.value !== "__add_new__")}
                       value={contactPoint}
-                      placeholder="Contacted Through"
                       onChange={setContactPoint}
-                      disabled={!isAdmin(user)}
+                      disabled={!isManager(user)}
                     />
                   </div>
                   <div className="w-full md:w-1/4">
@@ -1473,7 +1472,7 @@ export default function RecentOrders() {
                       value={campaign}
                       placeholder="Campaigns"
                       onChange={handleCampaignChange}
-                      disabled={!isAdmin(user)}
+                      disabled={!isManager(user)}
                     />
 
                   </div>

@@ -12,8 +12,13 @@ import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
 
 import API from "../../config/api";
+import { useContext } from "react";
+import { AuthContext } from "../../context/AuthContext";
+import { isManager } from "../../utils/roleHelpers";
 
 const CourseManagement = () => {
+  const { user } = useContext(AuthContext);
+  const hasAccess = isManager(user);
   const [activeTab, setActiveTab] = useState("courses");
 
   // Course States
@@ -289,6 +294,28 @@ const CourseManagement = () => {
     { value: "online", label: "Online" },
     { value: "offline", label: "Offline" }
   ];
+
+  if (!hasAccess) {
+    return (
+      <div>
+        <PageMeta
+          title="Course Management | Access Denied"
+          description="Access denied to course management"
+        />
+        <PageBreadcrumb pageTitle="Course Management" />
+        <div className="space-y-6">
+          <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6">
+            <div className="text-center py-8">
+              <p className="text-gray-500">
+                You don't have permission to access course management. Only Owners, Admins, and Center Heads/Managers can manage courses.
+              </p>
+            </div>
+          </div>
+        </div>
+        <ToastContainer position="top-center" className="!z-[999999]" style={{ zIndex: 999999 }} />
+      </div>
+    );
+  }
 
   return (
     <div>

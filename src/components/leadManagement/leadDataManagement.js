@@ -4,6 +4,7 @@ import { courseOptions, placeOptions, enquirerEducation, contactPoints } from ".
 import { formatDate, getLeadStatusLabel, getLeadStatusColor, getLatestRemark, hasUnreadRemarks } from "./leadHelpers";
 
 import API from "../../config/api";
+import { isManager } from "../../utils/roleHelpers";
 
 // Fetch all customers/leads
 export const fetchCustomers = async (setData, setLoading) => {
@@ -33,7 +34,7 @@ export const fetchCustomers = async (setData, setLoading) => {
 };
 
 // Fetch active campaigns
-export const fetchCampaigns = async (setCampaignOptions, campaigns) => {
+export const fetchCampaigns = async (setCampaignOptions, campaigns, user) => {
   try {
     const response = await axios.get(
       `${API}/campaigns/active`,
@@ -43,11 +44,13 @@ export const fetchCampaigns = async (setCampaignOptions, campaigns) => {
       value: c.value,
       label: c.name
     }));
-    // Add "Add New Campaign" option at the end
-    formattedCampaigns.push({
-      value: "__add_new__",
-      label: "+ Add New Campaign"
-    });
+    // Add "Add New Campaign" option at the end if user is manager
+    if (isManager(user)) {
+      formattedCampaigns.push({
+        value: "__add_new__",
+        label: "+ Add New Campaign"
+      });
+    }
     if (typeof setCampaignOptions === 'function') {
       setCampaignOptions(formattedCampaigns);
     }
@@ -55,7 +58,10 @@ export const fetchCampaigns = async (setCampaignOptions, campaigns) => {
   } catch (error) {
     console.error("Error fetching campaigns:", error);
     // Fallback to hardcoded campaigns if API fails
-    const fallbackOptions = [...campaigns, { value: "__add_new__", label: "+ Add New Campaign" }];
+    const fallbackOptions = [...campaigns];
+    if (isManager(user)) {
+      fallbackOptions.push({ value: "__add_new__", label: "+ Add New Campaign" });
+    }
     if (typeof setCampaignOptions === 'function') {
       setCampaignOptions(fallbackOptions);
     }
