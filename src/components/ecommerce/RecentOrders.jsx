@@ -699,8 +699,8 @@ export default function RecentOrders() {
       return;
     }
 
-    // Follow up date is not required when status is converted
-    if (leadStatus !== "converted" && !followUpDate) {
+    // Follow up date is not required when status is converted or lost
+    if (leadStatus !== "converted" && leadStatus !== "lost" && !followUpDate) {
       toast.error("Next Follow Up Date is required");
       return;
     }
@@ -731,7 +731,7 @@ export default function RecentOrders() {
         contactPoint,
         otherContactPoint,
         campaign,
-        leadStatus === "converted" ? null : followUpDate, // Don't send followUpDate for converted leads
+        (leadStatus === "converted" || leadStatus === "lost") ? null : followUpDate, // Don't send followUpDate for converted/lost leads
         selectedValues,
         user,
         handledByPerson,
