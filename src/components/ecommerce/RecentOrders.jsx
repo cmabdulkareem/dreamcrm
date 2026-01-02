@@ -318,65 +318,54 @@ export default function RecentOrders() {
   // Calculate optimal tooltip position
   const calculateTooltipPosition = (rect) => {
     const tooltipWidth = 384; // w-96 = 384px
-    const tooltipMaxHeight = window.innerHeight * 0.8; // 80vh
     const padding = 20;
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
+    const headerHeight = 85;
 
     // Calculate horizontal position
     let left = rect.left;
-    let arrowLeft = rect.left + rect.width / 2 - left; // Arrow position relative to tooltip
+    let arrowLeft = rect.width / 2; // Arrow position relative to cell center
 
     // Adjust if tooltip would go off right edge
     if (left + tooltipWidth > viewportWidth - padding) {
       left = viewportWidth - tooltipWidth - padding;
-      arrowLeft = rect.left + rect.width / 2 - left;
-      // Clamp arrow to tooltip bounds
-      arrowLeft = Math.max(20, Math.min(tooltipWidth - 20, arrowLeft));
     }
 
     // Adjust if tooltip would go off left edge
     if (left < padding) {
       left = padding;
-      arrowLeft = rect.left + rect.width / 2 - left;
-      arrowLeft = Math.max(20, Math.min(tooltipWidth - 20, arrowLeft));
     }
+
+    // Now recalculate arrowLeft relative to the tooltip's left
+    arrowLeft = (rect.left + rect.width / 2) - left;
+    // Clamp arrow to tooltip bounds
+    arrowLeft = Math.max(20, Math.min(tooltipWidth - 20, arrowLeft));
 
     // Calculate vertical position
-    const spaceAbove = rect.top;
-    const spaceBelow = viewportHeight - rect.bottom;
-    const estimatedTooltipHeight = Math.min(tooltipMaxHeight, 400); // Estimate height
+    const spaceAbove = rect.top - headerHeight - padding;
+    const spaceBelow = viewportHeight - rect.bottom - padding;
 
-    // We prefer showing above, but if there's not enough space AND more space below, show below
-    // Also consider the header height (roughly 80px)
-    const headerHeight = 85;
-    const effectiveSpaceAbove = spaceAbove - headerHeight;
+    // Default estimated height
+    const estimatedTooltipHeight = 350;
 
-    let top = rect.top;
-    let transform = 'translateY(-100%)';
+    let top = 0;
+    let transform = "";
+    let maxHeight = 0;
 
-    if (effectiveSpaceAbove < estimatedTooltipHeight && spaceBelow > effectiveSpaceAbove) {
-      top = rect.bottom;
-      transform = 'translateY(10px)';
-    } else {
+    if (spaceAbove > estimatedTooltipHeight || spaceAbove > spaceBelow) {
+      // Show ABOVE
       top = rect.top;
-      transform = 'translateY(-10px)';
+      transform = "translateY(-100%) translateY(-10px)";
+      maxHeight = spaceAbove;
+    } else {
+      // Show BELOW
+      top = rect.bottom;
+      transform = "translateY(10px)";
+      maxHeight = spaceBelow;
     }
 
-    // Ensure tooltip doesn't go off top
-    if (top < padding + headerHeight && transform.includes('-100%')) {
-      // If it would hit the header, force it to show below
-      if (spaceBelow > estimatedTooltipHeight) {
-        top = rect.bottom;
-        transform = 'translateY(10px)';
-      } else {
-        // Last resort: stay at top and let it be max-height
-        top = padding + headerHeight;
-        transform = 'translateY(0)';
-      }
-    }
-
-    return { top, left, arrowLeft, transform };
+    return { top, left, arrowLeft, transform, maxHeight };
   };
 
   // Handle tooltip hover with delay
@@ -1226,11 +1215,12 @@ export default function RecentOrders() {
             return (
               <div
                 ref={tooltipRef}
-                className={`fixed w-96 max-w-[90vw] max-h-[80vh] bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 z-[100000] transition-all duration-200 ${showTooltip ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+                className={`fixed w-96 max-w-[90vw] bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 z-[100000] transition-all duration-200 ${showTooltip ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
                   }`}
                 style={{
                   top: `${tooltipPosition.top}px`,
                   left: `${tooltipPosition.left}px`,
+                  maxHeight: `${tooltipPosition.maxHeight}px`,
                   transform: `${tooltipPosition.transform} ${showTooltip ? 'scale(1)' : 'scale(0.95)'}`
                 }}
                 onMouseEnter={() => {
@@ -1267,7 +1257,7 @@ export default function RecentOrders() {
                   <h4 className="text-sm font-semibold text-gray-800 dark:text-white">Remark History</h4>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{hoveredRow.remarks.length} remark{hoveredRow.remarks.length !== 1 ? 's' : ''}</p>
                 </div>
-                <div className="overflow-y-auto max-h-[calc(80vh-100px)] p-3 space-y-3 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent dark:scrollbar-thumb-gray-700 hover:scrollbar-thumb-gray-400 dark:hover:scrollbar-thumb-gray-600">
+                <div className="overflow-y-auto p-3 space-y-3 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent dark:scrollbar-thumb-gray-700 hover:scrollbar-thumb-gray-400 dark:hover:scrollbar-thumb-gray-600" style={{ maxHeight: `${tooltipPosition.maxHeight - 60}px` }}>
                   {[...hoveredRow.remarks].reverse().map((remark, index) => (
                     <div key={index} className="rounded-lg border border-gray-100 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800">
                       <div className="flex justify-between items-center mb-2">
