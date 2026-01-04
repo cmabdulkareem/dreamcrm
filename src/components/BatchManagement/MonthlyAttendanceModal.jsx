@@ -61,12 +61,14 @@ export default function MonthlyAttendanceModal({ isOpen, onClose, batch }) {
     // stats = { studentId: { present: count, absent: count, total: count } }
     const processAttendance = () => {
         const studentMap = {}; // studentId -> { day: status }
-        const statsMap = {}; // studentId -> { present, absent, late, excused, totalSessions }
+        const statsMap = {}; // studentId -> { present, absent, late, excused, holiday, totalSessions }
+        const monthlySummary = { present: 0, absent: 0, late: 0, excused: 0, holiday: 0 };
+        const dailyStats = {}; // day -> { present, absent, etc }
 
         // Initialize
         students.forEach(s => {
             studentMap[s._id] = {};
-            statsMap[s._id] = { present: 0, absent: 0, late: 0, excused: 0, totalSessions: 0 };
+            statsMap[s._id] = { present: 0, absent: 0, late: 0, excused: 0, holiday: 0, totalSessions: 0 };
         });
 
         attendanceData.forEach(record => {
@@ -80,26 +82,33 @@ export default function MonthlyAttendanceModal({ isOpen, onClose, batch }) {
                     // Update stats
                     if (statsMap[studentRec.studentId]) {
                         const s = statsMap[studentRec.studentId];
-                        if (studentRec.status === 'Holiday') {
-                            // Do not increment totalSessions for holidays?
-                            // Or maybe we treat it as neutral.
-                            // For now let's NOT increment totalSessions so it doesn't affect %
+                        const status = studentRec.status;
+
+                        // Initialize daily stats for this day
+                        if (!dailyStats[day]) {
+                            dailyStats[day] = { present: 0, absent: 0, late: 0, excused: 0, holiday: 0 };
+                        }
+
+                        if (status === 'Holiday') {
+                            s.holiday++;
+                            monthlySummary.holiday++;
+                            dailyStats[day].holiday++;
                         } else {
                             s.totalSessions++;
-                            if (studentRec.status === 'Present') s.present++;
-                            else if (studentRec.status === 'Absent') s.absent++;
-                            else if (studentRec.status === 'Late') s.late++;
-                            else if (studentRec.status === 'Excused') s.excused++;
+                            if (status === 'Present') { s.present++; monthlySummary.present++; dailyStats[day].present++; }
+                            else if (status === 'Absent') { s.absent++; monthlySummary.absent++; dailyStats[day].absent++; }
+                            else if (status === 'Late') { s.late++; monthlySummary.late++; dailyStats[day].late++; }
+                            else if (status === 'Excused') { s.excused++; monthlySummary.excused++; dailyStats[day].excused++; }
                         }
                     }
                 }
             });
         });
 
-        return { studentMap, statsMap };
+        return { studentMap, statsMap, monthlySummary, dailyStats };
     };
 
-    const { studentMap, statsMap } = processAttendance();
+    const { studentMap, statsMap, monthlySummary, dailyStats } = processAttendance();
 
     // Render Status Cell
     const renderStatusCell = (status) => {
@@ -153,6 +162,32 @@ export default function MonthlyAttendanceModal({ isOpen, onClose, batch }) {
                     </select>
                 </div>
             </div>
+
+            {/* Attendance Legend & Monthly Summary Indicators */}
+            {!loading && (
+                <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-100 dark:border-gray-600 shrink-0">
+                    <div className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 tracking-widest">Monthly Status Indicators</div>
+                    <div className="flex flex-wrap gap-x-8 gap-y-3">
+                        {[
+                            { l: 'P', n: 'Present', c: 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400', count: monthlySummary.present },
+                            { l: 'A', n: 'Absent', c: 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400', count: monthlySummary.absent },
+                            { l: 'L', n: 'Late', c: 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400', count: monthlySummary.late },
+                            { l: 'E', n: 'Excused', c: 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400', count: monthlySummary.excused },
+                            { l: 'H', n: 'Holiday', c: 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400', count: monthlySummary.holiday }
+                        ].map(item => (
+                            <div key={item.l} className="flex items-center gap-3">
+                                <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border shadow-sm ${item.c}`}>
+                                    {item.l}
+                                </span>
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase leading-none mb-1">{item.n}</span>
+                                    <span className="text-sm font-bold text-gray-800 dark:text-white leading-none">{item.count}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             <div className="flex-1 overflow-auto border rounded-lg">
                 {loading ? (
@@ -216,36 +251,37 @@ export default function MonthlyAttendanceModal({ isOpen, onClose, batch }) {
                                 );
                             })}
                         </tbody>
+                        <tfoot className="bg-gray-50 dark:bg-gray-700/30 sticky bottom-0 z-10">
+                            <tr className="border-t-2 border-gray-200 dark:border-gray-600">
+                                <td className="px-4 py-2 font-bold text-[10px] uppercase tracking-wider text-gray-500 sticky left-0 bg-gray-50 dark:bg-gray-700 z-10 border-r dark:border-gray-600">
+                                    Total Presents
+                                </td>
+                                {daysArray.map(day => (
+                                    <td key={day} className="px-1 py-1 text-center font-bold text-[11px] border-l border-gray-100 dark:border-gray-700 text-green-600">
+                                        {dailyStats[day]?.present || 0}
+                                    </td>
+                                ))}
+                                <td colSpan={2} className="bg-gray-50 dark:bg-gray-700"></td>
+                            </tr>
+                            <tr>
+                                <td className="px-4 py-2 font-bold text-[10px] uppercase tracking-wider text-gray-500 sticky left-0 bg-gray-50 dark:bg-gray-700 z-10 border-r dark:border-gray-600">
+                                    Total Absents
+                                </td>
+                                {daysArray.map(day => (
+                                    <td key={day} className="px-1 py-1 text-center font-bold text-[11px] border-l border-gray-100 dark:border-gray-700 text-red-600">
+                                        {dailyStats[day]?.absent || 0}
+                                    </td>
+                                ))}
+                                <td colSpan={2} className="bg-gray-50 dark:bg-gray-700"></td>
+                            </tr>
+                        </tfoot>
                     </table>
                 )}
             </div>
 
-            {/* Attendance Legend */}
-            {!loading && (
-                <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-100 dark:border-gray-600 shrink-0">
-                    <div className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-2 tracking-wider">Attendance Legend</div>
-                    <div className="flex flex-wrap gap-x-6 gap-y-2">
-                        {[
-                            { l: 'P', n: 'Present', c: 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400' },
-                            { l: 'A', n: 'Absent', c: 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400' },
-                            { l: 'L', n: 'Late', c: 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400' },
-                            { l: 'E', n: 'Excused', c: 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400' },
-                            { l: 'H', n: 'Holiday', c: 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400' }
-                        ].map(item => (
-                            <div key={item.l} className="flex items-center gap-2">
-                                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border ${item.c}`}>
-                                    {item.l}
-                                </span>
-                                <span className="text-xs text-gray-600 dark:text-gray-300">{item.n}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            <div className="mt-4 flex justify-end shrink-0">
-                <Button variant="outline" onClick={onClose}>Close</Button>
+            <div className="mt-6 flex justify-end shrink-0">
+                <Button variant="outline" onClick={onClose} className="px-6 py-2.5">Close</Button>
             </div>
-        </Modal>
+        </Modal >
     );
 }
