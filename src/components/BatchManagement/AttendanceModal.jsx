@@ -169,8 +169,9 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
                             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                 {students.map(student => (
                                     <tr key={student._id}>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                            {student.studentName}
+                                        <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
+                                            <div>{student.studentName}</div>
+                                            <div className="text-xs font-normal text-gray-500 dark:text-gray-400 mt-1">{student.phoneNumber}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                             <div className="flex gap-2">
@@ -203,36 +204,62 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
                     </div>
 
                     {/* Mobile Card View */}
-                    <div className="md:hidden space-y-4">
-                        {students.map(student => (
-                            <div key={student._id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm">
-                                <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-3">
-                                    {student.studentName}
-                                </h4>
-                                <div className="grid grid-cols-3 gap-2">
-                                    {["Present", "Absent", "Late", "Excused", "Holiday"].map(status => (
-                                        <button
-                                            key={status}
-                                            onClick={() => handleStatusChange(student._id, status)}
-                                            disabled={!canEdit}
-                                            className={`px-2 py-2 rounded-md text-xs font-medium transition-colors border text-center
-                                                ${attendanceRecords[student._id]?.status === status
-                                                    ? (status === 'Present' ? 'bg-green-100 text-green-800 border-green-200' :
-                                                        status === 'Absent' ? 'bg-red-100 text-red-800 border-red-200' :
-                                                            status === 'Late' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
-                                                                status === 'Holiday' ? 'bg-purple-100 text-purple-800 border-purple-200' :
-                                                                    'bg-blue-100 text-blue-800 border-blue-200')
-                                                    : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600'
-                                                }
-                                                ${!canEdit ? 'cursor-default opacity-80' : ''}
-                                            `}
-                                        >
-                                            {status}
-                                        </button>
-                                    ))}
-                                </div>
+                    <div className="md:hidden">
+                        {/* Legend for Mobile */}
+                        <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-100 dark:border-gray-600">
+                            <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2 italic">Attendance Legend</div>
+                            <div className="flex flex-wrap gap-x-4 gap-y-2">
+                                {[
+                                    { l: 'P', n: 'Present', c: 'bg-green-100 text-green-800 border-green-200' },
+                                    { l: 'A', n: 'Absent', c: 'bg-red-100 text-red-800 border-red-200' },
+                                    { l: 'L', n: 'Late', c: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
+                                    { l: 'E', n: 'Excused', c: 'bg-blue-100 text-blue-800 border-blue-200' },
+                                    { l: 'H', n: 'Holiday', c: 'bg-purple-100 text-purple-800 border-purple-200' }
+                                ].map(item => (
+                                    <div key={item.l} className="flex items-center gap-1.5">
+                                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border ${item.c}`}>
+                                            {item.l}
+                                        </span>
+                                        <span className="text-xs text-gray-600 dark:text-gray-300">{item.n}</span>
+                                    </div>
+                                ))}
                             </div>
-                        ))}
+                        </div>
+
+                        <div className="space-y-4">
+                            {students.map(student => (
+                                <div key={student._id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm">
+                                    <div className="mb-3">
+                                        <h4 className="text-sm font-bold text-gray-900 dark:text-white">
+                                            {student.studentName}
+                                        </h4>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{student.phoneNumber}</p>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {["Present", "Absent", "Late", "Excused", "Holiday"].map(status => (
+                                            <button
+                                                key={status}
+                                                onClick={() => handleStatusChange(student._id, status)}
+                                                disabled={!canEdit}
+                                                className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold transition-colors border
+                                                    ${attendanceRecords[student._id]?.status === status
+                                                        ? (status === 'Present' ? 'bg-green-100 text-green-800 border-green-200' :
+                                                            status === 'Absent' ? 'bg-red-100 text-red-800 border-red-200' :
+                                                                status === 'Late' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
+                                                                    status === 'Holiday' ? 'bg-purple-100 text-purple-800 border-purple-200' :
+                                                                        'bg-blue-100 text-blue-800 border-blue-200')
+                                                        : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600'
+                                                    }
+                                                    ${!canEdit ? 'cursor-default opacity-80' : ''}
+                                                `}
+                                            >
+                                                {status.charAt(0)}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </>
             )}
