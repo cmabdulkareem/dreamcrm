@@ -53,7 +53,7 @@ export default function UserDropdown() {
         onClick={toggleDropdown}
         className="flex items-center text-gray-700 dropdown-toggle dark:text-gray-400"
       >
-        <span className="mr-3 overflow-hidden rounded-full h-11 w-11">
+        <span className="mr-2 sm:mr-3 overflow-hidden rounded-full h-9 w-9 sm:h-11 sm:w-11">
           <img
             src={getAvatarUrl(user?.avatar)}
             alt="User"

@@ -368,7 +368,7 @@ const AppHeader = () => {
 
         <div
           className={`${isApplicationMenuOpen ? "flex" : "hidden"
-            } flex-col lg:flex-row items-center justify-between w-full lg:w-auto lg:flex-1 lg:min-w-0 gap-4 px-5 py-4 lg:flex shadow-theme-md lg:justify-end lg:px-0 lg:shadow-none`}
+            } flex-col lg:flex-row items-center justify-between w-full lg:w-auto lg:flex-1 lg:min-w-0 gap-4 px-3 py-4 lg:px-0 lg:flex shadow-theme-md lg:justify-end lg:shadow-none`}
         >
           <div className="hidden lg:block flex-1 min-w-0 max-w-xl mx-4 overflow-hidden">
             <AnimatedAnnouncement />
@@ -378,12 +378,12 @@ const AppHeader = () => {
           </div>
 
           <div className="flex flex-col lg:flex-row items-center w-full lg:w-auto gap-4">
-            <div className="flex items-center gap-2 2xsm:gap-3 justify-center w-full lg:w-auto lg:border-none lg:pb-0">
+            <div className="flex items-center gap-1.5 2xsm:gap-2 justify-center w-full lg:w-auto lg:border-none lg:pb-0">
               {/* Brand Switcher - Only show if user has brands */}
               {currentUser && currentUser.brands && currentUser.brands.length > 0 && (
                 <div className="relative">
                   <select
-                    className="h-10 pl-3 pr-8 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    className="h-10 pl-2 pr-6 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500 w-[100px] sm:w-auto"
                     value={selectedBrand ? selectedBrand._id : ""}
                     onChange={(e) => {
                       const brandId = e.target.value;
