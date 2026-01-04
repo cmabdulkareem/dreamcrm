@@ -23,6 +23,10 @@
       }
     },
     {
+      "src": "/(manifest.webmanifest|sw.js|registerSW.js|workbox-(.*).js|icon-(.*).png|favicon.png)",
+      "dest": "/$1"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
     }
