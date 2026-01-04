@@ -177,7 +177,7 @@ export const removeStudentFromBatch = async (req, res) => {
 export const markAttendance = async (req, res) => {
     try {
         const { id } = req.params; // batchId
-        const { records } = req.body;
+        const { records, date: providedDate } = req.body;
         const userId = req.user._id;
 
         if (!records || !Array.isArray(records)) {
@@ -189,9 +189,20 @@ export const markAttendance = async (req, res) => {
             return res.status(404).json({ message: "Batch not found" });
         }
 
-        // Strict Date Enforcement: Always use server's "Today"
-        const attendanceDate = new Date();
+        // Attendance Date: Use provided date from client (local) or fallback to server today
+        let attendanceDate;
+        if (providedDate) {
+            attendanceDate = new Date(providedDate);
+        } else {
+            attendanceDate = new Date();
+        }
+
+        // Normalize to midnight UTC for storage consistency while representing the intended "Day"
         attendanceDate.setHours(0, 0, 0, 0);
+
+        if (isNaN(attendanceDate.getTime())) {
+            return res.status(400).json({ message: "Invalid date provided." });
+        }
 
         // Check if "Today" is within batch duration
         const batchStart = new Date(batch.startDate);

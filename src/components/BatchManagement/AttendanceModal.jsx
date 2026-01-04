@@ -13,7 +13,7 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [date, setDate] = useState(new Date().toLocaleDateString('en-CA')); // YYYY-MM-DD local
     const [attendanceRecords, setAttendanceRecords] = useState({}); // { studentId: { status, remarks } }
     const [viewMode, setViewMode] = useState(false); // If true, only viewing past attendance
 
@@ -25,8 +25,8 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
 
     useEffect(() => {
         if (isOpen && batch) {
-            // Always force date to today
-            setDate(new Date().toISOString().split('T')[0]);
+            // Always force date to today local
+            setDate(new Date().toLocaleDateString('en-CA'));
             fetchStudentsAndAttendance();
         }
     }, [isOpen, batch]);
