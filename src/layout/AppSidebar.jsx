@@ -50,6 +50,7 @@ const navItems = [
     subItems: [
       { name: "New Student (beta)", path: "/new-student", pro: false },
       { name: "Manage Students (beta)", path: "/manage-students", pro: false },
+      { name: "Batch Management", path: "/batch-management", pro: false },
     ],
   },
   {
@@ -227,16 +228,17 @@ const AppSidebar = () => {
         const isParentEnabled = selectedBrand || isGlobalItem(nav.name) || (nav.subItems && nav.subItems.some(sub => isGlobalItem(sub.name)));
 
         // Restricted items for Faculty / Trainers
+        // Restricted items for Faculty / Trainers
         const restrictedItemsForFaculty = [
           "Dashboard",
           "Lead Management",
-          "Student Management",
+          // "Student Management", // Allow access to Student Management (specifically Batch Management)
           "Operations",
           "Marketing Materials",
           "UI Elements"
         ];
 
-        if (restrictedItemsForFaculty.includes(nav.name) && hasRole(user, "Faculty / Trainers")) {
+        if (restrictedItemsForFaculty.includes(nav.name) && hasRole(user, "Faculty / Trainers") && !hasManagerAccess) {
           return null;
         }
 
@@ -376,6 +378,14 @@ const AppSidebar = () => {
                     // RESTRICTION: Only Owner, HR, Manager can see "Manage Leaves"
                     if (subItem.name === "Manage Leaves" && !(hasRole(user, "Owner") || hasRole(user, "HR") || hasRole(user, "Manager"))) {
                       return null;
+                    }
+
+                    // RESTRICTION: Faculty / Trainers should only see "Batch Management" under Student Management
+                    if (hasRole(user, "Faculty / Trainers") && !hasManagerAccess) {
+                      const restrictedForFaculty = ["New Student (beta)", "Manage Students (beta)"];
+                      if (restrictedForFaculty.includes(subItem.name)) {
+                        return null;
+                      }
                     }
 
                     return (

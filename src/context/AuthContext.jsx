@@ -1,4 +1,4 @@
-import { createContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import axios from "axios";
 import { updateBrandTheme, ALL_BRANDS_THEME_COLOR } from "../utils/brandColors";
 
@@ -204,3 +204,6 @@ function AuthProvider({ children }) {
 
 export default AuthProvider;
 export { AuthContext };
+export function useAuth() {
+  return useContext(AuthContext);
+}

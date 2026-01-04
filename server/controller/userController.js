@@ -66,12 +66,22 @@ export const signUpUser = async (req, res) => {
   }
 };
 
+// Get users for dropdown (filtered by brand and/or roles)
 export const getUsersForDropdown = async (req, res) => {
   try {
-    const { brandId } = req.query;
+    const { brandId, roles } = req.query;
+
+    // Build query object
+    const query = {};
+
+    // Filter by roles if provided
+    if (roles) {
+      const roleArray = roles.split(',').map(r => r.trim());
+      query.roles = { $in: roleArray };
+    }
 
     // Fetch only necessary user information for dropdown
-    const users = await userModel.find({}, {
+    const users = await userModel.find(query, {
       _id: 1,
       fullName: 1,
       email: 1,
@@ -85,10 +95,12 @@ export const getUsersForDropdown = async (req, res) => {
       location: 1,
       dob: 1,
       designation: 1,
-      brands: 1 // Include brands in the projection
+      brands: 1,
+      roles: 1 // Include roles
     });
 
     // Filter users by brand if brandId is provided
+    // (We do this in JS because brands involves array matching which can be tricky if not all users have brands array populated/consistent)
     let filteredUsers = users;
     if (brandId) {
       filteredUsers = users.filter(user => {
@@ -112,7 +124,8 @@ export const getUsersForDropdown = async (req, res) => {
       location: user.location,
       dob: user.dob,
       designation: user.designation,
-      brands: user.brands || [] // Include brand information
+      brands: user.brands || [],
+      roles: user.roles || []
     }));
 
     return res.status(200).json({ users: formattedUsers });
@@ -376,7 +389,7 @@ export const updateUser = async (req, res) => {
     }
 
     // Check if the requesting user is an admin or updating their own profile
-    const isAdminUser = req.user.isAdmin;
+    const isAdminUser = req.user.isAdmin || (req.user.roles && req.user.roles.includes('Owner'));
     const isOwnProfile = req.user.id === id;
 
     // Regular users can update their own profile information
@@ -666,7 +679,15 @@ export const assignRoles = async (req, res) => {
     const { id } = req.params;
     const { roles, isAdmin: isAdminValue, accountStatus, brands } = req.body;
 
-    // Check if requesting    }
+    // Check if requesting user is admin
+    if (!isAdmin(req.user)) {
+      return res.status(403).json({ message: "Access denied. Admin privileges required." });
+    }
+
+    const user = await userModel.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
     // Update roles and admin status
     if (roles) {

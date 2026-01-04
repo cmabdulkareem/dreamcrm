@@ -73,9 +73,6 @@ export function hasRole(user, role) {
   return userRoles.includes(role);
 }
 
-/**
- * Check if user has any of the specified roles
- */
 export function hasAnyRole(user, roles) {
   if (!user) return false;
 
@@ -86,5 +83,18 @@ export function hasAnyRole(user, roles) {
 
   const userRoles = Array.isArray(user.roles) ? user.roles : (typeof user.roles === 'string' ? [user.roles] : []);
   return roles.some(role => userRoles.includes(role));
+}
+
+/**
+ * Check if user has manager privileges (Owner, Admin, Center Head / Manager, Manager)
+ */
+export function isManager(user) {
+  if (!user) return false;
+
+  if (isAdmin(user)) return true;
+
+  const userRoles = Array.isArray(user.roles) ? user.roles : (typeof user.roles === 'string' ? [user.roles] : []);
+
+  return userRoles.includes('Center Head / Manager') || userRoles.includes('Manager') || userRoles.includes('Owner') || userRoles.includes('Admin');
 }
 

@@ -40,6 +40,7 @@ const ManageLeads = lazy(() => import("./pages/LeadManagement/ManageLeads"));
 const LeadBlank = lazy(() => import("./pages/LeadManagement/LeadBlank"));
 const NewStudent = lazy(() => import("./pages/StudentManagement/NewStudent"));
 const ManageStudents = lazy(() => import("./pages/StudentManagement/ManageStudents"));
+const BatchManagement = lazy(() => import("./pages/StudentManagement/BatchManagement"));
 const BasicTables = lazy(() => import("./pages/Tables/BasicTables"));
 const Alerts = lazy(() => import("./pages/UiElements/Alerts"));
 const Avatars = lazy(() => import("./pages/UiElements/Avatars"));
@@ -114,6 +115,7 @@ function App() {
                       <Route path="/lead-blank" element={<ProtectedRoutes><LeadBlank /></ProtectedRoutes>} />
                       <Route path="/new-student" element={<ProtectedRoutes><NewStudent /></ProtectedRoutes>} />
                       <Route path="/manage-students" element={<ProtectedRoutes><ManageStudents /></ProtectedRoutes>} />
+                      <Route path="/batch-management" element={<ProtectedRoutes><BatchManagement /></ProtectedRoutes>} />
 
                       {/* Tables */}
                       <Route path="/basic-tables" element={<ProtectedRoutes><BasicTables /></ProtectedRoutes>} />
