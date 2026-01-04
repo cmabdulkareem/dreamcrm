@@ -10,31 +10,41 @@ const InstallPWA = () => {
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 1024;
         const isSecure = window.isSecureContext;
 
-        console.log('[PWA Debug]', { isIOS, isStandalone, isMobile, isSecure, location: window.location.href });
+        console.log('%c[PWA Debug]', 'color: #ee46bc; font-weight: bold;', {
+            isIOS,
+            isStandalone,
+            isMobile,
+            isSecure,
+            userAgent: navigator.userAgent,
+            location: window.location.href
+        });
 
         if (!isSecure && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
             console.warn('[PWA] PWA features require HTTPS when not on localhost.');
         }
 
         if (isIOS && isMobile && !isStandalone && !sessionStorage.getItem('pwa_prompt_shown')) {
-            console.log('[PWA] Triggering iOS specific prompt');
+            console.log('[PWA] iOS detected, showing instructions');
             showIOSInstallPrompt();
         }
 
         const handler = (e) => {
-            console.log('[PWA] beforeinstallprompt event fired');
+            console.log('%c[PWA] beforeinstallprompt event fired!', 'color: #12b76a; font-weight: bold;');
             // Prevent Chrome from automatically showing the prompt
             e.preventDefault();
             // Stash the event so it can be triggered later.
             setDeferredPrompt(e);
 
-            if (isMobile && !isStandalone && !sessionStorage.getItem('pwa_prompt_shown')) {
+            if (!isStandalone && !sessionStorage.getItem('pwa_prompt_shown')) {
+                console.log('[PWA] Showing custom install prompt');
                 showInstallPrompt(e);
             }
         };
 
         window.addEventListener('beforeinstallprompt', handler);
 
+        // Some browsers might have already fired the event
+        // though usually unlikely for a React component mount
         return () => {
             window.removeEventListener('beforeinstallprompt', handler);
         };

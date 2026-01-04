@@ -17,10 +17,11 @@ export default defineConfig({
     }),
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: 'auto',
       devOptions: {
         enabled: true
       },
-      includeAssets: ['favicon.png', 'images/logo/logo-icon.svg'],
+      includeAssets: ['favicon.png', 'images/logo/logo-icon.svg', 'icon-192.png', 'icon-512.png'],
       workbox: {
         maximumFileSizeToCacheInBytes: 6000000, // 6MB
       },
