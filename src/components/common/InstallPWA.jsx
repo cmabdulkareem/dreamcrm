@@ -5,16 +5,24 @@ const InstallPWA = () => {
     const [deferredPrompt, setDeferredPrompt] = useState(null);
 
     useEffect(() => {
-        // Check for iOS
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 1024;
+        const isSecure = window.isSecureContext;
+
+        console.log('[PWA Debug]', { isIOS, isStandalone, isMobile, isSecure, location: window.location.href });
+
+        if (!isSecure && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+            console.warn('[PWA] PWA features require HTTPS when not on localhost.');
+        }
 
         if (isIOS && isMobile && !isStandalone && !sessionStorage.getItem('pwa_prompt_shown')) {
+            console.log('[PWA] Triggering iOS specific prompt');
             showIOSInstallPrompt();
         }
 
         const handler = (e) => {
+            console.log('[PWA] beforeinstallprompt event fired');
             // Prevent Chrome from automatically showing the prompt
             e.preventDefault();
             // Stash the event so it can be triggered later.
