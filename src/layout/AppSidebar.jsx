@@ -251,8 +251,8 @@ const AppSidebar = () => {
 
         // Restricted items for Academic Coordinator
         if (hasRole(user, "Academic Coordinator")) {
-          // AC ONLY needs Student Management and Settings (will filter subitems below)
-          const allowedForAC = ["Student Management", "Settings"];
+          // AC ONLY needs Student Management, Settings and Leave Management (will filter subitems below)
+          const allowedForAC = ["Student Management", "Settings", "Leave Management"];
           if (!allowedForAC.includes(nav.name)) return null;
         }
 
@@ -377,9 +377,9 @@ const AppSidebar = () => {
                       return null;
                     }
 
-                    // RESTRICTION: Academic Coordinator only sees Batch Management and Edit Profile
+                    // RESTRICTION: Academic Coordinator only sees Batch Management, Edit Profile and personal Leave Management
                     if (hasRole(user, "Academic Coordinator")) {
-                      const allowedSubItemsAC = ["Batch Management", "Edit Profile"];
+                      const allowedSubItemsAC = ["Batch Management", "Edit Profile", "Apply Leave", "My Leaves"];
                       if (!allowedSubItemsAC.includes(subItem.name)) {
                         return null;
                       }
