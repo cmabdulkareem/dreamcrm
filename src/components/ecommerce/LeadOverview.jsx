@@ -11,6 +11,7 @@ import axios from "axios";
 import Button from "../ui/button/Button";
 import { PencilIcon, BellIcon } from "../../icons";
 import { useNavigate } from "react-router-dom";
+import LoadingSpinner from "../common/LoadingSpinner";
 
 import API from "../../config/api";
 
@@ -88,9 +89,7 @@ export default function LeadOverview() {
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6">
       {loading ? (
-        <div className="text-center py-8">
-          <p className="text-gray-500">Loading leads...</p>
-        </div>
+        <LoadingSpinner className="py-20" />
       ) : (
         <>
           {/* Header */}

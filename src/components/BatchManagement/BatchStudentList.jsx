@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import API from '../../config/api';
 import { useAuth } from '../../context/AuthContext';
 import { isAdmin, isOwner, isManager } from '../../utils/roleHelpers';
+import LoadingSpinner from '../common/LoadingSpinner';
 
 export default function BatchStudentList({ batchId }) {
     const { user } = useAuth();
@@ -84,7 +85,7 @@ export default function BatchStudentList({ batchId }) {
         }
     };
 
-    if (loading) return <div className="text-sm text-gray-500 py-4">Loading students...</div>;
+    if (loading) return <LoadingSpinner className="py-10" />;
 
     return (
         <div className="mt-4">

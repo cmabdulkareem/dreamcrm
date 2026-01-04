@@ -10,6 +10,7 @@ import {
 } from "../../icons";
 import Badge from "../ui/badge/Badge";
 import FlipCard from "./FlipCard";
+import LoadingSpinner from "../common/LoadingSpinner";
 
 import API from "../../config/api";
 
@@ -201,7 +202,7 @@ export default function EcommerceMetrics() {
             Total Leads
           </span>
           <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-            {loading ? "..." : metrics.totalLeads}
+            {loading ? <LoadingSpinner className="h-6" size="h-4 w-4" /> : metrics.totalLeads}
           </h4>
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
             {metrics.currentMonthLeads} this month
@@ -229,7 +230,7 @@ export default function EcommerceMetrics() {
           Total Leads Across Brand
         </span>
         <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-          {loading ? "..." : allLeadsCount}
+          {loading ? <LoadingSpinner className="h-6" size="h-4 w-4" /> : allLeadsCount}
         </h4>
         <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
           Leads from all users
@@ -250,10 +251,10 @@ export default function EcommerceMetrics() {
             Conversion Rate
           </span>
           <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-            {loading ? "..." : `${metrics.conversionRate.toFixed(1)}%`}
+            {loading ? <LoadingSpinner className="h-6" size="h-4 w-4" /> : `${metrics.conversionRate.toFixed(1)}%`}
           </h4>
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            {loading ? "..." : `${metrics.convertedLeads} / ${metrics.totalLeads} Leads`}
+            {loading ? <LoadingSpinner className="h-4" size="h-3 w-3" /> : `${metrics.convertedLeads} / ${metrics.totalLeads} Leads`}
           </p>
         </div>
       </div>
@@ -272,10 +273,10 @@ export default function EcommerceMetrics() {
           Brand Conversion Rate
         </span>
         <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-          {loading ? "..." : `${metrics.brandConversionRate?.toFixed(1) || 0}%`}
+          {loading ? <LoadingSpinner className="h-6" size="h-4 w-4" /> : `${metrics.brandConversionRate?.toFixed(1) || 0}%`}
         </h4>
         <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-          {loading ? "..." : `${metrics.brandConvertedLeads || 0} / ${allLeadsCount} Leads`}
+          {loading ? <LoadingSpinner className="h-4" size="h-3 w-3" /> : `${metrics.brandConvertedLeads || 0} / ${allLeadsCount} Leads`}
         </p>
       </div>
     </div>
@@ -310,7 +311,7 @@ export default function EcommerceMetrics() {
               Total Revenue
             </span>
             <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-              {loading ? "..." : formatCurrency(metrics.totalRevenue)}
+              {loading ? <LoadingSpinner className="h-6" size="h-4 w-4" /> : formatCurrency(metrics.totalRevenue)}
             </h4>
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               {formatCurrency(metrics.currentMonthRevenue)} this month
@@ -336,7 +337,7 @@ export default function EcommerceMetrics() {
               Active Students
             </span>
             <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-              {loading ? "..." : metrics.totalStudents}
+              {loading ? <LoadingSpinner className="h-6" size="h-4 w-4" /> : metrics.totalStudents}
             </h4>
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               {metrics.currentMonthStudents} enrolled this month

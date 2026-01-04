@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import Chart from "react-apexcharts";
 import ChartTab from "../common/ChartTab";
+import LoadingSpinner from "../common/LoadingSpinner";
 
 import API from "../../config/api";
 
@@ -175,9 +176,7 @@ export default function StatisticsChart() {
       <div className="max-w-full overflow-x-auto custom-scrollbar">
         <div className="w-full">
           {loading ? (
-            <div className="text-center py-20">
-              <p className="text-gray-500">Loading chart data...</p>
-            </div>
+            <LoadingSpinner className="h-[310px]" />
           ) : (
             <Chart options={options} series={series} type="area" height={310} />
           )}

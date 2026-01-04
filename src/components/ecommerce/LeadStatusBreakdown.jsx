@@ -4,6 +4,7 @@ import Chart from "react-apexcharts";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { MoreDotIcon } from "../../icons";
+import LoadingSpinner from "../common/LoadingSpinner";
 
 import API from "../../config/api";
 
@@ -170,9 +171,7 @@ export default function LeadStatusBreakdown() {
       </div>
 
       {loading ? (
-        <div className="text-center py-20">
-          <p className="text-gray-500">Loading status data...</p>
-        </div>
+        <LoadingSpinner className="h-[300px]" />
       ) : series.length === 0 ? (
         <div className="text-center py-20">
           <p className="text-gray-500">No lead data available</p>

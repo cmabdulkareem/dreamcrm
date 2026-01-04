@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { CalenderIcon, BellIcon } from "../../icons";
 import Button from "../ui/button/Button";
 import Badge from "../ui/badge/Badge";
+import LoadingSpinner from "../common/LoadingSpinner";
 
 import API from "../../config/api";
 
@@ -180,9 +181,7 @@ export default function FollowUpsDue() {
       </div>
 
       {loading ? (
-        <div className="text-center py-12">
-          <p className="text-gray-500">Loading follow-ups...</p>
-        </div>
+        <LoadingSpinner className="py-20" />
       ) : (
         <div className="max-h-[500px] overflow-y-auto custom-scrollbar">
           {followUps.overdue.length > 0 && renderFollowUpList(

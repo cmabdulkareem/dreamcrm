@@ -6,6 +6,7 @@ import API from '../../config/api';
 import { toast } from 'react-toastify';
 import { hasRole, isAdmin, isOwner, isManager } from '../../utils/roleHelpers';
 import { useAuth } from '../../context/AuthContext';
+import LoadingSpinner from '../common/LoadingSpinner';
 
 export default function AttendanceModal({ isOpen, onClose, batch }) {
     const { user } = useAuth();
@@ -159,7 +160,7 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
                 <div className="flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar">
 
                     {loading ? (
-                        <div className="text-center py-10">Loading...</div>
+                        <LoadingSpinner className="py-20" />
                     ) : (
                         <>
                             {/* Desktop Table View */}

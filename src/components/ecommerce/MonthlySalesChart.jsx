@@ -4,6 +4,7 @@ import axios from "axios";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { MoreDotIcon } from "../../icons";
+import LoadingSpinner from "../common/LoadingSpinner";
 
 import API from "../../config/api";
 
@@ -151,9 +152,7 @@ export default function MonthlySalesChart() {
       <div className="max-w-full overflow-x-auto custom-scrollbar">
         <div className="-ml-5 min-w-[650px] xl:min-w-full pl-2">
           {loading ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500">Loading revenue data...</p>
-            </div>
+            <LoadingSpinner className="h-[180px]" />
           ) : (
             <Chart options={options} series={series} type="bar" height={180} />
           )}

@@ -4,6 +4,7 @@ import axios from "axios";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { MoreDotIcon } from "../../icons";
+import LoadingSpinner from "../common/LoadingSpinner";
 import { Modal } from "../ui/modal";
 import { useModal } from "../../hooks/useModal";
 import Input from "../form/input/InputField";
@@ -276,9 +277,7 @@ export default function MonthlyTarget() {
 
           <div className="relative">
             {loading ? (
-              <div className="text-center py-20">
-                <p className="text-gray-500">Loading data...</p>
-              </div>
+              <LoadingSpinner className="h-[330px]" />
             ) : (
               <>
                 <div className="max-h-[330px]" id="chartDarkStyle">
@@ -309,7 +308,7 @@ export default function MonthlyTarget() {
           <div>
             <p className="mb-1 text-center text-gray-500 text-theme-xs dark:text-gray-400 sm:text-sm">Target</p>
             <p className="flex items-center justify-center gap-1 text-base font-semibold text-gray-800 dark:text-white/90 sm:text-lg">
-              {loading ? "..." : formatCurrency(metrics.targetRevenue)}
+              {loading ? <LoadingSpinner className="h-4 w-4" size="h-3 w-3" /> : formatCurrency(metrics.targetRevenue)}
             </p>
           </div>
 
@@ -319,7 +318,7 @@ export default function MonthlyTarget() {
           <div>
             <p className="mb-1 text-center text-gray-500 text-theme-xs dark:text-gray-400 sm:text-sm">Achieved</p>
             <p className="flex items-center justify-center gap-1 text-base font-semibold text-gray-800 dark:text-white/90 sm:text-lg">
-              {loading ? "..." : formatCurrency(metrics.currentMonthRevenue)}
+              {loading ? <LoadingSpinner className="h-4 w-4" size="h-3 w-3" /> : formatCurrency(metrics.currentMonthRevenue)}
             </p>
           </div>
 
@@ -329,7 +328,7 @@ export default function MonthlyTarget() {
           <div>
             <p className="mb-1 text-center text-gray-500 text-theme-xs dark:text-gray-400 sm:text-sm">Today</p>
             <p className="flex items-center justify-center gap-1 text-base font-semibold text-gray-800 dark:text-white/90 sm:text-lg">
-              {loading ? "..." : formatCurrency(metrics.todayRevenue)}
+              {loading ? <LoadingSpinner className="h-4 w-4" size="h-3 w-3" /> : formatCurrency(metrics.todayRevenue)}
             </p>
           </div>
         </div>

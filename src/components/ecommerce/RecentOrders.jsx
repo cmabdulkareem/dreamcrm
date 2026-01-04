@@ -52,6 +52,7 @@ import { saveLeadChanges, deleteLead, setLeadReminder, markRemarkAsRead } from "
 
 // Import role helper function
 import { isAdmin, isOwner, isManager } from "../../utils/roleHelpers";
+import LoadingSpinner from "../common/LoadingSpinner";
 
 // Helper function to determine row background color based on due date
 const getRowBackgroundColor = (followUpDate) => {
@@ -902,9 +903,7 @@ export default function RecentOrders() {
   return (
     <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6">
       {loading ? (
-        <div className="text-center py-8">
-          <p className="text-gray-500">Loading leads...</p>
-        </div>
+        <LoadingSpinner className="py-20" />
       ) : (
         <>
           {/* Header with Search / Sort / Status / Print */}
