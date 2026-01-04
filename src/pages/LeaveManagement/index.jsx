@@ -36,8 +36,8 @@ const LeaveManagement = () => {
 
   // Fetch all leave requests
   const fetchLeaves = async () => {
-    // Only Owner, HR, Manager can view all leaves
-    if (!(hasRole(user, 'Owner') || hasRole(user, 'HR') || hasRole(user, 'Manager'))) {
+    // Only Owner, HR can view all leaves
+    if (!(hasRole(user, 'Owner') || hasRole(user, 'HR'))) {
       // If user is not authorized, maybe they shouldn't even be here, or we show empty.
       // But since this component handles both "Manage" and "Requests" (legacy), we should be careful.
       // Actually, "Requests" route seems to be the public one? No, earlier I saw it uses this component for authenticated apply?

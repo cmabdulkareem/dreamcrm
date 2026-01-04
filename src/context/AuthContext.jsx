@@ -68,8 +68,7 @@ function AuthProvider({ children }) {
         const userRoles = user.roles || role || [];
         const rolesArray = Array.isArray(userRoles) ? userRoles : (typeof userRoles === 'string' ? [userRoles] : []);
         const isAdminUser = user.isAdmin ||
-          rolesArray.includes('Owner') ||
-          rolesArray.includes('Admin');
+          rolesArray.includes('Owner');
         setIsAdmin(isAdminUser);
 
         // Auto-select brand for single-brand users if none selected
@@ -124,7 +123,7 @@ function AuthProvider({ children }) {
     const rolesArray = Array.isArray(userRoles) ? userRoles : (typeof userRoles === 'string' ? [userRoles] : []);
     const isAdminUser = userData.isAdmin ||
       rolesArray.includes('Owner') ||
-      rolesArray.includes('Admin');
+      rolesArray.includes('Academic Coordinator');
     setIsAdmin(isAdminUser);
 
     // Auto-select brand for users with only one brand if none selected

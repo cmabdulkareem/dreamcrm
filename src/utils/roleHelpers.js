@@ -4,13 +4,13 @@
  */
 
 // Administrative roles (full system access)
-const ADMIN_ROLES = ['Owner', 'Admin'];
+const ADMIN_ROLES = ['Owner'];
 
 // Managerial roles (can manage teams and resources)
-const MANAGER_ROLES = ['Owner', 'Admin', 'Brand Manager', 'Manager'];
+const MANAGER_ROLES = ['Owner', 'Brand Manager'];
 
 // Finance roles
-const ACCOUNTANT_ROLES = ['Owner', 'Admin', 'Accounts Executive', 'Finance', 'Manager', 'Brand Manager'];
+const ACCOUNTANT_ROLES = ['Owner', 'Accounts Executive', 'Brand Manager'];
 
 /**
  * Check if user has a specific role

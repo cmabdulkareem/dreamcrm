@@ -63,6 +63,8 @@ import BrandManagement from "./components/brandManagement/BrandManagement";
 function App() {
   const { user } = useContext(AuthContext);
   const isFaculty = user && hasRole(user, "Instructor") && !isManager(user) && !user.isAdmin && !isOwner(user);
+  const isAC = user && hasRole(user, "Academic Coordinator");
+
   return (
     <>
       <TutorialProvider>
@@ -74,8 +76,16 @@ function App() {
                   <Routes>
                     {/* Authenticated Routes */}
                     <Route element={<ProtectedRoutes><AppLayout /></ProtectedRoutes>}>
-                      <Route index element={isFaculty ? <Navigate to="/calendar" replace /> : <Suspense fallback={<LoadingSpinner />}><Dashboard /></Suspense>} />
-                      <Route path="/dashboard" element={isFaculty ? <Navigate to="/calendar" replace /> : <Suspense fallback={<LoadingSpinner />}><Dashboard /></Suspense>} />
+                      <Route index element={
+                        isFaculty ? <Navigate to="/calendar" replace /> :
+                          isAC ? <Navigate to="/batch-management" replace /> :
+                            <Suspense fallback={<LoadingSpinner />}><Dashboard /></Suspense>
+                      } />
+                      <Route path="/dashboard" element={
+                        isFaculty ? <Navigate to="/calendar" replace /> :
+                          isAC ? <Navigate to="/batch-management" replace /> :
+                            <Suspense fallback={<LoadingSpinner />}><Dashboard /></Suspense>
+                      } />
                       <Route path="/ecommerce-dashboard" element={<Suspense fallback={<LoadingSpinner />}><EcommerceDashboard /></Suspense>} />
                       <Route path="/calendar" element={<Suspense fallback={<LoadingSpinner />}><Calendar /></Suspense>} />
                       <Route path="/email" element={<Suspense fallback={<LoadingSpinner />}><EmailInbox /></Suspense>} />

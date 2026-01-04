@@ -70,7 +70,7 @@ const UserManagement = () => {
 
   const roleOptions = [
     { value: "Owner", label: "Owner" },
-    { value: "Admin", label: "Admin" },
+    { value: "Academic Coordinator", label: "Academic Coordinator" },
     { value: "Brand Manager", label: "Brand Manager" },
     { value: "Counsellor", label: "Counsellor" },
     { value: "Marketing / Social Media Executive", label: "Marketing / Social Media Executive" },
@@ -84,11 +84,6 @@ const UserManagement = () => {
     { value: "Event Coordinator", label: "Event Coordinator" },
     { value: "Housekeeping / Office Assistant", label: "Housekeeping / Office Assistant" },
     { value: "PRO", label: "PRO" },
-    // Backward compatibility roles
-    { value: "Manager", label: "Manager (Legacy)" },
-    { value: "Marketing", label: "Marketing (Legacy)" },
-    { value: "Finance", label: "Finance (Legacy)" },
-    { value: "Placement", label: "Placement (Legacy)" },
     { value: "General", label: "General" }
   ];
 

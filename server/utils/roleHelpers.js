@@ -17,11 +17,11 @@ export function hasAdminOrManagerOrCounsellorAccess(user) {
   // Check roles array
   const userRoles = Array.isArray(user.roles) ? user.roles : (typeof user.roles === 'string' ? [user.roles] : []);
 
-  // Admin roles (Owner, Admin)
-  if (userRoles.includes('Owner') || userRoles.includes('Admin')) return true;
+  // Admin roles (Owner, Academic Coordinator)
+  if (userRoles.includes('Owner')) return true;
 
-  // Manager roles (Brand Manager, Manager)
-  if (userRoles.includes('Brand Manager') || userRoles.includes('Manager')) return true;
+  // Manager roles (Brand Manager)
+  if (userRoles.includes('Brand Manager')) return true;
 
   // Counselor role
   if (userRoles.includes('Counsellor') || userRoles.includes('Counselor')) return true;
@@ -42,7 +42,7 @@ export function isAdmin(user) {
   const userRoles = Array.isArray(user.roles) ? user.roles : (typeof user.roles === 'string' ? [user.roles] : []);
 
   // Admin roles
-  return userRoles.includes('Owner') || userRoles.includes('Admin');
+  return userRoles.includes('Owner');
 }
 
 /**
@@ -64,7 +64,7 @@ export function hasRole(user, role) {
   if (!user) return false;
 
   // Check isAdmin flag for backward compatibility with Admin role
-  if (user.isAdmin && (role === 'Admin' || role === 'Owner')) {
+  if (user.isAdmin && (role === 'Owner')) {
     return true;
   }
 
@@ -77,7 +77,7 @@ export function hasAnyRole(user, roles) {
   if (!user) return false;
 
   // Check isAdmin flag for backward compatibility
-  if (user.isAdmin && (roles.includes('Admin') || roles.includes('Owner'))) {
+  if (user.isAdmin && (roles.includes('Owner'))) {
     return true;
   }
 
@@ -95,6 +95,6 @@ export function isManager(user) {
 
   const userRoles = Array.isArray(user.roles) ? user.roles : (typeof user.roles === 'string' ? [user.roles] : []);
 
-  return userRoles.includes('Brand Manager') || userRoles.includes('Manager') || userRoles.includes('Owner') || userRoles.includes('Admin');
+  return userRoles.includes('Brand Manager') || userRoles.includes('Owner');
 }
 

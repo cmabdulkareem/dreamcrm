@@ -197,7 +197,7 @@ const AppSidebar = () => {
     );
   };
 
-  // Check if user has manager privileges (Owner, Admin, Centre Head/Manager)
+  // Check if user has manager privileges (Owner, Academic Coordinator, Brand Manager)
   const hasManagerAccess = isManager(user);
 
   // Helper to determine if an item is global (always accessible)
@@ -247,6 +247,13 @@ const AppSidebar = () => {
           // Counsellors need Lead Management, but not Finance or technical/admin items
           const hiddenForCounsellor = ["Finance", "Operations", "UI Elements"];
           if (hiddenForCounsellor.includes(nav.name)) return null;
+        }
+
+        // Restricted items for Academic Coordinator
+        if (hasRole(user, "Academic Coordinator")) {
+          // AC ONLY needs Student Management and Settings (will filter subitems below)
+          const allowedForAC = ["Student Management", "Settings"];
+          if (!allowedForAC.includes(nav.name)) return null;
         }
 
         // Restricted items for Accountants (who are not managers)
@@ -370,13 +377,16 @@ const AppSidebar = () => {
                       return null;
                     }
 
-                    // RESTRICTION: Only Owner and Admin can see User Management, Brand Management, and Announcements
-                    if ((subItem.name === "User Management" || subItem.name === "Brand Management" || subItem.name === "Announcements") && !isAdmin(user)) {
-                      return null;
+                    // RESTRICTION: Academic Coordinator only sees Batch Management and Edit Profile
+                    if (hasRole(user, "Academic Coordinator")) {
+                      const allowedSubItemsAC = ["Batch Management", "Edit Profile"];
+                      if (!allowedSubItemsAC.includes(subItem.name)) {
+                        return null;
+                      }
                     }
 
-                    // RESTRICTION: Only Owner, HR, Manager can see "Manage Leaves"
-                    if (subItem.name === "Manage Leaves" && !(hasRole(user, "Owner") || hasRole(user, "HR") || hasRole(user, "Manager"))) {
+                    // RESTRICTION: Only Owner, HR can see "Manage Leaves"
+                    if (subItem.name === "Manage Leaves" && !(hasRole(user, "Owner") || hasRole(user, "HR"))) {
                       return null;
                     }
 

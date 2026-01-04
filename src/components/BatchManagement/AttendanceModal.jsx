@@ -21,7 +21,7 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
     const isInstructor = (user && batch && user.fullName === batch.instructorName) || hasRole(user, 'Instructor');
     // Strict restriction: no one can change date. Attendance is always for TODAY.
     const canChangeDate = false;
-    const canEdit = isAdmin(user) || isOwner(user) || isManager(user) || isInstructor;
+    const canEdit = (isAdmin(user) || isOwner(user) || isManager(user) || isInstructor) && !hasRole(user, 'Academic Coordinator');
 
     useEffect(() => {
         if (isOpen && batch) {

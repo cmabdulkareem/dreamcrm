@@ -6,10 +6,9 @@
 // Role hierarchy - higher roles inherit permissions of lower roles
 const ROLE_HIERARCHY = {
   'Owner': 1,
-  'Admin': 2,
-  'Brand Manager': 3,
-
-  'Counsellor': 5,
+  'Brand Manager': 2,
+  'Academic Coordinator': 3,
+  'Counsellor': 4,
   'Marketing / Social Media Executive': 6,
   'Instructor': 7,
   'Placement Officer': 8,
@@ -21,22 +20,17 @@ const ROLE_HIERARCHY = {
   'Event Coordinator': 14,
   'Housekeeping / Office Assistant': 15,
   'PRO': 16,
-  // Backward compatibility roles
-  'Manager': 3,
-  'Marketing': 6,
-  'Finance': 11,
-  'Placement': 8,
   'General': 17
 };
 
 // Administrative roles (full system access)
-const ADMIN_ROLES = ['Owner', 'Admin'];
+const ADMIN_ROLES = ['Owner'];
 
 // Managerial roles (can manage teams and resources)
-const MANAGER_ROLES = ['Owner', 'Admin', 'Brand Manager', 'Manager'];
+const MANAGER_ROLES = ['Owner', 'Brand Manager'];
 
 // Roles that should be treated as admin for backward compatibility
-const ADMIN_EQUIVALENT_ROLES = ['Owner', 'Admin'];
+const ADMIN_EQUIVALENT_ROLES = ['Owner'];
 
 /**
  * Check if user has a specific role
