@@ -262,7 +262,28 @@ export const authCheck = async (req, res) => {
       return res.status(403).json({ message: "Account not approved yet" });
     }
 
+    // Refresh token to ensure latest roles/permissions are in the session
+    const token = jwt.sign(
+      {
+        id: user._id,
+        roles: user.roles,
+        isAdmin: user.isAdmin
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    // Set cookie
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      maxAge: 24 * 60 * 60 * 1000,
+      path: '/'
+    });
+
     return res.status(200).json({
+      token,
       user: {
         id: user._id,
         fullName: user.fullName,
@@ -279,7 +300,6 @@ export const authCheck = async (req, res) => {
         location: user.location,
         gender: user.gender,
         dob: user.dob,
-        designation: user.designation,
         designation: user.designation,
         accountStatus: user.accountStatus,
         employeeCode: user.employeeCode, // Include employeeCode
