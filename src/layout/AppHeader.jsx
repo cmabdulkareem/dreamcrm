@@ -251,13 +251,17 @@ const AppHeader = () => {
           <Link to="/" className="lg:hidden">
             <img
               className="dark:hidden"
-              src="./images/logo/logo.svg"
+              src="/images/logo/logo.svg"
               alt="Logo"
+              width={120}
+              height={32}
             />
             <img
               className="hidden dark:block"
-              src="./images/logo/logo-dark.svg"
+              src="/images/logo/logo-dark.svg"
               alt="Logo"
+              width={120}
+              height={32}
             />
           </Link>
 
@@ -364,66 +368,69 @@ const AppHeader = () => {
 
         <div
           className={`${isApplicationMenuOpen ? "flex" : "hidden"
-            } items-center justify-between w-full lg:w-auto lg:flex-1 lg:min-w-0 gap-4 px-5 py-4 lg:flex shadow-theme-md lg:justify-end lg:px-0 lg:shadow-none`}
+            } flex-col lg:flex-row items-center justify-between w-full lg:w-auto lg:flex-1 lg:min-w-0 gap-4 px-5 py-4 lg:flex shadow-theme-md lg:justify-end lg:px-0 lg:shadow-none`}
         >
           <div className="hidden lg:block flex-1 min-w-0 max-w-xl mx-4 overflow-hidden">
             <AnimatedAnnouncement />
           </div>
-          <div className="lg:hidden w-full overflow-hidden">
+          <div className="lg:hidden w-full overflow-hidden mb-2">
             <AnimatedAnnouncement />
           </div>
-          <div className="flex items-center gap-2 2xsm:gap-3">
-            {/* Brand Switcher - Only show if user has brands */}
-            {currentUser && currentUser.brands && currentUser.brands.length > 0 && (
-              <div className="relative">
-                <select
-                  className="h-10 pl-3 pr-8 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  value={selectedBrand ? selectedBrand._id : ""}
-                  onChange={(e) => {
-                    const brandId = e.target.value;
-                    if (brandId === "") {
-                      selectBrand(null); // Select All
-                    } else {
-                      const brand = currentUser.brands.find(b => b._id === brandId);
-                      selectBrand(brand);
-                    }
-                  }}
-                >
-                  {(isAdmin(currentUser) || currentUser.brands.length > 1) && <option value="">All Brands</option>}
-                  {currentUser.brands.map((brand) => (
-                    <option key={brand._id} value={brand._id}>
-                      {brand.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
 
-            {/* Notification Dropdown */}
-
-            <NotificationDropdown />
-
-            {/* Chat Notification Icon */}
-            <button
-              onClick={toggleChat}
-              className="relative flex h-10 w-10 items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-            >
-              <svg className="h-5 w-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-              </svg>
-              {hasUnreadMessages && (
-                <span className="absolute -top-1 -right-1 flex h-4 w-4">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-4 w-4 bg-green-500"></span>
-                </span>
+          <div className="flex flex-col lg:flex-row items-center w-full lg:w-auto gap-4">
+            <div className="flex items-center gap-2 2xsm:gap-3 justify-center w-full lg:w-auto lg:border-none lg:pb-0">
+              {/* Brand Switcher - Only show if user has brands */}
+              {currentUser && currentUser.brands && currentUser.brands.length > 0 && (
+                <div className="relative">
+                  <select
+                    className="h-10 pl-3 pr-8 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    value={selectedBrand ? selectedBrand._id : ""}
+                    onChange={(e) => {
+                      const brandId = e.target.value;
+                      if (brandId === "") {
+                        selectBrand(null); // Select All
+                      } else {
+                        const brand = currentUser.brands.find(b => b._id === brandId);
+                        selectBrand(brand);
+                      }
+                    }}
+                  >
+                    {(isAdmin(currentUser) || currentUser.brands.length > 1) && <option value="">All Brands</option>}
+                    {currentUser.brands.map((brand) => (
+                      <option key={brand._id} value={brand._id}>
+                        {brand.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               )}
-            </button>
 
-            {/* <!-- Dark Mode Toggler --> */}
-            <ThemeToggleButton />
+              {/* Notification Dropdown */}
+              <NotificationDropdown />
+
+              {/* Chat Notification Icon */}
+              <button
+                onClick={toggleChat}
+                className="relative flex h-10 w-10 items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                <svg className="h-5 w-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                {hasUnreadMessages && (
+                  <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-4 w-4 bg-green-500"></span>
+                  </span>
+                )}
+              </button>
+
+              {/* <!-- Dark Mode Toggler --> */}
+              <ThemeToggleButton />
+
+              {/* <!-- User Area --> */}
+              <UserDropdown />
+            </div>
           </div>
-          {/* <!-- User Area --> */}
-          <UserDropdown />
         </div>
       </div>
     </header>

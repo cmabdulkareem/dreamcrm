@@ -94,7 +94,7 @@ export default function SignUpForm() {
   };
 
   return (
-    <div className="flex flex-col flex-1 w-full overflow-y-auto lg:w-1/2 no-scrollbar">
+    <div className="flex flex-col flex-1 w-full px-6">
       <ToastContainer position="top-center" />
       <div className="w-full max-w-md mx-auto mb-5 sm:pt-10">
         <Link

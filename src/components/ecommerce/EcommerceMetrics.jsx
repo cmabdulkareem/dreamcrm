@@ -190,7 +190,7 @@ export default function EcommerceMetrics() {
 
   // Front content for the Total Leads card
   const totalLeadsFrontContent = (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6 h-full">
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6">
       <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-xl dark:bg-blue-900/30">
         <GroupIcon className="text-blue-600 size-6 dark:text-blue-400" />
       </div>
@@ -219,7 +219,7 @@ export default function EcommerceMetrics() {
 
   // Back content for the Total Leads card (shows all leads across brand)
   const totalLeadsBackContent = (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6 h-full flex flex-col items-center justify-center text-center">
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6 flex flex-col items-center justify-center text-center">
       <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-xl dark:bg-blue-900/30">
         <GroupIcon className="text-blue-600 size-6 dark:text-blue-400" />
       </div>
@@ -240,7 +240,7 @@ export default function EcommerceMetrics() {
 
   // Front content for the Conversion Rate card
   const conversionRateFrontContent = (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6 h-full">
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6">
       <div className="flex items-center justify-center w-12 h-12 bg-green-100 rounded-xl dark:bg-green-900/30">
         <ShootingStarIcon className="text-green-600 size-6 dark:text-green-400" />
       </div>
@@ -262,7 +262,7 @@ export default function EcommerceMetrics() {
 
   // Back content for the Conversion Rate card (shows total conversions across all users)
   const conversionRateBackContent = (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6 h-full flex flex-col items-center justify-center text-center">
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6 flex flex-col items-center justify-center text-center">
       <div className="flex items-center justify-center w-12 h-12 bg-green-100 rounded-xl dark:bg-green-900/30">
         <ShootingStarIcon className="text-green-600 size-6 dark:text-green-400" />
       </div>
@@ -284,7 +284,7 @@ export default function EcommerceMetrics() {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 md:gap-6">
       {/* Total Leads with Flip Card */}
-      <div className="h-full">
+      <div>
         <FlipCard
           frontContent={totalLeadsFrontContent}
           backContent={totalLeadsBackContent}
@@ -292,7 +292,7 @@ export default function EcommerceMetrics() {
       </div>
 
       {/* Conversion Rate with Flip Card */}
-      <div className="h-full">
+      <div>
         <FlipCard
           frontContent={conversionRateFrontContent}
           backContent={conversionRateBackContent}

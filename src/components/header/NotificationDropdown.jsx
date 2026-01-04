@@ -51,12 +51,16 @@ const NotificationDropdown = () => {
         )}
       </button>
 
-      <Dropdown isOpen={isOpen} onClose={closeDropdown} className="w-80 mt-2">
+      <Dropdown
+        isOpen={isOpen}
+        onClose={closeDropdown}
+        className="w-[calc(100vw-32px)] sm:w-80 mt-2 right-0 sm:right-0 max-sm:fixed max-sm:top-16 max-sm:left-4 max-sm:right-4 max-sm:translate-x-0"
+      >
         <div className="p-4">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Notifications</h3>
             {notifications.length > 0 && (
-              <button 
+              <button
                 onClick={markAllAsRead}
                 className="text-sm text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
               >
@@ -76,13 +80,12 @@ const NotificationDropdown = () => {
             <div className="max-h-96 overflow-y-auto custom-scrollbar">
               <ul className="space-y-2">
                 {notifications.map((notification) => (
-                  <li 
-                    key={notification.id} 
-                    className={`p-3 rounded-lg cursor-pointer transition-colors ${
-                      !notification.read 
-                        ? 'bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30' 
-                        : 'hover:bg-gray-100 dark:hover:bg-gray-800'
-                    }`}
+                  <li
+                    key={notification.id}
+                    className={`p-3 rounded-lg cursor-pointer transition-colors ${!notification.read
+                      ? 'bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30'
+                      : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                      }`}
                     onClick={() => {
                       if (!notification.read) {
                         markAsRead(notification.id);
@@ -92,9 +95,9 @@ const NotificationDropdown = () => {
                     <div className="flex items-start gap-3">
                       <div className="flex-shrink-0">
                         {notification.avatar ? (
-                          <img 
-                            src={getAvatarUrl(notification.avatar)} 
-                            alt={notification.userName} 
+                          <img
+                            src={getAvatarUrl(notification.avatar)}
+                            alt={notification.userName}
                             className="h-10 w-10 rounded-full object-cover"
                             onError={(e) => {
                               e.target.src = '/images/user/user-01.jpg';
@@ -108,7 +111,7 @@ const NotificationDropdown = () => {
                           </div>
                         )}
                       </div>
-                      
+
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-medium text-gray-900 dark:text-white">
@@ -122,7 +125,7 @@ const NotificationDropdown = () => {
                           {notification.module} • {getTimeAgo(notification.timestamp)}
                         </p>
                       </div>
-                      
+
                       <button
                         onClick={(e) => {
                           e.stopPropagation();

@@ -64,9 +64,9 @@ export default function UserDropdown() {
             }}
           />
         </span>
-        <span className="block mr-1 font-medium text-theme-sm">{user?.fullName}</span>
+        <span className="hidden mr-1 font-medium text-theme-sm sm:block">{user?.fullName}</span>
         <svg
-          className={`stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""
+          className={`hidden sm:block stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""
             }`}
           width="18"
           height="20"
