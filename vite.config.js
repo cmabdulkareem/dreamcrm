@@ -21,6 +21,9 @@ export default defineConfig({
         enabled: true
       },
       includeAssets: ['favicon.png', 'images/logo/logo-icon.svg'],
+      workbox: {
+        maximumFileSizeToCacheInBytes: 6000000, // 6MB
+      },
       manifest: {
         name: 'DreamCRM',
         short_name: 'DreamCRM',
@@ -48,6 +51,7 @@ export default defineConfig({
     })
   ],
   build: {
+    chunkSizeWarningLimit: 5000,
     rollupOptions: {
       output: {
         assetFileNames: (assetInfo) => {
