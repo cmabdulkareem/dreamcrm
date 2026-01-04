@@ -1,4 +1,5 @@
 import userModel from "../model/userModel.js";
+import brandModel from "../model/brandModel.js"; // Ensure Brand model is registered
 import mongoose from "mongoose";
 
 // Helper to get base URL with correct protocol (checking for proxy)
@@ -316,15 +317,20 @@ export const authCheck = async (req, res) => {
 // Get all users (admin only)
 export const getAllUsers = async (req, res) => {
   try {
+    console.log("getAllUsers called. User:", req.user ? { id: req.user.id, roles: req.user.roles, isAdmin: req.user.isAdmin } : "No user");
+
     // Check if user is admin (backward compatible)
     if (!isAdmin(req.user)) {
+      console.log("getAllUsers: Access denied. isAdmin returned false.");
       return res.status(403).json({ message: "Access denied. Admin privileges required." });
     }
 
     const users = await userModel.find().populate('reportingHead', 'fullName email').populate('brands');
+    console.log(`getAllUsers: Found ${users.length} users.`);
 
     // Format users with absolute avatar URLs
     const formattedUsers = users.map(user => ({
+      // ...
       id: user._id,
       fullName: user.fullName,
       email: user.email,
