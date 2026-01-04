@@ -40,9 +40,8 @@ const userSchema = new mongoose.Schema(
         type: String,
         enum: [
           'Owner',
-          'Admin',
+          'Academic Coordinator',
           'Brand Manager',
-
           'Counsellor',
           'Marketing / Social Media Executive',
           'Instructor',
@@ -55,10 +54,6 @@ const userSchema = new mongoose.Schema(
           'Event Coordinator',
           'Housekeeping / Office Assistant',
           'PRO',
-          'Manager', // Keep for backward compatibility
-          'Marketing', // Keep for backward compatibility
-          'Finance', // Keep for backward compatibility
-          'Placement', // Keep for backward compatibility
           'General'
         ]
       }],
