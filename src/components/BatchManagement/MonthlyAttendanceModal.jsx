@@ -163,11 +163,17 @@ export default function MonthlyAttendanceModal({ isOpen, onClose, batch }) {
                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider sticky left-0 bg-gray-50 dark:bg-gray-700 z-20 border-r dark:border-gray-600 min-w-[200px]">
                                     Student Name
                                 </th>
-                                {daysArray.map(day => (
-                                    <th key={day} className="px-1 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 min-w-[32px]">
-                                        {day}
-                                    </th>
-                                ))}
+                                {daysArray.map(day => {
+                                    const dateObj = new Date(selectedYear, selectedMonth - 1, day);
+                                    const dayName = ['S', 'M', 'T', 'W', 'T', 'F', 'S'][dateObj.getDay()];
+                                    const isSunday = dateObj.getDay() === 0;
+                                    return (
+                                        <th key={day} className={`px-1 py-2 text-center text-[10px] font-medium min-w-[32px] border-l dark:border-gray-600 ${isSunday ? 'text-red-600 bg-red-50 dark:bg-red-900/20' : 'text-gray-500 dark:text-gray-300'}`}>
+                                            <div className="mb-0.5">{dayName}</div>
+                                            <div className="text-[11px]">{day}</div>
+                                        </th>
+                                    );
+                                })}
                                 <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider bg-gray-50 dark:bg-gray-700 sticky right-0 z-20 border-l dark:border-gray-600">
                                     Total
                                 </th>
@@ -188,11 +194,15 @@ export default function MonthlyAttendanceModal({ isOpen, onClose, batch }) {
                                         <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white sticky left-0 bg-white dark:bg-gray-800 z-10 border-r dark:border-gray-600">
                                             {student.studentName}
                                         </td>
-                                        {daysArray.map(day => (
-                                            <td key={day} className="px-1 py-1 text-center border-l border-gray-100 dark:border-gray-700">
-                                                {renderStatusCell(studentMap[student._id]?.[day])}
-                                            </td>
-                                        ))}
+                                        {daysArray.map(day => {
+                                            const dateObj = new Date(selectedYear, selectedMonth - 1, day);
+                                            const isSunday = dateObj.getDay() === 0;
+                                            return (
+                                                <td key={day} className={`px-1 py-1 text-center border-l border-gray-100 dark:border-gray-700 ${isSunday ? 'bg-red-50/50 dark:bg-red-900/5' : ''}`}>
+                                                    {renderStatusCell(studentMap[student._id]?.[day])}
+                                                </td>
+                                            );
+                                        })}
                                         <td className="px-4 py-2 text-center text-sm text-gray-900 dark:text-white sticky right-0 bg-white dark:bg-gray-800 z-10 border-l dark:border-gray-600 font-semibold">
                                             <span className="text-green-600">{stats.present}</span> / {stats.totalSessions}
                                         </td>

@@ -141,47 +141,113 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
     const formatDate = (d) => d ? new Date(d).toISOString().split('T')[0] : '';
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} className="max-w-4xl p-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pr-10 sm:pr-12">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                    {canEdit ? "Mark Attendance" : "View Attendance"} - {batch?.batchName}
-                </h3>
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Date: {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    </span>
+        <Modal isOpen={isOpen} onClose={onClose} className="max-w-4xl p-0 h-[90vh] sm:h-auto sm:max-h-[90vh]">
+            <div className="flex flex-col h-full">
+                {/* Fixed Header */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 sm:p-6 border-b border-gray-100 dark:border-gray-700 shrink-0 pr-12 sm:pr-14">
+                    <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
+                        {canEdit ? "Mark Attendance" : "View Attendance"}
+                    </h3>
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">
+                            {batch?.batchName} | {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </span>
+                    </div>
                 </div>
-            </div>
 
-            {loading ? (
-                <div className="text-center py-10">Loading...</div>
-            ) : (
-                <>
-                    {/* Desktop Table View */}
-                    <div className="hidden md:block overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                            <thead className="bg-gray-50 dark:bg-gray-700">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Student Name</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                {students.map(student => (
-                                    <tr key={student._id}>
-                                        <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
-                                            <div>{student.studentName}</div>
-                                            <div className="text-xs font-normal text-gray-500 dark:text-gray-400 mt-1">{student.phoneNumber}</div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                            <div className="flex gap-2">
+                {/* Scrollable Content */}
+                <div className="flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar">
+
+                    {loading ? (
+                        <div className="text-center py-10">Loading...</div>
+                    ) : (
+                        <>
+                            {/* Desktop Table View */}
+                            <div className="hidden md:block overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                    <thead className="bg-gray-50 dark:bg-gray-700">
+                                        <tr>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Student Name</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                        {students.map(student => (
+                                            <tr key={student._id}>
+                                                <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">
+                                                    <div>{student.studentName}</div>
+                                                    <div className="text-xs font-normal text-gray-500 dark:text-gray-400 mt-1">{student.phoneNumber}</div>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                    <div className="flex gap-2">
+                                                        {["Present", "Absent", "Late", "Excused", "Holiday"].map(status => (
+                                                            <button
+                                                                key={status}
+                                                                onClick={() => handleStatusChange(student._id, status)}
+                                                                disabled={!canEdit}
+                                                                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors border 
+                                                            ${attendanceRecords[student._id]?.status === status
+                                                                        ? (status === 'Present' ? 'bg-green-100 text-green-800 border-green-200' :
+                                                                            status === 'Absent' ? 'bg-red-100 text-red-800 border-red-200' :
+                                                                                status === 'Late' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
+                                                                                    status === 'Holiday' ? 'bg-purple-100 text-purple-800 border-purple-200' :
+                                                                                        'bg-blue-100 text-blue-800 border-blue-200')
+                                                                        : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600'
+                                                                    }
+                                                            ${!canEdit ? 'cursor-default opacity-80' : ''}
+                                                        `}
+                                                            >
+                                                                {status}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Mobile Card View */}
+                            <div className="md:hidden">
+                                {/* Legend for Mobile */}
+                                <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-100 dark:border-gray-600">
+                                    <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2 italic">Attendance Legend</div>
+                                    <div className="flex flex-wrap gap-x-4 gap-y-2">
+                                        {[
+                                            { l: 'P', n: 'Present', c: 'bg-green-100 text-green-800 border-green-200' },
+                                            { l: 'A', n: 'Absent', c: 'bg-red-100 text-red-800 border-red-200' },
+                                            { l: 'L', n: 'Late', c: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
+                                            { l: 'E', n: 'Excused', c: 'bg-blue-100 text-blue-800 border-blue-200' },
+                                            { l: 'H', n: 'Holiday', c: 'bg-purple-100 text-purple-800 border-purple-200' }
+                                        ].map(item => (
+                                            <div key={item.l} className="flex items-center gap-1.5">
+                                                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border ${item.c}`}>
+                                                    {item.l}
+                                                </span>
+                                                <span className="text-xs text-gray-600 dark:text-gray-300">{item.n}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    {students.map(student => (
+                                        <div key={student._id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm">
+                                            <div className="mb-3">
+                                                <h4 className="text-sm font-bold text-gray-900 dark:text-white">
+                                                    {student.studentName}
+                                                </h4>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{student.phoneNumber}</p>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
                                                 {["Present", "Absent", "Late", "Excused", "Holiday"].map(status => (
                                                     <button
                                                         key={status}
                                                         onClick={() => handleStatusChange(student._id, status)}
                                                         disabled={!canEdit}
-                                                        className={`px-3 py-1 rounded-full text-xs font-medium transition-colors border 
-                                                            ${attendanceRecords[student._id]?.status === status
+                                                        className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold transition-colors border
+                                                    ${attendanceRecords[student._id]?.status === status
                                                                 ? (status === 'Present' ? 'bg-green-100 text-green-800 border-green-200' :
                                                                     status === 'Absent' ? 'bg-red-100 text-red-800 border-red-200' :
                                                                         status === 'Late' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
@@ -189,88 +255,31 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
                                                                                 'bg-blue-100 text-blue-800 border-blue-200')
                                                                 : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600'
                                                             }
-                                                            ${!canEdit ? 'cursor-default opacity-80' : ''}
-                                                        `}
+                                                    ${!canEdit ? 'cursor-default opacity-80' : ''}
+                                                `}
                                                     >
-                                                        {status}
+                                                        {status.charAt(0)}
                                                     </button>
                                                 ))}
                                             </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* Mobile Card View */}
-                    <div className="md:hidden">
-                        {/* Legend for Mobile */}
-                        <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-100 dark:border-gray-600">
-                            <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2 italic">Attendance Legend</div>
-                            <div className="flex flex-wrap gap-x-4 gap-y-2">
-                                {[
-                                    { l: 'P', n: 'Present', c: 'bg-green-100 text-green-800 border-green-200' },
-                                    { l: 'A', n: 'Absent', c: 'bg-red-100 text-red-800 border-red-200' },
-                                    { l: 'L', n: 'Late', c: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
-                                    { l: 'E', n: 'Excused', c: 'bg-blue-100 text-blue-800 border-blue-200' },
-                                    { l: 'H', n: 'Holiday', c: 'bg-purple-100 text-purple-800 border-purple-200' }
-                                ].map(item => (
-                                    <div key={item.l} className="flex items-center gap-1.5">
-                                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border ${item.c}`}>
-                                            {item.l}
-                                        </span>
-                                        <span className="text-xs text-gray-600 dark:text-gray-300">{item.n}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="space-y-4">
-                            {students.map(student => (
-                                <div key={student._id} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm">
-                                    <div className="mb-3">
-                                        <h4 className="text-sm font-bold text-gray-900 dark:text-white">
-                                            {student.studentName}
-                                        </h4>
-                                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{student.phoneNumber}</p>
-                                    </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {["Present", "Absent", "Late", "Excused", "Holiday"].map(status => (
-                                            <button
-                                                key={status}
-                                                onClick={() => handleStatusChange(student._id, status)}
-                                                disabled={!canEdit}
-                                                className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold transition-colors border
-                                                    ${attendanceRecords[student._id]?.status === status
-                                                        ? (status === 'Present' ? 'bg-green-100 text-green-800 border-green-200' :
-                                                            status === 'Absent' ? 'bg-red-100 text-red-800 border-red-200' :
-                                                                status === 'Late' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
-                                                                    status === 'Holiday' ? 'bg-purple-100 text-purple-800 border-purple-200' :
-                                                                        'bg-blue-100 text-blue-800 border-blue-200')
-                                                        : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600'
-                                                    }
-                                                    ${!canEdit ? 'cursor-default opacity-80' : ''}
-                                                `}
-                                            >
-                                                {status.charAt(0)}
-                                            </button>
-                                        ))}
-                                    </div>
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
-                    </div>
-                </>
-            )}
+                            </div>
+                        </>
+                    )}
 
-            <div className="mt-6 flex justify-end gap-3">
-                <Button variant="outline" onClick={onClose}>Close</Button>
-                {canEdit && (
-                    <Button variant="primary" onClick={handleSubmit} loading={submitting}>
-                        Save Attendance
-                    </Button>
-                )}
+                </div>
+
+                {/* Fixed Footer */}
+                <div className="mt-auto p-4 sm:p-6 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3 shrink-0">
+                    <Button variant="outline" onClick={onClose} className="px-4 py-2">Close</Button>
+                    {canEdit && (
+                        <Button variant="primary" onClick={handleSubmit} loading={submitting} className="px-6 py-2">
+                            Save Attendance
+                        </Button>
+                    )}
+                </div>
             </div>
         </Modal>
     );
