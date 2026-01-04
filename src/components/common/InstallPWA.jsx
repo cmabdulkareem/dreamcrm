@@ -1,0 +1,82 @@
+import React, { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
+
+const InstallPWA = () => {
+    const [deferredPrompt, setDeferredPrompt] = useState(null);
+
+    useEffect(() => {
+        const handler = (e) => {
+            // Prevent Chrome from automatically showing the prompt
+            e.preventDefault();
+            // Stash the event so it can be triggered later.
+            setDeferredPrompt(e);
+
+            // Check if it's mobile or tablet
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 1024;
+            // Check if already in standalone mode
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+            if (isMobile && !isStandalone && !sessionStorage.getItem('pwa_prompt_shown')) {
+                showInstallPrompt(e);
+            }
+        };
+
+        window.addEventListener('beforeinstallprompt', handler);
+
+        return () => {
+            window.removeEventListener('beforeinstallprompt', handler);
+        };
+    }, []);
+
+    const showInstallPrompt = (e) => {
+        // Only show if we haven't shown it yet this session
+        if (sessionStorage.getItem('pwa_prompt_shown')) return;
+
+        sessionStorage.setItem('pwa_prompt_shown', 'true');
+
+        toast.info(
+            <div className="flex flex-col gap-2 p-1 text-left">
+                <p className="font-bold text-gray-800 dark:text-white">Install DreamCRM App</p>
+                <p className="text-xs text-gray-600 dark:text-gray-300">Get a better mobile experience and faster access by installing our app.</p>
+                <div className="flex gap-2 justify-end mt-1">
+                    <button
+                        onClick={() => toast.dismiss()}
+                        className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1"
+                    >
+                        Later
+                    </button>
+                    <button
+                        onClick={() => handleInstall(e)}
+                        className="bg-brand-500 text-white px-3 py-1.5 rounded text-xs font-semibold hover:bg-brand-600 transition-colors shadow-sm"
+                    >
+                        Install
+                    </button>
+                </div>
+            </div>,
+            {
+                position: "bottom-center",
+                autoClose: false,
+                closeOnClick: false,
+                draggable: false,
+                closeButton: false,
+                className: 'dark:bg-gray-805 bg-white border border-gray-100 dark:border-gray-700 shadow-xl'
+            }
+        );
+    };
+
+    const handleInstall = async (e) => {
+        if (!e) return;
+        // Show the prompt
+        e.prompt();
+        // Wait for the user to respond to the prompt
+        const { outcome } = await e.userChoice;
+        console.log(`User response to the install prompt: ${outcome}`);
+        // We've used the prompt, and can't use it again, throw it away
+        setDeferredPrompt(null);
+        toast.dismiss();
+    };
+
+    return null;
+};
+
+export default InstallPWA;

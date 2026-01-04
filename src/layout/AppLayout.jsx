@@ -7,6 +7,9 @@ import Backdrop from "./Backdrop";
 import AppSidebar from "./AppSidebar";
 import Footer from "../components/common/Footer";
 import CounsellorTutorial from "../components/tutorial/CounsellorTutorial";
+import InstallPWA from "../components/common/InstallPWA";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const LayoutContent = () => {
   const { isExpanded, isHovered, isMobileOpen } = useSidebar();
@@ -30,6 +33,8 @@ const LayoutContent = () => {
         <Footer />
       </div>
       <CounsellorTutorial />
+      <InstallPWA />
+      <ToastContainer />
     </div>
   );
 };
