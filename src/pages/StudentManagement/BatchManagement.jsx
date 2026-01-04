@@ -11,12 +11,14 @@ import API from '../../config/api';
 import { AuthContext } from '../../context/AuthContext';
 import BatchAccordion from '../../components/BatchManagement/BatchAccordion';
 import CreateBatchModal from '../../components/BatchManagement/CreateBatchModal';
+import { isAdmin, isOwner, isManager } from '../../utils/roleHelpers';
 
 export default function BatchManagement() {
     const { user } = useContext(AuthContext);
     const [batches, setBatches] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const canCreate = isAdmin(user) || isOwner(user) || isManager(user);
 
     useEffect(() => {
         fetchBatches();
@@ -61,9 +63,11 @@ export default function BatchManagement() {
                     <h2 className="text-xl font-bold text-gray-800 dark:text-white">Structured Batches</h2>
                     <p className="text-sm text-gray-500 dark:text-gray-400">Create and manage student batches for your brand</p>
                 </div>
-                <Button variant="primary" onClick={() => setIsModalOpen(true)} className="w-full sm:w-auto">
-                    Create New Batch
-                </Button>
+                {canCreate && (
+                    <Button variant="primary" onClick={() => setIsModalOpen(true)} className="w-full sm:w-auto">
+                        Create New Batch
+                    </Button>
+                )}
             </div>
 
             {loading ? (
@@ -83,9 +87,11 @@ export default function BatchManagement() {
                 <ComponentCard>
                     <div className="text-center py-10">
                         <p className="text-gray-500 dark:text-gray-400 mb-4">No batches found for this brand.</p>
-                        <Button variant="outline" onClick={() => setIsModalOpen(true)}>
-                            Start by creating your first batch
-                        </Button>
+                        {canCreate && (
+                            <Button variant="outline" onClick={() => setIsModalOpen(true)}>
+                                Start by creating your first batch
+                            </Button>
+                        )}
                     </div>
                 </ComponentCard>
             )}

@@ -8,7 +8,6 @@ const batchStudentSchema = new mongoose.Schema({
     },
     studentId: {
         type: String,
-        required: true,
         trim: true
     },
     studentName: {
@@ -17,8 +16,7 @@ const batchStudentSchema = new mongoose.Schema({
         trim: true
     },
     dob: {
-        type: Date,
-        required: true
+        type: Date
     },
     phoneNumber: {
         type: String,

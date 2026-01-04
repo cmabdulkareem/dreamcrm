@@ -6,7 +6,7 @@ import BatchStudentList from './BatchStudentList';
 import AttendanceModal from './AttendanceModal';
 import MonthlyAttendanceModal from './MonthlyAttendanceModal';
 import { useAuth } from '../../context/AuthContext';
-import { hasRole, isAdmin, isOwner } from '../../utils/roleHelpers';
+import { hasRole, isAdmin, isOwner, isManager } from '../../utils/roleHelpers';
 import { GroupIcon } from '../../icons';
 
 export default function BatchAccordion({ batch, onUpdate, onDelete }) {
@@ -19,7 +19,8 @@ export default function BatchAccordion({ batch, onUpdate, onDelete }) {
 
     // Permission check for button text
     const isInstructor = (user && batch && user.fullName === batch.instructorName) || hasRole(user, 'Instructor');
-    const canMarkAttendance = isAdmin(user) || isOwner(user) || isInstructor;
+    const canMarkAttendance = isAdmin(user) || isOwner(user) || isManager(user) || isInstructor;
+    const canEdit = isAdmin(user) || isOwner(user) || isManager(user);
 
     const handleToggle = () => setIsExpanded(!isExpanded);
 
@@ -126,24 +127,28 @@ export default function BatchAccordion({ batch, onUpdate, onDelete }) {
                     >
                         Monthly Report
                     </button>
-                    <button
-                        onClick={handleEdit}
-                        className="p-2 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400"
-                        title="Edit Batch"
-                    >
-                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                    </button>
-                    <button
-                        onClick={handleDelete}
-                        className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400"
-                        title="Delete Batch"
-                    >
-                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                    </button>
+                    {canEdit && (
+                        <>
+                            <button
+                                onClick={handleEdit}
+                                className="p-2 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400"
+                                title="Edit Batch"
+                            >
+                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                            </button>
+                            <button
+                                onClick={handleDelete}
+                                className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400"
+                                title="Delete Batch"
+                            >
+                                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
 
