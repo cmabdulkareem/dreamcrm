@@ -5,27 +5,48 @@ const InstallPWA = () => {
     const [deferredPrompt, setDeferredPrompt] = useState(null);
 
     useEffect(() => {
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 1024;
+        // Better iOS detection
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+            (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+            window.navigator.standalone === true;
+
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         const isSecure = window.isSecureContext;
+        const isInAppBrowser = /FBAN|FBAV|Instagram|LinkedIn|Twitter|WhatsApp/i.test(navigator.userAgent);
 
         console.log('%c[PWA Debug]', 'color: #ee46bc; font-weight: bold;', {
             isIOS,
             isStandalone,
             isMobile,
             isSecure,
+            isInAppBrowser,
             userAgent: navigator.userAgent,
             location: window.location.href
         });
+
+        if (isInAppBrowser && !isStandalone && !sessionStorage.getItem('pwa_prompt_shown')) {
+            sessionStorage.setItem('pwa_prompt_shown', 'true');
+            toast.warning("You are using an in-app browser. For the best experience and to install this app, please open this link in your phone's main browser (Chrome or Safari).", {
+                position: "top-center",
+                autoClose: 10000
+            });
+        }
 
         if (!isSecure && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
             console.warn('[PWA] PWA features require HTTPS when not on localhost.');
         }
 
-        if (isIOS && isMobile && !isStandalone && !sessionStorage.getItem('pwa_prompt_shown')) {
-            console.log('[PWA] iOS detected, showing instructions');
-            showIOSInstallPrompt();
+        let iosTimer;
+        let installPromptTimer;
+
+        // Show iOS prompt after a short delay
+        if (isIOS && !isStandalone && !sessionStorage.getItem('pwa_prompt_shown')) {
+            iosTimer = setTimeout(() => {
+                console.log('[PWA] iOS detected, showing instructions');
+                showIOSInstallPrompt();
+            }, 3000);
         }
 
         const handler = (e) => {
@@ -36,8 +57,10 @@ const InstallPWA = () => {
             setDeferredPrompt(e);
 
             if (!isStandalone && !sessionStorage.getItem('pwa_prompt_shown')) {
-                console.log('[PWA] Showing custom install prompt');
-                showInstallPrompt(e);
+                installPromptTimer = setTimeout(() => {
+                    console.log('[PWA] Showing custom install prompt');
+                    showInstallPrompt(e);
+                }, 2000);
             }
         };
 
@@ -47,6 +70,8 @@ const InstallPWA = () => {
         // though usually unlikely for a React component mount
         return () => {
             window.removeEventListener('beforeinstallprompt', handler);
+            if (iosTimer) clearTimeout(iosTimer);
+            if (installPromptTimer) clearTimeout(installPromptTimer);
         };
     }, []);
 
