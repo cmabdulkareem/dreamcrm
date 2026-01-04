@@ -7,10 +7,10 @@
 const ADMIN_ROLES = ['Owner', 'Admin'];
 
 // Managerial roles (can manage teams and resources)
-const MANAGER_ROLES = ['Owner', 'Admin', 'Center Head / Manager', 'Manager'];
+const MANAGER_ROLES = ['Owner', 'Admin', 'Brand Manager', 'Manager'];
 
 // Finance roles
-const ACCOUNTANT_ROLES = ['Owner', 'Admin', 'Accounts Executive', 'Finance', 'Manager', 'Center Head / Manager'];
+const ACCOUNTANT_ROLES = ['Owner', 'Admin', 'Accounts Executive', 'Finance', 'Manager', 'Brand Manager'];
 
 /**
  * Check if user has a specific role

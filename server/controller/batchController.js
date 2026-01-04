@@ -206,7 +206,7 @@ export const markAttendance = async (req, res) => {
         // Permission check
         if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
             // For faculty/instructors
-            if (batch.instructorName !== req.user.fullName && !req.user.roles.includes('Faculty / Trainers')) {
+            if (batch.instructorName !== req.user.fullName && !req.user.roles.includes('Instructor')) {
                 return res.status(403).json({ message: "Not authorized to mark attendance for this batch." });
             }
         }

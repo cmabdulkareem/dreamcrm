@@ -227,8 +227,8 @@ const AppSidebar = () => {
         // If it's a parent menu (like Settings), checks if it has AT LEAST ONE enabled child or is itself global
         const isParentEnabled = selectedBrand || isGlobalItem(nav.name) || (nav.subItems && nav.subItems.some(sub => isGlobalItem(sub.name)));
 
-        // Restricted items for Faculty / Trainers
-        // Restricted items for Faculty / Trainers
+        // Restricted items for Instructor
+        // Restricted items for Instructor
         const restrictedItemsForFaculty = [
           "Dashboard",
           "Lead Management",
@@ -238,7 +238,7 @@ const AppSidebar = () => {
           "UI Elements"
         ];
 
-        if (restrictedItemsForFaculty.includes(nav.name) && hasRole(user, "Faculty / Trainers") && !hasManagerAccess) {
+        if (restrictedItemsForFaculty.includes(nav.name) && hasRole(user, "Instructor") && !hasManagerAccess) {
           return null;
         }
 
@@ -380,8 +380,8 @@ const AppSidebar = () => {
                       return null;
                     }
 
-                    // RESTRICTION: Faculty / Trainers should only see "Batch Management" under Student Management
-                    if (hasRole(user, "Faculty / Trainers") && !hasManagerAccess) {
+                    // RESTRICTION: Instructor should only see "Batch Management" under Student Management
+                    if (hasRole(user, "Instructor") && !hasManagerAccess) {
                       const restrictedForFaculty = ["New Student (beta)", "Manage Students (beta)"];
                       if (restrictedForFaculty.includes(subItem.name)) {
                         return null;

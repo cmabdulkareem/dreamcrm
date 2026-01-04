@@ -25,8 +25,8 @@ const Calendar = () => {
 
   // Filter events for specific roles
   const filteredEvents = events.filter(event => {
-    // Hide leads for Faculty / Trainers
-    if (hasRole(user, "Faculty / Trainers") && event.extendedProps?.leadId) {
+    // Hide leads for Instructor
+    if (hasRole(user, "Instructor") && event.extendedProps?.leadId) {
       return false;
     }
     return true;

@@ -17,7 +17,7 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
     const [viewMode, setViewMode] = useState(false); // If true, only viewing past attendance
 
     // Permissions
-    const isInstructor = (user && batch && user.fullName === batch.instructorName) || hasRole(user, 'Faculty / Trainers');
+    const isInstructor = (user && batch && user.fullName === batch.instructorName) || hasRole(user, 'Instructor');
     // Strict restriction: no one can change date. Attendance is always for TODAY.
     const canChangeDate = false;
     const canEdit = isAdmin(user) || isOwner(user) || isManager(user) || isInstructor;

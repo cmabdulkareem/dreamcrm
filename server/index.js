@@ -6,6 +6,7 @@ import cors from 'cors'
 import corsOptions from './config/corsOptions.js'
 import cookieParser from 'cookie-parser'
 import path from 'path'
+import fs from 'fs'
 import { fileURLToPath } from 'url'
 config({ quiet: true })
 
@@ -79,7 +80,18 @@ app.use((req, res) => {
     res.status(404).send('Not Found');
     return;
   }
-  res.sendFile(path.join(__dirname, '../dist/index.html'));
+
+  const indexPath = path.join(__dirname, '../dist/index.html');
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    // If dist/index.html doesn't exist, we might be in dev mode
+    res.status(404).json({
+      message: 'Resource not found',
+      env: process.env.NODE_ENV,
+      hint: 'If you are in development, make sure you are accessing the frontend via the dev server (usually port 5173).'
+    });
+  }
 });
 
 const PORT = process.env.PORT || 3000

@@ -43,14 +43,38 @@ const UserManagement = () => {
     brands: []
   });
 
+  // Filter states
+  const [searchTerm, setSearchTerm] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [departmentFilter, setDepartmentFilter] = useState("all");
+
+  const filteredUsers = users.filter((user) => {
+    // Search term filter
+    const matchesSearch =
+      user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (user.employeeCode && user.employeeCode.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    // Role filter
+    const matchesRole = roleFilter === "all" || (user.roles && user.roles.includes(roleFilter));
+
+    // Status filter
+    const matchesStatus = statusFilter === "all" || user.accountStatus === statusFilter;
+
+    // Department filter
+    const matchesDepartment = departmentFilter === "all" || user.department === departmentFilter;
+
+    return matchesSearch && matchesRole && matchesStatus && matchesDepartment;
+  });
+
   const roleOptions = [
     { value: "Owner", label: "Owner" },
     { value: "Admin", label: "Admin" },
-    { value: "Center Head / Manager", label: "Center Head / Manager" },
-    { value: "Academic Coordinator", label: "Academic Coordinator" },
+    { value: "Brand Manager", label: "Brand Manager" },
     { value: "Counsellor", label: "Counsellor" },
     { value: "Marketing / Social Media Executive", label: "Marketing / Social Media Executive" },
-    { value: "Faculty / Trainers", label: "Faculty / Trainers" },
+    { value: "Instructor", label: "Instructor" },
     { value: "Placement Officer", label: "Placement Officer" },
     { value: "Lab Assistant", label: "Lab Assistant" },
     { value: "CADD Club Support", label: "CADD Club Support" },
@@ -416,124 +440,191 @@ const UserManagement = () => {
           {loading ? (
             <LoadingSpinner />
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-800">
-                  <tr>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                    >
-                      User
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                    >
-                      Roles
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                    >
-                      Assigned Brands
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                    >
-                      Account Status
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                    >
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {users.length === 0 ? (
+            <div className="space-y-4">
+              {/* Filters UI */}
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
+                <div>
+                  <Label>Search Users</Label>
+                  <Input
+                    type="text"
+                    placeholder="Search name, email..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label>Role</Label>
+                  <Select
+                    options={[{ value: "all", label: "All Roles" }, ...roleOptions]}
+                    value={roleFilter}
+                    onChange={(val) => setRoleFilter(val)}
+                  />
+                </div>
+                <div>
+                  <Label>Department</Label>
+                  <Select
+                    options={[{ value: "all", label: "All Depts" }, ...departmentOptions]}
+                    value={departmentFilter}
+                    onChange={(val) => setDepartmentFilter(val)}
+                  />
+                </div>
+                <div>
+                  <Label>Status</Label>
+                  <Select
+                    options={[{ value: "all", label: "All Statuses" }, ...accountStatusOptions]}
+                    value={statusFilter}
+                    onChange={(val) => setStatusFilter(val)}
+                  />
+                </div>
+                <div className="flex items-end">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setSearchTerm("");
+                      setRoleFilter("all");
+                      setDepartmentFilter("all");
+                      setStatusFilter("all");
+                    }}
+                    className="w-full"
+                  >
+                    Reset
+                  </Button>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                  <thead className="bg-gray-50 dark:bg-gray-800">
                     <tr>
-                      <td
-                        colSpan="6"
-                        className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400"
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
                       >
-                        No users found
-                      </td>
+                        User
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                      >
+                        Roles
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                      >
+                        Assigned Brands
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                      >
+                        Joined Date
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                      >
+                        Account Status
+                      </th>
+                      <th
+                        scope="col"
+                        className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                      >
+                        Actions
+                      </th>
                     </tr>
-                  ) : (
-                    users.map((user) => (
-                      <tr
-                        key={user.id}
-                        className="hover:bg-gray-50 dark:hover:bg-gray-700"
-                      >
-                        <td className="py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900 dark:text:white dark:text-white">
-                                {user.fullName}
-                              </div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400">
-                                {user.designation || "No designation"}
-                              </div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                                {user.email}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-900 dark:text-white">
-                            {user.roles && user.roles.length > 0
-                              ? user.roles.join(", ")
-                              : "No roles"}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-900 dark:text-white">
-                            {getBrandNames(user.brands)}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <Badge
-                            size="sm"
-                            color={
-                              user.accountStatus === "Active"
-                                ? "success"
-                                : user.accountStatus === "Pending"
-                                  ? "warning"
-                                  : "error"
-                            }
-                          >
-                            {user.accountStatus}
-                          </Badge>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <button
-                            onClick={() => handleUpdateUser(user)}
-                            className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-3"
-                          >
-                            Update
-                          </button>
-                          <button
-                            onClick={() => handleAssignRoles(user)}
-                            className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-3"
-                          >
-                            Assign Roles
-                          </button>
-                          <button
-                            onClick={() => handleDeleteUser(user)}
-                            className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                          >
-                            Delete
-                          </button>
+                  </thead>
+                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    {filteredUsers.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan="6"
+                          className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400"
+                        >
+                          No users found matching your criteria.
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                    ) : (
+                      filteredUsers.map((user) => (
+                        <tr
+                          key={user.id}
+                          className="hover:bg-gray-50 dark:hover:bg-gray-700"
+                        >
+                          <td className="py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className="ml-4">
+                                <div className="text-sm font-medium text-gray-900 dark:text:white dark:text-white">
+                                  {user.fullName}
+                                </div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                  {user.designation || "No designation"}
+                                </div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                  {user.email}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm text-gray-900 dark:text-white">
+                              {user.roles && user.roles.length > 0
+                                ? user.roles.join(", ")
+                                : "No roles"}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm text-gray-900 dark:text-white">
+                              {getBrandNames(user.brands)}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900 dark:text-white">
+                              {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              {user.createdAt ? new Date(user.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <Badge
+                              size="sm"
+                              color={
+                                user.accountStatus === "Active"
+                                  ? "success"
+                                  : user.accountStatus === "Pending"
+                                    ? "warning"
+                                    : "error"
+                              }
+                            >
+                              {user.accountStatus}
+                            </Badge>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button
+                              onClick={() => handleUpdateUser(user)}
+                              className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-3"
+                            >
+                              Update
+                            </button>
+                            <button
+                              onClick={() => handleAssignRoles(user)}
+                              className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-3"
+                            >
+                              Assign Roles
+                            </button>
+                            <button
+                              onClick={() => handleDeleteUser(user)}
+                              className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </ComponentCard>

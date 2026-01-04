@@ -27,10 +27,9 @@ export default function CreateBatchModal({ isOpen, onClose, onCreated }) {
         if (isOpen) {
             const fetchInstructors = async () => {
                 try {
-                    // Use correct role name from schema: 'Faculty / Trainers'
-                    // We also include 'Instructor' in case of legacy data, though not in schema
-                    const response = await axios.get(`${API}/users/dropdown?roles=Instructor,Faculty / Trainers`, { withCredentials: true });
-                    const allowedRoles = ['Instructor', 'Faculty / Trainers'];
+                    // Use correct role name from schema: 'Instructor'
+                    const response = await axios.get(`${API}/users/dropdown?roles=Instructor`, { withCredentials: true });
+                    const allowedRoles = ['Instructor'];
 
                     // Filter users on frontend to be doubly sure
                     const filteredUsers = response.data.users.filter(user =>

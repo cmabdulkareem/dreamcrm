@@ -45,7 +45,7 @@ export default function SignInForm() {
       login(data.user, data.role, data.token);
 
       // Strict redirect for Faculty (NOT Managers/Admins/Owners)
-      const isFaculty = data.user && hasRole(data.user, "Faculty / Trainers") && !isManager(data.user) && !data.user.isAdmin && !isOwner(data.user);
+      const isFaculty = data.user && hasRole(data.user, "Instructor") && !isManager(data.user) && !data.user.isAdmin && !isOwner(data.user);
 
       if (isFaculty) {
         navigate("/calendar");

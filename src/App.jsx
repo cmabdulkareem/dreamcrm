@@ -62,7 +62,7 @@ import BrandManagement from "./components/brandManagement/BrandManagement";
 
 function App() {
   const { user } = useContext(AuthContext);
-  const isFaculty = user && hasRole(user, "Faculty / Trainers") && !isManager(user) && !user.isAdmin && !isOwner(user);
+  const isFaculty = user && hasRole(user, "Instructor") && !isManager(user) && !user.isAdmin && !isOwner(user);
   return (
     <>
       <TutorialProvider>

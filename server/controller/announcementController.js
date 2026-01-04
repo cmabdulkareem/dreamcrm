@@ -25,7 +25,7 @@ export const createAnnouncement = async (req, res) => {
     const isAdmin = user.isAdmin;
     const userRoles = user.roles || [];
     const isManager = isAdmin || userRoles.includes('Owner') || userRoles.includes('Admin') ||
-      userRoles.includes('Center Head / Manager') || userRoles.includes('Manager');
+      userRoles.includes('Brand Manager') || userRoles.includes('Manager');
 
     // Create announcement
     const announcement = new Announcement({
@@ -63,7 +63,7 @@ export const getAnnouncements = async (req, res) => {
     const isAdmin = user.isAdmin;
     const userRoles = user.roles || [];
     const isManager = isAdmin || userRoles.includes('Owner') || userRoles.includes('Admin') ||
-      userRoles.includes('Center Head / Manager') || userRoles.includes('Manager');
+      userRoles.includes('Brand Manager') || userRoles.includes('Manager');
 
     // Query based on user role
     // Query based on user role and brand filter
@@ -94,7 +94,7 @@ export const approveAnnouncement = async (req, res) => {
     const isAdmin = user.isAdmin;
     const userRoles = user.roles || [];
     const isManager = isAdmin || userRoles.includes('Owner') || userRoles.includes('Admin') ||
-      userRoles.includes('Center Head / Manager') || userRoles.includes('Manager');
+      userRoles.includes('Brand Manager') || userRoles.includes('Manager');
 
     if (!isManager) {
       return res.status(403).json({ message: 'Access denied. Managers only.' });
@@ -131,7 +131,7 @@ export const rejectAnnouncement = async (req, res) => {
     const isAdmin = user.isAdmin;
     const userRoles = user.roles || [];
     const isManager = isAdmin || userRoles.includes('Owner') || userRoles.includes('Admin') ||
-      userRoles.includes('Center Head / Manager') || userRoles.includes('Manager');
+      userRoles.includes('Brand Manager') || userRoles.includes('Manager');
 
     if (!isManager) {
       return res.status(403).json({ message: 'Access denied. Managers only.' });
@@ -177,7 +177,7 @@ export const updateAnnouncement = async (req, res) => {
     const isAdmin = user.isAdmin;
     const userRoles = user.roles || [];
     const isManager = isAdmin || userRoles.includes('Owner') || userRoles.includes('Admin') ||
-      userRoles.includes('Center Head / Manager') || userRoles.includes('Manager');
+      userRoles.includes('Brand Manager') || userRoles.includes('Manager');
 
     if (!isManager) {
       return res.status(403).json({ message: 'Access denied. Managers only.' });

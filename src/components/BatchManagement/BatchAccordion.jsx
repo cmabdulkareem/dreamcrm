@@ -18,7 +18,7 @@ export default function BatchAccordion({ batch, onUpdate, onDelete }) {
     const [isMonthlyReportOpen, setIsMonthlyReportOpen] = useState(false);
 
     // Permission check for button text
-    const isInstructor = (user && batch && user.fullName === batch.instructorName) || hasRole(user, 'Faculty / Trainers');
+    const isInstructor = (user && batch && user.fullName === batch.instructorName) || hasRole(user, 'Instructor');
     const canMarkAttendance = isAdmin(user) || isOwner(user) || isInstructor;
 
     const handleToggle = () => setIsExpanded(!isExpanded);

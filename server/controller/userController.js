@@ -192,7 +192,6 @@ export const signInUser = async (req, res) => {
         dob: user.dob,
         designation: user.designation,
         accountStatus: user.accountStatus,
-        accountStatus: user.accountStatus,
         employeeCode: user.employeeCode, // Include employeeCode
         brands: user.brands || [] // Include brands in login response
       },
@@ -325,12 +324,14 @@ export const getAllUsers = async (req, res) => {
       return res.status(403).json({ message: "Access denied. Admin privileges required." });
     }
 
-    const users = await userModel.find().populate('reportingHead', 'fullName email').populate('brands');
+    const users = await userModel.find()
+      .populate('reportingHead', 'fullName email')
+      .populate('brands')
+      .sort({ createdAt: -1 });
     console.log(`getAllUsers: Found ${users.length} users.`);
 
     // Format users with absolute avatar URLs
     const formattedUsers = users.map(user => ({
-      // ...
       id: user._id,
       fullName: user.fullName,
       email: user.email,
@@ -355,6 +356,7 @@ export const getAllUsers = async (req, res) => {
       employmentType: user.employmentType,
       joiningDate: user.joiningDate,
       company: user.company,
+      createdAt: user.createdAt,
     }));
 
     return res.status(200).json({ users: formattedUsers });

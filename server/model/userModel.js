@@ -5,7 +5,7 @@ const userSchema = new mongoose.Schema(
     fullName: { type: String, required: true, trim: true },
     gender: { type: String, enum: ["male", "female", "notDisclosed"], default: "notDisclosed" },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    employeeCode: { type: String, default: "DZ", uppercase: true, trim: true },
+    employeeCode: { type: String, default: "", uppercase: true, trim: true },
     instagram: { type: String, default: null, lowercase: true, trim: true },
     phone: { type: String, required: true, trim: true },
     department: {
@@ -41,11 +41,11 @@ const userSchema = new mongoose.Schema(
         enum: [
           'Owner',
           'Admin',
-          'Center Head / Manager',
-          'Academic Coordinator',
+          'Brand Manager',
+
           'Counsellor',
           'Marketing / Social Media Executive',
-          'Faculty / Trainers',
+          'Instructor',
           'Placement Officer',
           'Lab Assistant',
           'CADD Club Support',

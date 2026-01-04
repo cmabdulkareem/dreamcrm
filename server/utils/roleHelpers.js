@@ -20,8 +20,8 @@ export function hasAdminOrManagerOrCounsellorAccess(user) {
   // Admin roles (Owner, Admin)
   if (userRoles.includes('Owner') || userRoles.includes('Admin')) return true;
 
-  // Manager roles (Center Head / Manager, Manager)
-  if (userRoles.includes('Center Head / Manager') || userRoles.includes('Manager')) return true;
+  // Manager roles (Brand Manager, Manager)
+  if (userRoles.includes('Brand Manager') || userRoles.includes('Manager')) return true;
 
   // Counselor role
   if (userRoles.includes('Counsellor') || userRoles.includes('Counselor')) return true;
@@ -86,7 +86,7 @@ export function hasAnyRole(user, roles) {
 }
 
 /**
- * Check if user has manager privileges (Owner, Admin, Center Head / Manager, Manager)
+ * Check if user has manager privileges (Owner, Admin, Brand Manager, Manager)
  */
 export function isManager(user) {
   if (!user) return false;
@@ -95,6 +95,6 @@ export function isManager(user) {
 
   const userRoles = Array.isArray(user.roles) ? user.roles : (typeof user.roles === 'string' ? [user.roles] : []);
 
-  return userRoles.includes('Center Head / Manager') || userRoles.includes('Manager') || userRoles.includes('Owner') || userRoles.includes('Admin');
+  return userRoles.includes('Brand Manager') || userRoles.includes('Manager') || userRoles.includes('Owner') || userRoles.includes('Admin');
 }
 
