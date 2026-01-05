@@ -9,14 +9,18 @@ import {
     updateBatchStudent,
     removeStudentFromBatch,
     markAttendance,
-    getAttendance
+    getAttendance,
+    getPublicBatchAttendance
 } from '../controller/batchController.js';
 import verifyToken from '../middleware/verifyToken.js';
 import { applyBrandFilter } from '../middleware/brandMiddleware.js';
 
 const router = express.Router();
 
-// All batch routes are protected
+// Public routes (no authentication required)
+router.get('/public/:shareToken', getPublicBatchAttendance);
+
+// All other batch routes are protected
 router.use(verifyToken);
 router.use(applyBrandFilter);
 

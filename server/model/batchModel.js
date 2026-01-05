@@ -48,9 +48,21 @@ const batchSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true
+    },
+    shareToken: {
+        type: String,
+        unique: true
     }
 }, {
     timestamps: true
+});
+
+// Generate shareToken before saving if not exists
+batchSchema.pre('save', function (next) {
+    if (!this.shareToken) {
+        this.shareToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    }
+    next();
 });
 
 const Batch = mongoose.model('Batch', batchSchema);

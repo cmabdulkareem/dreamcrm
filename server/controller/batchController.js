@@ -280,3 +280,68 @@ export const getAttendance = async (req, res) => {
         return res.status(500).json({ message: "Internal server error" });
     }
 };
+
+// Get public attendance for a batch using shareToken
+export const getPublicBatchAttendance = async (req, res) => {
+    try {
+        const { shareToken } = req.params;
+        const { month, year } = req.query;
+
+        const batch = await Batch.findOne({ shareToken });
+        if (!batch) {
+            return res.status(404).json({ message: "Batch not found or link is invalid." });
+        }
+
+        const students = await BatchStudent.find({ batchId: batch._id }).sort({ studentName: 1 });
+
+        const query = { batchId: batch._id };
+        let sortOrder = 1;
+
+        if (month && year) {
+            const m = parseInt(month) - 1;
+            const y = parseInt(year);
+
+            const startDate = new Date(y, m, 1);
+            startDate.setHours(0, 0, 0, 0);
+
+            const endDate = new Date(y, m + 1, 0);
+            endDate.setHours(23, 59, 59, 999);
+
+            query.date = {
+                $gte: startDate,
+                $lte: endDate
+            };
+        } else {
+            // Default to current month if not provided
+            const now = new Date();
+            const m = now.getMonth();
+            const y = now.getFullYear();
+
+            const startDate = new Date(y, m, 1);
+            startDate.setHours(0, 0, 0, 0);
+
+            const endDate = new Date(y, m + 1, 0);
+            endDate.setHours(23, 59, 59, 999);
+
+            query.date = {
+                $gte: startDate,
+                $lte: endDate
+            };
+        }
+
+        const attendance = await Attendance.find(query).sort({ date: sortOrder });
+
+        return res.status(200).json({
+            batch: {
+                batchName: batch.batchName,
+                subject: batch.subject,
+                instructorName: batch.instructorName
+            },
+            students,
+            attendance
+        });
+    } catch (error) {
+        console.error("Error fetching public attendance:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};

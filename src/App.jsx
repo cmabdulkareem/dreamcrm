@@ -58,6 +58,7 @@ const MyLeaves = lazy(() => import("./pages/LeaveManagement/MyLeaves"));
 const CollectPayment = lazy(() => import("./pages/Finance/CollectPayment"));
 import ChatWidget from "./components/chat/ChatWidget";
 import BrandManagement from "./components/brandManagement/BrandManagement";
+import PublicAttendance from "./pages/PublicAttendance";
 
 
 function App() {
@@ -157,6 +158,7 @@ function App() {
 
                     {/* Public Routes */}
                     <Route path="/event-registration/:link" element={<EventRegistration />} />
+                    <Route path="/public/attendance/:shareToken" element={<PublicAttendance />} />
                   </Routes>
                 </Router>
                 <ChatWidget />
