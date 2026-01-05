@@ -37,6 +37,7 @@ const EventRegistrations = lazy(() => import("./pages/EventManagement/EventRegis
 const LeaveManagement = lazy(() => import("./pages/LeaveManagement"));
 const NewLead = lazy(() => import("./pages/LeadManagement/NewLead"));
 const ManageLeads = lazy(() => import("./pages/LeadManagement/ManageLeads"));
+const CallList = lazy(() => import("./pages/LeadManagement/CallList"));
 const LeadBlank = lazy(() => import("./pages/LeadManagement/LeadBlank"));
 const NewStudent = lazy(() => import("./pages/StudentManagement/NewStudent"));
 const ManageStudents = lazy(() => import("./pages/StudentManagement/ManageStudents"));
@@ -123,6 +124,7 @@ function App() {
                       {/* Forms */}
                       <Route path="/new-lead" element={<ProtectedRoutes><NewLead /></ProtectedRoutes>} />
                       <Route path="/lead-management" element={<ProtectedRoutes><ManageLeads /></ProtectedRoutes>} />
+                      <Route path="/lead-management/call-list" element={<ProtectedRoutes><Suspense fallback={<LoadingSpinner />}><CallList /></Suspense></ProtectedRoutes>} />
                       <Route path="/lead-blank" element={<ProtectedRoutes><LeadBlank /></ProtectedRoutes>} />
                       <Route path="/new-student" element={<ProtectedRoutes><NewStudent /></ProtectedRoutes>} />
                       <Route path="/manage-students" element={<ProtectedRoutes><ManageStudents /></ProtectedRoutes>} />

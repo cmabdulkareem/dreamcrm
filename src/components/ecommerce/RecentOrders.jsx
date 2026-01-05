@@ -200,6 +200,7 @@ export default function RecentOrders() {
   const [selectedRow, setSelectedRow] = useState(null);
   const [campaignOptions, setCampaignOptions] = useState([]);
   const [dynamicCourseOptions, setDynamicCourseOptions] = useState([]);
+  const [contactPointOptions, setContactPointOptions] = useState([]); // Dynamic contact points
   const [selectedLeads, setSelectedLeads] = useState([]);
   const [availableUsers, setAvailableUsers] = useState([]);
   const [hoveredRemarkRow, setHoveredRemarkRow] = useState(null);
@@ -264,6 +265,7 @@ export default function RecentOrders() {
     fetchCustomers(setData, setLoading);
     fetchCampaigns(setCampaignOptions, campaigns, user);
     fetchCourseCategories();
+    fetchContactPoints(); // Fetch dynamic contact points
   }, [user]);
 
   // Fetch available users for admins/managers
@@ -292,6 +294,44 @@ export default function RecentOrders() {
     } catch (error) {
       console.error("Error fetching users:", error);
       toast.error("Failed to fetch users for assignment");
+    }
+  };
+
+  // Fetch contact points from API
+  const fetchContactPoints = async () => {
+    try {
+      const response = await axios.get(
+        `${API}/contact-points/active`,
+        { withCredentials: true }
+      );
+      const formattedContactPoints = response.data.contactPoints.map(c => ({
+        value: c.value,
+        label: c.name
+      }));
+
+      // Add "Other" option
+      formattedContactPoints.push({
+        value: "other",
+        label: "Other"
+      });
+
+      // Add "Add New Contact Point" option at the end if user is manager
+      if (isManager(user)) {
+        formattedContactPoints.push({
+          value: "__add_new__",
+          label: "+ Add New Contact Point"
+        });
+      }
+
+      setContactPointOptions(formattedContactPoints);
+    } catch (error) {
+      console.error("Error fetching contact points:", error);
+      // Fallback to hardcoded contact points if API fails
+      const fallbackOptions = [...contactPoints];
+      if (isManager(user)) {
+        fallbackOptions.push({ value: "__add_new__", label: "+ Add New Contact Point" });
+      }
+      setContactPointOptions(fallbackOptions);
     }
   };
 
@@ -662,7 +702,8 @@ export default function RecentOrders() {
       setLeadStatus,
       setLeadPotential, // Add missing lead potential setter
       setSelectedValues,
-      courseOptions: dynamicCourseOptions
+      courseOptions: dynamicCourseOptions,
+      contactPointOptions: contactPointOptions // Pass dynamic contact points
     };
 
     prepareLeadForEdit(row, setters);
@@ -1436,7 +1477,7 @@ export default function RecentOrders() {
                   <div className="w-full md:w-1/4">
                     <Label>Contact Point</Label>
                     <Select
-                      options={isManager(user) ? contactPoints : contactPoints.filter(cp => cp.value !== "__add_new__")}
+                      options={isManager(user) ? contactPointOptions : contactPointOptions.filter(cp => cp.value !== "__add_new__")}
                       value={contactPoint}
                       onChange={setContactPoint}
                       disabled={!isManager(user)}

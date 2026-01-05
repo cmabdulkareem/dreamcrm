@@ -42,6 +42,7 @@ const navItems = [
     subItems: [
       { name: "New Lead", path: "/new-lead", pro: false },
       { name: "Manage Leads", path: "/lead-management", pro: false },
+      { name: "Call List", path: "/lead-management/call-list", pro: false },
     ],
   },
   {

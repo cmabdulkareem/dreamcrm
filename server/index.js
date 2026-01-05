@@ -29,6 +29,7 @@ import courseCategoryRoutes from './routes/courseCategoryRoute.js'
 import monthlyTargetRoutes from './routes/monthlyTargetRoutes.js'
 import paymentRoutes from './routes/paymentRoutes.js'
 import batchRoutes from './routes/batchRoutes.js'
+import callListRoutes from './routes/callListRoutes.js'
 
 const app = express()
 
@@ -70,6 +71,7 @@ app.use('/api/brands', brandRoutes)
 app.use('/api/monthly-targets', monthlyTargetRoutes)
 app.use('/api/payments', paymentRoutes)
 app.use('/api/batches', batchRoutes)
+app.use('/api/call-lists', callListRoutes)
 
 
 

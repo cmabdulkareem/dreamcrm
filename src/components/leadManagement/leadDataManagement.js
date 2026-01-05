@@ -246,7 +246,9 @@ export const prepareLeadForEdit = (row, setters) => {
     }
   }
   if (typeof setContactPoint === 'function') {
-    const matchedCP = contactPoints.find(opt => opt.value === row.contactPoint);
+    // Use dynamic contact points if available, otherwise fall back to static
+    const contactPointsToUse = setters.contactPointOptions || contactPoints;
+    const matchedCP = contactPointsToUse.find(opt => opt.value === row.contactPoint);
     if (matchedCP || !row.contactPoint) {
       setContactPoint(row.contactPoint || "");
     } else {
@@ -257,7 +259,9 @@ export const prepareLeadForEdit = (row, setters) => {
     if (row.contactPoint === "other") {
       setOtherContactPoint(row.otherContactPoint || "");
     } else {
-      const matchedCP = contactPoints.find(opt => opt.value === row.contactPoint);
+      // Use dynamic contact points if available, otherwise fall back to static
+      const contactPointsToUse = setters.contactPointOptions || contactPoints;
+      const matchedCP = contactPointsToUse.find(opt => opt.value === row.contactPoint);
       if (!matchedCP && row.contactPoint) {
         setOtherContactPoint(row.contactPoint);
       } else {
