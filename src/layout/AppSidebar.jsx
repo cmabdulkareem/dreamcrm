@@ -371,6 +371,12 @@ const AppSidebar = () => {
                       : (selectedBrand || isGlobalItem(subItem.name));
                     const subItemDisabledClass = !isSubItemEnabled ? "opacity-40 cursor-not-allowed pointer-events-none" : "";
 
+                    // RESTRICTION: Hide User Management, Brand Management, and Announcements for non-admin managers
+                    if (isManager(user) && !user.isAdmin &&
+                      ["User Management", "Brand Management", "Announcements"].includes(subItem.name)) {
+                      return null;
+                    }
+
                     // Only show Campaigns, Contact Points, Course Management to managers
                     if ((subItem.name === "Campaigns" || subItem.name === "Contact Points" ||
                       subItem.name === "Course Management") && !hasManagerAccess) {
