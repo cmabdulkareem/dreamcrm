@@ -220,7 +220,8 @@ export const prepareLeadForEdit = (row, setters) => {
   }
   if (typeof setOtherPlace === 'function') {
     const isOther = !placeOptions.some(opt => opt.value === row.place);
-    setOtherPlace(isOther ? row.place || "" : "");
+    // Use stored otherPlace if available, otherwise fallback to check if place is a custom value
+    setOtherPlace(row.otherPlace || (isOther ? row.place || "" : ""));
   }
   if (typeof setStatus === 'function') {
     setStatus(row.status || "");

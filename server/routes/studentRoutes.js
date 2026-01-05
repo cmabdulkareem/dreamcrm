@@ -20,7 +20,7 @@ router.use(applyBrandFilter);
 router.get('/all', verifyToken, getAllStudents);
 router.get('/get-next-id', verifyToken, getNextStudentId);
 router.get('/:id', verifyToken, getStudentById);
-router.put('/update/:id', verifyToken, updateStudent);
+router.put('/update/:id', verifyToken, uploadStudentPhoto, updateStudent);
 router.delete('/delete/:id', verifyToken, deleteStudent);
 
 export default router;

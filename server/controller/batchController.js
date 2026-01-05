@@ -2,7 +2,9 @@ import Batch from '../model/batchModel.js';
 import BatchStudent from '../model/batchStudentModel.js';
 import Attendance from '../model/attendanceModel.js';
 import Student from '../model/studentModel.js';
+import User from '../model/userModel.js';
 import { isAdmin, isOwner, hasRole, isManager, isInstructor } from '../utils/roleHelpers.js';
+import { emitNotification } from '../realtime/socket.js';
 
 // Get all batches for current user's brand
 export const getAllBatches = async (req, res) => {
@@ -64,6 +66,29 @@ export const createBatch = async (req, res) => {
         });
 
         await newBatch.save();
+
+        // Notification Logic
+        try {
+            // Find instructor to notify
+            const instructor = await User.findOne({ fullName: instructorName });
+
+            const notificationData = {
+                type: 'batch_assigned',
+                title: 'New Batch Assigned',
+                message: `You have been assigned to new batch: ${batchName}`,
+                actionUrl: '/batch-management',
+                metadata: { batchId: newBatch._id }
+            };
+
+            emitNotification({
+                recipients: instructor ? [instructor._id] : [],
+                brandId: brandId, // Notify brand managers
+                notification: notificationData
+            });
+        } catch (notifError) {
+            console.error('Error sending notification:', notifError);
+        }
+
         return res.status(201).json({ message: "Batch created successfully.", batch: newBatch });
     } catch (error) {
         console.error("Error creating batch:", error);
@@ -80,6 +105,28 @@ export const updateBatch = async (req, res) => {
         const updatedBatch = await Batch.findByIdAndUpdate(id, updateData, { new: true });
         if (!updatedBatch) {
             return res.status(404).json({ message: "Batch not found." });
+        }
+
+        // Notification Logic
+        try {
+            // Find instructor to notify
+            const instructor = await User.findOne({ fullName: updatedBatch.instructorName });
+
+            const notificationData = {
+                type: 'batch_updated',
+                title: 'Batch Updated',
+                message: `Batch ${updatedBatch.batchName} has been updated.`,
+                actionUrl: '/batch-management',
+                metadata: { batchId: updatedBatch._id }
+            };
+
+            emitNotification({
+                recipients: instructor ? [instructor._id] : [],
+                brandId: updatedBatch.brand,
+                notification: notificationData
+            });
+        } catch (notifError) {
+            console.error('Error sending notification:', notifError);
         }
 
         return res.status(200).json({ message: "Batch updated successfully.", batch: updatedBatch });

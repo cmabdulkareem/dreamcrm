@@ -383,10 +383,10 @@ const CourseManagement = () => {
                       courses.map((course) => (
                         <tr key={course._id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{course.courseCode}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{course.courseName}</td>
+                          <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{course.courseName}</td>
                           <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
                             {course.modules?.split(',').map((mod, idx) => (
-                              <div key={idx} className="whitespace-nowrap">{mod.trim()}</div>
+                              <div key={idx}>{mod.trim()}</div>
                             ))}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 capitalize">{course.mode}</td>
@@ -433,7 +433,7 @@ const CourseManagement = () => {
                     {categories.length > 0 ? (
                       categories.map((cat) => (
                         <tr key={cat._id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{cat.name}</td>
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white">{cat.name}</td>
                           <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{cat.description || "-"}</td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${cat.isActive ? "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100" : "bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100"}`}>

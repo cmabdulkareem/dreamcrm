@@ -24,11 +24,12 @@ const SearchableLeadSelect = forwardRef(({
       setFilteredLeads(leads);
     } else {
       const term = searchTerm.toLowerCase();
-      const filtered = leads.filter(lead =>
-        lead.fullName.toLowerCase().includes(term) ||
-        lead.email.toLowerCase().includes(term) ||
-        lead.phone1.includes(term)
-      );
+      const filtered = leads.filter(lead => {
+        const name = (lead.fullName || "").toLowerCase();
+        const email = (lead.email || "").toLowerCase();
+        const phone = (lead.phone1 || "").toLowerCase();
+        return name.includes(term) || email.includes(term) || phone.includes(term);
+      });
       setFilteredLeads(filtered);
     }
   }, [searchTerm, leads]);
@@ -50,7 +51,9 @@ const SearchableLeadSelect = forwardRef(({
   const handleSelect = useCallback((lead) => {
     onChange(lead._id);
     setIsOpen(false);
-    setSearchTerm(`${lead.fullName} (${lead.email})`);
+    const displayName = lead.fullName || "Unnamed Lead";
+    const displayEmail = lead.email ? ` (${lead.email})` : "";
+    setSearchTerm(`${displayName}${displayEmail}`);
   }, [onChange]);
 
   const handleInputChange = useCallback((e) => {
@@ -78,7 +81,9 @@ const SearchableLeadSelect = forwardRef(({
     if (value && !searchTerm) {
       const selectedLead = leads.find(lead => lead._id === value);
       if (selectedLead) {
-        setSearchTerm(`${selectedLead.fullName} (${selectedLead.email})`);
+        const displayName = selectedLead.fullName || "Unnamed Lead";
+        const displayEmail = selectedLead.email ? ` (${selectedLead.email})` : "";
+        setSearchTerm(`${displayName}${displayEmail}`);
       }
     }
   }, [value, leads, searchTerm]);
@@ -144,13 +149,26 @@ const SearchableLeadSelect = forwardRef(({
                   className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
                   onClick={() => handleSelect(lead)}
                 >
-                  <div className="font-medium">{lead.fullName}</div>
+                  <div className="font-medium">{lead.fullName || "Unnamed Lead"}</div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {lead.email} • {lead.phone1}
+                    {lead.email || "No email"} • {lead.phone1 || "No phone"}
                   </div>
                 </button>
               ))
             )}
+
+            {/* Special option to add without lead */}
+            <button
+              type="button"
+              className="block w-full px-4 py-2 text-left text-sm font-semibold text-brand-600 hover:bg-brand-50 bg-brand-50/30 border-t border-gray-100 dark:bg-brand-900/10 dark:hover:bg-brand-900/20 dark:border-gray-700"
+              onClick={() => {
+                onChange("no_lead");
+                setIsOpen(false);
+                setSearchTerm("--- Add Without Lead ---");
+              }}
+            >
+              + Add Without Lead
+            </button>
           </div>
         </div>
       )}

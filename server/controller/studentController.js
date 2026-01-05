@@ -63,8 +63,8 @@ export const createStudent = async (req, res) => {
       brandId
     } = req.body;
 
-    // Validation
-    if (!fullName || !email || !phone1 || !address || !aadharCardNumber || !coursePreference || !enrollmentDate || !leadId || !brandId) {
+    // Validation (Removed leadId from mandatory fields)
+    if (!fullName || !email || !phone1 || !address || !aadharCardNumber || !coursePreference || !enrollmentDate || !brandId) {
       return res.status(400).json({ message: "All required fields must be provided." });
     }
 
@@ -73,16 +73,18 @@ export const createStudent = async (req, res) => {
       return res.status(400).json({ message: "Aadhar Card Number must be 12 digits." });
     }
 
-    // Check if lead exists and is converted
-    const lead = await customerModel.findById(leadId);
-    if (!lead) {
-      return res.status(404).json({ message: "Lead not found." });
-    }
+    // Check if lead exists and is converted (Only if leadId is provided)
+    if (leadId && leadId !== "no_lead") {
+      const lead = await customerModel.findById(leadId);
+      if (!lead) {
+        return res.status(404).json({ message: "Lead not found." });
+      }
 
-    if (lead.leadStatus !== 'converted') {
-      return res.status(400).json({
-        message: `Only converted leads can be used to create students. Current lead status is: ${lead.leadStatus}`
-      });
+      if (lead.leadStatus !== 'converted') {
+        return res.status(400).json({
+          message: `Only converted leads can be used to create students. Current lead status is: ${lead.leadStatus}`
+        });
+      }
     }
 
     // Generate Student ID automatically
@@ -135,12 +137,17 @@ export const createStudent = async (req, res) => {
       discountAmount: parseFloat(discountAmount) || 0,
       finalAmount: parseFloat(finalAmount) || 0,
       enrollmentDate: new Date(enrollmentDate),
-      leadId,
+      leadId: (leadId && leadId !== "no_lead") ? leadId : null,
       createdBy: req.user.fullName || req.user.email,
       brand: brandId
     });
 
     await newStudent.save();
+
+    // Mark lead as admission taken (Only if leadId provided)
+    if (leadId && leadId !== "no_lead") {
+      await customerModel.findByIdAndUpdate(leadId, { isAdmissionTaken: true });
+    }
 
     return res.status(201).json({
       message: "Student created successfully.",
@@ -229,20 +236,51 @@ export const getStudentById = async (req, res) => {
 export const updateStudent = async (req, res) => {
   try {
     const { id } = req.params;
-    const updateData = req.body;
+    const updateData = { ...req.body };
 
     const student = await studentModel.findById(id);
     if (!student) {
       return res.status(404).json({ message: "Student not found." });
     }
 
-    // Update fields
-    Object.keys(updateData).forEach(key => {
-      if (key === 'dob' || key === 'enrollmentDate') {
-        student[key] = updateData[key] ? new Date(updateData[key]) : null;
-      } else if (key !== '_id' && key !== '__v') {
-        student[key] = updateData[key];
+    // Exclude studentId and internal fields from update
+    delete updateData.studentId;
+    delete updateData._id;
+    delete updateData.__v;
+
+    // Handle photo upload
+    if (req.file) {
+      updateData.photo = `/uploads/${req.file.filename}`;
+    }
+
+    // Parse additional courses if provided as JSON string
+    if (updateData.additionalCourses) {
+      try {
+        updateData.additionalCourses = typeof updateData.additionalCourses === 'string'
+          ? JSON.parse(updateData.additionalCourses)
+          : updateData.additionalCourses;
+      } catch (e) {
+        // If parsing fails, use as-is or keep existing
+        console.warn("Failed to parse additionalCourses in update:", e);
       }
+    }
+
+    // Convert dates and numeric fields
+    if (updateData.dob) updateData.dob = new Date(updateData.dob);
+    if (updateData.enrollmentDate) updateData.enrollmentDate = new Date(updateData.enrollmentDate);
+
+    if (updateData.totalCourseValue) updateData.totalCourseValue = parseFloat(updateData.totalCourseValue) || 0;
+    if (updateData.discountPercentage) updateData.discountPercentage = parseFloat(updateData.discountPercentage) || 0;
+    if (updateData.discountAmount) updateData.discountAmount = parseFloat(updateData.discountAmount) || 0;
+    if (updateData.finalAmount) updateData.finalAmount = parseFloat(updateData.finalAmount) || 0;
+
+    if (updateData.leadId === "" || updateData.leadId === "no_lead") {
+      updateData.leadId = null;
+    }
+
+    // Apply updates
+    Object.keys(updateData).forEach(key => {
+      student[key] = updateData[key];
     });
 
     await student.save();
@@ -253,7 +291,7 @@ export const updateStudent = async (req, res) => {
     });
   } catch (error) {
     console.error("Update student error:", error);
-    return res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: error.message || "Server error" });
   }
 };
 

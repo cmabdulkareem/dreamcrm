@@ -9,6 +9,7 @@ import Badge from "../ui/badge/Badge";
 import { useState, useEffect, useCallback, useRef, useContext } from "react";
 import { createPortal } from "react-dom";
 import axios from "axios";
+import Papa from "papaparse";
 import Button from "../../components/ui/button/Button";
 import { DownloadIcon, PencilIcon, CloseIcon, BoltIcon, ChevronDownIcon, ChevronUpIcon, FileIcon } from "../../icons";
 import ComponentCard from "../common/ComponentCard.jsx";
@@ -184,6 +185,7 @@ export default function RecentOrders() {
   const [leadStatusFilter, setLeadStatusFilter] = useState(""); // Filter by lead status
   const [leadPotentialFilter, setLeadPotentialFilter] = useState(""); // Filter by lead potential
   const [assignedUserFilter, setAssignedUserFilter] = useState(""); // Filter by assigned user
+  const [campaignFilter, setCampaignFilter] = useState(""); // Filter by campaign
   const [showFilters, setShowFilters] = useState(false); // Toggle for filter panel
 
   // Get initial date range (current month)
@@ -497,6 +499,9 @@ export default function RecentOrders() {
       // --- Lead Potential filter ---
       const matchesLeadPotential = leadPotentialFilter ? item.leadPotential === leadPotentialFilter : true;
 
+      // --- Campaign filter ---
+      const matchesCampaign = campaignFilter ? item.campaign === campaignFilter : true;
+
       // --- Assigned User filter (only for admins/managers) ---
       let matchesAssignedUser = true;
       if (canAssignLeads && assignedUserFilter) {
@@ -552,7 +557,7 @@ export default function RecentOrders() {
         }
       }
 
-      return matchesSearch && matchesStatus && matchesLeadStatus && matchesLeadPotential && matchesAssignedUser && isUserLead && matchesDateRange;
+      return matchesSearch && matchesStatus && matchesLeadStatus && matchesLeadPotential && matchesCampaign && matchesAssignedUser && isUserLead && matchesDateRange;
     })
     .sort((a, b) => {
       // Helper to get potential weight (higher = more urgent)
@@ -942,7 +947,7 @@ export default function RecentOrders() {
   };
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6">
+    <div className="rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6">
       {loading ? (
         <LoadingSpinner className="py-20" />
       ) : (
@@ -1062,6 +1067,16 @@ export default function RecentOrders() {
                   onChange={(value) => setLeadPotentialFilter(value)}
                 />
 
+                <Select
+                  options={[
+                    { value: "", label: "All Campaigns" },
+                    ...campaignOptions
+                  ]}
+                  value={campaignFilter}
+                  placeholder="Filter by campaign"
+                  onChange={(value) => setCampaignFilter(value)}
+                />
+
                 {canAssignLeads && (
                   <Select
                     options={[
@@ -1083,7 +1098,7 @@ export default function RecentOrders() {
 
           {/* Table */}
           <div className="max-w-full overflow-x-auto">
-            <Table className="min-w-[1200px]">
+            <Table>
               <TableHeader className="border-gray-100 dark:border-gray-800 border-y">
                 <TableRow>
                   <TableCell isHeader className="py-3 pl-8 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
@@ -1439,7 +1454,6 @@ export default function RecentOrders() {
                       id="otherPlace"
                       value={otherPlace}
                       onChange={(e) => setOtherPlace(e.target.value)}
-                      disabled={place !== "Other"}
                     />
                   </div>
                 </div>
@@ -1471,7 +1485,6 @@ export default function RecentOrders() {
                       id="otherEducation"
                       value={otherEducation}
                       onChange={(e) => setOtherEducation(e.target.value)}
-                      disabled={education !== "Other"}
                     />
                   </div>
                   <div className="w-full md:w-1/4">
@@ -1837,14 +1850,115 @@ export default function RecentOrders() {
               <Button variant="outline" onClick={closeImportModal}>
                 Cancel
               </Button>
-              <Button variant="primary" onClick={() => {
+              <Button variant="primary" loading={isSubmitting} onClick={() => {
                 const fileInput = document.getElementById('csv-upload');
                 if (fileInput.files.length === 0) {
                   toast.error("Please select a file first");
                   return;
                 }
-                toast.success("Lead import started! This may take a few moments.");
-                closeImportModal();
+
+                setIsSubmitting(true);
+                const file = fileInput.files[0];
+
+                Papa.parse(file, {
+                  header: true,
+                  skipEmptyLines: true,
+                  complete: async (results) => {
+                    // Helper to find case-insensitive key
+                    const findKey = (keys, candidates) => {
+                      if (!keys) return null;
+                      const lowerKeys = keys.map(k => k.toLowerCase().trim());
+                      for (const candidate of candidates) {
+                        const index = lowerKeys.indexOf(candidate.toLowerCase());
+                        if (index !== -1) return keys[index];
+                      }
+                      return null;
+                    };
+
+                    const headers = results.meta.fields || [];
+                    console.log("Details found in CSV:", headers);
+
+                    // Map keys
+                    const nameKey = findKey(headers, ["Full Name", "Name", "Student Name", "Lead Name", "Enquiry Name"]);
+                    const phoneKey = findKey(headers, ["Phone", "Phone Number", "Mobile", "Contact", "Phone 1", "Contact Number"]);
+                    const emailKey = findKey(headers, ["Email", "Email Address", "Email ID"]);
+                    const placeKey = findKey(headers, ["Place", "City", "Location", "Address"]);
+                    const educationKey = findKey(headers, ["Education", "Qualification"]);
+                    const courseKey = findKey(headers, ["Course Preference", "Course", "Interest", "Subject"]);
+                    const contactPointKey = findKey(headers, ["Contact Point", "Source"]);
+                    const campaignKey = findKey(headers, ["Campaign"]);
+                    const followupKey = findKey(headers, ["Next Follow Up Date", "Follow Up Date", "Follow Up", "Date"]);
+                    const remarksKey = findKey(headers, ["Remarks", "Note", "Comment"]);
+                    const potentialKey = findKey(headers, ["Lead Potential", "Potential", "Status"]);
+                    const dateCreatedKey = findKey(headers, ["Date Created", "Created At", "Creation Date", "Date Added"]);
+
+                    if (!nameKey || !phoneKey) {
+                      console.error("Missing headers. Found:", headers);
+                      toast.error(`Missing required columns! Found: ${headers.join(", ")}. Need at least 'Name' and 'Phone'.`, { autoClose: 10000 });
+                      setIsSubmitting(false);
+                      return;
+                    }
+
+                    const parsedLeads = results.data.map(row => {
+                      return {
+                        fullName: row[nameKey],
+                        phone1: row[phoneKey],
+                        email: emailKey ? row[emailKey] : "",
+                        place: placeKey ? row[placeKey] : "",
+                        education: educationKey ? row[educationKey] : "Other",
+                        coursePreference: courseKey ? row[courseKey] : "",
+                        contactPoint: contactPointKey ? row[contactPointKey] : "Other",
+                        campaign: campaignKey ? row[campaignKey] : "",
+                        nextFollowUpDate: followupKey ? row[followupKey] : "",
+                        remarks: remarksKey ? row[remarksKey] : "",
+                        leadStatus: "new",
+                        leadPotential: potentialKey ? (row[potentialKey] || "potentialProspect") : "potentialProspect",
+                        createdAt: dateCreatedKey ? row[dateCreatedKey] : null
+                      };
+                    });
+
+                    // Remove entries that are completely empty or missing required fields locally first?
+                    // Let's filter minimal validity
+                    const validLeads = parsedLeads.filter(l => l.fullName && l.phone1);
+
+                    if (validLeads.length === 0) {
+                      toast.error("No valid leads found in file. Check Name and Phone columns.");
+                      setIsSubmitting(false);
+                      return;
+                    }
+
+                    try {
+                      const response = await axios.post(
+                        `${API}/customers/import-leads`,
+                        { leads: validLeads },
+                        { withCredentials: true }
+                      );
+
+                      const { summary } = response.data;
+                      if (summary.success > 0) {
+                        toast.success(`Successfully imported ${summary.success} leads!`);
+                        fetchCustomers(setData, setLoading); // Refresh table
+                      }
+
+                      if (summary.failed > 0) {
+                        toast.warn(`${summary.failed} leads failed to import. Check console for details.`);
+                        console.warn("Import Errors:", summary.errors);
+                      }
+
+                      closeImportModal();
+                    } catch (error) {
+                      console.error("Import failed:", error);
+                      toast.error(error.response?.data?.message || "Import failed. Please try again.");
+                    } finally {
+                      setIsSubmitting(false);
+                    }
+                  },
+                  error: (error) => {
+                    console.error("CSV Parse Error:", error);
+                    toast.error("Failed to parse CSV file.");
+                    setIsSubmitting(false);
+                  }
+                });
               }}>
                 Confirm Import
               </Button>

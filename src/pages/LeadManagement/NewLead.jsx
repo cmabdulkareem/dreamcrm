@@ -48,7 +48,7 @@ export default function FormElements() {
   const [phone2, setPhone2] = useState("");
   const [gender, setGender] = useState("");
   const [dob, setDob] = useState("");
-  const [place, setPlace] = useState("");
+  const [place, setPlace] = useState("Kasaragod");
   const [otherPlace, setOtherPlace] = useState("");
   const [status, setStatus] = useState("");
   const [education, setEducation] = useState("");
@@ -402,13 +402,13 @@ export default function FormElements() {
       gender,
       dob,
       place: place === "Other" ? otherPlace : place,
-      otherPlace: place === "Other" ? otherPlace : "",
+      otherPlace: otherPlace, // Always save user input for otherPlace
       status,
       education,
-      otherEducation: education === "Other" ? otherEducation : "",
+      otherEducation: otherEducation, // Always save user input for otherEducation
       coursePreference: selectedValues,
       contactPoint,
-      otherContactPoint: contactPoint === "other" ? otherContactPoint : "",
+      otherContactPoint: contactPoint === "other" ? otherContactPoint : "", // Restore conditional logic
       campaign,
       handledBy: user?.fullName || "Unknown",
       leadRemarks,
@@ -584,15 +584,13 @@ export default function FormElements() {
                     />
                   </div>
                   <div className="w-full md:w-1/4">
-                    <Label htmlFor="otherPlace">Specify other *</Label>
+                    <Label htmlFor="otherPlace">Specify other</Label>
                     <Input
                       type="text"
                       id="otherPlace"
                       value={otherPlace}
                       onChange={(e) => setOtherPlace(e.target.value)}
-                      disabled={place !== "Other"}
-                      error={place === "Other" && !otherPlace.trim() && !!validationErrors.otherPlace}
-                      hint={place === "Other" && !otherPlace.trim() ? validationErrors.otherPlace : ""}
+                      placeholder="Specify details"
                     />
                   </div>
                 </div>
@@ -620,15 +618,13 @@ export default function FormElements() {
                     />
                   </div>
                   <div className="w-full md:w-1/3">
-                    <Label htmlFor="otherEducation">Specify other *</Label>
+                    <Label htmlFor="otherEducation">Specify other</Label>
                     <Input
                       type="text"
                       id="otherEducation"
                       value={otherEducation}
                       onChange={(e) => setOtherEducation(e.target.value)}
-                      disabled={education !== "Other"}
-                      error={education === "Other" && !otherEducation.trim() && !!validationErrors.otherEducation}
-                      hint={education === "Other" && !otherEducation.trim() ? validationErrors.otherEducation : ""}
+                      placeholder="Specify details"
                     />
                   </div>
                 </div>

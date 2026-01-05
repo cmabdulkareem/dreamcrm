@@ -1,4 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { io } from 'socket.io-client';
+import { useAuth } from './AuthContext';
+import API from '../config/api';
 
 const NotificationContext = createContext();
 
@@ -11,8 +14,10 @@ export const useNotifications = () => {
 };
 
 export const NotificationProvider = ({ children }) => {
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [hasUnread, setHasUnread] = useState(false);
+  const [socket, setSocket] = useState(null);
 
   // Load notifications from localStorage on mount
   useEffect(() => {
@@ -32,7 +37,7 @@ export const NotificationProvider = ({ children }) => {
   useEffect(() => {
     // Keep hasUnread in sync with notifications
     setHasUnread(notifications.some(n => !n.read));
-    
+
     // Save to localStorage
     if (notifications.length > 0) {
       localStorage.setItem('crm_notifications', JSON.stringify(notifications));
@@ -41,16 +46,63 @@ export const NotificationProvider = ({ children }) => {
     }
   }, [notifications]);
 
-  const addNotification = (notification) => {
-    // All notifications are always enabled now
-    const newNotification = {
-      id: Date.now() + Math.random(),
-      timestamp: new Date().toISOString(),
-      read: false,
-      ...notification,
-    };
+  // Socket Connection
+  useEffect(() => {
+    if (!user) return;
 
-    setNotifications(prev => [newNotification, ...prev].slice(0, 50)); // Keep last 50
+    // API is like "http://localhost:3000/api", we need "http://localhost:3000"
+    const socketUrl = API.replace('/api', '');
+    const newSocket = io(socketUrl, {
+      withCredentials: true,
+    });
+
+    newSocket.on('connect', () => {
+      console.log('Socket connected:', newSocket.id);
+      // Register user with roles and brands
+      newSocket.emit('register', {
+        userId: user._id || user.id,
+        fullName: user.fullName,
+        isAdmin: user.isAdmin,
+        roles: user.roles,
+        assignedBrands: user.brands
+      });
+    });
+
+    newSocket.on('notification', (data) => {
+      addNotification(data);
+    });
+
+    setSocket(newSocket);
+
+    return () => {
+      newSocket.disconnect();
+      setSocket(null);
+    };
+    // Only re-run if user ID changes to hold connection stable
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?._id]);
+
+
+  const addNotification = (notification) => {
+    // If notification comes from backend, it might have an ID.
+    // Use it to deduplicate.
+    const newId = notification.id || Date.now() + Math.random();
+
+    setNotifications(prev => {
+      // Deduplicate based on ID if present
+      if (notification.id && prev.some(n => n.id === notification.id)) {
+        return prev;
+      }
+
+      const newNotification = {
+        id: newId,
+        timestamp: new Date().toISOString(),
+        read: false,
+        ...notification,
+      };
+      const updated = [newNotification, ...prev].slice(0, 50); // Keep last 50
+      return updated;
+    });
     setHasUnread(true);
   };
 

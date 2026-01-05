@@ -1,6 +1,6 @@
 import PageBreadcrumb from "../../components/common/PageBreadCrumb.jsx";
 import PageMeta from "../../components/common/PageMeta.jsx";
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useRef, useCallback } from "react";
 import ComponentCard from "../../components/common/ComponentCard.jsx";
 import LoadingSpinner from "../../components/common/LoadingSpinner.jsx";
 import Button from "../../components/ui/button/Button.jsx";
@@ -12,6 +12,20 @@ import { AuthContext } from "../../context/AuthContext";
 import { useNotifications } from "../../context/NotificationContext";
 
 import API from "../../config/api";
+import { Modal } from "../../components/ui/modal";
+import Label from "../../components/form/Label.jsx";
+import Input from "../../components/form/input/InputField.jsx";
+import PhoneInput from "../../components/form/group-input/PhoneInput.jsx";
+import Select from "../../components/form/Select.jsx";
+import DatePicker from "../../components/form/date-picker.jsx";
+import SearchableCourseSelect from "../../components/form/SearchableCourseSelect.jsx";
+import {
+  countries,
+  enquirerGender,
+  enquirerStatus,
+  enquirerEducation,
+  placeOptions
+} from "../../data/DataSets.jsx";
 
 export default function ManageStudents() {
   const navigate = useNavigate();
@@ -19,12 +33,64 @@ export default function ManageStudents() {
   const { addNotification, areToastsEnabled } = useNotifications();
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [editingStudentId, setEditingStudentId] = useState(null);
-  const [editFormData, setEditFormData] = useState({});
+
+  // Modal states
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingStudent, setEditingStudent] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Controlled form states
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone1, setPhone1] = useState("");
+  const [phone2, setPhone2] = useState("");
+  const [gender, setGender] = useState("");
+  const [dob, setDob] = useState("");
+  const [place, setPlace] = useState("Kasaragod");
+  const [otherPlace, setOtherPlace] = useState("");
+  const [address, setAddress] = useState("");
+  const [aadharCardNumber, setAadharCardNumber] = useState("");
+  const [photo, setPhoto] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState("");
+  const [status, setStatus] = useState("");
+  const [education, setEducation] = useState("");
+  const [coursePreference, setCoursePreference] = useState("");
+  const [additionalCourses, setAdditionalCourses] = useState([]);
+  const [discountPercentage, setDiscountPercentage] = useState("");
+  const [enrollmentDate, setEnrollmentDate] = useState("");
+  const [studentId, setStudentId] = useState("");
+  const [selectedBrand, setSelectedBrand] = useState("");
+
+  const [courses, setCourses] = useState([]);
+  const [brands, setBrands] = useState([]);
+  const [validationErrors, setValidationErrors] = useState({});
+  const [emailError, setEmailError] = useState(false);
+
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     fetchStudents();
+    fetchCourses();
+    fetchBrands();
   }, []);
+
+  const fetchCourses = async () => {
+    try {
+      const response = await axios.get(`${API}/courses/all`, { withCredentials: true });
+      setCourses(response.data.courses);
+    } catch (error) {
+      console.error("Error fetching courses:", error);
+    }
+  };
+
+  const fetchBrands = async () => {
+    try {
+      const response = await axios.get(`${API}/brands`, { withCredentials: true });
+      setBrands(response.data.brands || []);
+    } catch (error) {
+      console.error("Error fetching brands:", error);
+    }
+  };
 
   const fetchStudents = async () => {
     try {
@@ -74,71 +140,203 @@ export default function ManageStudents() {
   };
 
   const handleViewStudent = (studentId) => {
-    // In a real implementation, you would navigate to a student detail page
     toast.info(`Viewing student ${studentId}`);
   };
 
   const handleEditClick = (student) => {
-    setEditingStudentId(student._id);
-    setEditFormData({ ...student });
+    setEditingStudent(student);
+    setFullName(student.fullName || "");
+    setEmail(student.email || "");
+    setPhone1(student.phone1 || "");
+    setPhone2(student.phone2 || "");
+    setGender(student.gender || "");
+    setDob(student.dob ? new Date(student.dob).toISOString().split('T')[0] : "");
+    setPlace(student.place || "");
+    setOtherPlace(student.otherPlace || "");
+    setAddress(student.address || "");
+    setAadharCardNumber(student.aadharCardNumber || "");
+    setPhoto(null);
+    setPhotoPreview(student.photo ? getPhotoUrl(student.photo) : "");
+    setStatus(student.status || "");
+    setEducation(student.education || "");
+    setCoursePreference(student.coursePreference || "");
+    setAdditionalCourses(student.additionalCourses || []);
+    setDiscountPercentage(student.discountPercentage || 0);
+    setEnrollmentDate(student.enrollmentDate ? new Date(student.enrollmentDate).toISOString().split('T')[0] : "");
+    setStudentId(student.studentId || "");
+    setSelectedBrand(student.brand?._id || student.brand || "");
+
+    setValidationErrors({});
+    setIsEditModalOpen(true);
   };
 
   const handleCancelEdit = () => {
-    setEditingStudentId(null);
-    setEditFormData({});
+    setIsEditModalOpen(false);
+    setEditingStudent(null);
+    setValidationErrors({});
   };
 
-  const handleInputChange = (e, field) => {
-    setEditFormData({
-      ...editFormData,
-      [field]: e.target.value
+  // Logic from NewStudent.jsx
+  const calculateTotalValue = useCallback(() => {
+    let total = 0;
+    if (coursePreference) {
+      const primaryCourse = courses.find(course => course._id === coursePreference);
+      if (primaryCourse) total += primaryCourse.normalFee || 0;
+    }
+    additionalCourses.forEach(courseId => {
+      const course = courses.find(course => course._id === courseId);
+      if (course) total += course.normalFee || 0;
     });
-  };
+    return total;
+  }, [coursePreference, additionalCourses, courses]);
+
+  const calculateDiscountAmount = useCallback(() => {
+    const total = calculateTotalValue();
+    const discount = parseFloat(discountPercentage) || 0;
+    return (total * discount / 100);
+  }, [calculateTotalValue, discountPercentage]);
+
+  const calculateFinalAmount = useCallback(() => {
+    const total = calculateTotalValue();
+    const discount = calculateDiscountAmount();
+    return total - discount;
+  }, [calculateTotalValue, calculateDiscountAmount]);
+
+  const handlePhotoChange = useCallback((e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error("Please select an image file");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File size exceeds 5MB limit");
+      return;
+    }
+    setPhoto(file);
+    const reader = new FileReader();
+    reader.onloadend = () => setPhotoPreview(reader.result);
+    reader.readAsDataURL(file);
+  }, []);
+
+  const validateForm = useCallback(() => {
+    const errors = {};
+    if (!fullName.trim()) errors.fullName = "Full Name is required";
+    if (!email.trim()) {
+      errors.email = "Email is required";
+    } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
+      errors.email = "Please enter a valid email address";
+    }
+    if (!phone1.trim()) errors.phone1 = "Phone is required";
+    if (!place) {
+      errors.place = "Place is required";
+    } else if (place === "Other" && !otherPlace.trim()) {
+      errors.otherPlace = "Please specify the place";
+    }
+    if (!address.trim()) errors.address = "Address is required";
+    if (!aadharCardNumber.trim()) {
+      errors.aadharCardNumber = "Aadhar Card Number is required";
+    } else if (!/^\d{12}$/.test(aadharCardNumber)) {
+      errors.aadharCardNumber = "Aadhar Card Number must be 12 digits";
+    }
+    if (!coursePreference) errors.coursePreference = "Primary course is required";
+    if (!enrollmentDate) errors.enrollmentDate = "Enrollment date is required";
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  }, [fullName, email, phone1, place, otherPlace, address, aadharCardNumber, coursePreference, enrollmentDate]);
 
   const handleSaveEdit = async () => {
+    if (!validateForm()) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
     try {
+      setSubmitting(true);
+      const formData = new FormData();
+      formData.append("fullName", fullName);
+      formData.append("email", email);
+      formData.append("phone1", phone1);
+      formData.append("phone2", phone2);
+      formData.append("gender", gender);
+      formData.append("dob", dob);
+      formData.append("place", place);
+      formData.append("otherPlace", otherPlace);
+      formData.append("address", address);
+      formData.append("aadharCardNumber", aadharCardNumber);
+      formData.append("status", status);
+      formData.append("education", education);
+      formData.append("coursePreference", coursePreference);
+      formData.append("additionalCourses", JSON.stringify(additionalCourses.filter(c => c)));
+      formData.append("totalCourseValue", calculateTotalValue());
+      formData.append("discountPercentage", discountPercentage || 0);
+      formData.append("discountAmount", calculateDiscountAmount());
+      formData.append("finalAmount", calculateFinalAmount());
+      formData.append("enrollmentDate", enrollmentDate);
+      formData.append("brandId", selectedBrand);
+      if (photo) formData.append("photo", photo);
+
       const response = await axios.put(
-        `${API}/students/update/${editingStudentId}`,
-        editFormData,
-        { withCredentials: true }
+        `${API}/students/update/${editingStudent._id}`,
+        formData,
+        {
+          withCredentials: true,
+          headers: { "Content-Type": "multipart/form-data" }
+        }
       );
 
-      // Update the student in the local state
-      setStudents(students.map(student =>
-        student._id === editingStudentId ? response.data.student : student
-      ));
+      // Re-fetch students to get updated data with populated fields
+      fetchStudents();
 
-      setEditingStudentId(null);
-      setEditFormData({});
+      setIsEditModalOpen(false);
+      setEditingStudent(null);
 
       if (areToastsEnabled()) {
         toast.success("Student updated successfully!");
       }
 
-      // Add notification
       addNotification({
         type: 'student_updated',
         userName: user?.fullName || 'Someone',
-        avatar: user?.avatar || null,  // Add avatar to notification
+        avatar: user?.avatar || null,
         action: 'updated student',
         entityName: response.data.student.fullName,
         module: 'Student Management',
       });
     } catch (error) {
       console.error("Error updating student:", error);
-      if (areToastsEnabled()) {
-        toast.error("Failed to update student. Please try again.");
-      }
+      toast.error(error.response?.data?.message || "Failed to update student");
+    } finally {
+      setSubmitting(false);
     }
+  };
+
+  // Additional course helpers
+  const handleAddAdditionalCourse = () => {
+    setAdditionalCourses([...additionalCourses, ""]);
+  };
+
+  const handleRemoveAdditionalCourse = (index) => {
+    const newCourses = [...additionalCourses];
+    newCourses.splice(index, 1);
+    setAdditionalCourses(newCourses);
+  };
+
+  const handleAdditionalCourseChange = (index, courseId) => {
+    const newCourses = [...additionalCourses];
+    newCourses[index] = courseId;
+    setAdditionalCourses(newCourses);
+  };
+
+  const triggerFileSelect = () => {
+    fileInputRef.current?.click();
   };
 
   const getPhotoUrl = (photoPath) => {
     if (!photoPath) return "/images/user/user-01.jpg";
-    if (photoPath.startsWith('http')) return photoPath;
-
-    // Extract the base URL (without /api) to construct the correct photo URL
+    if (photoPath.startsWith('http') || photoPath.startsWith('data:')) return photoPath;
     const baseUrl = API.replace('/api', '');
-    // Photo paths from the database already start with /uploads/
     return `${baseUrl}${photoPath}`;
   };
 
@@ -169,28 +367,16 @@ export default function ManageStudents() {
                       Photo
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Student ID
+                      Student
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Email
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Phone
+                      Contact
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Course
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Total Value
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Discount
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Final Amount
+                      Amount
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Enrollment Date
@@ -219,160 +405,59 @@ export default function ManageStudents() {
                             />
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                          {editingStudentId === student._id ? (
-                            <input
-                              type="text"
-                              value={editFormData.studentId || ''}
-                              onChange={(e) => handleInputChange(e, 'studentId')}
-                              className="w-full px-2 py-1 border rounded"
-                            />
-                          ) : (
-                            student.studentId
-                          )}
+                        <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                          <div className="flex flex-col">
+                            <span className="font-medium text-gray-900 dark:text-white">{student.fullName}</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">{student.studentId}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                          <div className="flex flex-col">
+                            <span className="text-gray-900 dark:text-white">{student.email}</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">{student.phone1}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                          <div className="max-w-[200px] break-words">
+                            {student.courseDetails ?
+                              `${student.courseDetails.courseCode} - ${student.courseDetails.courseName}` :
+                              student.coursePreference}
+                            {student.additionalCourseDetails && student.additionalCourseDetails.length > 0 && (
+                              <div className="text-xs text-gray-400 mt-1">
+                                +{student.additionalCourseDetails.length} additional course(s)
+                              </div>
+                            )}
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                          {editingStudentId === student._id ? (
-                            <input
-                              type="text"
-                              value={editFormData.fullName || ''}
-                              onChange={(e) => handleInputChange(e, 'fullName')}
-                              className="w-full px-2 py-1 border rounded"
-                            />
-                          ) : (
-                            student.fullName
-                          )}
+                          <div className="flex flex-col">
+                            <span className="font-medium text-gray-900 dark:text-white text-xs">Final: ₹{student.finalAmount || 0}</span>
+                            <span className="text-[10px] text-gray-500 dark:text-gray-400 line-through">Val: ₹{student.totalCourseValue || 0}</span>
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                          {editingStudentId === student._id ? (
-                            <input
-                              type="email"
-                              value={editFormData.email || ''}
-                              onChange={(e) => handleInputChange(e, 'email')}
-                              className="w-full px-2 py-1 border rounded"
-                            />
-                          ) : (
-                            student.email
-                          )}
+                          {new Date(student.enrollmentDate).toLocaleDateString()}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                          {editingStudentId === student._id ? (
-                            <input
-                              type="text"
-                              value={editFormData.phone1 || ''}
-                              onChange={(e) => handleInputChange(e, 'phone1')}
-                              className="w-full px-2 py-1 border rounded"
-                            />
-                          ) : (
-                            student.phone1
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                          {editingStudentId === student._id ? (
-                            <input
-                              type="text"
-                              value={editFormData.coursePreference || ''}
-                              onChange={(e) => handleInputChange(e, 'coursePreference')}
-                              className="w-full px-2 py-1 border rounded"
-                            />
-                          ) : (
-                            <div>
-                              {student.courseDetails ?
-                                `${student.courseDetails.courseCode} - ${student.courseDetails.courseName}` :
-                                student.coursePreference}
-                              {student.additionalCourseDetails && student.additionalCourseDetails.length > 0 && (
-                                <div className="text-xs text-gray-400 mt-1">
-                                  +{student.additionalCourseDetails.length} additional course(s)
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                          {editingStudentId === student._id ? (
-                            <input
-                              type="number"
-                              value={editFormData.totalCourseValue || ''}
-                              onChange={(e) => handleInputChange(e, 'totalCourseValue')}
-                              className="w-full px-2 py-1 border rounded"
-                            />
-                          ) : (
-                            `₹${student.totalCourseValue || 0}`
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                          {editingStudentId === student._id ? (
-                            <input
-                              type="number"
-                              value={editFormData.discountPercentage || ''}
-                              onChange={(e) => handleInputChange(e, 'discountPercentage')}
-                              className="w-full px-2 py-1 border rounded"
-                            />
-                          ) : (
-                            `${student.discountPercentage || 0}%`
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                          {editingStudentId === student._id ? (
-                            <input
-                              type="number"
-                              value={editFormData.finalAmount || ''}
-                              onChange={(e) => handleInputChange(e, 'finalAmount')}
-                              className="w-full px-2 py-1 border rounded"
-                            />
-                          ) : (
-                            `₹${student.finalAmount || 0}`
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                          {editingStudentId === student._id ? (
-                            <input
-                              type="date"
-                              value={editFormData.enrollmentDate ? new Date(editFormData.enrollmentDate).toISOString().split('T')[0] : ''}
-                              onChange={(e) => handleInputChange(e, 'enrollmentDate')}
-                              className="w-full px-2 py-1 border rounded"
-                            />
-                          ) : (
-                            new Date(student.enrollmentDate).toLocaleDateString()
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-6 py-4 whitespace-nowrap text-center">
                           <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">
                             Active
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          {editingStudentId === student._id ? (
-                            <div className="flex space-x-2">
-                              <button
-                                onClick={handleSaveEdit}
-                                className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
-                              >
-                                Save
-                              </button>
-                              <button
-                                onClick={handleCancelEdit}
-                                className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-300"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex space-x-2">
-                              <button
-                                onClick={() => handleEditClick(student)}
-                                className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                onClick={() => handleViewStudent(student.studentId)}
-                                className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
-                              >
-                                View
-                              </button>
-                            </div>
-                          )}
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => handleEditClick(student)}
+                              className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleViewStudent(student.studentId)}
+                              className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
+                            >
+                              View
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -389,6 +474,265 @@ export default function ManageStudents() {
           )}
         </ComponentCard>
       </div>
+
+      {/* Edit Student Modal */}
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={handleCancelEdit}
+        className="max-w-[1400px] p-6 lg:p-10"
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="mb-2 font-semibold text-gray-800 dark:text-white/90 modal-title text-theme-xl lg:text-2xl">
+            Edit Student: <span className="text-gray-500">{studentId}</span>
+          </h2>
+          <button
+            onClick={handleCancelEdit}
+            className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="overflow-y-auto max-h-[80vh] p-2">
+          <div className="grid grid-cols-1 gap-6">
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <Label>Full Name *</Label>
+                  <Input
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    error={!!validationErrors.fullName}
+                    hint={validationErrors.fullName}
+                  />
+                </div>
+                <div>
+                  <Label>Brand *</Label>
+                  <Select
+                    options={brands.map(b => ({ value: b._id, label: `${b.name} (${b.code})` }))}
+                    value={selectedBrand}
+                    onChange={setSelectedBrand}
+                  />
+                </div>
+                <div>
+                  <Label>Email *</Label>
+                  <Input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    error={!!validationErrors.email}
+                    hint={validationErrors.email}
+                  />
+                </div>
+                <div>
+                  <Label>Student Photo</Label>
+                  <div className="flex items-center gap-4">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handlePhotoChange}
+                      accept="image/*"
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={triggerFileSelect}
+                      className="w-16 h-16 overflow-hidden border-2 border-dashed border-gray-300 rounded-full cursor-pointer hover:border-brand-500 transition-colors flex items-center justify-center"
+                    >
+                      {photoPreview ? (
+                        <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="text-xs text-gray-400 text-center">No Photo</div>
+                      )}
+                    </button>
+                    {photoPreview && (
+                      <button
+                        type="button"
+                        onClick={() => { setPhoto(null); setPhotoPreview(""); }}
+                        className="text-xs text-red-500 hover:text-red-700"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <Label>Phone 1 *</Label>
+                  <PhoneInput
+                    countries={countries}
+                    value={phone1}
+                    onChange={setPhone1}
+                    error={!!validationErrors.phone1}
+                  />
+                </div>
+                <div>
+                  <Label>Phone 2</Label>
+                  <PhoneInput
+                    countries={countries}
+                    value={phone2}
+                    onChange={setPhone2}
+                  />
+                </div>
+                <div>
+                  <Label>Gender</Label>
+                  <Select
+                    options={enquirerGender}
+                    value={gender}
+                    onChange={setGender}
+                  />
+                </div>
+                <div>
+                  <DatePicker
+                    id="edit-student-dob"
+                    label="Date of Birth"
+                    value={dob}
+                    onChange={(date, str) => setDob(str)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <Label>Place *</Label>
+                  <Select
+                    options={placeOptions}
+                    value={place}
+                    onChange={setPlace}
+                    error={!!validationErrors.place}
+                  />
+                </div>
+                <div>
+                  <Label>Specify other *</Label>
+                  <Input
+                    type="text"
+                    value={otherPlace}
+                    onChange={(e) => setOtherPlace(e.target.value)}
+                    error={place === "Other" && !otherPlace.trim() && !!validationErrors.otherPlace}
+                  />
+                </div>
+                <div>
+                  <Label>Address *</Label>
+                  <Input
+                    type="text"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    error={!!validationErrors.address}
+                  />
+                </div>
+                <div>
+                  <Label>Aadhar Number *</Label>
+                  <Input
+                    type="text"
+                    value={aadharCardNumber}
+                    onChange={(e) => setAadharCardNumber(e.target.value.replace(/\D/g, ''))}
+                    maxLength="12"
+                    error={!!validationErrors.aadharCardNumber}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <Label>Current Status</Label>
+                  <Select
+                    options={enquirerStatus}
+                    value={status}
+                    onChange={setStatus}
+                  />
+                </div>
+                <div>
+                  <Label>Education</Label>
+                  <Select
+                    options={enquirerEducation}
+                    value={education}
+                    onChange={setEducation}
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <Label>Primary Course *</Label>
+                  <SearchableCourseSelect
+                    value={coursePreference}
+                    onChange={setCoursePreference}
+                    error={!!validationErrors.coursePreference}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-800 p-2 rounded">
+                  <Label className="!mb-0">Additional Courses</Label>
+                  <Button type="button" variant="outline" size="sm" onClick={handleAddAdditionalCourse}>
+                    Add Course
+                  </Button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {additionalCourses.map((courseId, index) => (
+                    <div key={index} className="flex gap-2 items-end">
+                      <div className="flex-grow">
+                        <SearchableCourseSelect
+                          value={courseId}
+                          onChange={(val) => handleAdditionalCourseChange(index, val)}
+                        />
+                      </div>
+                      <Button type="button" variant="outline" size="sm" onClick={() => handleRemoveAdditionalCourse(index)}>
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                <div>
+                  <Label>Total Value (₹)</Label>
+                  <Input type="text" value={calculateTotalValue()} readOnly className="bg-white dark:bg-gray-900" />
+                </div>
+                <div>
+                  <Label>Discount (%)</Label>
+                  <Input type="number" value={discountPercentage} onChange={(e) => setDiscountPercentage(e.target.value)} />
+                </div>
+                <div>
+                  <Label>Discount (₹)</Label>
+                  <Input type="text" value={calculateDiscountAmount()} readOnly className="bg-white dark:bg-gray-900" />
+                </div>
+                <div>
+                  <Label>Final Amount (₹)</Label>
+                  <Input type="text" value={calculateFinalAmount()} readOnly className="bg-white dark:bg-gray-900 font-bold text-brand-600" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <DatePicker
+                    id="edit-student-enrollment-date"
+                    label="Enrollment Date *"
+                    value={enrollmentDate}
+                    onChange={(date, str) => setEnrollmentDate(str)}
+                    error={!!validationErrors.enrollmentDate}
+                  />
+                </div>
+                <div>
+                  <Label>Student ID (Locked)</Label>
+                  <Input type="text" value={studentId} readOnly className="bg-gray-100 dark:bg-gray-700 font-mono" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-gray-100 dark:border-gray-800">
+          <Button variant="outline" onClick={handleCancelEdit} disabled={submitting}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={handleSaveEdit} disabled={submitting}>
+            {submitting ? "Saving..." : "Save Changes"}
+          </Button>
+        </div>
+      </Modal>
 
       <ToastContainer position="top-center" className="!z-[999999]" style={{ zIndex: 999999 }} />
     </div>

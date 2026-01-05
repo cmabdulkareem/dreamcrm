@@ -113,6 +113,10 @@ const customerSchema = new mongoose.Schema({
   brand: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Brand'
+  },
+  isAdmissionTaken: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true

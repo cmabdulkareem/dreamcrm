@@ -80,12 +80,12 @@ export const saveLeadChanges = async (
       gender,
       dob,
       place,
-      otherPlace,
+
       status,
       education,
-      otherEducation: education === "Other" ? otherEducation : "",
+      otherEducation,
       contactPoint,
-      otherContactPoint,
+      otherContactPoint: contactPoint === "other" ? otherContactPoint : "",
       campaign,
       handledBy: user?.fullName || handledByPerson,
       followUpDate: leadStatus === "converted" ? null : followUpDate, // Clear followUpDate for converted leads

@@ -25,7 +25,7 @@ const LayoutContent = () => {
           } ${isMobileOpen ? "ml-0" : ""}`}
       >
         <AppHeader />
-        <div className="flex-1 p-4 md:p-6">
+        <div className="flex-1 p-4 md:p-6 w-full max-w-full">
           <Suspense fallback={<LoadingSpinner />}>
             <Outlet />
           </Suspense>

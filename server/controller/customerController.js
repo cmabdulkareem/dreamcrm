@@ -1,5 +1,6 @@
 import customerModel from "../model/customerModel.js";
 import userModel from "../model/userModel.js";
+import { emitNotification as emitSocketNotification } from '../realtime/socket.js';
 import { isAdmin } from "../utils/roleHelpers.js";
 import { isManager } from "../middleware/roleMiddleware.js";
 
@@ -97,8 +98,6 @@ export const createCustomer = async (req, res) => {
       .populate('assignedTo', 'fullName email')
       .populate('assignedBy', 'fullName email');
 
-    console.log("Updated customer with leadPotential:", updatedCustomer.leadPotential); // Add logging
-
     return res.status(201).json({
       message: "Lead created successfully.",
       customer: updatedCustomer
@@ -143,12 +142,14 @@ export const getConvertedCustomers = async (req, res) => {
     const hasAdminAccess = isAdmin(req.user);
     const hasManagerAccess = isManager(req.user);
 
-    let query = { ...req.brandFilter, leadStatus: 'converted' };
+    let query = { ...req.brandFilter, leadStatus: 'converted', isAdmissionTaken: { $ne: true } };
 
     // If user is not admin or manager, only show leads assigned to them
     if (!hasAdminAccess && !hasManagerAccess) {
       query = {
+        ...req.brandFilter,
         leadStatus: 'converted',
+        isAdmissionTaken: { $ne: true },
         assignedTo: req.user.id // Only leads assigned to the user
       };
     }
@@ -195,6 +196,11 @@ export const updateCustomer = async (req, res) => {
 
     // Update fields
     Object.keys(updateData).forEach(key => {
+      // Sanitize Enums: If empty string, set to undefined or don't update
+      if ((key === 'gender' || key === 'status') && (updateData[key] === '' || updateData[key] === null)) {
+        return; // Skip updating this field if empty
+      }
+
       if (key === 'dob' || key === 'followUpDate') {
         customer[key] = updateData[key] ? new Date(updateData[key]) : null;
       } else if (key !== 'remarks') {
@@ -214,8 +220,6 @@ export const updateCustomer = async (req, res) => {
     const updatedCustomer = await customerModel.findById(id)
       .populate('assignedTo', 'fullName email')
       .populate('assignedBy', 'fullName email');
-
-    console.log("Updated customer with leadPotential:", updatedCustomer.leadPotential); // Add logging
 
     return res.status(200).json({
       message: "Customer updated successfully.",
@@ -356,6 +360,10 @@ export const assignLead = async (req, res) => {
       }
     }
 
+    // Get assigner details to ensure correct name
+    const assigner = await userModel.findById(req.user.id);
+    const assignerName = assigner ? assigner.fullName : "Unknown";
+
     // Update assignment fields
     customer.assignedTo = assignedTo;
     customer.assignedBy = assignedBy;
@@ -365,7 +373,7 @@ export const assignLead = async (req, res) => {
     // Add a remark about the assignment
     customer.remarks.push({
       updatedOn: new Date(),
-      handledBy: req.user.fullName || "Unknown", // Ensure handledBy is always populated
+      handledBy: assignerName,
       remark: assignmentRemark ? `Lead assigned to ${assignedUser.fullName}. Remark: ${assignmentRemark}` : `Lead assigned to ${assignedUser.fullName}`,
       leadStatus: customer.leadStatus || 'new',
       isUnread: true // Mark as unread for the assigned user
@@ -377,6 +385,30 @@ export const assignLead = async (req, res) => {
     const updatedCustomer = await customerModel.findById(id)
       .populate('assignedTo', 'fullName email')
       .populate('assignedBy', 'fullName email');
+
+    // Emit Real-time Notification
+    try {
+      const notificationData = {
+        type: 'lead_assigned',
+        title: `New Lead Assigned`,
+        message: `${assignerName} assigned you a lead: ${customer.fullName}`,
+        actionUrl: `/lead-management?leadId=${customer._id}`,
+        metadata: { leadId: customer._id },
+        userName: assignerName // Sender name
+      };
+
+      emitSocketNotification({
+        recipients: [assignedTo],
+        notification: notificationData
+      });
+    } catch (notifError) {
+      console.error('Error sending notification:', notifError);
+    }
+
+    return res.status(200).json({
+      message: "Lead assigned successfully.",
+      customer: updatedCustomer
+    });
 
     return res.status(200).json({
       message: "Lead assigned successfully.",
@@ -577,5 +609,108 @@ export const getLeaderboard = async (req, res) => {
   } catch (error) {
     console.error("Error fetching leaderboard:", error);
     return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Import leads from CSV
+export const importLeads = async (req, res) => {
+  try {
+    const { leads } = req.body;
+    const brandId = req.brandFilter?.brand || req.headers['x-brand-id'];
+
+    if (!leads || !Array.isArray(leads) || leads.length === 0) {
+      return res.status(400).json({ message: "No leads data provided." });
+    }
+
+    if (!brandId) {
+      return res.status(400).json({ message: "Brand context is missing." });
+    }
+
+    let successCount = 0;
+    let failedCount = 0;
+    let errors = [];
+
+    // Helper to normalize phone
+    const normalizePhone = (phone) => String(phone).replace(/\D/g, '').slice(-10);
+
+    for (const [index, leadData] of leads.entries()) {
+      try {
+        // 1. Basic Validation
+        if (!leadData.fullName || !leadData.phone1) {
+          throw new Error("Full Name and Phone are required.");
+        }
+
+        // 2. Duplicate Check (Phone or Email) within Brand
+        const existingQuery = {
+          brand: brandId,
+          $or: [
+            { phone1: { $regex: normalizePhone(leadData.phone1), $options: 'i' } }
+          ]
+        };
+
+        if (leadData.email) {
+          existingQuery.$or.push({ email: leadData.email });
+        }
+
+        const existingLead = await customerModel.findOne(existingQuery);
+        if (existingLead) {
+          throw new Error(`Duplicate lead found (matches phone or email): ${existingLead.fullName}`);
+        }
+
+        // 3. Prepare Data
+        // default status if missing
+        const leadStatus = leadData.leadStatus || 'new';
+        const leadPotential = leadData.leadPotential || 'potentialProspect';
+
+        const newLead = new customerModel({
+          fullName: leadData.fullName,
+          phone1: leadData.phone1,
+          email: leadData.email || "",
+          place: leadData.place || "",
+          education: leadData.education || "Other",
+          coursePreference: leadData.coursePreference || "",
+          contactPoint: leadData.contactPoint || "Other",
+          campaign: leadData.campaign || "",
+          leadStatus: leadStatus,
+          leadPotential: leadPotential,
+          followUpDate: leadData.nextFollowUpDate ? new Date(leadData.nextFollowUpDate) : null,
+          brand: brandId,
+          assignedTo: req.user.id, // Assign to uploader
+          assignedBy: req.user.id,
+          assignedAt: leadData.createdAt ? new Date(leadData.createdAt) : new Date(),
+          createdAt: leadData.createdAt ? new Date(leadData.createdAt) : new Date(),
+          remarks: leadData.remarks ? [{
+            updatedOn: leadData.createdAt ? new Date(leadData.createdAt) : new Date(),
+            remark: leadData.remarks,
+            handledBy: req.user.fullName,
+            leadStatus: leadStatus
+          }] : []
+        });
+
+        await newLead.save();
+        successCount++;
+      } catch (err) {
+        failedCount++;
+        errors.push({
+          row: index + 1,
+          name: leadData.fullName || 'Unknown',
+          error: err.message
+        });
+      }
+    }
+
+    return res.status(200).json({
+      message: "Import processing confirmed.",
+      summary: {
+        total: leads.length,
+        success: successCount,
+        failed: failedCount,
+        errors: errors
+      }
+    });
+
+  } catch (error) {
+    console.error("Import leads error:", error);
+    return res.status(500).json({ message: "Server error during import." });
   }
 };

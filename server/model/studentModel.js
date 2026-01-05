@@ -82,7 +82,7 @@ const studentSchema = new mongoose.Schema({
   leadId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Customer',
-    required: true
+    required: false
   },
   createdBy: {
     type: String

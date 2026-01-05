@@ -18,14 +18,31 @@ export default function setupSocket(server) {
 		let currentUserId = null
 
 		// Client should emit 'register' right after connect
-		socket.on('register', ({ userId, fullName }) => {
+		socket.on('register', ({ userId, fullName, isAdmin, roles, assignedBrands }) => {
 			try {
 				currentUserId = String(userId)
 				const set = userIdToSocketIds.get(currentUserId) || new Set()
 				set.add(socket.id)
 				userIdToSocketIds.set(currentUserId, set)
+
 				// Join a personal room per user
 				socket.join(`user:${currentUserId}`)
+
+				// Join Admin room
+				if (isAdmin || roles?.includes('Owner') || roles?.includes('Admin')) {
+					socket.join('room:admin')
+				}
+
+				// Join Brand rooms (for Managers/Admins)
+				if (assignedBrands && Array.isArray(assignedBrands)) {
+					assignedBrands.forEach(brand => {
+						const brandId = typeof brand === 'object' ? brand._id : brand
+						if (brandId) {
+							socket.join(`brand:${String(brandId)}`)
+						}
+					})
+				}
+
 				// Optionally acknowledge
 				socket.emit('registered', { ok: true })
 			} catch (e) {
@@ -46,6 +63,26 @@ export default function setupSocket(server) {
 	})
 
 	return io
+}
+
+// Export function to emit generic notifications
+export function emitNotification({ recipients, brandId, notification }) {
+	if (!ioInstance) return
+
+	// 1. Notify specific users (e.g. Faculties)
+	if (recipients && recipients.length > 0) {
+		recipients.forEach(userId => {
+			ioInstance.to(`user:${String(userId)}`).emit('notification', notification)
+		})
+	}
+
+	// 2. Notify Admins (Global)
+	ioInstance.to('room:admin').emit('notification', notification)
+
+	// 3. Notify Brand Managers (Scoped)
+	if (brandId) {
+		ioInstance.to(`brand:${String(brandId)}`).emit('notification', notification)
+	}
 }
 
 // Export function to emit messages to users

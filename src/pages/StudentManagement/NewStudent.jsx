@@ -20,6 +20,7 @@ import "react-toastify/dist/ReactToastify.css";
 
 import {
   countries,
+  placeOptions,
   enquirerGender,
   enquirerStatus,
   enquirerEducation,
@@ -27,15 +28,7 @@ import {
 
 import API from "../../config/api";
 
-// Place options
-const placeOptions = [
-  { value: "Manjeshwar", label: "Manjeshwar" },
-  { value: "Kasaragod", label: "Kasaragod" },
-  { value: "Uduma", label: "Uduma" },
-  { value: "Kanjangad", label: "Kanjangad" },
-  { value: "Trikarippur", label: "Trikarippur" },
-  { value: "Other", label: "Other" }
-];
+// Place options removed (now using shared DataSets)
 
 export default function NewStudent() {
   const { user, selectedBrand: globalSelectedBrand } = useContext(AuthContext);
@@ -50,7 +43,7 @@ export default function NewStudent() {
   const [phone2, setPhone2] = useState("");
   const [gender, setGender] = useState("");
   const [dob, setDob] = useState("");
-  const [place, setPlace] = useState("");
+  const [place, setPlace] = useState("Kasaragod");
   const [otherPlace, setOtherPlace] = useState("");
   const [address, setAddress] = useState("");
   const [aadharCardNumber, setAadharCardNumber] = useState("");
@@ -223,7 +216,7 @@ export default function NewStudent() {
     setSelectedLead(leadId);
 
     // Populate form fields with lead data
-    if (leadId) {
+    if (leadId && leadId !== "no_lead") {
       const lead = convertedLeads.find(l => l._id === leadId);
       if (lead) {
         setFullName(lead.fullName || "");
@@ -231,19 +224,16 @@ export default function NewStudent() {
         setPhone1(lead.phone1 || "");
         setPhone2(lead.phone2 || "");
         setGender(lead.gender || "");
-        setDob(lead.dob || "");
+        setDob(lead.dob ? new Date(lead.dob).toISOString().split('T')[0] : "");
         setPlace(lead.place || "");
         setOtherPlace(lead.otherPlace || "");
         setStatus(lead.status || "");
         setEducation(lead.education || "");
-        // NOTE: We're NOT setting coursePreference here because lead management uses hardcoded
-        // course data while new student uses database course IDs. User must select a course manually.
-        // However, we should clear any existing course preference
         setCoursePreference("");
         setAdditionalCourses([]);
       }
     } else {
-      // Clear form if no lead selected
+      // Clear form if no lead selected or "Add without lead" selected
       setFullName("");
       setEmail("");
       setPhone1("");
@@ -254,7 +244,7 @@ export default function NewStudent() {
       setOtherPlace("");
       setStatus("");
       setEducation("");
-      setCoursePreference(""); // Clear course preference when lead is deselected
+      setCoursePreference("");
       setAdditionalCourses([]);
     }
   }, [convertedLeads]);
@@ -361,8 +351,8 @@ export default function NewStudent() {
     const errors = {};
 
     if (!selectedLead) {
-      errors.selectedLead = "Please select a converted lead";
-    } else {
+      errors.selectedLead = "Please select a converted lead or 'Add without lead'";
+    } else if (selectedLead !== "no_lead") {
       // Additional validation to ensure selected lead is converted
       const selectedLeadData = convertedLeads.find(lead => lead._id === selectedLead);
       if (selectedLeadData && selectedLeadData.leadStatus !== 'converted') {
@@ -480,7 +470,7 @@ export default function NewStudent() {
       formData.append("discountAmount", calculateDiscountAmount());
       formData.append("finalAmount", calculateFinalAmount());
       formData.append("enrollmentDate", enrollmentDate);
-      formData.append("leadId", selectedLead);
+      formData.append("leadId", selectedLead === "no_lead" ? "" : selectedLead);
       formData.append("brandId", selectedBrand);
       if (photo) {
         formData.append("photo", photo);
@@ -600,7 +590,7 @@ export default function NewStudent() {
                       onChange={(e) => setFullName(e.target.value)}
                       error={!!validationErrors.fullName}
                       hint={validationErrors.fullName}
-                      disabled={!!selectedLead}
+                      disabled={!!selectedLead && selectedLead !== "no_lead"}
                     />
                   </div>
 
@@ -624,7 +614,7 @@ export default function NewStudent() {
                       onChange={handleEmailChange}
                       placeholder="Enter your email"
                       hint={validationErrors.email || (emailError ? "This is an invalid email address." : "")}
-                      disabled={!!selectedLead}
+                      disabled={!!selectedLead && selectedLead !== "no_lead"}
                     />
                   </div>
 
@@ -698,7 +688,7 @@ export default function NewStudent() {
                       onChange={setPhone1}
                       error={!!validationErrors.phone1}
                       hint={validationErrors.phone1}
-                      disabled={!!selectedLead}
+                      disabled={!!selectedLead && selectedLead !== "no_lead"}
                     />
                   </div>
                   <div className="w-full md:w-1/4">
@@ -709,7 +699,7 @@ export default function NewStudent() {
                       placeholder="+91 98765 43210"
                       value={phone2}
                       onChange={setPhone2}
-                      disabled={!!selectedLead}
+                      disabled={!!selectedLead && selectedLead !== "no_lead"}
                     />
                   </div>
                   <div className="w-full md:w-1/4">
@@ -719,7 +709,7 @@ export default function NewStudent() {
                       value={gender}
                       placeholder="Select Gender"
                       onChange={setGender}
-                      disabled={!!selectedLead}
+                      disabled={!!selectedLead && selectedLead !== "no_lead"}
                     />
                   </div>
                   <div className="w-full md:w-1/4">
@@ -728,7 +718,7 @@ export default function NewStudent() {
                       label="Date of Birth"
                       value={dob}
                       onChange={(date, str) => setDob(str)}
-                      disabled={!!selectedLead}
+                      disabled={!!selectedLead && selectedLead !== "no_lead"}
                     />
                   </div>
 
@@ -756,7 +746,6 @@ export default function NewStudent() {
                       id="otherPlace"
                       value={otherPlace}
                       onChange={(e) => setOtherPlace(e.target.value)}
-                      disabled={place !== "Other"}
                       error={place === "Other" && !otherPlace.trim() && !!validationErrors.otherPlace}
                       hint={place === "Other" && !otherPlace.trim() ? validationErrors.otherPlace : ""}
                     />
@@ -797,7 +786,7 @@ export default function NewStudent() {
                       value={status}
                       placeholder="Select Status"
                       onChange={setStatus}
-                      disabled={!!selectedLead}
+                      disabled={!!selectedLead && selectedLead !== "no_lead"}
                     />
                   </div>
                   <div className="w-full md:w-1/4">
@@ -807,7 +796,7 @@ export default function NewStudent() {
                       value={education}
                       placeholder="Select Education"
                       onChange={setEducation}
-                      disabled={!!selectedLead}
+                      disabled={!!selectedLead && selectedLead !== "no_lead"}
                     />
                   </div>
                   <div className="w-full md:w-1/2">

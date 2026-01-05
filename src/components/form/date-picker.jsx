@@ -66,7 +66,13 @@ export default function DatePicker({
 
     return () => {
       if (fp.current) {
-        fp.current.destroy();
+        if (typeof fp.current.destroy === "function") {
+          fp.current.destroy();
+        } else if (Array.isArray(fp.current)) {
+          fp.current.forEach(instance => {
+            if (typeof instance.destroy === "function") instance.destroy();
+          });
+        }
         fp.current = null;
       }
     };

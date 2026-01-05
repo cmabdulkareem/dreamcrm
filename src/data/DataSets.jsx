@@ -1,9 +1,14 @@
 const placeOptions = [
-  { value: "Manjeshwar", label: "Manjeshwar" },
+  { value: "Dakshina Kannada", label: "Dakshina Kannada" },
+  { value: "Udupi", label: "Udupi" },
+  { value: "Uttara Kannada", label: "Uttara Kannada" },
+  { value: "Kodagu", label: "Kodagu" },
+  { value: "Chikkamagaluru", label: "Chikkamagaluru" },
   { value: "Kasaragod", label: "Kasaragod" },
-  { value: "Uduma", label: "Uduma" },
-  { value: "Kanjangad", label: "Kanjangad" },
-  { value: "Trikarippur", label: "Trikarippur" },
+  { value: "Kannur", label: "Kannur" },
+  { value: "Wayanad", label: "Wayanad" },
+  { value: "Calicut", label: "Calicut" },
+  { value: "Malappuram", label: "Malappuram" },
   { value: "Other", label: "Other" },
 ];
 
