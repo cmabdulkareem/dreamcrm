@@ -8,7 +8,7 @@ import Select from "../form/Select";
 import Label from "../form/Label";
 import Button from "../ui/button/Button";
 
-export default function CreateBatchModal({ isOpen, onClose, onCreated }) {
+export default function CreateBatchModal({ isOpen, onClose, onCreated, onUpdated, batch }) {
     const [formData, setFormData] = useState({
         batchName: '',
         instructorName: '',
@@ -20,22 +20,20 @@ export default function CreateBatchModal({ isOpen, onClose, onCreated }) {
     });
     const [loading, setLoading] = useState(false);
     const [instructorOptions, setInstructorOptions] = useState([]);
-    // State to track selected instructor ID (if needed for internal logic, though we submit name)
     const [selectedInstructorId, setSelectedInstructorId] = useState('');
+
+    const isEditMode = !!batch;
 
     useEffect(() => {
         if (isOpen) {
+            // Load Instructors
             const fetchInstructors = async () => {
                 try {
-                    // Use correct role name from schema: 'Instructor'
                     const response = await axios.get(`${API}/users/dropdown?roles=Instructor`, { withCredentials: true });
                     const allowedRoles = ['Instructor'];
-
-                    // Filter users on frontend to be doubly sure
                     const filteredUsers = response.data.users.filter(user =>
                         user.roles && user.roles.some(role => allowedRoles.includes(role))
                     );
-
                     const instructors = filteredUsers.map(user => ({
                         value: user._id,
                         label: user.fullName
@@ -47,8 +45,52 @@ export default function CreateBatchModal({ isOpen, onClose, onCreated }) {
                 }
             };
             fetchInstructors();
+
+            // If Editing, populate form
+            if (batch) {
+                setFormData({
+                    batchName: batch.batchName || '',
+                    instructorName: batch.instructorName || '',
+                    mode: batch.mode || 'online',
+                    subject: batch.subject || '',
+                    startDate: batch.startDate ? new Date(batch.startDate).toISOString().split('T')[0] : '',
+                    expectedEndDate: batch.expectedEndDate ? new Date(batch.expectedEndDate).toISOString().split('T')[0] : '',
+                    batchTime: {
+                        from: batch.batchTime?.from || '',
+                        to: batch.batchTime?.to || ''
+                    }
+                });
+                // Note: We might not have the instructor's ID readily available in the batch object if it only stores name.
+                // If the batch object has instructorId, we would set it here. 
+                // Currently assuming batch.instructorName corresponds to label.
+                // We'll try to find the ID from options after they load, but they load async.
+                // For now, simple binding.
+            } else {
+                // Reset if creating new
+                setFormData({
+                    batchName: '',
+                    instructorName: '',
+                    mode: 'online',
+                    subject: '',
+                    startDate: '',
+                    expectedEndDate: '',
+                    batchTime: { from: '', to: '' }
+                });
+                setSelectedInstructorId('');
+            }
         }
-    }, [isOpen]);
+    }, [isOpen, batch]);
+
+    // Effect to sync selectedInstructorId when matches found in options (for edit mode)
+    useEffect(() => {
+        if (isEditMode && formData.instructorName && instructorOptions.length > 0) {
+            const match = instructorOptions.find(opt => opt.label === formData.instructorName);
+            if (match) {
+                setSelectedInstructorId(match.value);
+            }
+        }
+    }, [isEditMode, formData.instructorName, instructorOptions]);
+
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -79,24 +121,21 @@ export default function CreateBatchModal({ isOpen, onClose, onCreated }) {
         e.preventDefault();
         setLoading(true);
         try {
-            const response = await axios.post(`${API}/batches`, formData, { withCredentials: true });
-            toast.success("Batch created successfully!");
-            onCreated(response.data.batch);
-            onClose(); // Close modal on success
-            // Reset form
-            setFormData({
-                batchName: '',
-                instructorName: '',
-                mode: 'online',
-                subject: '',
-                startDate: '',
-                expectedEndDate: '',
-                batchTime: { from: '', to: '' }
-            });
-            setSelectedInstructorId('');
+            if (isEditMode) {
+                // UPDATE
+                const response = await axios.put(`${API}/batches/${batch._id}`, formData, { withCredentials: true });
+                toast.success("Batch updated successfully!");
+                if (onUpdated) onUpdated(response.data.batch);
+            } else {
+                // CREATE
+                const response = await axios.post(`${API}/batches`, formData, { withCredentials: true });
+                toast.success("Batch created successfully!");
+                if (onCreated) onCreated(response.data.batch);
+            }
+            onClose();
         } catch (error) {
-            console.error("Error creating batch:", error);
-            toast.error(error.response?.data?.message || "Failed to create batch.");
+            console.error("Error saving batch:", error);
+            toast.error(error.response?.data?.message || `Failed to ${isEditMode ? 'update' : 'create'} batch.`);
         } finally {
             setLoading(false);
         }
@@ -113,7 +152,9 @@ export default function CreateBatchModal({ isOpen, onClose, onCreated }) {
             onClose={onClose}
             className="max-w-2xl p-6 lg:p-10"
         >
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Create New Batch</h3>
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
+                {isEditMode ? 'Edit Batch Details' : 'Create New Batch'}
+            </h3>
 
             <form onSubmit={handleSubmit}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -226,7 +267,7 @@ export default function CreateBatchModal({ isOpen, onClose, onCreated }) {
                         loading={loading}
                         className="w-full sm:w-auto"
                     >
-                        Create Batch
+                        {isEditMode ? 'Update Batch' : 'Create Batch'}
                     </Button>
                 </div>
             </form>

@@ -7,7 +7,8 @@ const batchStudentSchema = new mongoose.Schema({
         required: true
     },
     studentId: {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Student',
         trim: true
     },
     studentName: {

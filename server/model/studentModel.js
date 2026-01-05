@@ -91,6 +91,10 @@ const studentSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Brand',
     required: true
+  },
+  batchScheduled: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true

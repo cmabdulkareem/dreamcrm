@@ -1,6 +1,7 @@
 import Batch from '../model/batchModel.js';
 import BatchStudent from '../model/batchStudentModel.js';
 import Attendance from '../model/attendanceModel.js';
+import Student from '../model/studentModel.js';
 import { isAdmin, isOwner, hasRole, isManager, isInstructor } from '../utils/roleHelpers.js';
 
 // Get all batches for current user's brand
@@ -98,6 +99,22 @@ export const deleteBatch = async (req, res) => {
             return res.status(404).json({ message: "Batch not found." });
         }
 
+        // Find all students in this batch to release them
+        const batchStudents = await BatchStudent.find({ batchId: id });
+
+        // Release students (set batchScheduled = false ONLY if not in other batches)
+        for (const bs of batchStudents) {
+            if (bs.studentId) {
+                // We are about to delete these, so count excluding CURRENT batch
+                // But since we haven't deleted them from BatchStudent collection yet, the count includes this batch.
+                // So if count is 1 (only this batch), then set to false.
+                const count = await BatchStudent.countDocuments({ studentId: bs.studentId });
+                if (count <= 1) {
+                    await Student.findByIdAndUpdate(bs.studentId, { batchScheduled: false });
+                }
+            }
+        }
+
         // Also delete all students in this batch
         await BatchStudent.deleteMany({ batchId: id });
 
@@ -112,7 +129,9 @@ export const deleteBatch = async (req, res) => {
 export const getBatchStudents = async (req, res) => {
     try {
         const { id } = req.params; // batchId
-        const students = await BatchStudent.find({ batchId: id }).sort({ studentName: 1 });
+        const students = await BatchStudent.find({ batchId: id })
+            .populate('studentId', 'fullName phone1 dob phone2') // Populate commonly used fields
+            .sort({ studentName: 1 });
         return res.status(200).json({ students });
     } catch (error) {
         console.error("Error fetching batch students:", error);
@@ -125,7 +144,7 @@ export const addStudentToBatch = async (req, res) => {
     try {
         const { id } = req.params; // batchId
         const {
-            studentId,
+            studentId, // This is the Student Model _id
             studentName,
             dob,
             phoneNumber,
@@ -135,6 +154,17 @@ export const addStudentToBatch = async (req, res) => {
         const batch = await Batch.findById(id);
         if (!batch) {
             return res.status(404).json({ message: "Batch not found." });
+        }
+
+        // Check availability if it's a linked student
+        if (studentId) {
+            const student = await Student.findById(studentId);
+            if (!student) {
+                return res.status(404).json({ message: "Student record not found." });
+            }
+            // Mark as scheduled (if not already)
+            student.batchScheduled = true;
+            await student.save();
         }
 
         const newStudent = new BatchStudent({
@@ -148,6 +178,10 @@ export const addStudentToBatch = async (req, res) => {
         });
 
         await newStudent.save();
+
+        // Populate the student details before returning
+        await newStudent.populate('studentId', 'studentId fullName phone1 dob phone2');
+
         return res.status(201).json({ message: "Student added to batch successfully.", student: newStudent });
     } catch (error) {
         console.error("Error adding student to batch:", error);
@@ -181,6 +215,14 @@ export const removeStudentFromBatch = async (req, res) => {
         const student = await BatchStudent.findByIdAndDelete(id);
         if (!student) {
             return res.status(404).json({ message: "Student not found." });
+        }
+
+        // Check if student is in any other batch
+        if (student.studentId) {
+            const count = await BatchStudent.countDocuments({ studentId: student.studentId });
+            if (count === 0) {
+                await Student.findByIdAndUpdate(student.studentId, { batchScheduled: false });
+            }
         }
 
         return res.status(200).json({ message: "Student removed from batch successfully." });

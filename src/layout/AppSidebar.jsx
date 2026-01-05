@@ -52,6 +52,7 @@ const navItems = [
       { name: "New Student (beta)", path: "/new-student", pro: false },
       { name: "Manage Students (beta)", path: "/manage-students", pro: false },
       { name: "Batch Management", path: "/batch-management", pro: false },
+
     ],
   },
   {

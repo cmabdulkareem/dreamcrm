@@ -5,15 +5,15 @@ import API from '../../config/api';
 import BatchStudentList from './BatchStudentList';
 import AttendanceModal from './AttendanceModal';
 import MonthlyAttendanceModal from './MonthlyAttendanceModal';
+import CreateBatchModal from './CreateBatchModal';
 import { useAuth } from '../../context/AuthContext';
-import { hasRole, isAdmin, isOwner, isManager } from '../../utils/roleHelpers';
+import { hasRole, isAdmin, isOwner, isManager } from '../../utils/roleHelpers.js';
 import { GroupIcon } from '../../icons';
 
 export default function BatchAccordion({ batch, onUpdate, onDelete }) {
     const { user } = useAuth();
     const [isExpanded, setIsExpanded] = useState(false);
-    const [isEditing, setIsEditing] = useState(false);
-    const [editFormData, setEditFormData] = useState({ ...batch });
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
     const [isMonthlyReportOpen, setIsMonthlyReportOpen] = useState(false);
 
@@ -39,32 +39,12 @@ export default function BatchAccordion({ batch, onUpdate, onDelete }) {
 
     const handleEdit = (e) => {
         e.stopPropagation();
-        setIsEditing(true);
+        setIsEditModalOpen(true);
     };
 
-    const handleSave = async (e) => {
-        e.preventDefault();
-        try {
-            const response = await axios.put(`${API}/batches/${batch._id}`, editFormData, { withCredentials: true });
-            toast.success("Batch updated successfully.");
-            onUpdate(response.data.batch);
-            setIsEditing(false);
-        } catch (error) {
-            toast.error("Failed to update batch.");
-        }
-    };
-
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        if (name.includes('batchTime.')) {
-            const field = name.split('.')[1];
-            setEditFormData(prev => ({
-                ...prev,
-                batchTime: { ...prev.batchTime, [field]: value }
-            }));
-        } else {
-            setEditFormData(prev => ({ ...prev, [name]: value }));
-        }
+    const handleBatchUpdated = (updatedBatch) => {
+        onUpdate(updatedBatch);
+        setIsEditModalOpen(false);
     };
 
     return (
@@ -172,49 +152,6 @@ export default function BatchAccordion({ batch, onUpdate, onDelete }) {
 
             {isExpanded && (
                 <div className="p-6 border-t border-gray-100 dark:border-gray-700">
-                    {isEditing ? (
-                        <form onSubmit={handleSave} className="mb-8 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="col-span-2">
-                                    <label className="block text-xs font-medium text-gray-500 uppercase">Batch Name</label>
-                                    <input
-                                        type="text"
-                                        name="batchName"
-                                        value={editFormData.batchName}
-                                        onChange={handleChange}
-                                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm dark:bg-gray-800 dark:border-gray-600 dark:text-white"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-500 uppercase">Instructor Assigned</label>
-                                    <input
-                                        type="text"
-                                        name="instructorName"
-                                        value={editFormData.instructorName}
-                                        onChange={handleChange}
-                                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm dark:bg-gray-800 dark:border-gray-600 dark:text-white"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-500 uppercase">Mode</label>
-                                    <select
-                                        name="mode"
-                                        value={editFormData.mode}
-                                        onChange={handleChange}
-                                        className="mt-1 block w-full border-gray-300 rounded-md shadow-sm sm:text-sm dark:bg-gray-800 dark:border-gray-600 dark:text-white"
-                                    >
-                                        <option value="online">Online</option>
-                                        <option value="offline">Offline</option>
-                                    </select>
-                                </div>
-                                <div className="flex space-x-2">
-                                    <button type="submit" className="px-3 py-1 bg-indigo-600 text-white rounded-md text-sm hover:bg-indigo-700">Save</button>
-                                    <button type="button" onClick={() => setIsEditing(false)} className="px-3 py-1 bg-gray-200 text-gray-700 rounded-md text-sm hover:bg-gray-300">Cancel</button>
-                                </div>
-                            </div>
-                        </form>
-                    ) : null}
-
                     <div className="mt-6">
                         <h5 className="text-md font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
                             <GroupIcon className="h-5 w-5 mr-2 text-gray-400" />
@@ -235,6 +172,15 @@ export default function BatchAccordion({ batch, onUpdate, onDelete }) {
                 onClose={() => setIsMonthlyReportOpen(false)}
                 batch={batch}
             />
+
+            {isEditModalOpen && (
+                <CreateBatchModal
+                    isOpen={isEditModalOpen}
+                    onClose={() => setIsEditModalOpen(false)}
+                    onUpdated={handleBatchUpdated}
+                    batch={batch}
+                />
+            )}
         </div>
     );
 }

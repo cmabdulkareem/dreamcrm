@@ -24,6 +24,7 @@ import UserManagement from "./pages/Settings/UserManagement";
 import AnnouncementManagement from "./pages/Settings/AnnouncementManagement";
 import UserProfiles from "./pages/UserProfiles";
 
+
 // Lazy load other components
 const AppLayout = lazy(() => import("./layout/AppLayout"));
 const Dashboard = lazy(() => import("./pages/Dashboard/LeadsOverview"));
@@ -129,6 +130,7 @@ function App() {
                       <Route path="/new-student" element={<ProtectedRoutes><NewStudent /></ProtectedRoutes>} />
                       <Route path="/manage-students" element={<ProtectedRoutes><ManageStudents /></ProtectedRoutes>} />
                       <Route path="/batch-management" element={<ProtectedRoutes><BatchManagement /></ProtectedRoutes>} />
+
 
                       {/* Tables */}
                       <Route path="/basic-tables" element={<ProtectedRoutes><BasicTables /></ProtectedRoutes>} />

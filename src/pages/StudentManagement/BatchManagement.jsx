@@ -61,7 +61,7 @@ export default function BatchManagement() {
             <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h2 className="text-xl font-bold text-gray-800 dark:text-white">Structured Batches</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Create and manage student batches for your brand</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Manage batches with improved student search and addition.</p>
                 </div>
                 {canCreate && (
                     <Button variant="primary" onClick={() => setIsModalOpen(true)} className="w-full sm:w-auto">

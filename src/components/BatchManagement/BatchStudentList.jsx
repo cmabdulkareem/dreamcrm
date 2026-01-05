@@ -14,6 +14,12 @@ export default function BatchStudentList({ batchId }) {
     const [isAdding, setIsAdding] = useState(false);
     const [editingId, setEditingId] = useState(null);
 
+    // Search & Select States
+    const [convertedStudents, setConvertedStudents] = useState([]);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [isSearching, setIsSearching] = useState(false);
+    const [showResults, setShowResults] = useState(false);
+
     const initialStudentState = {
         studentId: '',
         studentName: '',
@@ -28,6 +34,12 @@ export default function BatchStudentList({ batchId }) {
         fetchStudents();
     }, [batchId]);
 
+    useEffect(() => {
+        if (isAdding && convertedStudents.length === 0) {
+            fetchConvertedStudents();
+        }
+    }, [isAdding]);
+
     const fetchStudents = async () => {
         try {
             setLoading(true);
@@ -40,21 +52,106 @@ export default function BatchStudentList({ batchId }) {
         }
     };
 
-    const handleAddSubmit = async (e) => {
+    const fetchConvertedStudents = async () => {
+        try {
+            setIsSearching(true);
+            // Fetch all students from Manage Students list
+            const response = await axios.get(`${API}/students/all`, { withCredentials: true });
+            setConvertedStudents(response.data.students);
+        } catch (error) {
+            toast.error("Failed to fetch student list for selection.");
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
+    // Filter students based on search term and exclude those already in batch
+    const filteredConvertedStudents = convertedStudents.filter(student => {
+        const isInBatch = students.some(s =>
+            (s.studentId && s.studentId._id === student._id) ||
+            (s.studentId === student._id)
+        );
+
+        if (isInBatch) return false;
+
+        return (
+            student.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            student.phone1?.includes(searchTerm) ||
+            (student.studentId && student.studentId.toLowerCase().includes(searchTerm.toLowerCase()))
+        );
+    });
+
+    // Quick Add: Immediately add student upon selection
+    const handleQuickAddStudent = async (student) => {
+        const payload = {
+            studentId: student._id, // The Object ID ref to 'Student'
+            studentName: student.fullName,
+            dob: student.dob ? new Date(student.dob).toISOString().split('T')[0] : '',
+            phoneNumber: student.phone1,
+            parentPhoneNumber: student.phone2 || ''
+        };
+
+        try {
+            const response = await axios.post(`${API}/batches/${batchId}/students`, payload, { withCredentials: true });
+
+            // Update UI
+            setStudents(prev => [...prev, response.data.student]);
+            setSearchTerm(''); // Clear search
+            setShowResults(false); // Hide dropdown
+
+            toast.success(`${student.fullName} added successfully!`);
+        } catch (error) {
+            console.error("Error adding student:", error);
+            if (error.response && error.response.data && error.response.data.message) {
+                toast.error(error.response.data.message);
+            } else {
+                toast.error("Failed to add student.");
+            }
+        }
+    };
+
+    // Manual Add: For when user types details manually without selecting
+    const handleManualSubmit = async (e) => {
         e.preventDefault();
         if (!newStudent.studentName || !newStudent.phoneNumber) {
             toast.error("Student Name and Phone Number are required.");
             return;
         }
+
+        const payload = { ...newStudent };
+        // If manual, we don't have a linked studentId (ObjectId), so ensure we don't send a partial string
+        if (!payload.studentId || payload.studentId.length < 24) {
+            delete payload.studentId;
+        }
+
         try {
-            const response = await axios.post(`${API}/batches/${batchId}/students`, newStudent, { withCredentials: true });
+            const response = await axios.post(`${API}/batches/${batchId}/students`, payload, { withCredentials: true });
             setStudents([...students, response.data.student]);
-            setIsAdding(false);
             setNewStudent(initialStudentState);
             toast.success("Student added successfully!");
         } catch (error) {
-            toast.error("Failed to add student.");
+            console.error(error);
+            if (error.response && error.response.data && error.response.data.message) {
+                toast.error(error.response.data.message);
+            } else {
+                toast.error("Failed to add student.");
+            }
         }
+    };
+
+    // Helper to get display values (prefer populated data, fallback to static)
+    const getStudentData = (student) => {
+        const source = student.studentId && typeof student.studentId === 'object' ? student.studentId : student;
+        const isPopulated = student.studentId && typeof student.studentId === 'object';
+
+        return {
+            id: isPopulated ? (source.studentId || '-') : (student.studentId || '-'), // Student ID might not be in Customer model explicitly unless added
+            name: isPopulated ? source.fullName : student.studentName,
+            dob: source.dob,
+            phone: isPopulated ? source.phone1 : student.phoneNumber,
+            parentPhone: isPopulated ? source.phone2 : student.parentPhoneNumber,
+            _id: student._id // Keep the BatchStudent ID for actions
+        };
     };
 
     const handleEditSubmit = async (e) => {
@@ -64,8 +161,8 @@ export default function BatchStudentList({ batchId }) {
             return;
         }
         try {
-            const response = await axios.put(`${API}/batches/students/${editingId}`, editStudent, { withCredentials: true });
-            setStudents(students.map(s => s._id === editingId ? response.data.student : s));
+            await axios.put(`${API}/batches/students/${editingId}`, editStudent, { withCredentials: true });
+            fetchStudents();
             setEditingId(null);
             toast.success("Student updated successfully!");
         } catch (error) {
@@ -96,10 +193,91 @@ export default function BatchStudentList({ batchId }) {
                         onClick={() => setIsAdding(!isAdding)}
                         className="text-xs font-semibold px-3 py-1 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400"
                     >
-                        {isAdding ? 'Cancel' : '+ Add Student'}
+                        {isAdding ? 'Done Adding' : '+ Add Student'}
                     </button>
                 )}
             </div>
+
+            {isAdding && (
+                <div className="mb-4 p-4 bg-indigo-50/50 dark:bg-indigo-900/20 rounded-lg border border-indigo-100 dark:border-indigo-800">
+                    <h5 className="text-sm font-semibold text-gray-800 dark:text-white mb-3">Add Student to Batch</h5>
+
+                    {/* Search Section */}
+                    <div className="mb-4 relative">
+                        <label className="block text-xs font-medium text-gray-500 mb-1">Search Student (from Manage Students)</label>
+                        <input
+                            type="text"
+                            autoFocus
+                            placeholder="Search by name, phone or ID..."
+                            className="w-full text-sm border-gray-300 rounded-md dark:bg-gray-800 dark:text-white dark:border-gray-600"
+                            value={searchTerm}
+                            onChange={(e) => {
+                                setSearchTerm(e.target.value);
+                                setShowResults(true);
+                            }}
+                            onFocus={() => setShowResults(true)}
+                            onBlur={() => {
+                                setTimeout(() => {
+                                    setShowResults(false);
+                                }, 200);
+                            }}
+                        />
+                        {showResults && searchTerm && (
+                            <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                {isSearching ? (
+                                    <div className="p-2 text-xs text-gray-500">Loading...</div>
+                                ) : filteredConvertedStudents.length > 0 ? (
+                                    filteredConvertedStudents.map(student => (
+                                        <div
+                                            key={student._id}
+                                            className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-50 dark:border-gray-700/50 last:border-0"
+                                            onMouseDown={(e) => e.preventDefault()}
+                                            onClick={() => handleQuickAddStudent(student)}
+                                        >
+                                            <div className="text-sm font-medium text-gray-900 dark:text-white">{student.fullName}</div>
+                                            <div className="text-xs text-gray-500">{student.studentId || 'No ID'} | {student.phone1}</div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="p-2 text-xs text-gray-500">No matching students found.</div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Manual Entry Form (Fallback) */}
+                    <div className="border-t border-gray-100 dark:border-gray-700 pt-3 mt-3">
+                        <div className="text-xs text-gray-400 mb-2 italic">Or enter details manually if not found in search:</div>
+                        <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 items-end">
+                            <div>
+                                <label className="block text-xs text-gray-500 mb-1">ID (Opt)</label>
+                                <input type="text" value={newStudent.studentId} onChange={e => setNewStudent({ ...newStudent, studentId: e.target.value })} className="w-full text-sm border-gray-300 rounded dark:bg-gray-800 dark:text-white" placeholder="Custom ID" />
+                            </div>
+                            <div className="sm:col-span-1">
+                                <label className="block text-xs text-gray-500 mb-1">Name *</label>
+                                <input type="text" value={newStudent.studentName} onChange={e => setNewStudent({ ...newStudent, studentName: e.target.value })} className="w-full text-sm border-gray-300 rounded dark:bg-gray-800 dark:text-white" placeholder="Name" />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-500 mb-1">DOB</label>
+                                <input type="date" value={newStudent.dob} onChange={e => setNewStudent({ ...newStudent, dob: e.target.value })} className="w-full text-sm border-gray-300 rounded dark:bg-gray-800 dark:text-white" />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-500 mb-1">Phone *</label>
+                                <input type="text" value={newStudent.phoneNumber} onChange={e => setNewStudent({ ...newStudent, phoneNumber: e.target.value })} className="w-full text-sm border-gray-300 rounded dark:bg-gray-800 dark:text-white" placeholder="Phone" />
+                            </div>
+                            <div>
+                                <label className="block text-xs text-gray-500 mb-1">Parent Phone</label>
+                                <input type="text" value={newStudent.parentPhoneNumber} onChange={e => setNewStudent({ ...newStudent, parentPhoneNumber: e.target.value })} className="w-full text-sm border-gray-300 rounded dark:bg-gray-800 dark:text-white" placeholder="Parent (Opt)" />
+                            </div>
+                        </div>
+                        <div className="mt-3 flex justify-end">
+                            <button onClick={handleManualSubmit} className="px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-md hover:bg-gray-700 shadow-sm">
+                                Add Manually
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="overflow-x-auto border border-gray-100 dark:border-gray-700 rounded-lg">
                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -114,49 +292,40 @@ export default function BatchStudentList({ batchId }) {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                        {isAdding && (
-                            <tr className="bg-indigo-50/30 dark:bg-indigo-900/10">
-                                <td className="px-4 py-2"><input type="text" value={newStudent.studentId} onChange={e => setNewStudent({ ...newStudent, studentId: e.target.value })} className="w-full text-sm border-gray-300 rounded dark:bg-gray-800 dark:text-white" placeholder="ID (Opt)" /></td>
-                                <td className="px-4 py-2"><input type="text" value={newStudent.studentName} onChange={e => setNewStudent({ ...newStudent, studentName: e.target.value })} className="w-full text-sm border-gray-300 rounded dark:bg-gray-800 dark:text-white" placeholder="Name" /></td>
-                                <td className="px-4 py-2"><input type="date" value={newStudent.dob} onChange={e => setNewStudent({ ...newStudent, dob: e.target.value })} className="w-full text-sm border-gray-300 rounded dark:bg-gray-800 dark:text-white" /></td>
-                                <td className="px-4 py-2"><input type="text" value={newStudent.phoneNumber} onChange={e => setNewStudent({ ...newStudent, phoneNumber: e.target.value })} className="w-full text-sm border-gray-300 rounded dark:bg-gray-800 dark:text-white" placeholder="Phone" /></td>
-                                <td className="px-4 py-2"><input type="text" value={newStudent.parentPhoneNumber} onChange={e => setNewStudent({ ...newStudent, parentPhoneNumber: e.target.value })} className="w-full text-sm border-gray-300 rounded dark:bg-gray-800 dark:text-white" placeholder="Parent (Opt)" /></td>
-                                <td className="px-4 py-2 text-right">
-                                    <button onClick={handleAddSubmit} className="text-green-600 hover:text-green-800 mr-2"><svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg></button>
-                                </td>
-                            </tr>
-                        )}
-                        {students.map(student => (
-                            <tr key={student._id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                                {editingId === student._id ? (
-                                    <>
-                                        <td className="px-4 py-2"><input type="text" value={editStudent.studentId} onChange={e => setEditStudent({ ...editStudent, studentId: e.target.value })} className="w-full text-sm border-gray-300 rounded dark:bg-gray-800 dark:text-white" /></td>
-                                        <td className="px-4 py-2"><input type="text" value={editStudent.studentName} onChange={e => setEditStudent({ ...editStudent, studentName: e.target.value })} className="w-full text-sm border-gray-300 rounded dark:bg-gray-800 dark:text-white" /></td>
-                                        <td className="px-4 py-2"><input type="date" value={editStudent.dob ? new Date(editStudent.dob).toISOString().split('T')[0] : ''} onChange={e => setEditStudent({ ...editStudent, dob: e.target.value })} className="w-full text-sm border-gray-300 rounded dark:bg-gray-800 dark:text-white" /></td>
-                                        <td className="px-4 py-2"><input type="text" value={editStudent.phoneNumber} onChange={e => setEditStudent({ ...editStudent, phoneNumber: e.target.value })} className="w-full text-sm border-gray-300 rounded dark:bg-gray-800 dark:text-white" /></td>
-                                        <td className="px-4 py-2"><input type="text" value={editStudent.parentPhoneNumber} onChange={e => setEditStudent({ ...editStudent, parentPhoneNumber: e.target.value })} className="w-full text-sm border-gray-300 rounded dark:bg-gray-800 dark:text-white" /></td>
-                                        <td className="px-4 py-2 text-right">
-                                            <button onClick={handleEditSubmit} className="text-green-600 hover:text-green-800 mr-2"><svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg></button>
-                                            <button onClick={() => setEditingId(null)} className="text-red-600 hover:text-red-800"><svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
-                                        </td>
-                                    </>
-                                ) : (
-                                    <>
-                                        <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{student.studentId || '-'}</td>
-                                        <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{student.studentName}</td>
-                                        <td className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400">{student.dob ? new Date(student.dob).toLocaleDateString() : '-'}</td>
-                                        <td className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400">{student.phoneNumber}</td>
-                                        <td className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400">{student.parentPhoneNumber || '-'}</td>
-                                        {canEdit && (
+                        {students.map(student => {
+                            const data = getStudentData(student);
+                            return (
+                                <tr key={student._id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                    {editingId === student._id ? (
+                                        <>
+                                            <td className="px-4 py-2"><input type="text" value={editStudent.studentId} disabled className="w-full text-sm border-gray-300 rounded bg-gray-100 cursor-not-allowed dark:bg-gray-700 dark:text-white" /></td>
+                                            <td className="px-4 py-2"><input type="text" value={editStudent.studentName} onChange={e => setEditStudent({ ...editStudent, studentName: e.target.value })} className="w-full text-sm border-gray-300 rounded dark:bg-gray-800 dark:text-white" /></td>
+                                            <td className="px-4 py-2"><input type="date" value={editStudent.dob ? new Date(editStudent.dob).toISOString().split('T')[0] : ''} onChange={e => setEditStudent({ ...editStudent, dob: e.target.value })} className="w-full text-sm border-gray-300 rounded dark:bg-gray-800 dark:text-white" /></td>
+                                            <td className="px-4 py-2"><input type="text" value={editStudent.phoneNumber} onChange={e => setEditStudent({ ...editStudent, phoneNumber: e.target.value })} className="w-full text-sm border-gray-300 rounded dark:bg-gray-800 dark:text-white" /></td>
+                                            <td className="px-4 py-2"><input type="text" value={editStudent.parentPhoneNumber} onChange={e => setEditStudent({ ...editStudent, parentPhoneNumber: e.target.value })} className="w-full text-sm border-gray-300 rounded dark:bg-gray-800 dark:text-white" /></td>
                                             <td className="px-4 py-2 text-right">
-                                                <button onClick={() => { setEditingId(student._id); setEditStudent(student); }} className="text-gray-400 hover:text-indigo-600 mr-2"><svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
-                                                <button onClick={() => handleDelete(student._id)} className="text-gray-400 hover:text-red-600"><svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                                                <button onClick={handleEditSubmit} className="text-green-600 hover:text-green-800 mr-2"><svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg></button>
+                                                <button onClick={() => setEditingId(null)} className="text-red-600 hover:text-red-800"><svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
                                             </td>
-                                        )}
-                                    </>
-                                )}
-                            </tr>
-                        ))}
+                                        </>
+                                    ) : (
+                                        <>
+                                            <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{data.id}</td>
+                                            <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{data.name}</td>
+                                            <td className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400">{data.dob ? new Date(data.dob).toLocaleDateString() : '-'}</td>
+                                            <td className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400">{data.phone}</td>
+                                            <td className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400">{data.parentPhone || '-'}</td>
+                                            {canEdit && (
+                                                <td className="px-4 py-2 text-right">
+                                                    <button onClick={() => { setEditingId(student._id); setEditStudent(student); }} className="text-gray-400 hover:text-indigo-600 mr-2"><svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
+                                                    <button onClick={() => handleDelete(student._id)} className="text-gray-400 hover:text-red-600"><svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                                                </td>
+                                            )}
+                                        </>
+                                    )}
+                                </tr>
+                            );
+                        })}
                         {!isAdding && students.length === 0 && (
                             <tr>
                                 <td colSpan="6" className="px-4 py-10 text-center text-sm text-gray-500">No students enrolled in this batch yet.</td>

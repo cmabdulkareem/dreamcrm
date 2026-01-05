@@ -156,6 +156,12 @@ export const createStudent = async (req, res) => {
 export const getAllStudents = async (req, res) => {
   try {
     const query = { ...req.brandFilter }; // Apply brand filter
+
+    // Filter for batch availability if requested
+    if (req.query.availableForBatch === 'true') {
+      query.batchScheduled = { $ne: true };
+    }
+
     const students = await studentModel.find(query).sort({ createdAt: -1 }).populate('leadId', 'fullName email');
     // Populate course details for each student
     const studentsWithCourseDetails = await Promise.all(students.map(async (student) => {

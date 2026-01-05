@@ -34,7 +34,7 @@ const LayoutContent = () => {
       </div>
       <CounsellorTutorial />
       <InstallPWA />
-      <ToastContainer />
+      <ToastContainer position="top-center" className="!z-[999999]" style={{ zIndex: 999999 }} />
     </div>
   );
 };
