@@ -98,3 +98,14 @@ export function isManager(user) {
   return userRoles.includes('Brand Manager') || userRoles.includes('Owner');
 }
 
+/**
+ * Check if user has instructor privileges (Instructor role)
+ */
+export function isInstructor(user) {
+  if (!user) return false;
+
+  const userRoles = Array.isArray(user.roles) ? user.roles : (typeof user.roles === 'string' ? [user.roles] : []);
+
+  return userRoles.includes('Instructor');
+}
+

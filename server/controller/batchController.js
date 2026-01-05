@@ -1,12 +1,18 @@
 import Batch from '../model/batchModel.js';
 import BatchStudent from '../model/batchStudentModel.js';
 import Attendance from '../model/attendanceModel.js';
-import { isAdmin, isOwner, hasRole, isManager } from '../utils/roleHelpers.js';
+import { isAdmin, isOwner, hasRole, isManager, isInstructor } from '../utils/roleHelpers.js';
 
 // Get all batches for current user's brand
 export const getAllBatches = async (req, res) => {
     try {
         const finalQuery = req.brandFilter || {};
+
+        // If user is an instructor (and not admin/owner/manager), filter by instructor name
+        if (isInstructor(req.user) && !isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
+            finalQuery.instructorName = req.user.fullName;
+        }
+
         const batches = await Batch.find(finalQuery).sort({ createdAt: -1 });
 
         // Self-healing: Ensure all batches have a shareToken
