@@ -8,6 +8,17 @@ export const getAllBatches = async (req, res) => {
     try {
         const finalQuery = req.brandFilter || {};
         const batches = await Batch.find(finalQuery).sort({ createdAt: -1 });
+
+        // Self-healing: Ensure all batches have a shareToken
+        let updated = false;
+        for (let batch of batches) {
+            if (!batch.shareToken) {
+                batch.shareToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+                await batch.save();
+                updated = true;
+            }
+        }
+
         return res.status(200).json({ batches });
     } catch (error) {
         console.error("Error fetching batches:", error);
