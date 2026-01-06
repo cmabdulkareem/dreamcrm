@@ -16,7 +16,7 @@ import Input from '../../components/form/input/InputField';
 import PhoneInput from '../../components/form/group-input/PhoneInput';
 import API from '../../config/api';
 import { AuthContext } from '../../context/AuthContext';
-import { isOwner } from '../../utils/roleHelpers';
+import { isOwner, isManager } from '../../utils/roleHelpers';
 import { CloseIcon, DownloadIcon, FileIcon } from '../../icons';
 import { countries, callListStatusOptions } from '../../data/DataSets';
 
@@ -35,6 +35,8 @@ export default function CallList() {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [socialMediaId, setSocialMediaId] = useState('');
     const [remarks, setRemarks] = useState('');
+    const [assignedTo, setAssignedTo] = useState('');
+    const [users, setUsers] = useState([]);
     const [selectedEntry, setSelectedEntry] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -42,7 +44,19 @@ export default function CallList() {
 
     useEffect(() => {
         fetchCallLists();
-    }, []);
+        if (isOwner(user) || isManager(user)) {
+            fetchUsers();
+        }
+    }, [user]);
+
+    const fetchUsers = async () => {
+        try {
+            const response = await axios.get(`${API}/users/dropdown?roles=Owner,Brand Manager,Counsellor,Counselor`, { withCredentials: true });
+            setUsers(response.data.users || []);
+        } catch (error) {
+            console.error("Error fetching users:", error);
+        }
+    };
 
     const fetchCallLists = async () => {
         try {
@@ -62,6 +76,7 @@ export default function CallList() {
         setPhoneNumber('');
         setSocialMediaId('');
         setRemarks('');
+        setAssignedTo('');
         setSelectedEntry(null);
     };
 
@@ -76,7 +91,7 @@ export default function CallList() {
             setIsSubmitting(true);
             const response = await axios.post(
                 `${API}/call-lists`,
-                { name, phoneNumber, socialMediaId, remarks },
+                { name, phoneNumber, socialMediaId, remarks, assignedTo },
                 { withCredentials: true }
             );
 
@@ -98,6 +113,7 @@ export default function CallList() {
         setPhoneNumber(entry.phoneNumber || '');
         setSocialMediaId(entry.socialMediaId || '');
         setRemarks(entry.remarks || '');
+        setAssignedTo(entry.assignedTo?._id || '');
         openEditModal();
     };
 
@@ -112,7 +128,7 @@ export default function CallList() {
             setIsSubmitting(true);
             const response = await axios.put(
                 `${API}/call-lists/${selectedEntry._id}`,
-                { name, phoneNumber, socialMediaId, remarks },
+                { name, phoneNumber, socialMediaId, remarks, assignedTo },
                 { withCredentials: true }
             );
 
@@ -180,6 +196,43 @@ export default function CallList() {
         return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
     };
 
+    const renderActions = (entry) => (
+        <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={() => handleEdit(entry)}>
+                Edit
+            </Button>
+            {canDelete && (
+                <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-red-500"
+                    endIcon={<CloseIcon className="size-4" />}
+                    onClick={() => handleDeleteClick(entry)}
+                />
+            )}
+        </div>
+    );
+
+    const renderStatus = (entry) => (
+        <div className="flex flex-col gap-1.5">
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium w-fit capitalize ${callListStatusOptions.find(opt => opt.value === entry.status)?.color || 'bg-gray-100 text-gray-700'
+                }`}>
+                {entry.status || 'pending'}
+            </span>
+            <select
+                className="text-[10px] bg-transparent border border-gray-200 dark:border-gray-800 rounded px-1 py-0.5 outline-none focus:border-brand-500"
+                value={entry.status || 'pending'}
+                onChange={(e) => handleStatusUpdate(entry._id, e.target.value)}
+            >
+                {callListStatusOptions.map(opt => (
+                    <option key={opt.value} value={opt.value}>
+                        Mark as {opt.label}
+                    </option>
+                ))}
+            </select>
+        </div>
+    );
+
     return (
         <div className="p-4 md:p-6">
             <PageMeta
@@ -217,72 +270,103 @@ export default function CallList() {
                 {loading ? (
                     <LoadingSpinner />
                 ) : filteredData.length > 0 ? (
-                    <div className="max-w-full overflow-x-auto">
-                        <Table className="min-w-[800px]">
-                            <TableHeader className="border-gray-100 dark:border-gray-800 border-y">
-                                <TableRow>
-                                    <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Name</TableCell>
-                                    <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Phone Number</TableCell>
-                                    <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Social Media ID</TableCell>
-                                    <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Remarks</TableCell>
-                                    <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Created By</TableCell>
-                                    <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Date</TableCell>
-                                    <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Status</TableCell>
-                                    <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Actions</TableCell>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
-                                {filteredData.map((entry) => (
-                                    <TableRow key={entry._id} className="transition-colors hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
-                                        <TableCell className="py-3 text-gray-800 text-theme-sm dark:text-white/90">{entry.name || '-'}</TableCell>
-                                        <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{entry.phoneNumber || '-'}</TableCell>
-                                        <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{entry.socialMediaId || '-'}</TableCell>
-                                        <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
-                                            <div className="max-w-[200px] truncate" title={entry.remarks}>
-                                                {entry.remarks || '-'}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{entry.createdBy?.fullName || 'Unknown'}</TableCell>
-                                        <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{formatDate(entry.createdAt)}</TableCell>
-                                        <TableCell className="py-3">
-                                            <div className="flex flex-col gap-1.5">
-                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium w-fit capitalize ${callListStatusOptions.find(opt => opt.value === entry.status)?.color || 'bg-gray-100 text-gray-700'
-                                                    }`}>
-                                                    {entry.status || 'pending'}
-                                                </span>
-                                                <select
-                                                    className="text-[10px] bg-transparent border border-gray-200 dark:border-gray-800 rounded px-1 py-0.5 outline-none focus:border-brand-500"
-                                                    value={entry.status || 'pending'}
-                                                    onChange={(e) => handleStatusUpdate(entry._id, e.target.value)}
+                    <div className="space-y-4">
+                        {/* Mobile view Cards */}
+                        <div className="grid grid-cols-1 gap-4 md:hidden">
+                            {filteredData.map((entry, index) => (
+                                <div key={entry._id} className="bg-white dark:bg-white/[0.03] border border-gray-100 dark:border-gray-800 rounded-xl p-4 shadow-sm">
+                                    <div className="flex justify-between items-start mb-3">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs font-bold text-gray-400">#{index + 1}</span>
+                                            <h3 className="font-semibold text-gray-800 dark:text-white">{entry.name || 'Unnamed'}</h3>
+                                        </div>
+                                        {renderStatus(entry)}
+                                    </div>
+
+                                    <div className="space-y-2 mb-4">
+                                        {entry.phoneNumber && (
+                                            <div className="flex items-center gap-2 text-sm">
+                                                <span className="text-gray-500 dark:text-gray-400">Phone:</span>
+                                                <a
+                                                    href={`tel:${entry.phoneNumber}`}
+                                                    className="text-brand-500 hover:underline font-medium"
                                                 >
-                                                    {callListStatusOptions.map(opt => (
-                                                        <option key={opt.value} value={opt.value}>
-                                                            Mark as {opt.label}
-                                                        </option>
-                                                    ))}
-                                                </select>
+                                                    {entry.phoneNumber}
+                                                </a>
                                             </div>
-                                        </TableCell>
-                                        <TableCell className="py-3">
-                                            <div className="flex items-center gap-2">
-                                                <Button size="sm" variant="outline" onClick={() => handleEdit(entry)}>
-                                                    Edit
-                                                </Button>
-                                                {canDelete && (
-                                                    <Button
-                                                        size="sm"
-                                                        variant="outline"
-                                                        className="text-red-500"
-                                                        endIcon={<CloseIcon className="size-4" />}
-                                                        onClick={() => handleDeleteClick(entry)}
-                                                    />
-                                                )}
+                                        )}
+                                        {entry.socialMediaId && (
+                                            <div className="flex items-center gap-2 text-sm">
+                                                <span className="text-gray-500 dark:text-gray-400">Social:</span>
+                                                <span className="text-gray-700 dark:text-gray-300">{entry.socialMediaId}</span>
                                             </div>
-                                        </TableCell>
+                                        )}
+                                        <div className="flex items-center gap-2 text-sm">
+                                            <span className="text-gray-500 dark:text-gray-400">Assigned:</span>
+                                            <span className="text-gray-700 dark:text-gray-300">{entry.assignedTo?.fullName || 'Unassigned'}</span>
+                                        </div>
+                                        {entry.remarks && (
+                                            <div className="mt-2 p-2 bg-gray-50 dark:bg-white/[0.02] rounded text-xs text-gray-600 dark:text-gray-400 italic">
+                                                "{entry.remarks}"
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="flex justify-between items-center pt-3 border-t border-gray-50 dark:border-gray-800">
+                                        <span className="text-[10px] text-gray-400">{formatDate(entry.createdAt)}</span>
+                                        {renderActions(entry)}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Desktop view Table */}
+                        <div className="hidden md:block overflow-x-auto">
+                            <Table className="min-w-[1000px]">
+                                <TableHeader className="border-gray-100 dark:border-gray-800 border-y">
+                                    <TableRow>
+                                        <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">#</TableCell>
+                                        <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Name</TableCell>
+                                        <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Phone Number</TableCell>
+                                        <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Assigned To</TableCell>
+                                        <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Social Media ID</TableCell>
+                                        <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Remarks</TableCell>
+                                        <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Date</TableCell>
+                                        <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Status</TableCell>
+                                        <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Actions</TableCell>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                                </TableHeader>
+                                <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
+                                    {filteredData.map((entry, index) => (
+                                        <TableRow key={entry._id} className="transition-colors hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
+                                            <TableCell className="py-3 text-gray-400 text-theme-xs">{index + 1}</TableCell>
+                                            <TableCell className="py-3 text-gray-800 text-theme-sm dark:text-white/90">{entry.name || '-'}</TableCell>
+                                            <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
+                                                {entry.phoneNumber ? (
+                                                    <a href={`tel:${entry.phoneNumber}`} className="text-brand-500 hover:underline">
+                                                        {entry.phoneNumber}
+                                                    </a>
+                                                ) : '-'}
+                                            </TableCell>
+                                            <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{entry.assignedTo?.fullName || 'Unassigned'}</TableCell>
+                                            <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{entry.socialMediaId || '-'}</TableCell>
+                                            <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
+                                                <div className="max-w-[150px] truncate" title={entry.remarks}>
+                                                    {entry.remarks || '-'}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{formatDate(entry.createdAt)}</TableCell>
+                                            <TableCell className="py-3">
+                                                {renderStatus(entry)}
+                                            </TableCell>
+                                            <TableCell className="py-3">
+                                                {renderActions(entry)}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
                     </div>
                 ) : (
                     <div className="text-center py-10">
@@ -328,6 +412,22 @@ export default function CallList() {
                             placeholder="Instagram, Facebook, etc. (optional)"
                         />
                     </div>
+                    {(isOwner(user) || isManager(user)) && (
+                        <div>
+                            <Label htmlFor="assignedTo">Assign To</Label>
+                            <select
+                                id="assignedTo"
+                                value={assignedTo}
+                                onChange={(e) => setAssignedTo(e.target.value)}
+                                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:ring focus:ring-brand-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 shadow-theme-xs outline-none"
+                            >
+                                <option value="">Select User (Optional)</option>
+                                {users.map(u => (
+                                    <option key={u._id} value={u._id}>{u.fullName}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
                     <div>
                         <Label htmlFor="remarks">Remarks</Label>
                         <textarea
@@ -380,6 +480,22 @@ export default function CallList() {
                             placeholder="Instagram, Facebook, etc. (optional)"
                         />
                     </div>
+                    {(isOwner(user) || isManager(user)) && (
+                        <div>
+                            <Label htmlFor="editAssignedTo">Assign To</Label>
+                            <select
+                                id="editAssignedTo"
+                                value={assignedTo}
+                                onChange={(e) => setAssignedTo(e.target.value)}
+                                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:ring focus:ring-brand-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 shadow-theme-xs outline-none"
+                            >
+                                <option value="">Select User (Optional)</option>
+                                {users.map(u => (
+                                    <option key={u._id} value={u._id}>{u.fullName}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
                     <div>
                         <Label htmlFor="editRemarks">Remarks</Label>
                         <textarea

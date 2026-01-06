@@ -1,12 +1,19 @@
 import CallList from '../model/callListModel.js';
-import { isOwner } from '../utils/roleHelpers.js';
+import { isOwner, isManager } from '../utils/roleHelpers.js';
 
-// Get all call lists for current user's brand
+// Get all call lists for current user's brand with role-based filtering
 export const getAllCallLists = async (req, res) => {
     try {
-        const finalQuery = req.brandFilter || {};
+        let finalQuery = req.brandFilter || {};
+
+        // If not Owner or Manager, only show entries assigned to them
+        if (!isOwner(req.user) && !isManager(req.user)) {
+            finalQuery.assignedTo = req.user.id;
+        }
+
         const callLists = await CallList.find(finalQuery)
             .populate('createdBy', 'fullName')
+            .populate('assignedTo', 'fullName')
             .sort({ createdAt: -1 });
 
         return res.status(200).json({ callLists });
@@ -19,7 +26,7 @@ export const getAllCallLists = async (req, res) => {
 // Create a new call list entry
 export const createCallList = async (req, res) => {
     try {
-        const { name, phoneNumber, socialMediaId, remarks } = req.body;
+        const { name, phoneNumber, socialMediaId, remarks, assignedTo } = req.body;
 
         const brandId = req.headers['x-brand-id'];
         if (!brandId) {
@@ -37,13 +44,17 @@ export const createCallList = async (req, res) => {
             socialMediaId: socialMediaId || '',
             remarks: remarks || '',
             brand: brandId,
-            createdBy: req.user.id
+            createdBy: req.user.id,
+            assignedTo: assignedTo || null
         });
 
         await newCallList.save();
 
-        // Populate createdBy for response
-        await newCallList.populate('createdBy', 'fullName');
+        // Populate for response
+        await newCallList.populate([
+            { path: 'createdBy', select: 'fullName' },
+            { path: 'assignedTo', select: 'fullName' }
+        ]);
 
         return res.status(201).json({
             message: "Call list entry created successfully.",
@@ -59,7 +70,7 @@ export const createCallList = async (req, res) => {
 export const updateCallList = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, phoneNumber, socialMediaId, remarks } = req.body;
+        const { name, phoneNumber, socialMediaId, remarks, assignedTo } = req.body;
 
         // At least one field (excluding remarks) must be present
         if (!name && !phoneNumber && !socialMediaId) {
@@ -70,14 +81,18 @@ export const updateCallList = async (req, res) => {
             name: name || '',
             phoneNumber: phoneNumber || '',
             socialMediaId: socialMediaId || '',
-            remarks: remarks || ''
+            remarks: remarks || '',
+            assignedTo: assignedTo || null
         };
 
         const updatedCallList = await CallList.findByIdAndUpdate(
             id,
             updateData,
             { new: true }
-        ).populate('createdBy', 'fullName');
+        ).populate([
+            { path: 'createdBy', select: 'fullName' },
+            { path: 'assignedTo', select: 'fullName' }
+        ]);
 
         if (!updatedCallList) {
             return res.status(404).json({ message: "Call list entry not found." });
@@ -188,7 +203,10 @@ export const updateCallListStatus = async (req, res) => {
             id,
             { status },
             { new: true }
-        ).populate('createdBy', 'fullName');
+        ).populate([
+            { path: 'createdBy', select: 'fullName' },
+            { path: 'assignedTo', select: 'fullName' }
+        ]);
 
         if (!updatedCallList) {
             return res.status(404).json({ message: "Call list entry not found." });

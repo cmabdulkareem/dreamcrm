@@ -35,13 +35,18 @@ const callListSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true
+    },
+    assignedTo: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
     }
 }, {
     timestamps: true
 });
 
-// Index for efficient brand-based queries
+// Indexes for efficient queries
 callListSchema.index({ brand: 1, createdAt: -1 });
+callListSchema.index({ brand: 1, assignedTo: 1, createdAt: -1 });
 
 const CallList = mongoose.model('CallList', callListSchema);
 export default CallList;
