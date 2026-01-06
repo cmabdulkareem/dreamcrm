@@ -48,31 +48,17 @@ const AppBackup = () => {
         }
     };
 
-    const handleDownload = async (filename) => {
-        try {
-            const response = await axios.get(`${API}/backup/download/${filename}`, {
-                responseType: 'blob',
-                withCredentials: true,
-                timeout: 300000 // 5 min for large files
-            });
+    const handleDownload = (filename) => {
+        window.open(`${API}/backup/download/${filename}`, '_blank');
+    };
 
-            // Create blob link to download
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', filename);
-            document.body.appendChild(link);
-            link.click();
-
-            // Clean up
-            link.parentNode.removeChild(link);
-            window.URL.revokeObjectURL(url);
-
-            toast.success('Download started');
-        } catch (error) {
-            console.error('Download error:', error);
-            toast.error('Failed to download backup. You may not have permission.');
-        }
+    const handleCopyLink = (filename) => {
+        const url = `${API}/backup/download/${filename}`;
+        navigator.clipboard.writeText(url).then(() => {
+            toast.success('Download link copied to clipboard');
+        }).catch(() => {
+            toast.error('Failed to copy link');
+        });
     };
 
     const handleDelete = async (filename) => {
@@ -221,6 +207,15 @@ const AppBackup = () => {
                                                 {backup.createdAt && new Date(backup.createdAt).toLocaleString()}
                                             </td>
                                             <td className="px-4 py-4 text-right space-x-2">
+                                                <button
+                                                    onClick={() => handleCopyLink(backup.name)}
+                                                    className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                                                    title="Copy Download Link"
+                                                >
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                                                    </svg>
+                                                </button>
                                                 <button
                                                     onClick={() => handleDownload(backup.name)}
                                                     className="p-2 text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-900/20 rounded-lg transition-colors"

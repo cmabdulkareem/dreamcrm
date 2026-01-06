@@ -21,12 +21,13 @@ const upload = multer({
     limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
 });
 
+router.get('/download/:filename', downloadBackup);
+
 router.use(verifyToken);
 router.use(requireOwnerOrManager);
 
 router.post('/create', createBackup);
 router.get('/list', listBackups);
-router.get('/download/:filename', downloadBackup);
 router.delete('/:filename', deleteBackup);
 router.post('/restore', upload.single('backup'), restoreBackup);
 
