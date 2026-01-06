@@ -75,20 +75,25 @@ export const createBackup = async (req, res) => {
 
 export const listBackups = async (req, res) => {
     try {
-        const files = fs.readdirSync(BACKUP_DIR)
-            .filter(file => file.endsWith('.zip'))
-            .map(file => {
-                const stats = fs.statSync(path.join(BACKUP_DIR, file));
+        const files = await fs.promises.readdir(BACKUP_DIR);
+        const backupFiles = files.filter(file => file.endsWith('.zip'));
+
+        const backupDetails = await Promise.all(
+            backupFiles.map(async (file) => {
+                const stats = await fs.promises.stat(path.join(BACKUP_DIR, file));
                 return {
                     name: file,
                     size: stats.size,
                     createdAt: stats.birthtime
                 };
             })
-            .sort((a, b) => b.createdAt - a.createdAt);
+        );
 
-        res.status(200).json({ backups: files });
+        backupDetails.sort((a, b) => b.createdAt - a.createdAt);
+
+        res.status(200).json({ backups: backupDetails });
     } catch (error) {
+        console.error('List backups error:', error);
         res.status(500).json({ message: 'Error listing backups' });
     }
 };

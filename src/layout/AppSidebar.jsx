@@ -376,7 +376,7 @@ const AppSidebar = () => {
                     const subItemDisabledClass = !isSubItemEnabled ? "opacity-40 cursor-not-allowed pointer-events-none" : "";
 
                     // RESTRICTION: Hide User Management, Brand Management, and Announcements for non-admin managers
-                    if (isManager(user) && !user.isAdmin &&
+                    if (isManager(user) && !user?.isAdmin &&
                       ["User Management", "Brand Management", "Announcements"].includes(subItem.name)) {
                       return null;
                     }

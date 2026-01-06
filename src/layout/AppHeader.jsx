@@ -130,7 +130,7 @@ const AppHeader = () => {
       // Search customer data
       try {
         const response = await axios.get(`${API}/customers/all`, { withCredentials: true });
-        const customers = response.data.customers || [];
+        const customers = response?.data?.customers || [];
 
         const customerResults = customers
           .filter(customer =>
@@ -390,7 +390,7 @@ const AppHeader = () => {
                       if (brandId === "") {
                         selectBrand(null); // Select All
                       } else {
-                        const brand = currentUser.brands.find(b => b._id === brandId);
+                        const brand = currentUser?.brands?.find(b => b._id === brandId);
                         selectBrand(brand);
                       }
                     }}

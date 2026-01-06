@@ -16,8 +16,11 @@ const AppBackup = () => {
     const fetchBackups = async () => {
         try {
             setLoading(true);
-            const response = await axios.get(`${API}/backup/list`, { withCredentials: true });
-            setBackups(response.data.backups || []);
+            const response = await axios.get(`${API}/backup/list`, {
+                withCredentials: true,
+                timeout: 30000 // 30s timeout for file listing
+            });
+            setBackups(response?.data?.backups || []);
         } catch (error) {
             toast.error('Failed to fetch backups');
         } finally {
@@ -32,8 +35,11 @@ const AppBackup = () => {
     const handleCreateBackup = async () => {
         try {
             setCreating(true);
-            const response = await axios.post(`${API}/backup/create`, {}, { withCredentials: true });
-            toast.success(response.data.message);
+            const response = await axios.post(`${API}/backup/create`, {}, {
+                withCredentials: true,
+                timeout: 120000 // 2 min for creating backup
+            });
+            toast.success(response?.data?.message || 'Backup created');
             fetchBackups();
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to create backup');
@@ -44,16 +50,38 @@ const AppBackup = () => {
 
     const handleDownload = async (filename) => {
         try {
-            window.open(`${API}/backup/download/${filename}`, '_blank');
+            const response = await axios.get(`${API}/backup/download/${filename}`, {
+                responseType: 'blob',
+                withCredentials: true,
+                timeout: 300000 // 5 min for large files
+            });
+
+            // Create blob link to download
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+
+            // Clean up
+            link.parentNode.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+            toast.success('Download started');
         } catch (error) {
-            toast.error('Failed to download backup');
+            console.error('Download error:', error);
+            toast.error('Failed to download backup. You may not have permission.');
         }
     };
 
     const handleDelete = async (filename) => {
         if (!window.confirm('Are you sure you want to delete this backup?')) return;
         try {
-            await axios.delete(`${API}/backup/${filename}`, { withCredentials: true });
+            await axios.delete(`${API}/backup/${filename}`, {
+                withCredentials: true,
+                timeout: 10000
+            });
             toast.success('Backup deleted');
             fetchBackups();
         } catch (error) {
@@ -77,9 +105,10 @@ const AppBackup = () => {
             setRestoring(true);
             const response = await axios.post(`${API}/backup/restore`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
-                withCredentials: true
+                withCredentials: true,
+                timeout: 300000 // 5 min for restoration
             });
-            toast.success(response.data.message);
+            toast.success(response?.data?.message || 'System restored successfully');
             // Optionally redirect or reload
             setTimeout(() => window.location.reload(), 2000);
         } catch (error) {
@@ -91,7 +120,7 @@ const AppBackup = () => {
     };
 
     const formatSize = (bytes) => {
-        if (bytes === 0) return '0 Bytes';
+        if (!bytes || bytes === 0) return '0 Bytes';
         const k = 1024;
         const sizes = ['Bytes', 'KB', 'MB', 'GB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
@@ -168,7 +197,7 @@ const AppBackup = () => {
                         <div className="flex justify-center py-10">
                             <RefreshIcon className="w-10 h-10 animate-spin text-brand-500" />
                         </div>
-                    ) : backups.length === 0 ? (
+                    ) : (backups?.length || 0) === 0 ? (
                         <div className="text-center py-10 text-gray-500">
                             No backups found on server.
                         </div>
@@ -184,12 +213,12 @@ const AppBackup = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {backups.map((backup) => (
+                                    {backups?.map((backup) => (
                                         <tr key={backup.name} className="border-b border-gray-100 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/10 transition-colors">
                                             <td className="px-4 py-4 text-sm font-medium text-gray-800 dark:text-gray-200">{backup.name}</td>
                                             <td className="px-4 py-4 text-sm text-gray-500">{formatSize(backup.size)}</td>
                                             <td className="px-4 py-4 text-sm text-gray-500">
-                                                {new Date(backup.createdAt).toLocaleString()}
+                                                {backup.createdAt && new Date(backup.createdAt).toLocaleString()}
                                             </td>
                                             <td className="px-4 py-4 text-right space-x-2">
                                                 <button

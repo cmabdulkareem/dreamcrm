@@ -59,20 +59,20 @@ function AuthProvider({ children }) {
         const res = await axios.get(`${API}/users/auth`, {
           withCredentials: true,
           // Add timeout to prevent hanging requests
-          timeout: 10000
+          timeout: 20000
         });
         const { user, role } = res.data;
         setUser(user);
         setIsLoggedIn(true);
         // Check if user has admin role (Owner or Admin) or isAdmin flag is true
-        const userRoles = user.roles || role || [];
+        const userRoles = user?.roles || role || [];
         const rolesArray = Array.isArray(userRoles) ? userRoles : (typeof userRoles === 'string' ? [userRoles] : []);
-        const isAdminUser = user.isAdmin ||
+        const isAdminUser = user?.isAdmin ||
           rolesArray.includes('Owner');
         setIsAdmin(isAdminUser);
 
         // Auto-select brand for single-brand users if none selected
-        if (!selectedBrand && Array.isArray(user.brands) && user.brands.length === 1) {
+        if (!selectedBrand && user && Array.isArray(user.brands) && user.brands.length === 1) {
           const firstBrand = user.brands[0];
           // Use selectBrand to ensure indices/themes/reload are handled
           selectBrand(firstBrand);
@@ -127,7 +127,7 @@ function AuthProvider({ children }) {
     setIsAdmin(isAdminUser);
 
     // Auto-select brand for users with only one brand if none selected
-    if (!selectedBrand && Array.isArray(userData.brands) && userData.brands.length === 1) {
+    if (!selectedBrand && userData && Array.isArray(userData.brands) && userData.brands.length === 1) {
       const firstBrand = userData.brands[0];
       // We must ensure the token is saved BEFORE selectBrand reloads the page
       selectBrand(firstBrand);

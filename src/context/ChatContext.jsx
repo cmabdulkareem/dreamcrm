@@ -101,8 +101,8 @@ export const ChatProvider = ({ children }) => {
         }).catch(() => ({ data: { onlineUsers: [] } })) // Fallback if endpoint doesn't exist yet
       ]);
 
-      const allUsers = usersResponse.data.users || [];
-      const onlineUsersList = onlineResponse.data.onlineUsers || [];
+      const allUsers = usersResponse?.data?.users || [];
+      const onlineUsersList = onlineResponse?.data?.onlineUsers || [];
 
       // Normalize user IDs - handle both 'id' and '_id' formats
       const normalizeUserId = (u) => u._id || u.id;
@@ -354,7 +354,7 @@ export const ChatProvider = ({ children }) => {
         try {
           await axios.post(`${API}/users/online`, {}, {
             withCredentials: true,
-            timeout: 5000
+            timeout: 10000
           });
 
           // Fetch updated online users list
@@ -371,7 +371,7 @@ export const ChatProvider = ({ children }) => {
         try {
           await axios.post(`${API}/users/online`, {}, {
             withCredentials: true,
-            timeout: 5000
+            timeout: 10000
           });
         } catch (error) {
           console.error('Error updating heartbeat:', error);
@@ -836,7 +836,7 @@ export const ChatProvider = ({ children }) => {
         // Mark user as offline on server
         await axios.delete(`${API}/users/online`, {
           withCredentials: true,
-          timeout: 5000
+          timeout: 10000
         });
 
         // Remove current user from online users list
