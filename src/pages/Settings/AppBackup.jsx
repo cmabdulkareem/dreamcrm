@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { toast } from 'react-hot-toast';
+import { toast } from 'react-toastify';
 import { BoxIcon, DownloadIcon, TrashBinIcon, RefreshIcon, PlusIcon } from '../../icons';
 import ComponentCard from '../../components/common/ComponentCard';
-import PageBreadcrumb from '../../components/common/PageBreadcrumb';
+import PageBreadCrumb from '../../components/common/PageBreadCrumb';
 import PageMeta from '../../components/common/PageMeta';
 
 const AppBackup = () => {
@@ -99,7 +99,7 @@ const AppBackup = () => {
     return (
         <>
             <PageMeta title="App Backup & Restore | Student Management" />
-            <PageBreadcrumb pageTitle="App Backup & Restore" />
+            <PageBreadCrumb pageTitle="App Backup & Restore" />
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <ComponentCard title="Generate Backup">
