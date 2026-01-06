@@ -30,6 +30,7 @@ import monthlyTargetRoutes from './routes/monthlyTargetRoutes.js'
 import paymentRoutes from './routes/paymentRoutes.js'
 import batchRoutes from './routes/batchRoutes.js'
 import callListRoutes from './routes/callListRoutes.js'
+import backupRoutes from './routes/backupRoutes.js'
 
 const app = express()
 
@@ -72,6 +73,7 @@ app.use('/api/monthly-targets', monthlyTargetRoutes)
 app.use('/api/payments', paymentRoutes)
 app.use('/api/batches', batchRoutes)
 app.use('/api/call-lists', callListRoutes)
+app.use('/api/backup', backupRoutes)
 
 
 

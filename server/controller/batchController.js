@@ -9,14 +9,27 @@ import { emitNotification } from '../realtime/socket.js';
 // Get all batches for current user's brand
 export const getAllBatches = async (req, res) => {
     try {
-        const finalQuery = req.brandFilter || {};
+        let finalQuery;
 
-        // If user is an instructor (and not admin/owner/manager), filter by instructor ID or name
+        // If user is an instructor (and NOT an admin/owner/manager), ONLY show assigned batches
+        // This overrides the brand filter for pure instructors
         if (isInstructor(req.user) && !isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
-            finalQuery.$or = [
-                { instructor: req.user._id },
-                { instructorName: req.user.fullName }
-            ];
+            finalQuery = {
+                $or: [
+                    { instructor: req.user._id },
+                    { instructorName: req.user.fullName }
+                ]
+            };
+        } else {
+            // For Admins, Owners, and Managers, use brand filter but also allow seeing assigned batches from other brands
+            const brandFilter = req.brandFilter || {};
+            finalQuery = {
+                $or: [
+                    brandFilter,
+                    { instructor: req.user._id },
+                    { instructorName: req.user.fullName }
+                ]
+            };
         }
 
         const batches = await Batch.find(finalQuery).sort({ createdAt: -1 });
@@ -107,10 +120,19 @@ export const updateBatch = async (req, res) => {
         const { id } = req.params;
         const updateData = req.body;
 
-        const updatedBatch = await Batch.findByIdAndUpdate(id, updateData, { new: true });
-        if (!updatedBatch) {
+        const batch = await Batch.findById(id);
+        if (!batch) {
             return res.status(404).json({ message: "Batch not found." });
         }
+
+        // Authorization check
+        if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
+            if (batch.instructor.toString() !== req.user._id.toString() && batch.instructorName !== req.user.fullName) {
+                return res.status(403).json({ message: "Not authorized to update this batch." });
+            }
+        }
+
+        const updatedBatch = await Batch.findByIdAndUpdate(id, updateData, { new: true });
 
         // Notification Logic
         try {
@@ -146,10 +168,19 @@ export const deleteBatch = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const batch = await Batch.findByIdAndDelete(id);
+        const batch = await Batch.findById(id);
         if (!batch) {
             return res.status(404).json({ message: "Batch not found." });
         }
+
+        // Authorization check
+        if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
+            if (batch.instructor.toString() !== req.user._id.toString() && batch.instructorName !== req.user.fullName) {
+                return res.status(403).json({ message: "Not authorized to delete this batch." });
+            }
+        }
+
+        await Batch.findByIdAndDelete(id);
 
         // Find all students in this batch to release them
         const batchStudents = await BatchStudent.find({ batchId: id });
@@ -181,6 +212,19 @@ export const deleteBatch = async (req, res) => {
 export const getBatchStudents = async (req, res) => {
     try {
         const { id } = req.params; // batchId
+
+        const batch = await Batch.findById(id);
+        if (!batch) {
+            return res.status(404).json({ message: "Batch not found." });
+        }
+
+        // Authorization check
+        if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
+            if (batch.instructor.toString() !== req.user._id.toString() && batch.instructorName !== req.user.fullName) {
+                return res.status(403).json({ message: "Not authorized to view students for this batch." });
+            }
+        }
+
         const students = await BatchStudent.find({ batchId: id })
             .populate('studentId', 'fullName phone1 dob phone2') // Populate commonly used fields
             .sort({ studentName: 1 });
@@ -206,6 +250,13 @@ export const addStudentToBatch = async (req, res) => {
         const batch = await Batch.findById(id);
         if (!batch) {
             return res.status(404).json({ message: "Batch not found." });
+        }
+
+        // Authorization check
+        if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
+            if (batch.instructor.toString() !== req.user._id.toString() && batch.instructorName !== req.user.fullName) {
+                return res.status(403).json({ message: "Not authorized to add students to this batch." });
+            }
         }
 
         // Check availability if it's a linked student
@@ -247,10 +298,24 @@ export const updateBatchStudent = async (req, res) => {
         const { studentId: id } = req.params; // DB _id
         const updateData = req.body;
 
-        const updatedStudent = await BatchStudent.findByIdAndUpdate(id, updateData, { new: true });
+        const updatedStudent = await BatchStudent.findById(id);
         if (!updatedStudent) {
             return res.status(404).json({ message: "Student not found." });
         }
+
+        const batch = await Batch.findById(updatedStudent.batchId);
+        if (!batch) {
+            return res.status(404).json({ message: "Batch not found." });
+        }
+
+        // Authorization check
+        if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
+            if (batch.instructor.toString() !== req.user._id.toString() && batch.instructorName !== req.user.fullName) {
+                return res.status(403).json({ message: "Not authorized to update students for this batch." });
+            }
+        }
+
+        await BatchStudent.findByIdAndUpdate(id, updateData, { new: true });
 
         return res.status(200).json({ message: "Student updated successfully.", student: updatedStudent });
     } catch (error) {
@@ -264,10 +329,24 @@ export const removeStudentFromBatch = async (req, res) => {
     try {
         const { studentId: id } = req.params; // DB _id
 
-        const student = await BatchStudent.findByIdAndDelete(id);
+        const student = await BatchStudent.findById(id);
         if (!student) {
             return res.status(404).json({ message: "Student not found." });
         }
+
+        const batch = await Batch.findById(student.batchId);
+        if (!batch) {
+            return res.status(404).json({ message: "Batch not found." });
+        }
+
+        // Authorization check
+        if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
+            if (batch.instructor.toString() !== req.user._id.toString() && batch.instructorName !== req.user.fullName) {
+                return res.status(403).json({ message: "Not authorized to remove students from this batch." });
+            }
+        }
+
+        await BatchStudent.findByIdAndDelete(id);
 
         // Check if student is in any other batch
         if (student.studentId) {
@@ -328,7 +407,7 @@ export const markAttendance = async (req, res) => {
         // Permission check
         if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
             // For faculty/instructors
-            if (batch.instructorName !== req.user.fullName && !req.user.roles.includes('Instructor')) {
+            if (batch.instructor.toString() !== req.user._id.toString() && batch.instructorName !== req.user.fullName) {
                 return res.status(403).json({ message: "Not authorized to mark attendance for this batch." });
             }
         }
@@ -356,6 +435,18 @@ export const getAttendance = async (req, res) => {
     try {
         const { id } = req.params; // batchId
         const { date, month, year } = req.query;
+
+        const batch = await Batch.findById(id);
+        if (!batch) {
+            return res.status(404).json({ message: "Batch not found." });
+        }
+
+        // Authorization check
+        if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
+            if (batch.instructor.toString() !== req.user._id.toString() && batch.instructorName !== req.user.fullName) {
+                return res.status(403).json({ message: "Not authorized to view attendance for this batch." });
+            }
+        }
 
         const query = { batchId: id };
         let sortOrder = -1; // Default descending

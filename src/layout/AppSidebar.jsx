@@ -133,7 +133,8 @@ const settingsItems = [
       { name: "Course Management", path: "/settings/courses", pro: false },
       { name: "User Management", path: "/settings/users", pro: false },
       { name: "Brand Management", path: "/settings/brands", pro: false },
-      { name: "Announcements", path: "/settings/announcements", pro: false }
+      { name: "Announcements", path: "/settings/announcements", pro: false },
+      { name: "App Backup", path: "/settings/backup", pro: false }
     ],
   }
 ];
@@ -217,7 +218,8 @@ const AppSidebar = () => {
       "Dashboard",
       "Leads & Conversions",
       "Student Performance (beta)",
-      "Revenue Snapshot (beta)"
+      "Revenue Snapshot (beta)",
+      "App Backup"
     ];
     return globalModules.includes(name);
   };
