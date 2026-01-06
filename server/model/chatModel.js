@@ -5,7 +5,6 @@ const chatSchema = new mongoose.Schema(
     type: {
       type: String,
       enum: ['user', 'group'],
-      enum: ['user', 'group'],
       required: true
     },
     brand: {
@@ -43,7 +42,6 @@ const chatSchema = new mongoose.Schema(
 );
 
 // Index for faster queries
-chatSchema.index({ participants: 1 });
 chatSchema.index({ participants: 1 });
 chatSchema.index({ type: 1, participants: 1, brand: 1 });
 

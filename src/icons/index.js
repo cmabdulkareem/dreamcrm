@@ -44,6 +44,9 @@ import { ReactComponent as UserIcon } from "./user-line.svg?react";
 import { ReactComponent as MailIcon } from "./mail-line.svg?react";
 import { ReactComponent as ChatIcon } from "./chat.svg?react";
 import { ReactComponent as CalendarIcon } from "./calendar.svg?react";
+import { ReactComponent as PaperAirplaneIcon } from "./paper-airplane.svg?react";
+import { ReactComponent as RupeeIcon } from "./rupee.svg?react";
+
 
 export {
   PlusIcon,
@@ -92,4 +95,6 @@ export {
   ChatIcon,
   CalendarIcon,
   ChevronUpIcon,
+  PaperAirplaneIcon,
+  RupeeIcon,
 };
