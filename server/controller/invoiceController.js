@@ -57,7 +57,7 @@ export const createInvoice = async (req, res) => {
             notes,
             terms,
             brand,
-            createdBy: req.user._id
+            createdBy: req.user.id
         });
 
         await newInvoice.save();

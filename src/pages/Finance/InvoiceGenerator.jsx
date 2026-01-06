@@ -1,4 +1,4 @@
-// Version: 1.1 - Fixed brand ID and customer search endpoint
+// Version: 1.2 - Filtered customer search (converted only)
 import { useState, useEffect, useContext } from "react";
 import { toast } from "react-toastify";
 import axios from "axios";
@@ -55,9 +55,8 @@ const InvoiceGenerator = () => {
     const performSearch = async () => {
         setSearching(true);
         try {
-            // The brand filter is automatically applied by the backend middleware
-            // using the x-brand-id header provided by AuthContext
-            const endpoint = `${API}/customers/all`;
+            // Only search converted customers. Filtered by brand via x-brand-id header.
+            const endpoint = `${API}/customers/converted`;
 
             const response = await axios.get(endpoint, { withCredentials: true });
             const data = response.data.customers || response.data;
