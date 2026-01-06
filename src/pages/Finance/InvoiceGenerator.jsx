@@ -1,3 +1,4 @@
+// Version: 1.1 - Fixed brand ID and customer search endpoint
 import { useState, useEffect, useContext } from "react";
 import { toast } from "react-toastify";
 import axios from "axios";

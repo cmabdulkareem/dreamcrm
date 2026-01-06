@@ -1,3 +1,4 @@
+// Version: 1.1 - Fixed brand ID usage
 import { useState, useEffect, useContext } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
@@ -23,7 +24,8 @@ const InvoiceList = () => {
     const fetchInvoices = async () => {
         setLoading(true);
         try {
-            const url = selectedBrand ? `${API}/invoices?brand=${selectedBrand}` : `${API}/invoices`;
+            const brandId = selectedBrand?._id || selectedBrand?.id;
+            const url = brandId ? `${API}/invoices?brand=${brandId}` : `${API}/invoices`;
             const response = await axios.get(url, { withCredentials: true });
             setInvoices(response.data);
         } catch (error) {
