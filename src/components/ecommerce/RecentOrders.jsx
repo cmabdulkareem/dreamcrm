@@ -1097,7 +1097,7 @@ export default function RecentOrders() {
           </div>
 
           {/* Table */}
-          <div className="max-w-full overflow-x-auto">
+          <div className="hidden md:block max-w-full overflow-x-auto">
             <Table>
               <TableHeader className="border-gray-100 dark:border-gray-800 border-y">
                 <TableRow>
@@ -1164,9 +1164,9 @@ export default function RecentOrders() {
                             <p className="text-gray-400 text-xs truncate max-w-[180px]">
                               {row.coursePreference?.join(", ") || "N/A"}
                             </p>
-                            <p className="text-brand-500/80 text-[11px] font-medium mt-0.5">
+                            <a href={`tel:${row.phone1}`} className="text-brand-500 hover:underline text-[11px] font-medium mt-0.5">
                               {row.phone1}
-                            </p>
+                            </a>
                           </div>
                         </TableCell>
                         <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
@@ -1258,6 +1258,115 @@ export default function RecentOrders() {
                 )}
               </TableBody>
             </Table>
+          </div>
+
+          {/* Mobile Card View */}
+          <div className="grid grid-cols-1 gap-4 md:hidden">
+            {filteredData.length === 0 ? (
+              <div className="py-8 text-center text-gray-500 bg-white dark:bg-white/[0.03] rounded-xl border border-gray-100 dark:border-gray-800">
+                {isRegularUser ? "No leads assigned to you." : "No leads found."}
+              </div>
+            ) : (
+              filteredData.map((row) => {
+                const latestRemark = getLatestRemark(row.remarks);
+                const styles = getLeadPotentialStyles(row.leadPotential);
+                const hasUnread = hasUnreadRemarks(row.remarks);
+
+                return (
+                  <div key={row._id} className="relative overflow-hidden bg-white dark:bg-white/[0.03] border border-gray-100 dark:border-gray-800 rounded-xl p-4 shadow-sm">
+                    {/* Vertical Status Strip */}
+                    <div className={`absolute left-0 top-0 bottom-0 w-[4px] ${styles.bar}`} />
+
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedLeads.includes(row._id)}
+                          onChange={() => handleSelectLead(row._id)}
+                          className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+                        />
+                        <div>
+                          <h4 className="font-semibold text-gray-800 dark:text-white/90">{row.fullName}</h4>
+                          <a href={`tel:${row.phone1}`} className="text-brand-500 text-sm font-medium hover:underline">
+                            {row.phone1}
+                          </a>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-2">
+                        <Badge size="sm" color={getLeadStatusColor(row.leadStatus)}>
+                          {getLeadStatusLabel(row.leadStatus)}
+                        </Badge>
+                        {hasUnread && (
+                          <div className="size-5 rounded-full bg-red-600 flex items-center justify-center shadow-sm">
+                            <BoltIcon className="size-3 text-white" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 mb-4">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-gray-500 dark:text-gray-400">Course Preference:</span>
+                        <span className="text-gray-700 dark:text-gray-200 text-right max-w-[150px] truncate">
+                          {row.coursePreference?.join(", ") || "N/A"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-gray-500 dark:text-gray-400">Added:</span>
+                        <span className="text-gray-700 dark:text-gray-200">
+                          {formatDate(row.createdAt)} by {row.handledBy || "N/A"}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-gray-500 dark:text-gray-400">Next Follow-up:</span>
+                        <Badge size="sm" color={getDueDateBadgeColor(row.followUpDate)}>
+                          {getDueDateBadgeText(row.followUpDate)}
+                        </Badge>
+                      </div>
+                      {row.assignedTo && (
+                        <div className="flex justify-between text-xs">
+                          <span className="text-gray-500 dark:text-gray-400">Assigned To:</span>
+                          <span className="text-gray-700 dark:text-gray-200 font-medium">
+                            {row.assignedTo.fullName}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 mb-4">
+                      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Latest Remark:</p>
+                      <p className="text-xs text-gray-700 dark:text-gray-300 line-clamp-2">
+                        {latestRemark || "No remarks yet"}
+                      </p>
+                      {row.assignmentRemark && (
+                        <p className="text-[10px] text-red-500 dark:text-red-400 mt-2 font-medium">
+                          Suggestion: {row.assignmentRemark}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100 dark:border-gray-800">
+                      <Button size="sm" variant="outline" className="p-2" onClick={() => handleAlarm(row)}>
+                        <BoltIcon className="size-5 text-yellow-500" />
+                      </Button>
+                      {canAssignLeads && (
+                        <Button size="sm" variant="outline" className="text-blue-500 px-3" onClick={() => openAssignModal(row)}>
+                          Assign
+                        </Button>
+                      )}
+                      {isOwner(user) && (
+                        <Button size="sm" variant="outline" className="p-2 text-red-500" onClick={() => handleDelete(row)}>
+                          <CloseIcon className="size-5" />
+                        </Button>
+                      )}
+                      <Button size="sm" variant="primary" className="px-3" onClick={() => handleEdit(row)}>
+                        <PencilIcon className="size-4 mr-2" /> Edit
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
 
           {/* History Tooltip - Rendered via Portal at Body Level */}
