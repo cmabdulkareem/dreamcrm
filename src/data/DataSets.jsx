@@ -266,6 +266,16 @@ const leadPotentialOptions = [
   { value: "notAProspect", label: "Not a Prospect", color: "text-gray-600 bg-gray-100" },
 ];
 
+const callListStatusOptions = [
+  { value: 'pending', label: 'Pending', color: 'bg-gray-100 text-gray-700' },
+  { value: 'called', label: 'Called', color: 'bg-blue-100 text-blue-700' },
+  { value: 'wrong-number', label: 'Wrong Number', color: 'bg-red-100 text-red-700' },
+  { value: 'not-picked', label: 'Not Picked', color: 'bg-orange-100 text-orange-700' },
+  { value: 'busy', label: 'Busy', color: 'bg-yellow-100 text-yellow-700' },
+  { value: 'interested', label: 'Interested', color: 'bg-green-100 text-green-700' },
+  { value: 'not-interested', label: 'Not Interested', color: 'bg-red-100 text-red-700' },
+];
+
 export {
   placeOptions,
   bloodGroupOptions,
@@ -288,5 +298,6 @@ export {
   employmentType,
   rolesOptions,
   leadStatusOptions,
-  leadPotentialOptions
+  leadPotentialOptions,
+  callListStatusOptions
 };

@@ -18,7 +18,7 @@ import API from '../../config/api';
 import { AuthContext } from '../../context/AuthContext';
 import { isOwner } from '../../utils/roleHelpers';
 import { CloseIcon, DownloadIcon, FileIcon } from '../../icons';
-import { countries } from '../../data/DataSets';
+import { countries, callListStatusOptions } from '../../data/DataSets';
 
 export default function CallList() {
     const { user } = useContext(AuthContext);
@@ -146,6 +146,24 @@ export default function CallList() {
         }
     };
 
+    const handleStatusUpdate = async (id, newStatus) => {
+        try {
+            await axios.patch(
+                `${API}/call-lists/${id}/status`,
+                { status: newStatus },
+                { withCredentials: true }
+            );
+
+            toast.success("Status updated successfully!");
+            setCallLists(callLists.map(entry =>
+                entry._id === id ? { ...entry, status: newStatus } : entry
+            ));
+        } catch (error) {
+            console.error("Error updating status:", error);
+            toast.error(error.response?.data?.message || "Failed to update status.");
+        }
+    };
+
     const filteredData = callLists.filter(item => {
         const searchLower = search.toLowerCase();
         return (
@@ -209,6 +227,7 @@ export default function CallList() {
                                     <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Remarks</TableCell>
                                     <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Created By</TableCell>
                                     <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Date</TableCell>
+                                    <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Status</TableCell>
                                     <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Actions</TableCell>
                                 </TableRow>
                             </TableHeader>
@@ -225,6 +244,25 @@ export default function CallList() {
                                         </TableCell>
                                         <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{entry.createdBy?.fullName || 'Unknown'}</TableCell>
                                         <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{formatDate(entry.createdAt)}</TableCell>
+                                        <TableCell className="py-3">
+                                            <div className="flex flex-col gap-1.5">
+                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium w-fit capitalize ${callListStatusOptions.find(opt => opt.value === entry.status)?.color || 'bg-gray-100 text-gray-700'
+                                                    }`}>
+                                                    {entry.status || 'pending'}
+                                                </span>
+                                                <select
+                                                    className="text-[10px] bg-transparent border border-gray-200 dark:border-gray-800 rounded px-1 py-0.5 outline-none focus:border-brand-500"
+                                                    value={entry.status || 'pending'}
+                                                    onChange={(e) => handleStatusUpdate(entry._id, e.target.value)}
+                                                >
+                                                    {callListStatusOptions.map(opt => (
+                                                        <option key={opt.value} value={opt.value}>
+                                                            Mark as {opt.label}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </TableCell>
                                         <TableCell className="py-3">
                                             <div className="flex items-center gap-2">
                                                 <Button size="sm" variant="outline" onClick={() => handleEdit(entry)}>

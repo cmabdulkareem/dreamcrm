@@ -146,6 +146,7 @@ export const importCallLists = async (req, res) => {
                 phoneNumber: phoneNumber || '',
                 socialMediaId: socialMediaId || '',
                 remarks: remarks || '',
+                status: entry.status || 'pending',
                 brand: brandId,
                 createdBy: req.user.id
             });
@@ -169,6 +170,36 @@ export const importCallLists = async (req, res) => {
         });
     } catch (error) {
         console.error("Error importing call lists:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+// Update status of a call list entry
+export const updateCallListStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        if (!status) {
+            return res.status(400).json({ message: "Status is required." });
+        }
+
+        const updatedCallList = await CallList.findByIdAndUpdate(
+            id,
+            { status },
+            { new: true }
+        ).populate('createdBy', 'fullName');
+
+        if (!updatedCallList) {
+            return res.status(404).json({ message: "Call list entry not found." });
+        }
+
+        return res.status(200).json({
+            message: "Status updated successfully.",
+            callList: updatedCallList
+        });
+    } catch (error) {
+        console.error("Error updating call list status:", error);
         return res.status(500).json({ message: "Internal server error" });
     }
 };
