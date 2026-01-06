@@ -142,16 +142,16 @@ export const getConvertedCustomers = async (req, res) => {
     const hasAdminAccess = isAdmin(req.user);
     const hasManagerAccess = isManager(req.user);
 
-    let query = { ...req.brandFilter, leadStatus: 'converted', isAdmissionTaken: { $ne: true } };
+    const { includeStudents } = req.query;
+    let query = { ...req.brandFilter, leadStatus: 'converted' };
+
+    if (includeStudents !== 'true') {
+      query.isAdmissionTaken = { $ne: true };
+    }
 
     // If user is not admin or manager, only show leads assigned to them
     if (!hasAdminAccess && !hasManagerAccess) {
-      query = {
-        ...req.brandFilter,
-        leadStatus: 'converted',
-        isAdmissionTaken: { $ne: true },
-        assignedTo: req.user.id // Only leads assigned to the user
-      };
+      query.assignedTo = req.user.id; // Only leads assigned to the user
     }
 
     const customers = await customerModel.find(query).sort({ createdAt: -1 });

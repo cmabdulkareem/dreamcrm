@@ -1,4 +1,4 @@
-// Version: 1.2 - Filtered customer search (converted only)
+// Version: 1.3 - Search converted customers including students
 import { useState, useEffect, useContext } from "react";
 import { toast } from "react-toastify";
 import axios from "axios";
@@ -55,8 +55,8 @@ const InvoiceGenerator = () => {
     const performSearch = async () => {
         setSearching(true);
         try {
-            // Only search converted customers. Filtered by brand via x-brand-id header.
-            const endpoint = `${API}/customers/converted`;
+            // Include students in the search (some converted leads might have already taken admission)
+            const endpoint = `${API}/customers/converted?includeStudents=true`;
 
             const response = await axios.get(endpoint, { withCredentials: true });
             const data = response.data.customers || response.data;
