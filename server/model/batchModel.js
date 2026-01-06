@@ -11,6 +11,11 @@ const batchSchema = new mongoose.Schema({
         required: true,
         trim: true
     },
+    instructor: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: false // Optional for older records, but will be enforced for new ones via logic
+    },
     mode: {
         type: String,
         enum: ['online', 'offline'],

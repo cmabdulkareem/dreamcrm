@@ -11,9 +11,12 @@ export const getAllBatches = async (req, res) => {
     try {
         const finalQuery = req.brandFilter || {};
 
-        // If user is an instructor (and not admin/owner/manager), filter by instructor name
+        // If user is an instructor (and not admin/owner/manager), filter by instructor ID or name
         if (isInstructor(req.user) && !isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
-            finalQuery.instructorName = req.user.fullName;
+            finalQuery.$or = [
+                { instructor: req.user._id },
+                { instructorName: req.user.fullName }
+            ];
         }
 
         const batches = await Batch.find(finalQuery).sort({ createdAt: -1 });
@@ -45,7 +48,8 @@ export const createBatch = async (req, res) => {
             subject,
             startDate,
             expectedEndDate,
-            batchTime
+            batchTime,
+            instructor // Add instructor ID
         } = req.body;
 
         const brandId = req.headers['x-brand-id'];
@@ -61,6 +65,7 @@ export const createBatch = async (req, res) => {
             startDate,
             expectedEndDate,
             batchTime,
+            instructor, // Save instructor ID
             brand: brandId,
             createdBy: req.user.id
         });

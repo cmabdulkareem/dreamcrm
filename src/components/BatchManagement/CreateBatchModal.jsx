@@ -16,7 +16,8 @@ export default function CreateBatchModal({ isOpen, onClose, onCreated, onUpdated
         subject: '',
         startDate: '',
         expectedEndDate: '',
-        batchTime: { from: '', to: '' }
+        batchTime: { from: '', to: '' },
+        instructor: ''
     });
     const [loading, setLoading] = useState(false);
     const [instructorOptions, setInstructorOptions] = useState([]);
@@ -58,7 +59,8 @@ export default function CreateBatchModal({ isOpen, onClose, onCreated, onUpdated
                     batchTime: {
                         from: batch.batchTime?.from || '',
                         to: batch.batchTime?.to || ''
-                    }
+                    },
+                    instructor: batch.instructor || ''
                 });
                 // Note: We might not have the instructor's ID readily available in the batch object if it only stores name.
                 // If the batch object has instructorId, we would set it here. 
@@ -74,7 +76,8 @@ export default function CreateBatchModal({ isOpen, onClose, onCreated, onUpdated
                     subject: '',
                     startDate: '',
                     expectedEndDate: '',
-                    batchTime: { from: '', to: '' }
+                    batchTime: { from: '', to: '' },
+                    instructor: ''
                 });
                 setSelectedInstructorId('');
             }
@@ -109,7 +112,11 @@ export default function CreateBatchModal({ isOpen, onClose, onCreated, onUpdated
         setSelectedInstructorId(value);
         const selectedInstructor = instructorOptions.find(opt => opt.value === value);
         if (selectedInstructor) {
-            setFormData(prev => ({ ...prev, instructorName: selectedInstructor.label }));
+            setFormData(prev => ({
+                ...prev,
+                instructorName: selectedInstructor.label,
+                instructor: value
+            }));
         }
     };
 
