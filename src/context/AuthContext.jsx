@@ -72,7 +72,7 @@ function AuthProvider({ children }) {
         setIsAdmin(isAdminUser);
 
         // Auto-select brand for single-brand users if none selected
-        if (!selectedBrand && user.brands && user.brands.length === 1) {
+        if (!selectedBrand && Array.isArray(user.brands) && user.brands.length === 1) {
           const firstBrand = user.brands[0];
           // Use selectBrand to ensure indices/themes/reload are handled
           selectBrand(firstBrand);
@@ -127,7 +127,7 @@ function AuthProvider({ children }) {
     setIsAdmin(isAdminUser);
 
     // Auto-select brand for users with only one brand if none selected
-    if (!selectedBrand && userData.brands && userData.brands.length === 1) {
+    if (!selectedBrand && Array.isArray(userData.brands) && userData.brands.length === 1) {
       const firstBrand = userData.brands[0];
       // We must ensure the token is saved BEFORE selectBrand reloads the page
       selectBrand(firstBrand);

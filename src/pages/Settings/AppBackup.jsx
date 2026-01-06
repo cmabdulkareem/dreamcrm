@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import API from '../../config/api';
 import { BoxIcon, DownloadIcon, TrashBinIcon, RefreshIcon, PlusIcon } from '../../icons';
 import ComponentCard from '../../components/common/ComponentCard';
 import PageBreadCrumb from '../../components/common/PageBreadCrumb';
@@ -15,8 +16,8 @@ const AppBackup = () => {
     const fetchBackups = async () => {
         try {
             setLoading(true);
-            const response = await axios.get('/api/backup/list');
-            setBackups(response.data.backups);
+            const response = await axios.get(`${API}/backup/list`, { withCredentials: true });
+            setBackups(response.data.backups || []);
         } catch (error) {
             toast.error('Failed to fetch backups');
         } finally {
@@ -31,7 +32,7 @@ const AppBackup = () => {
     const handleCreateBackup = async () => {
         try {
             setCreating(true);
-            const response = await axios.post('/api/backup/create');
+            const response = await axios.post(`${API}/backup/create`, {}, { withCredentials: true });
             toast.success(response.data.message);
             fetchBackups();
         } catch (error) {
@@ -43,7 +44,7 @@ const AppBackup = () => {
 
     const handleDownload = async (filename) => {
         try {
-            window.open(`/api/backup/download/${filename}`, '_blank');
+            window.open(`${API}/backup/download/${filename}`, '_blank');
         } catch (error) {
             toast.error('Failed to download backup');
         }
@@ -52,7 +53,7 @@ const AppBackup = () => {
     const handleDelete = async (filename) => {
         if (!window.confirm('Are you sure you want to delete this backup?')) return;
         try {
-            await axios.delete(`/api/backup/${filename}`);
+            await axios.delete(`${API}/backup/${filename}`, { withCredentials: true });
             toast.success('Backup deleted');
             fetchBackups();
         } catch (error) {
@@ -74,8 +75,9 @@ const AppBackup = () => {
 
         try {
             setRestoring(true);
-            const response = await axios.post('/api/backup/restore', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
+            const response = await axios.post(`${API}/backup/restore`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+                withCredentials: true
             });
             toast.success(response.data.message);
             // Optionally redirect or reload

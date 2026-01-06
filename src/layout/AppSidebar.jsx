@@ -381,9 +381,8 @@ const AppSidebar = () => {
                       return null;
                     }
 
-                    // Only show Campaigns, Contact Points, Course Management to managers
-                    if ((subItem.name === "Campaigns" || subItem.name === "Contact Points" ||
-                      subItem.name === "Course Management") && !hasManagerAccess) {
+                    // Only show Campaigns, Contact Points, Course Management, and App Backup to managers
+                    if (["Campaigns", "Contact Points", "Course Management", "App Backup"].includes(subItem.name) && !hasManagerAccess) {
                       return null;
                     }
 
@@ -507,7 +506,7 @@ const AppSidebar = () => {
                 className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
                   }`}
               >
-                {isExpanded || isHovered || isMobileOpen ? (user?.roles?.[0] || "Menu") : <MoreDotIcon className="size-6" />}
+                {isExpanded || isHovered || isMobileOpen ? (user?.roles?.[0] || user?.role || "Menu") : <MoreDotIcon className="size-6" />}
               </h2>
               {renderMenuItems(navItems, "main")}
             </div>

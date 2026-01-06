@@ -380,7 +380,7 @@ const AppHeader = () => {
           <div className="flex flex-col lg:flex-row items-center w-full lg:w-auto gap-4">
             <div className="flex items-center gap-1.5 2xsm:gap-2 justify-center w-full lg:w-auto lg:border-none lg:pb-0">
               {/* Brand Switcher - Only show if user has brands */}
-              {currentUser && currentUser.brands && currentUser.brands.length > 0 && (
+              {currentUser && Array.isArray(currentUser.brands) && currentUser.brands.length > 0 && (
                 <div className="relative">
                   <select
                     className="h-10 pl-2 pr-6 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500 w-[100px] sm:w-auto"
@@ -395,7 +395,7 @@ const AppHeader = () => {
                       }
                     }}
                   >
-                    {(isAdmin(currentUser) || currentUser.brands.length > 1) && <option value="">All Brands</option>}
+                    {(isAdmin(currentUser) || (Array.isArray(currentUser.brands) && currentUser.brands.length > 1)) && <option value="">All Brands</option>}
                     {currentUser.brands.map((brand) => (
                       <option key={brand._id} value={brand._id}>
                         {brand.name}
