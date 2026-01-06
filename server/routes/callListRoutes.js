@@ -3,7 +3,8 @@ import {
     getAllCallLists,
     createCallList,
     updateCallList,
-    deleteCallList
+    deleteCallList,
+    importCallLists
 } from '../controller/callListController.js';
 import verifyToken from '../middleware/verifyToken.js';
 import { applyBrandFilter } from '../middleware/brandMiddleware.js';
@@ -19,5 +20,6 @@ router.get('/', getAllCallLists);
 router.post('/', createCallList);
 router.put('/:id', updateCallList);
 router.delete('/:id', deleteCallList); // Owner check is in controller
+router.post('/import', importCallLists);
 
 export default router;

@@ -26,9 +26,9 @@ export const createCallList = async (req, res) => {
             return res.status(400).json({ message: "Brand ID is required in headers." });
         }
 
-        // At least one field should be provided
-        if (!name && !phoneNumber && !socialMediaId && !remarks) {
-            return res.status(400).json({ message: "At least one field must be provided." });
+        // At least one field should be provided (except remarks)
+        if (!name && !phoneNumber && !socialMediaId) {
+            return res.status(400).json({ message: "At least one field (Name, Phone, or Social Media ID) must be provided." });
         }
 
         const newCallList = new CallList({
@@ -60,6 +60,11 @@ export const updateCallList = async (req, res) => {
     try {
         const { id } = req.params;
         const { name, phoneNumber, socialMediaId, remarks } = req.body;
+
+        // At least one field (excluding remarks) must be present
+        if (!name && !phoneNumber && !socialMediaId) {
+            return res.status(400).json({ message: "At least one field (Name, Phone, or Social Media ID) must be provided." });
+        }
 
         const updateData = {
             name: name || '',
@@ -106,6 +111,64 @@ export const deleteCallList = async (req, res) => {
         return res.status(200).json({ message: "Call list entry deleted successfully." });
     } catch (error) {
         console.error("Error deleting call list:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+// Import multiple call list entries
+export const importCallLists = async (req, res) => {
+    try {
+        const { entries } = req.body;
+        const brandId = req.headers['x-brand-id'];
+
+        if (!brandId) {
+            return res.status(400).json({ message: "Brand ID is required in headers." });
+        }
+
+        if (!entries || !Array.isArray(entries) || entries.length === 0) {
+            return res.status(400).json({ message: "No entries provided for import." });
+        }
+
+        const validEntries = [];
+        const skippedEntries = [];
+
+        for (const entry of entries) {
+            const { name, phoneNumber, socialMediaId, remarks } = entry;
+
+            // At least one field (excluding remarks) must be present
+            if (!name && !phoneNumber && !socialMediaId) {
+                skippedEntries.push({ entry, reason: "Missing mandatory fields (Name, Phone, or Social Media ID)" });
+                continue;
+            }
+
+            validEntries.push({
+                name: name || '',
+                phoneNumber: phoneNumber || '',
+                socialMediaId: socialMediaId || '',
+                remarks: remarks || '',
+                brand: brandId,
+                createdBy: req.user.id
+            });
+        }
+
+        if (validEntries.length === 0) {
+            return res.status(400).json({
+                message: "No valid entries found to import.",
+                skippedCount: skippedEntries.length,
+                skippedEntries
+            });
+        }
+
+        const createdEntries = await CallList.insertMany(validEntries);
+
+        return res.status(201).json({
+            message: `Successfully imported ${createdEntries.length} entries.`,
+            importedCount: createdEntries.length,
+            skippedCount: skippedEntries.length,
+            skippedEntries
+        });
+    } catch (error) {
+        console.error("Error importing call lists:", error);
         return res.status(500).json({ message: "Internal server error" });
     }
 };
