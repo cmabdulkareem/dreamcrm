@@ -59,6 +59,9 @@ const LeaveStatusCheck = lazy(() => import("./pages/LeaveStatusCheck"));
 const ApplyLeave = lazy(() => import("./pages/LeaveManagement/ApplyLeave"));
 const MyLeaves = lazy(() => import("./pages/LeaveManagement/MyLeaves"));
 const CollectPayment = lazy(() => import("./pages/Finance/CollectPayment"));
+const InvoiceList = lazy(() => import("./pages/Finance/InvoiceList"));
+const InvoiceGenerator = lazy(() => import("./pages/Finance/InvoiceGenerator"));
+const InvoiceDetails = lazy(() => import("./pages/Finance/InvoiceDetails"));
 import ChatWidget from "./components/chat/ChatWidget";
 import BrandManagement from "./components/brandManagement/BrandManagement";
 import PublicAttendance from "./pages/PublicAttendance";
@@ -106,6 +109,9 @@ function App() {
 
                       {/* Finance */}
                       <Route path="/finance/collect-payment" element={<ProtectedRoutes requireAccountant={true}><CollectPayment /></ProtectedRoutes>} />
+                      <Route path="/finance/invoices" element={<ProtectedRoutes requireAccountant={true}><InvoiceList /></ProtectedRoutes>} />
+                      <Route path="/finance/generate-invoice" element={<ProtectedRoutes requireAccountant={true}><InvoiceGenerator /></ProtectedRoutes>} />
+                      <Route path="/finance/invoices/:id" element={<ProtectedRoutes requireAccountant={true}><InvoiceDetails /></ProtectedRoutes>} />
 
                       {/* Profile */}
                       <Route path="/profile" element={<ProtectedRoutes><UserProfiles /></ProtectedRoutes>} />

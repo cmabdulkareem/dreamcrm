@@ -60,6 +60,8 @@ const navItems = [
     icon: <TableIcon />,
     subItems: [
       { name: "Collect Payment", path: "/finance/collect-payment", pro: false },
+      { name: "Manage Invoices", path: "/finance/invoices", pro: false },
+      { name: "Generate Invoice", path: "/finance/generate-invoice", pro: false },
     ]
   },
   {
