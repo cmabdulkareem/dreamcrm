@@ -54,10 +54,9 @@ const InvoiceGenerator = () => {
     const performSearch = async () => {
         setSearching(true);
         try {
-            // Filter by selected brand if available
-            const endpoint = selectedBrand
-                ? `${API}/customers?brand=${selectedBrand}`
-                : `${API}/customers/all`;
+            // The brand filter is automatically applied by the backend middleware
+            // using the x-brand-id header provided by AuthContext
+            const endpoint = `${API}/customers/all`;
 
             const response = await axios.get(endpoint, { withCredentials: true });
             const data = response.data.customers || response.data;
@@ -135,7 +134,7 @@ const InvoiceGenerator = () => {
                 items,
                 subTotal,
                 totalAmount,
-                brand: selectedBrand
+                brand: selectedBrand?._id || selectedBrand?.id
             };
 
             await axios.post(`${API}/invoices`, payload, { withCredentials: true });
