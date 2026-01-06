@@ -221,3 +221,39 @@ export const updateCallListStatus = async (req, res) => {
         return res.status(500).json({ message: "Internal server error" });
     }
 };
+// Bulk assign call list entries
+export const bulkAssignCallLists = async (req, res) => {
+    try {
+        const { ids, assignedTo } = req.body;
+
+        if (!isOwner(req.user) && !isManager(req.user)) {
+            return res.status(403).json({ message: "Only owners and managers can bulk assign call lists." });
+        }
+
+        if (!ids || !Array.isArray(ids) || ids.length === 0) {
+            return res.status(400).json({ message: "No entries selected for assignment." });
+        }
+
+        // assignedTo can be null (unassign) or a valid user ID
+        const finalAssignedTo = assignedTo || null;
+
+        // Ensure we only update items in the current brand's context
+        const query = {
+            ...req.brandFilter,
+            _id: { $in: ids }
+        };
+
+        const result = await CallList.updateMany(
+            query,
+            { $set: { assignedTo: finalAssignedTo } }
+        );
+
+        return res.status(200).json({
+            message: `Successfully assigned ${result.modifiedCount} entries.`,
+            modifiedCount: result.modifiedCount
+        });
+    } catch (error) {
+        console.error("Error bulk assigning call lists:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};

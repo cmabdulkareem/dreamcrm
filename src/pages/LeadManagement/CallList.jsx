@@ -39,6 +39,9 @@ export default function CallList() {
     const [users, setUsers] = useState([]);
     const [selectedEntry, setSelectedEntry] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [selectedIds, setSelectedIds] = useState([]);
+    const [bulkAssignedTo, setBulkAssignedTo] = useState('');
+
 
     const canDelete = isOwner(user);
 
@@ -68,6 +71,7 @@ export default function CallList() {
             toast.error("Failed to load call lists.");
         } finally {
             setLoading(false);
+            setSelectedIds([]); // Reset selection on refresh
         }
     };
 
@@ -180,6 +184,48 @@ export default function CallList() {
         }
     };
 
+    const toggleSelectAll = () => {
+        if (selectedIds.length === filteredData.length && filteredData.length > 0) {
+            setSelectedIds([]);
+        } else {
+            setSelectedIds(filteredData.map(item => item._id));
+        }
+    };
+
+    const toggleSelect = (id) => {
+        if (selectedIds.includes(id)) {
+            setSelectedIds(selectedIds.filter(i => i !== id));
+        } else {
+            setSelectedIds([...selectedIds, id]);
+        }
+    };
+
+    const handleBulkAssign = async () => {
+        if (selectedIds.length === 0) {
+            toast.error("Please select entries to assign.");
+            return;
+        }
+
+        try {
+            setIsSubmitting(true);
+            const response = await axios.post(
+                `${API}/call-lists/bulk-assign`,
+                { ids: selectedIds, assignedTo: bulkAssignedTo },
+                { withCredentials: true }
+            );
+
+            toast.success(response.data.message || "Bulk assignment successful!");
+            fetchCallLists();
+            setBulkAssignedTo('');
+        } catch (error) {
+            console.error("Error in bulk assignment:", error);
+            toast.error(error.response?.data?.message || "Failed to perform bulk assignment.");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+
     const filteredData = callLists.filter(item => {
         const searchLower = search.toLowerCase();
         return (
@@ -241,6 +287,51 @@ export default function CallList() {
             />
             <PageBreadcrumb pageTitle="Call List" />
 
+            {selectedIds.length > 0 && (
+                <div className="mb-6 p-4 bg-brand-50/50 dark:bg-brand-500/5 border border-brand-100 dark:border-brand-500/20 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4">
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-center size-8 bg-brand-500 text-white text-sm font-bold rounded-lg shadow-lg shadow-brand-500/20">
+                            {selectedIds.length}
+                        </div>
+                        <div>
+                            <span className="block text-sm font-semibold text-gray-800 dark:text-white">
+                                {selectedIds.length} Entries Selected
+                            </span>
+                            <button
+                                onClick={() => setSelectedIds([])}
+                                className="text-xs text-brand-500 hover:text-brand-600 font-medium transition-colors"
+                            >
+                                Clear Selection
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+                        <div className="relative flex-1 sm:min-w-[200px]">
+                            <select
+                                value={bulkAssignedTo}
+                                onChange={(e) => setBulkAssignedTo(e.target.value)}
+                                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:ring focus:ring-brand-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 outline-none shadow-sm transition-all"
+                            >
+                                <option value="">Select User to Assign</option>
+                                <option value="unassign">Unassign (None)</option>
+                                {users.map(u => (
+                                    <option key={u._id} value={u._id}>{u.fullName}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <Button
+                            variant="primary"
+                            loading={isSubmitting}
+                            onClick={handleBulkAssign}
+                            className="whitespace-nowrap shadow-lg shadow-brand-500/20"
+                        >
+                            Assign Entries
+                        </Button>
+                    </div>
+                </div>
+            )}
+
             <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h2 className="text-xl font-bold text-gray-800 dark:text-white">Call List</h2>
@@ -277,6 +368,14 @@ export default function CallList() {
                                 <div key={entry._id} className="bg-white dark:bg-white/[0.03] border border-gray-100 dark:border-gray-800 rounded-xl p-4 shadow-sm">
                                     <div className="flex justify-between items-start mb-3">
                                         <div className="flex items-center gap-2">
+                                            {(isOwner(user) || isManager(user)) && (
+                                                <input
+                                                    type="checkbox"
+                                                    className="size-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500 cursor-pointer"
+                                                    checked={selectedIds.includes(entry._id)}
+                                                    onChange={() => toggleSelect(entry._id)}
+                                                />
+                                            )}
                                             <span className="text-xs font-bold text-gray-400">#{index + 1}</span>
                                             <h3 className="font-semibold text-gray-800 dark:text-white">{entry.name || 'Unnamed'}</h3>
                                         </div>
@@ -325,6 +424,16 @@ export default function CallList() {
                             <Table className="min-w-[1000px]">
                                 <TableHeader className="border-gray-100 dark:border-gray-800 border-y">
                                     <TableRow>
+                                        {(isOwner(user) || isManager(user)) && (
+                                            <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
+                                                <input
+                                                    type="checkbox"
+                                                    className="size-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500 cursor-pointer"
+                                                    checked={selectedIds.length === filteredData.length && filteredData.length > 0}
+                                                    onChange={toggleSelectAll}
+                                                />
+                                            </TableCell>
+                                        )}
                                         <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">#</TableCell>
                                         <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Name</TableCell>
                                         <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Phone Number</TableCell>
@@ -339,6 +448,16 @@ export default function CallList() {
                                 <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
                                     {filteredData.map((entry, index) => (
                                         <TableRow key={entry._id} className="transition-colors hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
+                                            {(isOwner(user) || isManager(user)) && (
+                                                <TableCell className="py-3">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="size-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500 cursor-pointer"
+                                                        checked={selectedIds.includes(entry._id)}
+                                                        onChange={() => toggleSelect(entry._id)}
+                                                    />
+                                                </TableCell>
+                                            )}
                                             <TableCell className="py-3 text-gray-400 text-theme-xs">{index + 1}</TableCell>
                                             <TableCell className="py-3 text-gray-800 text-theme-sm dark:text-white/90">{entry.name || '-'}</TableCell>
                                             <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
