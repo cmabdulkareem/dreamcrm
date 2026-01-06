@@ -6,11 +6,11 @@ import {
     updateInvoice,
     deleteInvoice
 } from '../controller/invoiceController.js';
-import { protect } from '../middleware/authMiddleware.js';
+import verifyToken from '../middleware/verifyToken.js';
 
 const router = express.Router();
 
-router.use(protect);
+router.use(verifyToken);
 
 router.post('/', createInvoice);
 router.get('/', getInvoices);
