@@ -174,6 +174,7 @@ function App() {
               <ChatWidget />
             </DndProvider>
           </ChatProvider>
+        </CalendarProvider>
       </NotificationProvider>
     </>
   );
