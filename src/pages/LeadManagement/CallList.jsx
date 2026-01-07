@@ -35,12 +35,16 @@ export default function CallList() {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [socialMediaId, setSocialMediaId] = useState('');
     const [remarks, setRemarks] = useState('');
+    const [source, setSource] = useState('');
+    const [purpose, setPurpose] = useState('');
     const [assignedTo, setAssignedTo] = useState('');
     const [users, setUsers] = useState([]);
     const [selectedEntry, setSelectedEntry] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedIds, setSelectedIds] = useState([]);
     const [bulkAssignedTo, setBulkAssignedTo] = useState('');
+    const [bulkSource, setBulkSource] = useState('');
+    const [bulkPurpose, setBulkPurpose] = useState('');
 
 
     const canDelete = isOwner(user);
@@ -54,7 +58,8 @@ export default function CallList() {
 
     const fetchUsers = async () => {
         try {
-            const response = await axios.get(`${API}/users/dropdown?roles=Owner,Brand Manager,Counsellor,Counselor`, { withCredentials: true });
+            // Use scope=global to get users from ALL brands for assignment
+            const response = await axios.get(`${API}/users/dropdown?roles=Owner,Brand Manager,Counsellor,Counselor&scope=global`, { withCredentials: true });
             setUsers(response.data.users || []);
         } catch (error) {
             console.error("Error fetching users:", error);
@@ -80,6 +85,8 @@ export default function CallList() {
         setPhoneNumber('');
         setSocialMediaId('');
         setRemarks('');
+        setSource('');
+        setPurpose('');
         setAssignedTo('');
         setSelectedEntry(null);
     };
@@ -117,6 +124,8 @@ export default function CallList() {
         setPhoneNumber(entry.phoneNumber || '');
         setSocialMediaId(entry.socialMediaId || '');
         setRemarks(entry.remarks || '');
+        setSource(entry.source || '');
+        setPurpose(entry.purpose || '');
         setAssignedTo(entry.assignedTo?._id || '');
         openEditModal();
     };
@@ -132,7 +141,15 @@ export default function CallList() {
             setIsSubmitting(true);
             const response = await axios.put(
                 `${API}/call-lists/${selectedEntry._id}`,
-                { name, phoneNumber, socialMediaId, remarks, assignedTo },
+                {
+                    name,
+                    phoneNumber,
+                    socialMediaId,
+                    remarks,
+                    source,
+                    purpose,
+                    assignedTo: assignedTo || null
+                },
                 { withCredentials: true }
             );
 
@@ -200,26 +217,40 @@ export default function CallList() {
         }
     };
 
-    const handleBulkAssign = async () => {
+    const handleBulkUpdate = async () => {
         if (selectedIds.length === 0) {
-            toast.error("Please select entries to assign.");
+            toast.error("Please select entries to update.");
+            return;
+        }
+
+        // Check if at least one field is set
+        if (!bulkAssignedTo && !bulkSource && !bulkPurpose) {
+            toast.error("Please select a user, or enter source/purpose to update.");
             return;
         }
 
         try {
             setIsSubmitting(true);
             const response = await axios.post(
-                `${API}/call-lists/bulk-assign`,
-                { ids: selectedIds, assignedTo: bulkAssignedTo },
+                `${API}/call-lists/bulk-assign`, // Using existing endpoint which now supports partial updates
+                {
+                    ids: selectedIds,
+                    assignedTo: bulkAssignedTo,
+                    source: bulkSource,
+                    purpose: bulkPurpose
+                },
                 { withCredentials: true }
             );
 
-            toast.success(response.data.message || "Bulk assignment successful!");
+            toast.success(response.data.message || "Bulk update successful!");
             fetchCallLists();
+            // Reset fields
             setBulkAssignedTo('');
+            setBulkSource('');
+            setBulkPurpose('');
         } catch (error) {
-            console.error("Error in bulk assignment:", error);
-            toast.error(error.response?.data?.message || "Failed to perform bulk assignment.");
+            console.error("Error in bulk update:", error);
+            toast.error(error.response?.data?.message || "Failed to perform bulk update.");
         } finally {
             setIsSubmitting(false);
         }
@@ -232,7 +263,9 @@ export default function CallList() {
             item.name?.toLowerCase().includes(searchLower) ||
             item.phoneNumber?.includes(search) ||
             item.socialMediaId?.toLowerCase().includes(searchLower) ||
-            item.remarks?.toLowerCase().includes(searchLower)
+            item.remarks?.toLowerCase().includes(searchLower) ||
+            item.source?.toLowerCase().includes(searchLower) ||
+            item.purpose?.toLowerCase().includes(searchLower)
         );
     });
 
@@ -282,10 +315,10 @@ export default function CallList() {
     return (
         <div className="p-4 md:p-6">
             <PageMeta
-                title="Call List | DreamCRM"
+                title="Cold Call list | DreamCRM"
                 description="Manage customer contact information"
             />
-            <PageBreadcrumb pageTitle="Call List" />
+            <PageBreadcrumb pageTitle="Cold Call list" />
 
             {selectedIds.length > 0 && (
                 <div className="mb-6 p-4 bg-brand-50/50 dark:bg-brand-500/5 border border-brand-100 dark:border-brand-500/20 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4">
@@ -306,27 +339,50 @@ export default function CallList() {
                         </div>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
-                        <div className="relative flex-1 sm:min-w-[200px]">
-                            <select
-                                value={bulkAssignedTo}
-                                onChange={(e) => setBulkAssignedTo(e.target.value)}
-                                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:ring focus:ring-brand-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 outline-none shadow-sm transition-all"
-                            >
-                                <option value="">Select User to Assign</option>
-                                <option value="unassign">Unassign (None)</option>
-                                {users.map(u => (
-                                    <option key={u._id} value={u._id}>{u.fullName}</option>
-                                ))}
-                            </select>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3 w-full md:w-auto">
+                        <div>
+                            <label className="text-[10px] text-gray-500 font-medium mb-1 block uppercase tracking-wider">Source</label>
+                            <input
+                                type="text"
+                                value={bulkSource}
+                                onChange={(e) => setBulkSource(e.target.value)}
+                                placeholder="e.g. LinkedIn"
+                                className="w-full sm:w-[150px] rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:ring focus:ring-brand-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 outline-none shadow-sm transition-all"
+                            />
+                        </div>
+                        <div>
+                            <label className="text-[10px] text-gray-500 font-medium mb-1 block uppercase tracking-wider">Purpose</label>
+                            <input
+                                type="text"
+                                value={bulkPurpose}
+                                onChange={(e) => setBulkPurpose(e.target.value)}
+                                placeholder="e.g. Sales"
+                                className="w-full sm:w-[150px] rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:ring focus:ring-brand-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 outline-none shadow-sm transition-all"
+                            />
+                        </div>
+                        <div>
+                            <label className="text-[10px] text-gray-500 font-medium mb-1 block uppercase tracking-wider">Assign To</label>
+                            <div className="relative sm:min-w-[200px]">
+                                <select
+                                    value={bulkAssignedTo}
+                                    onChange={(e) => setBulkAssignedTo(e.target.value)}
+                                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:ring focus:ring-brand-200 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 outline-none shadow-sm transition-all"
+                                >
+                                    <option value="">Select User (No Change)</option>
+                                    <option value="unassign">Unassign (None)</option>
+                                    {users.map(u => (
+                                        <option key={u._id} value={u._id}>{u.fullName}</option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
                         <Button
                             variant="primary"
                             loading={isSubmitting}
-                            onClick={handleBulkAssign}
-                            className="whitespace-nowrap shadow-lg shadow-brand-500/20"
+                            onClick={handleBulkUpdate}
+                            className="whitespace-nowrap shadow-lg shadow-brand-500/20 h-[38px] mb-[1px]" // Align with inputs
                         >
-                            Assign Entries
+                            Update Selected
                         </Button>
                     </div>
                 </div>
@@ -334,7 +390,7 @@ export default function CallList() {
 
             <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h2 className="text-xl font-bold text-gray-800 dark:text-white">Call List</h2>
+                    <h2 className="text-xl font-bold text-gray-800 dark:text-white">Cold Call list</h2>
                     <p className="text-sm text-gray-500 dark:text-gray-400">Manage customer contact information</p>
                 </div>
                 <div className="flex gap-3 w-full sm:w-auto">
@@ -404,6 +460,18 @@ export default function CallList() {
                                             <span className="text-gray-500 dark:text-gray-400">Assigned:</span>
                                             <span className="text-gray-700 dark:text-gray-300">{entry.assignedTo?.fullName || 'Unassigned'}</span>
                                         </div>
+                                        {entry.source && (
+                                            <div className="flex items-center gap-2 text-sm">
+                                                <span className="text-gray-500 dark:text-gray-400">Source:</span>
+                                                <span className="text-gray-700 dark:text-gray-300">{entry.source}</span>
+                                            </div>
+                                        )}
+                                        {entry.purpose && (
+                                            <div className="flex items-center gap-2 text-sm">
+                                                <span className="text-gray-500 dark:text-gray-400">Purpose:</span>
+                                                <span className="text-gray-700 dark:text-gray-300">{entry.purpose}</span>
+                                            </div>
+                                        )}
                                         {entry.remarks && (
                                             <div className="mt-2 p-2 bg-gray-50 dark:bg-white/[0.02] rounded text-xs text-gray-600 dark:text-gray-400 italic">
                                                 "{entry.remarks}"
@@ -439,6 +507,8 @@ export default function CallList() {
                                         <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Phone Number</TableCell>
                                         <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Assigned To</TableCell>
                                         <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Social Media ID</TableCell>
+                                        <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Source</TableCell>
+                                        <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Purpose</TableCell>
                                         <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Remarks</TableCell>
                                         <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Date</TableCell>
                                         <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Status</TableCell>
@@ -469,6 +539,8 @@ export default function CallList() {
                                             </TableCell>
                                             <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{entry.assignedTo?.fullName || 'Unassigned'}</TableCell>
                                             <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{entry.socialMediaId || '-'}</TableCell>
+                                            <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{entry.source || '-'}</TableCell>
+                                            <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{entry.purpose || '-'}</TableCell>
                                             <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                                                 <div className="max-w-[150px] truncate" title={entry.remarks}>
                                                     {entry.remarks || '-'}
@@ -529,6 +601,26 @@ export default function CallList() {
                             value={socialMediaId}
                             onChange={(e) => setSocialMediaId(e.target.value)}
                             placeholder="Instagram, Facebook, etc. (optional)"
+                        />
+                    </div>
+                    <div>
+                        <Label htmlFor="source">Source</Label>
+                        <Input
+                            id="source"
+                            type="text"
+                            value={source}
+                            onChange={(e) => setSource(e.target.value)}
+                            placeholder="e.g. LinkedIn, Referral (optional)"
+                        />
+                    </div>
+                    <div>
+                        <Label htmlFor="purpose">Purpose</Label>
+                        <Input
+                            id="purpose"
+                            type="text"
+                            value={purpose}
+                            onChange={(e) => setPurpose(e.target.value)}
+                            placeholder="e.g. Sales, Inquiry (optional)"
                         />
                     </div>
                     {(isOwner(user) || isManager(user)) && (
@@ -597,6 +689,26 @@ export default function CallList() {
                             value={socialMediaId}
                             onChange={(e) => setSocialMediaId(e.target.value)}
                             placeholder="Instagram, Facebook, etc. (optional)"
+                        />
+                    </div>
+                    <div>
+                        <Label htmlFor="editSource">Source</Label>
+                        <Input
+                            id="editSource"
+                            type="text"
+                            value={source}
+                            onChange={(e) => setSource(e.target.value)}
+                            placeholder="e.g. LinkedIn, Referral (optional)"
+                        />
+                    </div>
+                    <div>
+                        <Label htmlFor="editPurpose">Purpose</Label>
+                        <Input
+                            id="editPurpose"
+                            type="text"
+                            value={purpose}
+                            onChange={(e) => setPurpose(e.target.value)}
+                            placeholder="e.g. Sales, Inquiry (optional)"
                         />
                     </div>
                     {(isOwner(user) || isManager(user)) && (

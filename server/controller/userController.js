@@ -70,7 +70,7 @@ export const signUpUser = async (req, res) => {
 // Get users for dropdown (filtered by brand and/or roles)
 export const getUsersForDropdown = async (req, res) => {
   try {
-    const { brandId, roles } = req.query;
+    const { brandId, roles, scope } = req.query;
 
     // Build query object
     const query = {};
@@ -103,7 +103,13 @@ export const getUsersForDropdown = async (req, res) => {
     // Filter users by brand if brandId is provided
     // (We do this in JS because brands involves array matching which can be tricky if not all users have brands array populated/consistent)
     let filteredUsers = users;
-    if (brandId) {
+
+    // Check for global scope access (Admin/Owner/Manager only)
+    const canAccessGlobal = isAdmin(req.user) || isOwner(req.user) || isManager(req.user);
+    if (scope === 'global' && canAccessGlobal) {
+      // If scope is global and user has permission, do NOT filter by brand
+      filteredUsers = users;
+    } else if (brandId) {
       filteredUsers = users.filter(user => {
         const userBrandIds = (user.brands || []).map(b => b.toString());
         return userBrandIds.includes(brandId);

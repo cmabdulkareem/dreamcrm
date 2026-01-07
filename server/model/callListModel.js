@@ -21,6 +21,16 @@ const callListSchema = new mongoose.Schema({
         trim: true,
         default: ''
     },
+    source: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    purpose: {
+        type: String,
+        trim: true,
+        default: ''
+    },
     status: {
         type: String,
         enum: ['pending', 'called', 'wrong-number', 'not-picked', 'busy', 'interested', 'not-interested'],

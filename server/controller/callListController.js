@@ -35,7 +35,7 @@ export const getAllCallLists = async (req, res) => {
 // Create a new call list entry
 export const createCallList = async (req, res) => {
     try {
-        const { name, phoneNumber, socialMediaId, remarks, assignedTo } = req.body;
+        const { name, phoneNumber, socialMediaId, remarks, assignedTo, source, purpose } = req.body;
 
         const brandId = req.headers['x-brand-id'];
         if (!brandId) {
@@ -52,6 +52,8 @@ export const createCallList = async (req, res) => {
             phoneNumber: phoneNumber || '',
             socialMediaId: socialMediaId || '',
             remarks: remarks || '',
+            source: source || '',
+            purpose: purpose || '',
             brand: brandId,
             createdBy: req.user.id,
             assignedTo: assignedTo || null
@@ -79,7 +81,7 @@ export const createCallList = async (req, res) => {
 export const updateCallList = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, phoneNumber, socialMediaId, remarks, assignedTo } = req.body;
+        const { name, phoneNumber, socialMediaId, remarks, assignedTo, source, purpose } = req.body;
 
         // At least one field (excluding remarks) must be present
         if (!name && !phoneNumber && !socialMediaId) {
@@ -91,6 +93,8 @@ export const updateCallList = async (req, res) => {
             phoneNumber: phoneNumber || '',
             socialMediaId: socialMediaId || '',
             remarks: remarks || '',
+            source: source || '',
+            purpose: purpose || '',
             assignedTo: assignedTo || null
         };
 
@@ -243,8 +247,28 @@ export const bulkAssignCallLists = async (req, res) => {
             return res.status(400).json({ message: "No entries selected for assignment." });
         }
 
-        // assignedTo can be null (unassign) or a valid user ID
-        const finalAssignedTo = assignedTo || null;
+        const { source, purpose } = req.body;
+
+        // Construct update object dynamically
+        const updateData = {};
+
+        // Handle assignment (allow unassign with null/empty string if explicitly passed, usually 'unassign' string from frontend)
+        if (assignedTo !== undefined) {
+            updateData.assignedTo = assignedTo === 'unassign' ? null : assignedTo;
+        }
+
+        // Handle source and purpose updates if provided
+        if (source !== undefined && source !== null && source.trim() !== '') {
+            updateData.source = source.trim();
+        }
+
+        if (purpose !== undefined && purpose !== null && purpose.trim() !== '') {
+            updateData.purpose = purpose.trim();
+        }
+
+        if (Object.keys(updateData).length === 0) {
+            return res.status(400).json({ message: "No fields provided to update." });
+        }
 
         // Ensure we only update items in the current brand's context
         const query = {
@@ -254,7 +278,7 @@ export const bulkAssignCallLists = async (req, res) => {
 
         const result = await CallList.updateMany(
             query,
-            { $set: { assignedTo: finalAssignedTo } }
+            { $set: updateData }
         );
 
         return res.status(200).json({
