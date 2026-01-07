@@ -8,8 +8,13 @@ export const getAllCallLists = async (req, res) => {
 
         // If not Owner or Manager, only show entries assigned to them (irrespective of brand)
         if (!isOwner(req.user) && !isManager(req.user)) {
-            // Override brand filter to show ANY assigned call list
-            finalQuery = { assignedTo: req.user.id };
+            // Override brand filter to show ANY assigned call list OR created by the user
+            finalQuery = {
+                $or: [
+                    { assignedTo: req.user.id },
+                    { createdBy: req.user.id }
+                ]
+            };
         } else {
             // For Owners/Managers: Show brand items OR items assigned to them (even if from another brand)
             finalQuery = {
@@ -56,7 +61,8 @@ export const createCallList = async (req, res) => {
             purpose: purpose || '',
             brand: brandId,
             createdBy: req.user.id,
-            assignedTo: assignedTo || null
+            // If assignedTo is not provided, default to the creator
+            assignedTo: assignedTo || req.user.id
         });
 
         await newCallList.save();
