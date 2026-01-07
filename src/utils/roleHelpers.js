@@ -7,7 +7,7 @@
 const ADMIN_ROLES = ['Owner'];
 
 // Managerial roles (can manage teams and resources)
-const MANAGER_ROLES = ['Owner', 'Brand Manager'];
+const MANAGER_ROLES = ['Owner', 'Brand Manager', 'Manager'];
 
 // Finance roles
 const ACCOUNTANT_ROLES = ['Owner', 'Accounts Executive', 'Brand Manager'];
