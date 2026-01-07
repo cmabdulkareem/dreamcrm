@@ -21,7 +21,7 @@ import { CloseIcon, DownloadIcon, FileIcon } from '../../icons';
 import { countries, callListStatusOptions } from '../../data/DataSets';
 
 export default function CallList() {
-    const { user } = useContext(AuthContext);
+    const { user, selectedBrand } = useContext(AuthContext);
     const [callLists, setCallLists] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
@@ -77,8 +77,11 @@ export default function CallList() {
 
     const fetchUsers = async () => {
         try {
-            // Use scope=global to get users from ALL brands for assignment, and no role filter to allow assigning to anyone
-            const response = await axios.get(`${API}/users/dropdown?scope=global`, { withCredentials: true });
+            const params = new URLSearchParams();
+            if (selectedBrand) {
+                params.append('brandId', selectedBrand._id);
+            }
+            const response = await axios.get(`${API}/users/dropdown?${params.toString()}`, { withCredentials: true });
             setUsers(response.data.users || []);
         } catch (error) {
             console.error("Error fetching users:", error);

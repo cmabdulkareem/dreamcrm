@@ -19,21 +19,16 @@ export const getAllCallLists = async (req, res) => {
         const skip = (parseInt(page) - 1) * parseInt(limit);
         const limitInt = parseInt(limit);
 
-        let finalQuery = {};
+        const brandFilter = req.brandFilter || {};
+        let finalQuery = { ...brandFilter };
 
-        // Role-based base query
+        // Role-based base query restriction WITHIN the brand
         if (!isOwner(req.user) && !isManager(req.user)) {
             finalQuery = {
+                ...brandFilter,
                 $or: [
                     { assignedTo: req.user.id },
                     { createdBy: req.user.id }
-                ]
-            };
-        } else {
-            finalQuery = {
-                $or: [
-                    req.brandFilter || {},
-                    { assignedTo: req.user.id }
                 ]
             };
         }
@@ -178,8 +173,9 @@ export const updateCallList = async (req, res) => {
             assignedTo: assignedTo || null
         };
 
-        const updatedCallList = await CallList.findByIdAndUpdate(
-            id,
+        const query = { _id: id, ...req.brandFilter };
+        const updatedCallList = await CallList.findOneAndUpdate(
+            query,
             updateData,
             { new: true }
         ).populate([
@@ -211,7 +207,8 @@ export const deleteCallList = async (req, res) => {
             return res.status(403).json({ message: "Only owners can delete call list entries." });
         }
 
-        const callList = await CallList.findByIdAndDelete(id);
+        const query = { _id: id, ...req.brandFilter };
+        const callList = await CallList.findOneAndDelete(query);
         if (!callList) {
             return res.status(404).json({ message: "Call list entry not found." });
         }
@@ -292,8 +289,9 @@ export const updateCallListStatus = async (req, res) => {
             return res.status(400).json({ message: "Status is required." });
         }
 
-        const updatedCallList = await CallList.findByIdAndUpdate(
-            id,
+        const query = { _id: id, ...req.brandFilter };
+        const updatedCallList = await CallList.findOneAndUpdate(
+            query,
             { status },
             { new: true }
         ).populate([
