@@ -40,6 +40,14 @@ const app = express()
 app.set('trust proxy', 1);
 
 // Serve static files from uploads directory
+app.use(cookieParser())
+app.use(express.json({ limit: '50mb' }))
+app.use(express.urlencoded({ limit: '50mb', extended: true }))
+
+app.use(cors(corsOptions))
+app.use(compression())
+
+// Serve static files from uploads directory
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -49,13 +57,6 @@ app.use(express.static(path.join(__dirname, '../dist')));
 
 // Serve static files from public directory (images, favicon, etc.)
 app.use(express.static(path.join(__dirname, '../public')));
-
-app.use(cookieParser())
-app.use(express.json({ limit: '50mb' }))
-app.use(express.urlencoded({ limit: '50mb', extended: true }))
-// ...
-app.use(compression())
-app.use(cors(corsOptions))
 
 app.use('/api/users', routes)
 app.use('/api/customers', customerRoutes)

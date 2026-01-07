@@ -198,11 +198,11 @@ export const getAllStudents = async (req, res) => {
   }
 };
 
-// Get single student by ID
+// Get single student by ID with full batch and attendance history
 export const getStudentById = async (req, res) => {
   try {
     const { id } = req.params;
-    const student = await studentModel.findById(id).populate('leadId', 'fullName email');
+    const student = await studentModel.findById(id).populate('leadId', 'fullName email').populate('brand', 'name code');
 
     if (!student) {
       return res.status(404).json({ message: "Student not found." });
@@ -220,10 +220,58 @@ export const getStudentById = async (req, res) => {
     if (student.additionalCourses && student.additionalCourses.length > 0) {
       studentObj.additionalCourseDetails = await Promise.all(
         student.additionalCourses.map(async (courseId) => {
-          return await courseModel.findById(courseId);
+          try {
+            return await courseModel.findById(courseId);
+          } catch (err) {
+            console.error(`Error populating additional course ${courseId}:`, err);
+            return null;
+          }
         })
       );
+      // Filter out any null results from failed lookups
+      studentObj.additionalCourseDetails = studentObj.additionalCourseDetails.filter(c => c !== null);
     }
+
+    // Fetch Batch History and Attendance
+    const BatchStudent = (await import('../model/batchStudentModel.js')).default;
+    const Attendance = (await import('../model/attendanceModel.js')).default;
+
+    const batchEnrollments = await BatchStudent.find({ studentId: id }).populate('batchId');
+
+    const batchHistory = await Promise.all(batchEnrollments.map(async (enrollment) => {
+      if (!enrollment.batchId) return null;
+
+      const batch = enrollment.batchId;
+
+      // Fetch attendance records for this student in this batch
+      const attendanceRecords = await Attendance.find({
+        batchId: batch._id,
+        'records.studentId': enrollment._id // Link is via BatchStudent ID in records
+      }).select('date records.$');
+
+      const attendanceData = attendanceRecords.map(record => ({
+        date: record.date,
+        status: record.records[0]?.status,
+        remarks: record.records[0]?.remarks
+      }));
+
+      const totalClasses = attendanceRecords.length;
+      const presentCount = attendanceData.filter(r => r.status === 'Present').length;
+      const attendancePercentage = totalClasses > 0 ? ((presentCount / totalClasses) * 100).toFixed(2) : 0;
+
+      return {
+        batchId: batch._id,
+        batchName: batch.batchName,
+        subject: batch.subject,
+        instructorName: batch.instructorName,
+        startDate: batch.startDate,
+        expectedEndDate: batch.expectedEndDate,
+        attendancePercentage,
+        attendanceDetails: attendanceData.sort((a, b) => new Date(b.date) - new Date(a.date))
+      };
+    }));
+
+    studentObj.batchHistory = batchHistory.filter(b => b !== null);
 
     return res.status(200).json({ student: studentObj });
   } catch (error) {

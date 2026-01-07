@@ -3,6 +3,7 @@ import BatchStudent from '../model/batchStudentModel.js';
 import Attendance from '../model/attendanceModel.js';
 import Student from '../model/studentModel.js';
 import User from '../model/userModel.js';
+import courseModel from '../model/courseModel.js';
 import { isAdmin, isOwner, hasRole, isManager, isInstructor } from '../utils/roleHelpers.js';
 import { emitNotification } from '../realtime/socket.js';
 
@@ -32,7 +33,7 @@ export const getAllBatches = async (req, res) => {
             };
         }
 
-        const batches = await Batch.find(finalQuery).sort({ createdAt: -1 });
+        const batches = await Batch.find(finalQuery).sort({ createdAt: -1 }).populate('brand', 'name code');
 
         // Self-healing: Ensure all batches have a shareToken
         let updated = false;
@@ -217,7 +218,7 @@ export const getBatchStudents = async (req, res) => {
     try {
         const { id } = req.params; // batchId
 
-        const batch = await Batch.findById(id);
+        const batch = await Batch.findById(id).populate('brand', 'name');
         if (!batch) {
             return res.status(404).json({ message: "Batch not found." });
         }
@@ -232,9 +233,26 @@ export const getBatchStudents = async (req, res) => {
         }
 
         const students = await BatchStudent.find({ batchId: id })
-            .populate('studentId', 'fullName phone1 dob phone2') // Populate commonly used fields
+            .populate('studentId') // Populate all student fields for the profile datasheet
             .sort({ studentName: 1 });
-        return res.status(200).json({ students });
+
+        // Manually resolve course names for each student
+        const studentsWithCourseNames = await Promise.all(students.map(async (bs) => {
+            const bsObj = bs.toObject();
+            if (bsObj.studentId && bsObj.studentId.coursePreference) {
+                try {
+                    const course = await courseModel.findById(bsObj.studentId.coursePreference);
+                    if (course) {
+                        bsObj.studentId.courseName = course.courseName;
+                    }
+                } catch (courseError) {
+                    console.error("Error fetching course for student:", bsObj.studentId._id, courseError);
+                }
+            }
+            return bsObj;
+        }));
+
+        return res.status(200).json({ students: studentsWithCourseNames });
     } catch (error) {
         console.error("Error fetching batch students:", error);
         return res.status(500).json({ message: "Internal server error" });
