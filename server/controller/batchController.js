@@ -127,7 +127,9 @@ export const updateBatch = async (req, res) => {
 
         // Authorization check
         if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
-            if (batch.instructor.toString() !== req.user._id.toString() && batch.instructorName !== req.user.fullName) {
+            const isAssignedInstructor = (batch.instructor && batch.instructor.toString() === req.user._id.toString()) ||
+                batch.instructorName === req.user.fullName;
+            if (!isAssignedInstructor) {
                 return res.status(403).json({ message: "Not authorized to update this batch." });
             }
         }
@@ -175,7 +177,9 @@ export const deleteBatch = async (req, res) => {
 
         // Authorization check
         if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
-            if (batch.instructor.toString() !== req.user._id.toString() && batch.instructorName !== req.user.fullName) {
+            const isAssignedInstructor = (batch.instructor && batch.instructor.toString() === req.user._id.toString()) ||
+                batch.instructorName === req.user.fullName;
+            if (!isAssignedInstructor) {
                 return res.status(403).json({ message: "Not authorized to delete this batch." });
             }
         }
@@ -220,7 +224,9 @@ export const getBatchStudents = async (req, res) => {
 
         // Authorization check
         if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
-            if (batch.instructor.toString() !== req.user._id.toString() && batch.instructorName !== req.user.fullName) {
+            const isAssignedInstructor = (batch.instructor && batch.instructor.toString() === req.user._id.toString()) ||
+                batch.instructorName === req.user.fullName;
+            if (!isAssignedInstructor) {
                 return res.status(403).json({ message: "Not authorized to view students for this batch." });
             }
         }
@@ -254,7 +260,9 @@ export const addStudentToBatch = async (req, res) => {
 
         // Authorization check
         if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
-            if (batch.instructor.toString() !== req.user._id.toString() && batch.instructorName !== req.user.fullName) {
+            const isAssignedInstructor = (batch.instructor && batch.instructor.toString() === req.user._id.toString()) ||
+                batch.instructorName === req.user.fullName;
+            if (!isAssignedInstructor) {
                 return res.status(403).json({ message: "Not authorized to add students to this batch." });
             }
         }
@@ -310,7 +318,9 @@ export const updateBatchStudent = async (req, res) => {
 
         // Authorization check
         if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
-            if (batch.instructor.toString() !== req.user._id.toString() && batch.instructorName !== req.user.fullName) {
+            const isAssignedInstructor = (batch.instructor && batch.instructor.toString() === req.user._id.toString()) ||
+                batch.instructorName === req.user.fullName;
+            if (!isAssignedInstructor) {
                 return res.status(403).json({ message: "Not authorized to update students for this batch." });
             }
         }
@@ -341,7 +351,9 @@ export const removeStudentFromBatch = async (req, res) => {
 
         // Authorization check
         if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
-            if (batch.instructor.toString() !== req.user._id.toString() && batch.instructorName !== req.user.fullName) {
+            const isAssignedInstructor = (batch.instructor && batch.instructor.toString() === req.user._id.toString()) ||
+                batch.instructorName === req.user.fullName;
+            if (!isAssignedInstructor) {
                 return res.status(403).json({ message: "Not authorized to remove students from this batch." });
             }
         }
@@ -407,7 +419,9 @@ export const markAttendance = async (req, res) => {
         // Permission check
         if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
             // For faculty/instructors
-            if (batch.instructor.toString() !== req.user._id.toString() && batch.instructorName !== req.user.fullName) {
+            const isAssignedInstructor = (batch.instructor && batch.instructor.toString() === req.user._id.toString()) ||
+                batch.instructorName === req.user.fullName;
+            if (!isAssignedInstructor) {
                 return res.status(403).json({ message: "Not authorized to mark attendance for this batch." });
             }
         }
@@ -443,7 +457,9 @@ export const getAttendance = async (req, res) => {
 
         // Authorization check
         if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
-            if (batch.instructor.toString() !== req.user._id.toString() && batch.instructorName !== req.user.fullName) {
+            const isAssignedInstructor = (batch.instructor && batch.instructor.toString() === req.user._id.toString()) ||
+                batch.instructorName === req.user.fullName;
+            if (!isAssignedInstructor) {
                 return res.status(403).json({ message: "Not authorized to view attendance for this batch." });
             }
         }

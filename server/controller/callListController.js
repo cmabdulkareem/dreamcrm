@@ -4,11 +4,20 @@ import { isOwner, isManager } from '../utils/roleHelpers.js';
 // Get all call lists for current user's brand with role-based filtering
 export const getAllCallLists = async (req, res) => {
     try {
-        let finalQuery = req.brandFilter || {};
+        let finalQuery;
 
-        // If not Owner or Manager, only show entries assigned to them
+        // If not Owner or Manager, only show entries assigned to them (irrespective of brand)
         if (!isOwner(req.user) && !isManager(req.user)) {
-            finalQuery.assignedTo = req.user.id;
+            // Override brand filter to show ANY assigned call list
+            finalQuery = { assignedTo: req.user.id };
+        } else {
+            // For Owners/Managers: Show brand items OR items assigned to them (even if from another brand)
+            finalQuery = {
+                $or: [
+                    req.brandFilter || {},
+                    { assignedTo: req.user.id }
+                ]
+            };
         }
 
         const callLists = await CallList.find(finalQuery)
