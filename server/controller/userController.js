@@ -12,7 +12,7 @@ import { comparePassword } from "../helpers/comparePassword.js";
 import { validateEmail } from "../validators/validateEmail.js";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
-import { isAdmin } from "../utils/roleHelpers.js";
+import { isAdmin, isOwner, isManager } from "../utils/roleHelpers.js";
 import crypto from "crypto";
 import { getFrontendUrl } from "../utils/urlHelper.js";
 dotenv.config();
