@@ -20,8 +20,8 @@ export function hasAdminOrManagerOrCounsellorAccess(user) {
   // Admin roles (Owner, Academic Coordinator)
   if (userRoles.includes('Owner')) return true;
 
-  // Manager roles (Brand Manager)
-  if (userRoles.includes('Brand Manager')) return true;
+  // Manager roles (Brand Manager, Manager)
+  if (userRoles.includes('Brand Manager') || userRoles.includes('Manager')) return true;
 
   // Counselor role
   if (userRoles.includes('Counsellor') || userRoles.includes('Counselor')) return true;
@@ -95,7 +95,7 @@ export function isManager(user) {
 
   const userRoles = Array.isArray(user.roles) ? user.roles : (typeof user.roles === 'string' ? [user.roles] : []);
 
-  return userRoles.includes('Brand Manager') || userRoles.includes('Owner');
+  return userRoles.includes('Brand Manager') || userRoles.includes('Owner') || userRoles.includes('Manager');
 }
 
 /**

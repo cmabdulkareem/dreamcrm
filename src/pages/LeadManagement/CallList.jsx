@@ -58,8 +58,8 @@ export default function CallList() {
 
     const fetchUsers = async () => {
         try {
-            // Use scope=global to get users from ALL brands for assignment
-            const response = await axios.get(`${API}/users/dropdown?roles=Owner,Brand Manager,Counsellor,Counselor&scope=global`, { withCredentials: true });
+            // Use scope=global to get users from ALL brands for assignment, and no role filter to allow assigning to anyone
+            const response = await axios.get(`${API}/users/dropdown?scope=global`, { withCredentials: true });
             setUsers(response.data.users || []);
         } catch (error) {
             console.error("Error fetching users:", error);
