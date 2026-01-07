@@ -66,7 +66,6 @@ export function isAdmin(user) {
 export function isManager(user) {
   if (!user) return false;
 
-  // Admins are also managers
   if (isAdmin(user)) return true;
 
   const userRoles = user.roles || [];
