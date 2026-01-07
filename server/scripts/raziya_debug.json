@@ -1,0 +1,83 @@
+{
+  "_id": "69576ec83bea723e4117d4ee",
+  "fullName": "Raziya",
+  "email": null,
+  "phone1": "+919847754737",
+  "phone2": "",
+  "gender": "female",
+  "dob": null,
+  "place": "Kasaragod",
+  "otherPlace": "",
+  "status": "doingNothing",
+  "education": "graduate",
+  "otherEducation": "",
+  "coursePreference": [
+    "Graphic Design"
+  ],
+  "contactPoint": "other",
+  "otherContactPoint": "incoming-call",
+  "campaign": "social-media-ig",
+  "handledBy": "Siddeeq mc",
+  "followUpDate": "2026-01-08T00:00:00.000Z",
+  "leadStatus": "contacted",
+  "remarks": [
+    {
+      "updatedOn": "2026-01-02T07:07:52.512Z",
+      "nextFollowUpDate": "2026-01-02T00:00:00.000Z",
+      "handledBy": "Fathimath Rabiya Jumana MM",
+      "remark": "enquired about IT based course/suggested graphics/asked about ui/ux and also programming language/details shared /suggested ui/ux+web design course /will inform",
+      "leadStatus": "new",
+      "isUnread": false
+    },
+    {
+      "updatedOn": "2026-01-02T10:57:59.201Z",
+      "nextFollowUpDate": "2026-01-02T00:00:00.000Z",
+      "handledBy": "Fathimath Rabiya Jumana MM",
+      "remark": "contacted no response",
+      "leadStatus": "contacted",
+      "isUnread": false
+    },
+    {
+      "updatedOn": "2026-01-02T10:58:33.775Z",
+      "nextFollowUpDate": "2026-01-03T00:00:00.000Z",
+      "handledBy": "Fathimath Rabiya Jumana MM",
+      "remark": "contacted no response",
+      "leadStatus": "contacted",
+      "isUnread": false
+    },
+    {
+      "updatedOn": "2026-01-03T11:55:01.930Z",
+      "nextFollowUpDate": "2026-01-05T00:00:00.000Z",
+      "handledBy": "Fathimath Rabiya Jumana MM",
+      "remark": "contacted no response",
+      "leadStatus": "contacted",
+      "isUnread": false
+    },
+    {
+      "updatedOn": "2026-01-06T10:10:19.551Z",
+      "handledBy": "Abdul Kareem CM",
+      "remark": "Lead assigned to Siddeeq mc",
+      "leadStatus": "contacted",
+      "isUnread": false
+    },
+    {
+      "updatedOn": "2026-01-07T06:26:57.095Z",
+      "nextFollowUpDate": "2026-01-08T00:00:00.000Z",
+      "handledBy": "Siddeeq mc",
+      "remark": "call manytimes, not attend",
+      "leadStatus": "contacted",
+      "isUnread": true
+    }
+  ],
+  "assignedTo": "695ccf24716e254237888fb4",
+  "assignedBy": "6952647f858f1c12c20f6779",
+  "assignedAt": "2026-01-06T10:10:19.551Z",
+  "leadPotential": "potentialProspect",
+  "brand": "69526676858f1c12c20f67f2",
+  "createdAt": "2026-01-02T07:07:52.514Z",
+  "updatedAt": "2026-01-07T09:46:25.598Z",
+  "__v": 5,
+  "assignmentRemark": "",
+  "isAdmissionTaken": false,
+  "createdBy": "6952647f858f1c12c20f6779"
+}
