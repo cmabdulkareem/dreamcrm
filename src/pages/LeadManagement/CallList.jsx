@@ -46,6 +46,25 @@ export default function CallList() {
     const [bulkSource, setBulkSource] = useState('');
     const [bulkPurpose, setBulkPurpose] = useState('');
 
+    // Pagination & Filtering states
+    const [page, setPage] = useState(1);
+    const [pagination, setPagination] = useState({ totalItems: 0, totalPages: 1, currentPage: 1 });
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
+    const [creatorFilter, setCreatorFilter] = useState('');
+    const [assigneeFilter, setAssigneeFilter] = useState('');
+    const [sortBy, setSortBy] = useState('createdAt');
+    const [sortOrder, setSortOrder] = useState('desc');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedSearch(search);
+            setPage(1);
+        }, 500);
+        return () => clearTimeout(handler);
+    }, [search]);
+
 
     const canDelete = isOwner(user);
 
@@ -54,7 +73,7 @@ export default function CallList() {
         if (isOwner(user) || isManager(user)) {
             fetchUsers();
         }
-    }, [user]);
+    }, [user, page, debouncedSearch, startDate, endDate, creatorFilter, assigneeFilter, sortBy, sortOrder]);
 
     const fetchUsers = async () => {
         try {
@@ -69,8 +88,21 @@ export default function CallList() {
     const fetchCallLists = async () => {
         try {
             setLoading(true);
-            const response = await axios.get(`${API}/call-lists`, { withCredentials: true });
+            const params = new URLSearchParams({
+                page,
+                limit: 50,
+                sortBy,
+                sortOrder
+            });
+            if (debouncedSearch) params.append('search', debouncedSearch);
+            if (startDate) params.append('startDate', startDate);
+            if (endDate) params.append('endDate', endDate);
+            if (creatorFilter) params.append('creator', creatorFilter);
+            if (assigneeFilter) params.append('assignedTo', assigneeFilter);
+
+            const response = await axios.get(`${API}/call-lists?${params.toString()}`, { withCredentials: true });
             setCallLists(response.data.callLists);
+            setPagination(response.data.pagination);
         } catch (error) {
             console.error("Error fetching call lists:", error);
             toast.error("Failed to load call lists.");
@@ -257,17 +289,7 @@ export default function CallList() {
     };
 
 
-    const filteredData = callLists.filter(item => {
-        const searchLower = search.toLowerCase();
-        return (
-            item.name?.toLowerCase().includes(searchLower) ||
-            item.phoneNumber?.includes(search) ||
-            item.socialMediaId?.toLowerCase().includes(searchLower) ||
-            item.remarks?.toLowerCase().includes(searchLower) ||
-            item.source?.toLowerCase().includes(searchLower) ||
-            item.purpose?.toLowerCase().includes(searchLower)
-        );
-    });
+    const filteredData = callLists; // Search and filtering now handled by server
 
     const formatDate = (dateString) => {
         if (!dateString) return 'N/A';
@@ -404,14 +426,102 @@ export default function CallList() {
             </div>
 
             <ComponentCard>
-                {/* Search */}
-                <div className="mb-4">
-                    <Input
-                        type="text"
-                        placeholder="Search by name, phone, social media, or remarks..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                    />
+                {/* Search & Filters */}
+                <div className="mb-6 space-y-4">
+                    <div className="flex flex-col md:flex-row gap-4">
+                        <div className="flex-1">
+                            <Label>Search</Label>
+                            <Input
+                                type="text"
+                                placeholder="Search by name, phone, etc..."
+                                value={search}
+                                onChange={(e) => {
+                                    setSearch(e.target.value);
+                                    setPage(1); // Reset to page 1 on search
+                                }}
+                            />
+                        </div>
+                        <div className="flex gap-4">
+                            <div className="w-40">
+                                <Label>Start Date</Label>
+                                <Input
+                                    type="date"
+                                    value={startDate}
+                                    onChange={(e) => {
+                                        setStartDate(e.target.value);
+                                        setPage(1);
+                                    }}
+                                />
+                            </div>
+                            <div className="w-40">
+                                <Label>End Date</Label>
+                                <Input
+                                    type="date"
+                                    value={endDate}
+                                    onChange={(e) => {
+                                        setEndDate(e.target.value);
+                                        setPage(1);
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col md:flex-row gap-4">
+                        {(isOwner(user) || isManager(user)) && (
+                            <>
+                                <div className="w-full md:w-64">
+                                    <Label>Filter by Creator</Label>
+                                    <select
+                                        value={creatorFilter}
+                                        onChange={(e) => {
+                                            setCreatorFilter(e.target.value);
+                                            setPage(1);
+                                        }}
+                                        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:ring focus:ring-brand-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 outline-none transition-all"
+                                    >
+                                        <option value="">All Creators</option>
+                                        {users.map(u => (
+                                            <option key={u._id} value={u._id}>{u.fullName}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="w-full md:w-64">
+                                    <Label>Filter by Assignee</Label>
+                                    <select
+                                        value={assigneeFilter}
+                                        onChange={(e) => {
+                                            setAssigneeFilter(e.target.value);
+                                            setPage(1);
+                                        }}
+                                        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:ring focus:ring-brand-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 outline-none transition-all"
+                                    >
+                                        <option value="">All Assignees</option>
+                                        <option value="unassigned">Unassigned</option>
+                                        {users.map(u => (
+                                            <option key={u._id} value={u._id}>{u.fullName}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </>
+                        )}
+                        <div className="flex items-end gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                    setStartDate('');
+                                    setEndDate('');
+                                    setCreatorFilter('');
+                                    setAssigneeFilter('');
+                                    setSearch('');
+                                    setPage(1);
+                                }}
+                            >
+                                Reset Filters
+                            </Button>
+                        </div>
+                    </div>
                 </div>
 
                 {loading ? (
@@ -510,7 +620,16 @@ export default function CallList() {
                                         <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Source</TableCell>
                                         <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Purpose</TableCell>
                                         <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Remarks</TableCell>
-                                        <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Date</TableCell>
+                                        <TableCell
+                                            isHeader
+                                            className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400 cursor-pointer hover:text-brand-500"
+                                            onClick={() => {
+                                                setSortOrder(sortBy === 'createdAt' && sortOrder === 'desc' ? 'asc' : 'desc');
+                                                setSortBy('createdAt');
+                                            }}
+                                        >
+                                            Date {sortBy === 'createdAt' && (sortOrder === 'desc' ? '↓' : '↑')}
+                                        </TableCell>
                                         <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Status</TableCell>
                                         <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Actions</TableCell>
                                     </TableRow>
@@ -528,7 +647,7 @@ export default function CallList() {
                                                     />
                                                 </TableCell>
                                             )}
-                                            <TableCell className="py-3 text-gray-400 text-theme-xs">{index + 1}</TableCell>
+                                            <TableCell className="py-3 text-gray-400 text-theme-xs">{(page - 1) * 50 + index + 1}</TableCell>
                                             <TableCell className="py-3 text-gray-800 text-theme-sm dark:text-white/90">{entry.name || '-'}</TableCell>
                                             <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                                                 {entry.phoneNumber ? (
@@ -558,6 +677,63 @@ export default function CallList() {
                                 </TableBody>
                             </Table>
                         </div>
+
+                        {/* Pagination */}
+                        {pagination.totalPages > 1 && (
+                            <div className="mt-6 flex flex-col md:flex-row items-center justify-between gap-4 border-t border-gray-100 dark:border-gray-800 pt-6">
+                                <p className="text-sm text-gray-500">
+                                    Showing <span className="font-medium">{(page - 1) * 50 + 1}</span> to <span className="font-medium">{Math.min(page * 50, pagination.totalItems)}</span> of <span className="font-medium">{pagination.totalItems}</span> results
+                                </p>
+                                <div className="flex items-center gap-2">
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        disabled={page === 1}
+                                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                                    >
+                                        Previous
+                                    </Button>
+                                    <div className="flex items-center gap-1">
+                                        {[...Array(pagination.totalPages)].map((_, i) => {
+                                            const pageNum = i + 1;
+                                            // Show only first, last, and pages around current page
+                                            if (
+                                                pageNum === 1 ||
+                                                pageNum === pagination.totalPages ||
+                                                (pageNum >= page - 1 && pageNum <= page + 1)
+                                            ) {
+                                                return (
+                                                    <button
+                                                        key={pageNum}
+                                                        onClick={() => setPage(pageNum)}
+                                                        className={`size-8 rounded-lg text-sm font-medium transition-colors ${page === pageNum
+                                                            ? 'bg-brand-500 text-white'
+                                                            : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5'
+                                                            }`}
+                                                    >
+                                                        {pageNum}
+                                                    </button>
+                                                );
+                                            } else if (
+                                                pageNum === page - 2 ||
+                                                pageNum === page + 2
+                                            ) {
+                                                return <span key={pageNum} className="px-1 text-gray-400">...</span>;
+                                            }
+                                            return null;
+                                        })}
+                                    </div>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        disabled={page === pagination.totalPages}
+                                        onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
+                                    >
+                                        Next
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 ) : (
                     <div className="text-center py-10">

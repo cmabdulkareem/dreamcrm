@@ -1,14 +1,28 @@
 import CallList from '../model/callListModel.js';
 import { isOwner, isManager } from '../utils/roleHelpers.js';
 
-// Get all call lists for current user's brand with role-based filtering
+// Get all call lists with pagination and advanced filtering
 export const getAllCallLists = async (req, res) => {
     try {
-        let finalQuery;
+        const {
+            page = 1,
+            limit = 50,
+            search,
+            startDate,
+            endDate,
+            creator,
+            assignedTo: filterAssignedTo,
+            sortBy = 'createdAt',
+            sortOrder = 'desc'
+        } = req.query;
 
-        // If not Owner or Manager, only show entries assigned to them (irrespective of brand)
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+        const limitInt = parseInt(limit);
+
+        let finalQuery = {};
+
+        // Role-based base query
         if (!isOwner(req.user) && !isManager(req.user)) {
-            // Override brand filter to show ANY assigned call list OR created by the user
             finalQuery = {
                 $or: [
                     { assignedTo: req.user.id },
@@ -16,7 +30,6 @@ export const getAllCallLists = async (req, res) => {
                 ]
             };
         } else {
-            // For Owners/Managers: Show brand items OR items assigned to them (even if from another brand)
             finalQuery = {
                 $or: [
                     req.brandFilter || {},
@@ -25,12 +38,73 @@ export const getAllCallLists = async (req, res) => {
             };
         }
 
+        // Apply additional filters
+        const filters = [];
+
+        if (startDate || endDate) {
+            const dateQuery = {};
+            if (startDate) dateQuery.$gte = new Date(startDate);
+            if (endDate) {
+                const end = new Date(endDate);
+                end.setHours(23, 59, 59, 999);
+                dateQuery.$lte = end;
+            }
+            filters.push({ createdAt: dateQuery });
+        }
+
+        if (creator) {
+            filters.push({ createdBy: creator });
+        }
+
+        if (filterAssignedTo) {
+            if (filterAssignedTo === 'unassigned') {
+                filters.push({ assignedTo: null });
+            } else {
+                filters.push({ assignedTo: filterAssignedTo });
+            }
+        }
+
+        if (search) {
+            const searchRegex = new RegExp(search, 'i');
+            filters.push({
+                $or: [
+                    { name: searchRegex },
+                    { phoneNumber: searchRegex },
+                    { socialMediaId: searchRegex },
+                    { remarks: searchRegex },
+                    { source: searchRegex },
+                    { purpose: searchRegex }
+                ]
+            });
+        }
+
+        if (filters.length > 0) {
+            // Combine role-based query with filters
+            finalQuery = {
+                $and: [
+                    finalQuery,
+                    ...filters
+                ]
+            };
+        }
+
+        const totalItems = await CallList.countDocuments(finalQuery);
         const callLists = await CallList.find(finalQuery)
             .populate('createdBy', 'fullName')
             .populate('assignedTo', 'fullName')
-            .sort({ createdAt: -1 });
+            .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
+            .skip(skip)
+            .limit(limitInt);
 
-        return res.status(200).json({ callLists });
+        return res.status(200).json({
+            callLists,
+            pagination: {
+                totalItems,
+                totalPages: Math.ceil(totalItems / limitInt),
+                currentPage: parseInt(page),
+                limit: limitInt
+            }
+        });
     } catch (error) {
         console.error("Error fetching call lists:", error);
         return res.status(500).json({ message: "Internal server error" });
