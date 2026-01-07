@@ -86,6 +86,7 @@ export const createCustomer = async (req, res) => {
       // Automatically assign the lead to the user who created it
       assignedTo: req.user.id,
       assignedBy: req.user.id,
+      createdBy: req.user.id, // Persistent creator
       assignedAt: new Date(),
       brand: req.brandFilter?.brand || req.headers['x-brand-id'] || null // Strict brand assignment
     });
@@ -126,6 +127,7 @@ export const getAllCustomers = async (req, res) => {
     const customers = await customerModel.find(query)
       .populate('assignedTo', 'fullName email')
       .populate('assignedBy', 'fullName email')
+      .populate('createdBy', 'fullName email') // Populate creator
       .sort({ createdAt: -1 });
 
     return res.status(200).json({ customers });
@@ -203,7 +205,7 @@ export const updateCustomer = async (req, res) => {
 
       if (key === 'dob' || key === 'followUpDate') {
         customer[key] = updateData[key] ? new Date(updateData[key]) : null;
-      } else if (key !== 'remarks') {
+      } else if (key !== 'remarks' && key !== 'createdBy') { // Prevent overwriting createdBy
         customer[key] = updateData[key];
       }
     });
@@ -677,6 +679,7 @@ export const importLeads = async (req, res) => {
           brand: brandId,
           assignedTo: req.user.id, // Assign to uploader
           assignedBy: req.user.id,
+          createdBy: req.user.id, // Persistent creator
           assignedAt: leadData.createdAt ? new Date(leadData.createdAt) : new Date(),
           createdAt: leadData.createdAt ? new Date(leadData.createdAt) : new Date(),
           remarks: leadData.remarks ? [{

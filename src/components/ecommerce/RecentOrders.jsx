@@ -1173,7 +1173,7 @@ export default function RecentOrders() {
                           <div className="flex flex-col gap-0.5">
                             <p>{formatDate(row.createdAt)}</p>
                             <p className="text-gray-400 text-xs truncate max-w-[180px]">
-                              By:&nbsp;{row.handledBy || "N/A"}
+                              By:&nbsp;{row.createdBy?.fullName || row.handledBy || "N/A"}
                             </p>
                           </div>
                         </TableCell>
@@ -1314,7 +1314,7 @@ export default function RecentOrders() {
                       <div className="flex justify-between text-xs">
                         <span className="text-gray-500 dark:text-gray-400">Added:</span>
                         <span className="text-gray-700 dark:text-gray-200">
-                          {formatDate(row.createdAt)} by {row.handledBy || "N/A"}
+                          {formatDate(row.createdAt)} by {row.createdBy?.fullName || row.handledBy || "N/A"}
                         </span>
                       </div>
                       <div className="flex justify-between text-xs">
