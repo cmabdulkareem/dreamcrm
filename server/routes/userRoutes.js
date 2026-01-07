@@ -14,8 +14,7 @@ import {
     getOnlineUsers,
     deleteUser,
     forgotPassword,
-    resetPassword,
-    completeTutorial
+    resetPassword
 } from '../controller/userController.js'
 import verifyToken from "../middleware/verifyToken.js";
 
@@ -32,7 +31,7 @@ router.patch('/assign-roles/:id', verifyToken, assignRoles)
 router.delete('/delete/:id', verifyToken, deleteUser) // Add delete user route
 router.get('/auth', verifyToken, authCheck)
 router.get('/logout', verifyToken, logoutUser)
-router.put('/tutorial-complete', verifyToken, completeTutorial)
+
 
 // Online status routes
 router.post('/online', verifyToken, markUserOnlineStatus)

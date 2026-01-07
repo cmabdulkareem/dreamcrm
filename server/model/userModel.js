@@ -81,10 +81,7 @@ const userSchema = new mongoose.Schema(
 
     // Password reset fields
     resetPasswordToken: { type: String },
-    resetPasswordExpires: { type: Date },
-
-    // Tutorial completion status
-    hasSeenCounsellorTutorial: { type: Boolean, default: false }
+    resetPasswordExpires: { type: Date }
   },
   {
     timestamps: true, // enable both createdAt and updatedAt

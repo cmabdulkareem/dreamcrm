@@ -6,7 +6,6 @@ import AppHeader from "./AppHeader";
 import Backdrop from "./Backdrop";
 import AppSidebar from "./AppSidebar";
 import Footer from "../components/common/Footer";
-import CounsellorTutorial from "../components/tutorial/CounsellorTutorial";
 import InstallPWA from "../components/common/InstallPWA";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -32,7 +31,6 @@ const LayoutContent = () => {
         </div>
         <Footer />
       </div>
-      <CounsellorTutorial />
       <InstallPWA />
       <ToastContainer position="top-center" className="!z-[999999]" style={{ zIndex: 999999 }} />
     </div>
