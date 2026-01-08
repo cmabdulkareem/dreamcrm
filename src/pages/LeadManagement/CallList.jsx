@@ -42,6 +42,7 @@ export default function CallList() {
     const [selectedEntry, setSelectedEntry] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedIds, setSelectedIds] = useState([]);
+    const [lastSelectedIndex, setLastSelectedIndex] = useState(null);
     const [bulkAssignedTo, setBulkAssignedTo] = useState('');
     const [bulkSource, setBulkSource] = useState('');
     const [bulkPurpose, setBulkPurpose] = useState('');
@@ -244,11 +245,28 @@ export default function CallList() {
         }
     };
 
-    const toggleSelect = (id) => {
-        if (selectedIds.includes(id)) {
-            setSelectedIds(selectedIds.filter(i => i !== id));
+    const toggleSelect = (id, index, event) => {
+        if (event?.shiftKey && lastSelectedIndex !== null && index !== undefined) {
+            // Shift-click range selection
+            const start = Math.min(lastSelectedIndex, index);
+            const end = Math.max(lastSelectedIndex, index);
+            const rangeIds = filteredData.slice(start, end + 1).map(item => item._id);
+
+            // Add all items in range to selection
+            const newSelectedIds = [...new Set([...selectedIds, ...rangeIds])];
+            setSelectedIds(newSelectedIds);
         } else {
-            setSelectedIds([...selectedIds, id]);
+            // Normal toggle
+            if (selectedIds.includes(id)) {
+                setSelectedIds(selectedIds.filter(i => i !== id));
+            } else {
+                setSelectedIds([...selectedIds, id]);
+            }
+        }
+
+        // Update last selected index
+        if (index !== undefined) {
+            setLastSelectedIndex(index);
         }
     };
 
@@ -538,9 +556,9 @@ export default function CallList() {
                                             {(isOwner(user) || isManager(user)) && (
                                                 <input
                                                     type="checkbox"
-                                                    className="size-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500 cursor-pointer"
+                                                    className="size-5 rounded border-gray-300 text-brand-500 focus:ring-brand-500 cursor-pointer"
                                                     checked={selectedIds.includes(entry._id)}
-                                                    onChange={() => toggleSelect(entry._id)}
+                                                    onChange={(e) => toggleSelect(entry._id, index, e)}
                                                 />
                                             )}
                                             <span className="text-xs font-bold text-gray-400">#{index + 1}</span>
@@ -607,7 +625,7 @@ export default function CallList() {
                                             <TableCell isHeader className="py-5 px-4 font-bold text-gray-700 text-start text-sm dark:text-gray-300">
                                                 <input
                                                     type="checkbox"
-                                                    className="size-4.5 rounded border-gray-300 text-brand-500 focus:ring-brand-500 cursor-pointer"
+                                                    className="size-5 rounded border-gray-300 text-brand-500 focus:ring-brand-500 cursor-pointer"
                                                     checked={selectedIds.length === filteredData.length && filteredData.length > 0}
                                                     onChange={toggleSelectAll}
                                                 />
@@ -629,9 +647,9 @@ export default function CallList() {
                                                 <TableCell className="py-5 px-4">
                                                     <input
                                                         type="checkbox"
-                                                        className="size-4.5 rounded border-gray-300 text-brand-500 focus:ring-brand-500 cursor-pointer"
+                                                        className="size-5 rounded border-gray-300 text-brand-500 focus:ring-brand-500 cursor-pointer"
                                                         checked={selectedIds.includes(entry._id)}
-                                                        onChange={() => toggleSelect(entry._id)}
+                                                        onChange={(e) => toggleSelect(entry._id, index, e)}
                                                     />
                                                 </TableCell>
                                             )}
