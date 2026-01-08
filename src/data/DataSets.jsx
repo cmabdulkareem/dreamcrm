@@ -274,6 +274,7 @@ const callListStatusOptions = [
   { value: 'busy', label: 'Busy', color: 'bg-yellow-100 text-yellow-700' },
   { value: 'interested', label: 'Interested', color: 'bg-green-100 text-green-700' },
   { value: 'not-interested', label: 'Not Interested', color: 'bg-red-100 text-red-700' },
+  { value: 'copied-to-leads', label: 'Copied to Leads', color: 'bg-purple-100 text-purple-700' },
 ];
 
 export {
