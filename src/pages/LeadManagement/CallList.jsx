@@ -318,13 +318,13 @@ export default function CallList() {
     );
 
     const renderStatus = (entry) => (
-        <div className="flex flex-col gap-1.5">
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium w-fit capitalize ${callListStatusOptions.find(opt => opt.value === entry.status)?.color || 'bg-gray-100 text-gray-700'
+        <div className="flex flex-col gap-2">
+            <span className={`px-3 py-1 rounded-full text-xs font-semibold w-fit capitalize ${callListStatusOptions.find(opt => opt.value === entry.status)?.color || 'bg-gray-100 text-gray-700'
                 }`}>
                 {entry.status || 'pending'}
             </span>
             <select
-                className="text-[10px] bg-transparent border border-gray-200 dark:border-gray-800 rounded px-1 py-0.5 outline-none focus:border-brand-500"
+                className="text-xs bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-2 py-1.5 outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-200 cursor-pointer"
                 value={entry.status || 'pending'}
                 onChange={(e) => handleStatusUpdate(entry._id, e.target.value)}
             >
@@ -413,13 +413,9 @@ export default function CallList() {
                 </div>
             )}
 
-            <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                    <h2 className="text-xl font-bold text-gray-800 dark:text-white">Cold Call list</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Manage customer contact information</p>
-                </div>
+            <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div className="flex gap-3 w-full sm:w-auto">
-                    <Button variant="outline" onClick={openImportModal} className="w-full sm:w-auto" startIcon={<FileIcon className="size-5" />}>
+                    <Button variant="outline" onClick={openImportModal} className="w-full sm:w-auto" startIcon={<FileIcon className="size-4" />}>
                         Import
                     </Button>
                     <Button variant="primary" onClick={openAddModal} className="w-full sm:w-auto">
@@ -430,23 +426,24 @@ export default function CallList() {
 
             <ComponentCard>
                 {/* Search & Filters */}
-                <div className="mb-6 space-y-4">
-                    <div className="flex flex-col md:flex-row gap-4">
+                <div className="mb-8 space-y-6">
+                    <div className="flex flex-col lg:flex-row gap-4">
                         <div className="flex-1">
-                            <Label>Search</Label>
+                            <Label className="text-xs">Search</Label>
                             <Input
                                 type="text"
                                 placeholder="Search by name, phone, etc..."
                                 value={search}
                                 onChange={(e) => {
                                     setSearch(e.target.value);
-                                    setPage(1); // Reset to page 1 on search
+                                    setPage(1);
                                 }}
+                                className="h-10"
                             />
                         </div>
-                        <div className="flex gap-4">
-                            <div className="w-40">
-                                <Label>Start Date</Label>
+                        <div className="flex gap-3">
+                            <div className="w-44">
+                                <Label className="text-xs">Start Date</Label>
                                 <Input
                                     type="date"
                                     value={startDate}
@@ -454,10 +451,11 @@ export default function CallList() {
                                         setStartDate(e.target.value);
                                         setPage(1);
                                     }}
+                                    className="h-10"
                                 />
                             </div>
-                            <div className="w-40">
-                                <Label>End Date</Label>
+                            <div className="w-44">
+                                <Label className="text-xs">End Date</Label>
                                 <Input
                                     type="date"
                                     value={endDate}
@@ -465,23 +463,24 @@ export default function CallList() {
                                         setEndDate(e.target.value);
                                         setPage(1);
                                     }}
+                                    className="h-10"
                                 />
                             </div>
                         </div>
                     </div>
 
-                    <div className="flex flex-col md:flex-row gap-4">
+                    <div className="flex flex-col lg:flex-row gap-4 items-end">
                         {(isOwner(user) || isManager(user)) && (
                             <>
-                                <div className="w-full md:w-64">
-                                    <Label>Filter by Creator</Label>
+                                <div className="w-full lg:w-56">
+                                    <Label className="text-xs">Filter by Creator</Label>
                                     <select
                                         value={creatorFilter}
                                         onChange={(e) => {
                                             setCreatorFilter(e.target.value);
                                             setPage(1);
                                         }}
-                                        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:ring focus:ring-brand-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 outline-none transition-all"
+                                        className="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-700 focus:border-brand-500 focus:ring focus:ring-brand-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 outline-none transition-all"
                                     >
                                         <option value="">All Creators</option>
                                         {users.map(u => (
@@ -489,15 +488,15 @@ export default function CallList() {
                                         ))}
                                     </select>
                                 </div>
-                                <div className="w-full md:w-64">
-                                    <Label>Filter by Assignee</Label>
+                                <div className="w-full lg:w-56">
+                                    <Label className="text-xs">Filter by Assignee</Label>
                                     <select
                                         value={assigneeFilter}
                                         onChange={(e) => {
                                             setAssigneeFilter(e.target.value);
                                             setPage(1);
                                         }}
-                                        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:ring focus:ring-brand-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 outline-none transition-all"
+                                        className="w-full h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm text-gray-700 focus:border-brand-500 focus:ring focus:ring-brand-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 outline-none transition-all"
                                     >
                                         <option value="">All Assignees</option>
                                         <option value="unassigned">Unassigned</option>
@@ -508,22 +507,21 @@ export default function CallList() {
                                 </div>
                             </>
                         )}
-                        <div className="flex items-end gap-2">
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                    setStartDate('');
-                                    setEndDate('');
-                                    setCreatorFilter('');
-                                    setAssigneeFilter('');
-                                    setSearch('');
-                                    setPage(1);
-                                }}
-                            >
-                                Reset Filters
-                            </Button>
-                        </div>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                                setStartDate('');
+                                setEndDate('');
+                                setCreatorFilter('');
+                                setAssigneeFilter('');
+                                setSearch('');
+                                setPage(1);
+                            }}
+                            className="h-10"
+                        >
+                            Reset Filters
+                        </Button>
                     </div>
                 </div>
 
@@ -602,77 +600,87 @@ export default function CallList() {
 
                         {/* Desktop view Table */}
                         <div className="hidden md:block overflow-x-auto">
-                            <Table className="min-w-[1000px]">
-                                <TableHeader className="border-gray-100 dark:border-gray-800 border-y">
+                            <Table className="min-w-[1100px]">
+                                <TableHeader className="border-gray-200 dark:border-gray-700 border-y bg-gray-50 dark:bg-gray-800/50">
                                     <TableRow>
                                         {(isOwner(user) || isManager(user)) && (
-                                            <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
+                                            <TableCell isHeader className="py-5 px-4 font-bold text-gray-700 text-start text-sm dark:text-gray-300">
                                                 <input
                                                     type="checkbox"
-                                                    className="size-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500 cursor-pointer"
+                                                    className="size-4.5 rounded border-gray-300 text-brand-500 focus:ring-brand-500 cursor-pointer"
                                                     checked={selectedIds.length === filteredData.length && filteredData.length > 0}
                                                     onChange={toggleSelectAll}
                                                 />
                                             </TableCell>
                                         )}
-                                        <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">#</TableCell>
-                                        <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Name</TableCell>
-                                        <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Phone Number</TableCell>
-                                        <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Assigned To</TableCell>
-                                        <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Social Media ID</TableCell>
-                                        <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Source</TableCell>
-                                        <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Purpose</TableCell>
-                                        <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Remarks</TableCell>
-                                        <TableCell
-                                            isHeader
-                                            className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400 cursor-pointer hover:text-brand-500"
-                                            onClick={() => {
-                                                setSortOrder(sortBy === 'createdAt' && sortOrder === 'desc' ? 'asc' : 'desc');
-                                                setSortBy('createdAt');
-                                            }}
-                                        >
-                                            Date {sortBy === 'createdAt' && (sortOrder === 'desc' ? '↓' : '↑')}
-                                        </TableCell>
-                                        <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Status</TableCell>
-                                        <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Actions</TableCell>
+                                        <TableCell isHeader className="py-5 px-4 font-bold text-gray-700 text-start text-sm dark:text-gray-300 w-16">#</TableCell>
+                                        <TableCell isHeader className="py-5 px-4 font-bold text-gray-700 text-start text-sm dark:text-gray-300 min-w-[220px]">Contact Details</TableCell>
+                                        <TableCell isHeader className="py-5 px-4 font-bold text-gray-700 text-start text-sm dark:text-gray-300 min-w-[120px]">Assigned To</TableCell>
+                                        <TableCell isHeader className="py-5 px-4 font-bold text-gray-700 text-start text-sm dark:text-gray-300 min-w-[140px]">Source / Purpose</TableCell>
+                                        <TableCell isHeader className="py-5 px-4 font-bold text-gray-700 text-start text-sm dark:text-gray-300 min-w-[200px]">Remarks</TableCell>
+                                        <TableCell isHeader className="py-5 px-4 font-bold text-gray-700 text-start text-sm dark:text-gray-300 min-w-[140px]">Status</TableCell>
+                                        <TableCell isHeader className="py-5 px-4 font-bold text-gray-700 text-start text-sm dark:text-gray-300 min-w-[100px]">Actions</TableCell>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
                                     {filteredData.map((entry, index) => (
-                                        <TableRow key={entry._id} className="transition-colors hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
+                                        <TableRow key={entry._id} className="transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/30">
                                             {(isOwner(user) || isManager(user)) && (
-                                                <TableCell className="py-3">
+                                                <TableCell className="py-5 px-4">
                                                     <input
                                                         type="checkbox"
-                                                        className="size-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500 cursor-pointer"
+                                                        className="size-4.5 rounded border-gray-300 text-brand-500 focus:ring-brand-500 cursor-pointer"
                                                         checked={selectedIds.includes(entry._id)}
                                                         onChange={() => toggleSelect(entry._id)}
                                                     />
                                                 </TableCell>
                                             )}
-                                            <TableCell className="py-3 text-gray-400 text-theme-xs">{(page - 1) * 50 + index + 1}</TableCell>
-                                            <TableCell className="py-3 text-gray-800 text-theme-sm dark:text-white/90">{entry.name || '-'}</TableCell>
-                                            <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
-                                                {entry.phoneNumber ? (
-                                                    <a href={`tel:${entry.phoneNumber}`} className="text-brand-500 hover:underline">
-                                                        {entry.phoneNumber}
-                                                    </a>
-                                                ) : '-'}
+                                            <TableCell className="py-5 px-4 text-gray-500 text-sm font-semibold">{(page - 1) * 50 + index + 1}</TableCell>
+                                            <TableCell className="py-5 px-4">
+                                                <div className="flex flex-col gap-0.5">
+                                                    <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{formatDate(entry.createdAt)}</div>
+                                                    <div className="text-gray-900 text-base font-bold dark:text-white">{entry.name || 'Unnamed'}</div>
+                                                    {entry.phoneNumber && (
+                                                        <a href={`tel:${entry.phoneNumber}`} className="text-brand-600 hover:text-brand-700 hover:underline font-semibold text-sm flex items-center gap-1.5">
+                                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                                                            {entry.phoneNumber}
+                                                        </a>
+                                                    )}
+                                                    {entry.socialMediaId && (
+                                                        <div className="text-gray-600 text-xs dark:text-gray-400 flex items-center gap-1.5">
+                                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" /></svg>
+                                                            {entry.socialMediaId}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </TableCell>
-                                            <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{entry.assignedTo?.fullName || 'Unassigned'}</TableCell>
-                                            <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{entry.socialMediaId || '-'}</TableCell>
-                                            <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{entry.source || '-'}</TableCell>
-                                            <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{entry.purpose || '-'}</TableCell>
-                                            <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
-                                                <div className="max-w-[150px] truncate" title={entry.remarks}>
+                                            <TableCell className="py-5 px-4 text-gray-700 text-sm dark:text-gray-300">{entry.assignedTo?.fullName || 'Unassigned'}</TableCell>
+                                            <TableCell className="py-5 px-4">
+                                                <div className="flex flex-col gap-0.5">
+                                                    {entry.source && (
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">Source:</span>
+                                                            <span className="text-sm text-gray-700 dark:text-gray-300">{entry.source}</span>
+                                                        </div>
+                                                    )}
+                                                    {entry.purpose && (
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">Purpose:</span>
+                                                            <span className="text-sm text-gray-700 dark:text-gray-300">{entry.purpose}</span>
+                                                        </div>
+                                                    )}
+                                                    {!entry.source && !entry.purpose && <span className="text-gray-400">-</span>}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="py-5 px-4 text-gray-700 text-sm dark:text-gray-300">
+                                                <div className="max-w-[250px]" title={entry.remarks}>
                                                     {entry.remarks || '-'}
                                                 </div>
                                             </TableCell>
-                                            <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{formatDate(entry.createdAt)}</TableCell>
-                                            <TableCell className="py-3">
+                                            <TableCell className="py-5 px-4">
                                                 {renderStatus(entry)}
                                             </TableCell>
-                                            <TableCell className="py-3">
+                                            <TableCell className="py-5 px-4">
                                                 {renderActions(entry)}
                                             </TableCell>
                                         </TableRow>

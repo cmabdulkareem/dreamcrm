@@ -157,7 +157,13 @@ export default function BatchAccordion({ batch, onUpdate, onDelete }) {
                             <GroupIcon className="h-5 w-5 mr-2 text-gray-400" />
                             Enrolled Students
                         </h5>
-                        <BatchStudentList batchId={batch._id} />
+                        <BatchStudentList
+                            batchId={batch._id}
+                            batchSubject={batch.subject}
+                            batchStartDate={batch.startDate}
+                            batchEndDate={batch.expectedEndDate}
+                            brandName={batch.brand?.name}
+                        />
                     </div>
                 </div>
             )}

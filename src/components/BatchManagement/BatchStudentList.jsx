@@ -5,14 +5,20 @@ import API from '../../config/api';
 import { useAuth } from '../../context/AuthContext';
 import { isAdmin, isOwner, isManager } from '../../utils/roleHelpers';
 import LoadingSpinner from '../common/LoadingSpinner';
+import { jsPDF } from 'jspdf';
+import StudentProfileModal from '../StudentManagement/StudentProfileModal';
 
-export default function BatchStudentList({ batchId }) {
+export default function BatchStudentList({ batchId, batchSubject, batchStartDate, batchEndDate, brandName }) {
     const { user } = useAuth();
     const canEdit = isAdmin(user) || isOwner(user) || isManager(user);
     const [students, setStudents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isAdding, setIsAdding] = useState(false);
     const [editingId, setEditingId] = useState(null);
+    const [generatingId, setGeneratingId] = useState(null);
+    const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+    const [selectedStudentForProfile, setSelectedStudentForProfile] = useState(null);
+    const cardRef = React.useRef(null);
 
     // Search & Select States
     const [convertedStudents, setConvertedStudents] = useState([]);
@@ -98,7 +104,6 @@ export default function BatchStudentList({ batchId }) {
             setStudents(prev => [...prev, response.data.student]);
             setSearchTerm(''); // Clear search
             setShowResults(false); // Hide dropdown
-
             toast.success(`${student.fullName} added successfully!`);
         } catch (error) {
             console.error("Error adding student:", error);
@@ -139,18 +144,25 @@ export default function BatchStudentList({ batchId }) {
         }
     };
 
+    const handleViewStudent = (student) => {
+        const studentData = student.studentId && typeof student.studentId === 'object' ? student.studentId : student;
+        setSelectedStudentForProfile(studentData);
+        setIsProfileModalOpen(true);
+    };
+
     // Helper to get display values (prefer populated data, fallback to static)
     const getStudentData = (student) => {
         const source = student.studentId && typeof student.studentId === 'object' ? student.studentId : student;
         const isPopulated = student.studentId && typeof student.studentId === 'object';
 
         return {
-            id: isPopulated ? (source.studentId || '-') : (student.studentId || '-'), // Student ID might not be in Customer model explicitly unless added
+            id: isPopulated ? (source.studentId || '-') : (student.studentId || '-'),
             name: isPopulated ? source.fullName : student.studentName,
             dob: source.dob,
             phone: isPopulated ? source.phone1 : student.phoneNumber,
             parentPhone: isPopulated ? source.phone2 : student.parentPhoneNumber,
-            _id: student._id // Keep the BatchStudent ID for actions
+            course: isPopulated ? (source.courseName || source.coursePreference || '') : '',
+            _id: student._id
         };
     };
 
@@ -182,6 +194,129 @@ export default function BatchStudentList({ batchId }) {
         }
     };
 
+    const handleGenerateID = async (student) => {
+        setGeneratingId(student._id);
+
+        try {
+            const loadImage = (src) => new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = "anonymous";
+                img.onload = () => resolve(img);
+                img.onerror = () => {
+                    console.error(`Failed to load image: ${src}`);
+                    reject(new Error(`Failed to load: ${src}`));
+                };
+                img.src = src;
+            });
+
+            const canvasWidth = 1550;
+            const canvasHeight = 2400;
+            const canvas = document.createElement('canvas');
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
+            const ctx = canvas.getContext('2d');
+
+            // --- PAGE 1: FRONT SIDE ---
+            let frontTemplate = '/images/cc_id_temp.png'; // Default
+            if (brandName) {
+                const lowerBrand = brandName.toLowerCase();
+                if (lowerBrand.includes('cadd')) frontTemplate = '/images/cc_id_temp.png';
+                else if (lowerBrand.includes('synergy')) frontTemplate = '/images/syn_id_temp.png';
+                else if (lowerBrand.includes('dream')) frontTemplate = '/images/dz_id_temp.png';
+                else if (lowerBrand.includes('livewire')) frontTemplate = '/images/lw_id_temp.png';
+            }
+
+            const bgImgFront = await loadImage(frontTemplate);
+            ctx.drawImage(bgImgFront, 0, 0, canvasWidth, canvasHeight);
+
+            const sData = getStudentData(student);
+            let studentPhoto = student.studentId?.photo || student.photo;
+            if (studentPhoto && !studentPhoto.startsWith('http') && !studentPhoto.startsWith('data:')) {
+                studentPhoto = `${API.replace('/api', '')}/${studentPhoto.replace(/^\//, '')}`;
+            }
+            if (!studentPhoto) {
+                studentPhoto = '/images/user/avatar.png';
+            }
+
+            try {
+                const photoImg = await loadImage(studentPhoto);
+                const x = 345, y = 422, size = 905;
+                const cx = x + size / 2, cy = y + size / 2, radius = size / 2;
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+                ctx.clip();
+                ctx.drawImage(photoImg, x, y, size, size);
+                ctx.restore();
+
+                ctx.strokeStyle = "#000";
+                ctx.lineWidth = 5;
+                ctx.beginPath();
+                ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+                ctx.stroke();
+            } catch (err) {
+                console.error("Could not load student photo, drawing placeholder", err);
+                const x = 345, y = 422, size = 905;
+                const cx = x + size / 2, cy = y + size / 2, radius = size / 2;
+                ctx.fillStyle = "#f3f4f6";
+                ctx.beginPath();
+                ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.fillStyle = "#021349";
+            ctx.font = "bold 100px Arial";
+            ctx.fillText(sData.name || "Student Name", 145, 1595);
+
+            ctx.fillStyle = "#000000";
+            ctx.font = "bold 75px Arial";
+            ctx.fillText(sData.course || "", 145, 1680);
+
+            ctx.fillStyle = "#021349";
+            ctx.font = "normal 70px Arial";
+            ctx.fillText(sData.id || "Student ID", 145, 1800);
+
+            const imgDataFront = canvas.toDataURL('image/jpeg', 0.95);
+
+            // --- PAGE 2: BACK SIDE ---
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+            const bgImgBack = await loadImage('/images/cc_id_temp_back.png');
+            ctx.drawImage(bgImgBack, 0, 0, canvasWidth, canvasHeight);
+
+            if (batchStartDate && batchEndDate) {
+                const startStr = new Date(batchStartDate).toLocaleDateString();
+                const endStr = new Date(batchEndDate).toLocaleDateString();
+                ctx.fillStyle = "#021349";
+                ctx.font = "bold 70px Arial";
+                ctx.textAlign = "center";
+                ctx.fillText(`Start Date: ${startStr}`, canvasWidth / 2, 2030);
+                ctx.fillText(`End Date: ${endStr}`, canvasWidth / 2, 2150);
+            }
+
+            const imgDataBack = canvas.toDataURL('image/jpeg', 0.95);
+
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'pt',
+                format: [canvasWidth * 0.75, canvasHeight * 0.75],
+            });
+
+            pdf.addImage(imgDataFront, 'JPEG', 0, 0, canvasWidth * 0.75, canvasHeight * 0.75);
+            pdf.addPage();
+            pdf.addImage(imgDataBack, 'JPEG', 0, 0, canvasWidth * 0.75, canvasHeight * 0.75);
+
+            const baseName = (sData.name || "Student").trim().replace(/[^a-z0-9]/gi, '_');
+            const fileName = `${baseName}_ID_Card.pdf`;
+            pdf.save(fileName);
+        } catch (error) {
+            console.error("ID Generation Error:", error);
+            toast.error(`Error: ${error.message}`);
+        } finally {
+            setGeneratingId(null);
+        }
+    };
+
     if (loading) return <LoadingSpinner className="py-10" />;
 
     return (
@@ -191,7 +326,7 @@ export default function BatchStudentList({ batchId }) {
                 {canEdit && (
                     <button
                         onClick={() => setIsAdding(!isAdding)}
-                        className="text-xs font-semibold px-3 py-1 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400"
+                        className="text-xs font-semibold px-3 py-1 bg-brand-50 text-brand-600 rounded-md hover:bg-brand-100 dark:bg-brand-900/30 dark:text-brand-400"
                     >
                         {isAdding ? 'Done Adding' : '+ Add Student'}
                     </button>
@@ -199,10 +334,8 @@ export default function BatchStudentList({ batchId }) {
             </div>
 
             {isAdding && (
-                <div className="mb-4 p-4 bg-indigo-50/50 dark:bg-indigo-900/20 rounded-lg border border-indigo-100 dark:border-indigo-800">
+                <div className="mb-4 p-4 bg-brand-50/50 dark:bg-brand-900/20 rounded-lg border border-brand-100 dark:border-brand-800">
                     <h5 className="text-sm font-semibold text-gray-800 dark:text-white mb-3">Add Student to Batch</h5>
-
-                    {/* Search Section */}
                     <div className="mb-4 relative">
                         <label className="block text-xs font-medium text-gray-500 mb-1">Search Student (from Manage Students)</label>
                         <input
@@ -245,7 +378,6 @@ export default function BatchStudentList({ batchId }) {
                         )}
                     </div>
 
-                    {/* Manual Entry Form (Fallback) */}
                     <div className="border-t border-gray-100 dark:border-gray-700 pt-3 mt-3">
                         <div className="text-xs text-gray-400 mb-2 italic">Or enter details manually if not found in search:</div>
                         <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 items-end">
@@ -311,14 +443,38 @@ export default function BatchStudentList({ batchId }) {
                                     ) : (
                                         <>
                                             <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{data.id}</td>
-                                            <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{data.name}</td>
+                                            <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">
+                                                <span
+                                                    className="cursor-pointer hover:text-brand-600 transition-colors font-medium"
+                                                    onClick={() => handleViewStudent(student)}
+                                                >
+                                                    {data.name}
+                                                </span>
+                                            </td>
                                             <td className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400">{data.dob ? new Date(data.dob).toLocaleDateString() : '-'}</td>
                                             <td className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400">{data.phone}</td>
                                             <td className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400">{data.parentPhone || '-'}</td>
                                             {canEdit && (
-                                                <td className="px-4 py-2 text-right">
-                                                    <button onClick={() => { setEditingId(student._id); setEditStudent(student); }} className="text-gray-400 hover:text-indigo-600 mr-2"><svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
-                                                    <button onClick={() => handleDelete(student._id)} className="text-gray-400 hover:text-red-600"><svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                                                <td className="px-4 py-2 text-right flex items-center justify-end space-x-2">
+                                                    <button
+                                                        onClick={() => handleGenerateID(student)}
+                                                        disabled={generatingId === student._id}
+                                                        className={`p-1.5 rounded-md transition-colors ${generatingId === student._id ? 'text-gray-300' : 'text-brand-500 hover:bg-brand-50'}`}
+                                                        title="Generate ID Card"
+                                                    >
+                                                        {generatingId === student._id ? (
+                                                            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                            </svg>
+                                                        ) : (
+                                                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                            </svg>
+                                                        )}
+                                                    </button>
+                                                    <button onClick={() => { setEditingId(student._id); setEditStudent(student); }} className="p-1.5 text-gray-400 hover:text-brand-600 hover:bg-gray-100 rounded-md transition-colors"><svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
+                                                    <button onClick={() => handleDelete(student._id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"><svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
                                                 </td>
                                             )}
                                         </>
@@ -334,6 +490,12 @@ export default function BatchStudentList({ batchId }) {
                     </tbody>
                 </table>
             </div>
+
+            <StudentProfileModal
+                isOpen={isProfileModalOpen}
+                onClose={() => setIsProfileModalOpen(false)}
+                student={selectedStudentForProfile}
+            />
         </div>
     );
 }

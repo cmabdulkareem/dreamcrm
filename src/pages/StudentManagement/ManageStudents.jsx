@@ -10,6 +10,7 @@ import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
 import { AuthContext } from "../../context/AuthContext";
 import { useNotifications } from "../../context/NotificationContext";
+import StudentProfileModal from "../../components/StudentManagement/StudentProfileModal.jsx";
 
 import API from "../../config/api";
 import { Modal } from "../../components/ui/modal";
@@ -37,6 +38,8 @@ export default function ManageStudents() {
   // Modal states
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [selectedStudentForProfile, setSelectedStudentForProfile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   // Controlled form states
@@ -139,8 +142,9 @@ export default function ManageStudents() {
     navigate("/new-student");
   };
 
-  const handleViewStudent = (studentId) => {
-    toast.info(`Viewing student ${studentId}`);
+  const handleViewStudent = (student) => {
+    setSelectedStudentForProfile(student);
+    setIsProfileModalOpen(true);
   };
 
   const handleEditClick = (student) => {
@@ -407,7 +411,12 @@ export default function ManageStudents() {
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
                           <div className="flex flex-col">
-                            <span className="font-medium text-gray-900 dark:text-white">{student.fullName}</span>
+                            <span
+                              className="font-medium text-gray-900 dark:text-white cursor-pointer hover:text-indigo-600 transition-colors"
+                              onClick={() => handleViewStudent(student)}
+                            >
+                              {student.fullName}
+                            </span>
                             <span className="text-xs text-gray-500 dark:text-gray-400">{student.studentId}</span>
                           </div>
                         </td>
@@ -452,7 +461,7 @@ export default function ManageStudents() {
                               Edit
                             </button>
                             <button
-                              onClick={() => handleViewStudent(student.studentId)}
+                              onClick={() => handleViewStudent(student)}
                               className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
                             >
                               View
@@ -733,6 +742,12 @@ export default function ManageStudents() {
           </Button>
         </div>
       </Modal>
+
+      <StudentProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        student={selectedStudentForProfile}
+      />
 
       <ToastContainer position="top-center" className="!z-[999999]" style={{ zIndex: 999999 }} />
     </div>

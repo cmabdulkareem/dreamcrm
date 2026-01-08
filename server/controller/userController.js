@@ -75,6 +75,9 @@ export const getUsersForDropdown = async (req, res) => {
     // Build query object
     const query = {};
 
+    // Only include active users in assignment dropdowns
+    query.accountStatus = 'Active';
+
     // Filter by roles if provided
     if (roles) {
       const roleArray = roles.split(',').map(r => r.trim());
