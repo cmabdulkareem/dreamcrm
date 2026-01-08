@@ -115,9 +115,9 @@ function App() {
                     <Route path="/profile" element={<ProtectedRoutes><UserProfiles /></ProtectedRoutes>} />
 
                     {/* Event Management */}
-                    <Route path="/events" element={<ProtectedRoutes requireAdmin={true}><ManageEvents /></ProtectedRoutes>} />
-                    <Route path="/events/create" element={<ProtectedRoutes requireAdmin={true}><CreateEvent /></ProtectedRoutes>} />
-                    <Route path="/events/:id/registrations" element={<ProtectedRoutes requireAdmin={true}><EventRegistrations /></ProtectedRoutes>} />
+                    <Route path="/events" element={<ProtectedRoutes requireManager={true}><ManageEvents /></ProtectedRoutes>} />
+                    <Route path="/events/create" element={<ProtectedRoutes requireManager={true}><CreateEvent /></ProtectedRoutes>} />
+                    <Route path="/events/:id/registrations" element={<ProtectedRoutes requireManager={true}><EventRegistrations /></ProtectedRoutes>} />
 
                     {/* Leave Management */}
                     {/* Leave Management */}

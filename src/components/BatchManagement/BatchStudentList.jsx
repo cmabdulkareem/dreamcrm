@@ -5,7 +5,7 @@ import API from '../../config/api';
 import { useAuth } from '../../context/AuthContext';
 import { isAdmin, isOwner, isManager } from '../../utils/roleHelpers';
 import LoadingSpinner from '../common/LoadingSpinner';
-import { jsPDF } from 'jspdf';
+
 import StudentProfileModal from '../StudentManagement/StudentProfileModal';
 
 export default function BatchStudentList({ batchId, batchSubject, batchStartDate, batchEndDate, brandName }) {
@@ -296,6 +296,7 @@ export default function BatchStudentList({ batchId, batchSubject, batchStartDate
 
             const imgDataBack = canvas.toDataURL('image/jpeg', 0.95);
 
+            const { jsPDF } = await import('jspdf');
             const pdf = new jsPDF({
                 orientation: 'portrait',
                 unit: 'pt',

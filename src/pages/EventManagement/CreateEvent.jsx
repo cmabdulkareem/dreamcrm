@@ -12,6 +12,7 @@ import Label from '../../components/form/Label';
 import Input from '../../components/form/input/InputField';
 import Select from '../../components/form/Select';
 import DatePicker from '../../components/form/date-picker';
+import { isManager } from '../../utils/roleHelpers';
 import { AuthContext } from '../../context/AuthContext';
 
 axios.defaults.withCredentials = true;
@@ -19,7 +20,7 @@ axios.defaults.withCredentials = true;
 import API from "../../config/api";
 
 const CreateEvent = () => {
-  const { isAdmin } = useContext(AuthContext);
+  const { isAdmin, user } = useContext(AuthContext);
   const [formData, setFormData] = useState({
     eventName: '',
     eventDescription: '',
@@ -33,7 +34,8 @@ const CreateEvent = () => {
   const [newField, setNewField] = useState({
     fieldName: '',
     fieldType: 'text',
-    isRequired: false
+    isRequired: false,
+    options: []
   });
 
   // Banner image state
@@ -109,8 +111,8 @@ const CreateEvent = () => {
 
   const uploadBannerForEvent = async (eventId, blob) => {
     try {
-      if (!isAdmin) {
-        throw new Error('Access denied. Admin privileges required.');
+      if (!isManager(user)) {
+        throw new Error('Access denied. Manager privileges required.');
       }
 
       const file = new File([blob], "banner.jpg", { type: "image/jpeg" });
@@ -141,8 +143,13 @@ const CreateEvent = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!isAdmin) {
-      toast.error('Access denied. Admin privileges required.');
+    if (!isManager(user)) {
+      toast.error('Access denied. Manager privileges required.');
+      return;
+    }
+
+    if (newField.fieldName && newField.fieldName.trim() !== '') {
+      toast.warning("You have an unsaved field in the 'New Field' section. Please click 'Add Field' to include it, or clear the input.");
       return;
     }
 
@@ -194,7 +201,8 @@ const CreateEvent = () => {
     setNewField({
       fieldName: '',
       fieldType: 'text',
-      isRequired: false
+      isRequired: false,
+      options: []
     });
 
     setBannerPreview(null);
@@ -364,7 +372,7 @@ const CreateEvent = () => {
     }
   };
 
-  if (!isAdmin) {
+  if (!isManager(user)) {
     return (
       <>
         <PageMeta title="Create Event - CRM" />
@@ -377,7 +385,7 @@ const CreateEvent = () => {
         />
         <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6" role="alert">
           <p className="font-bold">Access Denied</p>
-          <p>You don't have admin privileges to create events.</p>
+          <p>You don't have permission to create events.</p>
         </div>
       </>
     );
@@ -587,7 +595,6 @@ const CreateEvent = () => {
                       />
                     </div>
                     <div className="w-full md:w-2/5">
-                      <Label>Field Type</Label>
                       <Select
                         options={[
                           { value: "text", label: "Text" },
@@ -600,6 +607,17 @@ const CreateEvent = () => {
                         value={field.fieldType}
                         onChange={(value) => handleFieldChange(index, 'fieldType', value)}
                       />
+                      {field.fieldType === 'select' && (
+                        <div className="mt-2">
+                          <Label>Options (comma separated)</Label>
+                          <Input
+                            type="text"
+                            value={field.options ? field.options.join(', ') : ''}
+                            onChange={(e) => handleFieldChange(index, 'options', e.target.value.split(',').map(opt => opt.trim()))}
+                            placeholder="Option 1, Option 2, Option 3"
+                          />
+                        </div>
+                      )}
                     </div>
                     <div className="w-full md:w-1/5 flex items-end">
                       <div className="flex items-center">
@@ -648,6 +666,17 @@ const CreateEvent = () => {
                     value={newField.fieldType}
                     onChange={(value) => setNewField({ ...newField, fieldType: value })}
                   />
+                  {newField.fieldType === 'select' && (
+                    <div className="mt-2">
+                      <Label>Options (comma separated)</Label>
+                      <Input
+                        type="text"
+                        value={newField.options ? newField.options.join(', ') : ''}
+                        onChange={(e) => setNewField({ ...newField, options: e.target.value.split(',').map(opt => opt.trim()) })}
+                        placeholder="Option 1, Option 2, Option 3"
+                      />
+                    </div>
+                  )}
                 </div>
                 <div className="w-full md:w-1/5 flex items-end">
                   <div className="flex items-center">

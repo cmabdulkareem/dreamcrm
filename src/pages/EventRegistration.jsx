@@ -218,7 +218,7 @@ const EventRegistration = () => {
             <div className="grid grid-cols-1 gap-6">
               {event.registrationFields.map((field, index) => (
                 <div key={index}>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-1">
                     {field.fieldName}
                     {field.isRequired && <span className="text-red-500 ml-1">*</span>}
                   </label>
@@ -228,7 +228,7 @@ const EventRegistration = () => {
                       value={formData[field.fieldName] || ''}
                       onChange={(e) => handleInputChange(field.fieldName, e.target.value)}
                       rows="3"
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors[field.fieldName] ? 'border-red-500' : 'border-gray-300'
+                      className={`w-full px-4 py-3 text-base border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors[field.fieldName] ? 'border-red-500' : 'border-gray-300'
                         }`}
                       placeholder={`Enter your ${field.fieldName.toLowerCase()}`}
                     />
@@ -236,7 +236,7 @@ const EventRegistration = () => {
                     <select
                       value={formData[field.fieldName] || ''}
                       onChange={(e) => handleInputChange(field.fieldName, e.target.value)}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors[field.fieldName] ? 'border-red-500' : 'border-gray-300'
+                      className={`w-full px-4 py-3 text-base border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors[field.fieldName] ? 'border-red-500' : 'border-gray-300'
                         }`}
                     >
                       <option value="">Select an option</option>
@@ -251,7 +251,7 @@ const EventRegistration = () => {
                       type={field.fieldType}
                       value={formData[field.fieldName] || ''}
                       onChange={(e) => handleInputChange(field.fieldName, e.target.value)}
-                      className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors[field.fieldName] ? 'border-red-500' : 'border-gray-300'
+                      className={`w-full px-4 py-3 text-base border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white ${errors[field.fieldName] ? 'border-red-500' : 'border-gray-300'
                         }`}
                       placeholder={`Enter your ${field.fieldName.toLowerCase()}`}
                     />
@@ -268,7 +268,7 @@ const EventRegistration = () => {
               <button
                 type="submit"
                 disabled={submitting}
-                className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${submitting ? 'opacity-75 cursor-not-allowed' : ''
+                className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${submitting ? 'opacity-75 cursor-not-allowed' : ''
                   }`}
               >
                 {submitting ? (

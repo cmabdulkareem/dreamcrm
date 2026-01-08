@@ -13,6 +13,7 @@ import DatePicker from '../../components/form/date-picker';
 import { useNavigate } from 'react-router-dom';
 import ReactCrop from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
+import { isManager } from '../../utils/roleHelpers';
 import { AuthContext } from '../../context/AuthContext';
 
 axios.defaults.withCredentials = true;
@@ -20,7 +21,7 @@ axios.defaults.withCredentials = true;
 import API from "../../config/api";
 
 const ManageEvents = () => {
-  const { isAdmin } = useContext(AuthContext);
+  const { isAdmin, user } = useContext(AuthContext);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showEditForm, setShowEditForm] = useState(false);
@@ -38,7 +39,8 @@ const ManageEvents = () => {
   const [newField, setNewField] = useState({
     fieldName: '',
     fieldType: 'text',
-    isRequired: false
+    isRequired: false,
+    options: []
   });
 
   // Banner image state for editing
@@ -117,7 +119,8 @@ const ManageEvents = () => {
     setNewField({
       fieldName: '',
       fieldType: 'text',
-      isRequired: false
+      isRequired: false,
+      options: []
     });
   };
 
@@ -133,8 +136,8 @@ const ManageEvents = () => {
 
   const uploadBannerForEvent = async (eventId, blob) => {
     try {
-      if (!isAdmin) {
-        throw new Error('Access denied. Admin privileges required.');
+      if (!isManager(user)) {
+        throw new Error('Access denied. Manager privileges required.');
       }
 
       const file = new File([blob], "banner.jpg", { type: "image/jpeg" });
@@ -176,7 +179,8 @@ const ManageEvents = () => {
     setNewField({
       fieldName: '',
       fieldType: 'text',
-      isRequired: false
+      isRequired: false,
+      options: []
     });
 
     setBannerPreview(null);
@@ -238,8 +242,13 @@ const ManageEvents = () => {
   const handleUpdateEvent = async (e) => {
     e.preventDefault();
 
-    if (!isAdmin) {
-      toast.error('Access denied. Admin privileges required.');
+    if (!isManager(user)) {
+      toast.error('Access denied. Manager privileges required.');
+      return;
+    }
+
+    if (newField.fieldName && newField.fieldName.trim() !== '') {
+      toast.warning("You have an unsaved field in the 'New Field' section. Please click 'Add Field' to include it, or clear the input.");
       return;
     }
 
@@ -280,8 +289,8 @@ const ManageEvents = () => {
 
   // Toggle event status
   const toggleEventStatus = async (eventId) => {
-    if (!isAdmin) {
-      toast.error('Access denied. Admin privileges required.');
+    if (!isManager(user)) {
+      toast.error('Access denied. Manager privileges required.');
       return;
     }
 
@@ -297,8 +306,8 @@ const ManageEvents = () => {
 
   // Delete event
   const deleteEvent = async (eventId) => {
-    if (!isAdmin) {
-      toast.error('Access denied. Admin privileges required.');
+    if (!isManager(user)) {
+      toast.error('Access denied. Manager privileges required.');
       return;
     }
 
@@ -496,14 +505,14 @@ const ManageEvents = () => {
       />
       <ToastContainer position="top-center" className="!z-[999999]" style={{ zIndex: 999999 }} />
 
-      {!isAdmin && (
+      {!isManager(user) && (
         <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6" role="alert">
           <p className="font-bold">Access Limited</p>
-          <p>You don't have admin privileges. Some features may be unavailable.</p>
+          <p>You don't have permission to manage events.</p>
         </div>
       )}
 
-      {showEditForm && isAdmin ? (
+      {showEditForm && isManager(user) ? (
         <ComponentCard title="Edit Event">
           <form onSubmit={handleUpdateEvent}>
             <div className="space-y-6">
@@ -576,13 +585,23 @@ const ManageEvents = () => {
                                   { value: "text", label: "Text" },
                                   { value: "email", label: "Email" },
                                   { value: "number", label: "Number" },
-                                  { value: "date", label: "Date" },
                                   { value: "textarea", label: "Textarea" },
                                   { value: "select", label: "Select" }
                                 ]}
                                 value={field.fieldType}
                                 onChange={(value) => handleFieldChange(index, 'fieldType', value)}
                               />
+                              {field.fieldType === 'select' && (
+                                <div className="mt-2">
+                                  <Label>Options (comma separated)</Label>
+                                  <Input
+                                    type="text"
+                                    value={field.options ? field.options.join(', ') : ''}
+                                    onChange={(e) => handleFieldChange(index, 'options', e.target.value.split(',').map(opt => opt.trim()))}
+                                    placeholder="Option 1, Option 2, Option 3"
+                                  />
+                                </div>
+                              )}
                             </div>
                             <div className="w-full md:w-1/5 flex items-end">
                               <div className="flex items-center">
@@ -631,6 +650,17 @@ const ManageEvents = () => {
                             value={newField.fieldType}
                             onChange={(value) => setNewField({ ...newField, fieldType: value })}
                           />
+                          {newField.fieldType === 'select' && (
+                            <div className="mt-2">
+                              <Label>Options (comma separated)</Label>
+                              <Input
+                                type="text"
+                                value={newField.options ? newField.options.join(', ') : ''}
+                                onChange={(e) => setNewField({ ...newField, options: e.target.value.split(',').map(opt => opt.trim()) })}
+                                placeholder="Option 1, Option 2, Option 3"
+                              />
+                            </div>
+                          )}
                         </div>
                         <div className="w-full md:w-1/5 flex items-end">
                           <div className="flex items-center">
@@ -877,7 +907,7 @@ const ManageEvents = () => {
                       )}
 
                       <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
-                        {isAdmin && (
+                        {isManager(user) && (
                           <>
                             <button
                               onClick={() => toggleEventStatus(event._id)}
@@ -911,7 +941,7 @@ const ManageEvents = () => {
                             </button>
                           </>
                         )}
-                        {!isAdmin && (
+                        {!isManager(user) && (
                           <button
                             onClick={() => viewRegistrations(event._id)}
                             className="px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-md text-sm font-medium transition-colors"
