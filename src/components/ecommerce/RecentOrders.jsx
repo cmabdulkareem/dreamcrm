@@ -1149,7 +1149,7 @@ export default function RecentOrders() {
                               className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
                             />
                             {hasUnread ? (
-                              <div className="size-6 shrink-0 rounded-full bg-red-600 flex items-center justify-center shadow-md" title="New Remark">
+                              <div className="size-5 shrink-0 rounded-full bg-red-600 flex items-center justify-center shadow-md" title="New Remark">
                                 <BoltIcon className="size-3.5 text-white" />
                               </div>
                             ) : (
@@ -1164,7 +1164,7 @@ export default function RecentOrders() {
                             <p className="text-gray-400 text-xs truncate max-w-[180px]">
                               {row.coursePreference?.join(", ") || "N/A"}
                             </p>
-                            <a href={`tel:${row.phone1}`} className="text-brand-500 hover:underline text-[11px] font-medium mt-0.5">
+                            <a href={`tel:${row.phone1}`} className="text-brand-500 hover:underline text-[12px] font-medium mt-0.5">
                               {row.phone1}
                             </a>
                           </div>
