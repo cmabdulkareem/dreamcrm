@@ -6,7 +6,7 @@ import {
   TableRow,
 } from "../ui/table";
 import Badge from "../ui/badge/Badge";
-import { useState, useEffect, useCallback, useRef, useContext } from "react";
+import { useState, useEffect, useCallback, useRef, useContext, useMemo } from "react";
 import { createPortal } from "react-dom";
 import axios from "axios";
 import Papa from "papaparse";
@@ -619,6 +619,49 @@ export default function RecentOrders() {
       return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
     });
 
+  // Calculate contact point statistics from filtered data (based on createdAt only)
+  const contactPointStats = useMemo(() => {
+    const stats = {};
+
+    // Filter leads to only include those added within the date range
+    const leadsInDateRange = filteredData.filter(lead => {
+      if (!dateRange || dateRange.length === 0) return true;
+
+      const createdAtDate = new Date(lead.createdAt);
+      createdAtDate.setHours(0, 0, 0, 0);
+
+      if (dateRange.length === 2) {
+        const startDate = new Date(dateRange[0]);
+        const endDate = new Date(dateRange[1]);
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(0, 0, 0, 0);
+        return createdAtDate >= startDate && createdAtDate <= endDate;
+      } else if (dateRange.length === 1) {
+        const filterDate = new Date(dateRange[0]);
+        filterDate.setHours(0, 0, 0, 0);
+        return createdAtDate.getTime() === filterDate.getTime();
+      }
+      return true;
+    });
+
+    // Count contact points from date-filtered leads
+    leadsInDateRange.forEach(lead => {
+      // Normalize contact point to proper case (first letter capitalized)
+      let cp = lead.contactPoint || 'Not Specified';
+      if (cp && cp !== 'Not Specified') {
+        cp = cp.charAt(0).toUpperCase() + cp.slice(1).toLowerCase();
+      }
+      stats[cp] = (stats[cp] || 0) + 1;
+    });
+
+    // Sort by count (descending)
+    return Object.entries(stats)
+      .sort((a, b) => b[1] - a[1])
+      .reduce((acc, [key, value]) => {
+        acc[key] = value;
+        return acc;
+      }, {});
+  }, [filteredData, dateRange]);
 
   const handlePrint = () => {
     window.print();
@@ -992,6 +1035,19 @@ export default function RecentOrders() {
                     <span className="text-xs text-gray-600 dark:text-gray-400">Not a prospect</span>
                   </div>
                 </div>
+
+                {/* Contact Point Statistics */}
+                {Object.keys(contactPointStats).length > 0 && (
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800/60">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">This Month:</span>
+                    {Object.entries(contactPointStats).map(([contactPoint, count]) => (
+                      <div key={contactPoint} className="flex items-center gap-1.5">
+                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{contactPoint}:</span>
+                        <span className="text-xs font-semibold text-brand-600 dark:text-brand-400">{count}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="flex flex-wrap items-center gap-3">
                 <div className="w-full sm:w-56">
