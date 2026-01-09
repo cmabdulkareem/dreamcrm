@@ -95,7 +95,7 @@ export function isManager(user) {
 
   const userRoles = Array.isArray(user.roles) ? user.roles : (typeof user.roles === 'string' ? [user.roles] : []);
 
-  return userRoles.includes('Brand Manager') || userRoles.includes('Owner') || userRoles.includes('Manager');
+  return userRoles.includes('Brand Manager') || userRoles.includes('Owner') || userRoles.includes('Manager') || userRoles.includes('Academic Coordinator');
 }
 
 /**

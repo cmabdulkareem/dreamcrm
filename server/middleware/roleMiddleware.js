@@ -27,7 +27,7 @@ const ROLE_HIERARCHY = {
 const ADMIN_ROLES = ['Owner'];
 
 // Managerial roles (can manage teams and resources)
-const MANAGER_ROLES = ['Owner', 'Brand Manager'];
+const MANAGER_ROLES = ['Owner', 'Brand Manager', 'Academic Coordinator'];
 
 // Roles that should be treated as admin for backward compatibility
 const ADMIN_EQUIVALENT_ROLES = ['Owner'];
