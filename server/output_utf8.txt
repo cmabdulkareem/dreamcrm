@@ -1,0 +1,37 @@
+﻿[dotenv@17.2.3] injecting env (10) from .env -- tip: ≡ƒöä add secrets lifecycle management: https://dotenvx.com/ops
+CWD: E:\crm\server
+Connecting to DB...
+Connected to DB
+--- Checking ContactPoints ---
+
+--- Checking Campaigns ---
+Camp ID: 6954b15a1d301c0dd996268b
+   Name: 'Bekal Fest 2025'
+   Value: 'bekal-fest-2025'
+   Brand: 69526536858f1c12c20f67c7
+Camp ID: 69526c12858f1c12c20f6c3b
+   Name: 'Bekal Fest 2025'
+   Value: 'bekal-fest-2025'
+   Brand: 695265c7858f1c12c20f67d5
+Camp ID: 6960a2c55c31c68396048b60
+   Name: 'Bekal Fest 2025'
+   Value: 'bekal-fest-2025'
+   Brand: 69526619858f1c12c20f67e3
+Camp ID: 6960a3e55c31c68396048c93
+   Name: 'Bekal Fest 2025'
+   Value: 'bekal-fest-2025'
+   Brand: 69526653858f1c12c20f67ec
+Camp ID: 6956596ab64d61d1b17cb7c2
+   Name: 'Bekal Fest 2025'
+   Value: 'bekal-fest-2025'
+   Brand: 695266c3858f1c12c20f6801
+Camp ID: 69526cb6858f1c12c20f6c72
+   Name: 'DEC25-Bekal BF'
+   Value: 'dec25-bekal-bf'
+   Brand: 69526676858f1c12c20f67f2
+
+--- Checking Customers similar to "Bekal" or "BF" ---
+Cust ID: 695f6dc56fae171628076649
+   ContactPoint: 'activities'
+   Campaign: 'bekal-beach-festival-2025'
+   Brand: 69526676858f1c12c20f67f2

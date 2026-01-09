@@ -125,15 +125,22 @@ export const updateContactPoint = async (req, res) => {
           return res.status(400).json({ message: 'Contact point with this name or value already exists for this brand' });
         }
 
+        const oldValue = contactPoint.value; // Capture old value
+
         contactPoint.name = trimmedName;
         // Update value when name changes
         contactPoint.value = newValue;
 
         // Update related customers
-        await Customer.updateMany(
-          { contactPoint: oldName, brand: contactPoint.brand },
-          { contactPoint: trimmedName }
+        console.log(`Updating customers with contactPoint: "${oldName}" OR "${oldValue}" to "${newValue}" for brand: ${contactPoint.brand}`);
+        const updateResult = await Customer.updateMany(
+          {
+            contactPoint: { $in: [oldName, oldValue] },
+            brand: contactPoint.brand
+          },
+          { contactPoint: newValue }
         );
+        console.log('Update result:', updateResult);
       }
     }
 

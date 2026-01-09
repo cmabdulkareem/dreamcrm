@@ -90,15 +90,23 @@ export const updateCampaign = async (req, res) => {
       if (existingCampaign) {
         return res.status(400).json({ message: 'Campaign name already exists for this brand' });
       }
+      const oldValue = campaign.value; // Capture old value
+
       campaign.name = name;
       // Update value when name changes
       campaign.value = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      const newValue = campaign.value;
 
       // Update related customers
-      await Customer.updateMany(
-        { campaign: oldName, brand: campaign.brand },
-        { campaign: name }
+      console.log(`Updating customers with campaign: "${oldName}" OR "${oldValue}" to "${newValue}" for brand: ${campaign.brand}`);
+      const updateResult = await Customer.updateMany(
+        {
+          campaign: { $in: [oldName, oldValue] },
+          brand: campaign.brand
+        },
+        { campaign: newValue }
       );
+      console.log('Update result:', updateResult);
     }
 
     if (description !== undefined) campaign.description = description;

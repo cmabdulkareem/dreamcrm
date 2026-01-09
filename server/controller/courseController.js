@@ -141,10 +141,12 @@ export const updateCourse = async (req, res) => {
 
     // Update related customers if course name changed
     if (oldCourseName && oldCourseName !== course.courseName) {
-      await Customer.updateMany(
+      console.log(`Updating customers with coursePreference: "${oldCourseName}" to "${course.courseName}" for brand: ${course.brand}`);
+      const updateResult = await Customer.updateMany(
         { coursePreference: oldCourseName, brand: course.brand },
         { $set: { "coursePreference.$": course.courseName } }
       );
+      console.log('Update result:', updateResult);
     }
 
     return res.status(200).json({
