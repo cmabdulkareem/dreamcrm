@@ -1,4 +1,5 @@
 import courseModel from '../model/courseModel.js';
+import Customer from '../model/customerModel.js';
 
 // Get all courses
 export const getAllCourses = async (req, res) => {
@@ -102,6 +103,9 @@ export const updateCourse = async (req, res) => {
       return res.status(404).json({ message: "Course not found." });
     }
 
+    // Track if course name changed
+    let oldCourseName = null;
+
     // Update fields
     for (const key of Object.keys(updateData)) {
       if (key === 'courseCode' || key === 'courseName') {
@@ -116,6 +120,11 @@ export const updateCourse = async (req, res) => {
             message: `Course with this ${key === 'courseCode' ? 'code' : 'name'} already exists for this brand.`
           });
         }
+
+        if (key === 'courseName') {
+          oldCourseName = course.courseName;
+        }
+
         course[key] = updateData[key];
       } else if (key === 'duration') {
         course[key] = parseInt(updateData[key]);
@@ -129,6 +138,14 @@ export const updateCourse = async (req, res) => {
     }
 
     await course.save();
+
+    // Update related customers if course name changed
+    if (oldCourseName && oldCourseName !== course.courseName) {
+      await Customer.updateMany(
+        { coursePreference: oldCourseName, brand: course.brand },
+        { $set: { "coursePreference.$": course.courseName } }
+      );
+    }
 
     return res.status(200).json({
       message: "Course updated successfully.",

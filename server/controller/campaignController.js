@@ -1,4 +1,5 @@
 import Campaign from '../model/campaignModel.js';
+import Customer from '../model/customerModel.js';
 
 // Get all campaigns
 export const getAllCampaigns = async (req, res) => {
@@ -79,6 +80,7 @@ export const updateCampaign = async (req, res) => {
     }
 
     if (name && name !== campaign.name) {
+      const oldName = campaign.name;
       // Check if new name already exists FOR THIS BRAND
       const existingCampaign = await Campaign.findOne({
         name,
@@ -91,6 +93,12 @@ export const updateCampaign = async (req, res) => {
       campaign.name = name;
       // Update value when name changes
       campaign.value = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
+      // Update related customers
+      await Customer.updateMany(
+        { campaign: oldName, brand: campaign.brand },
+        { campaign: name }
+      );
     }
 
     if (description !== undefined) campaign.description = description;

@@ -1,4 +1,5 @@
 import ContactPoint from '../model/contactPointModel.js';
+import Customer from '../model/customerModel.js';
 
 // Get all contact points
 export const getAllContactPoints = async (req, res) => {
@@ -96,6 +97,8 @@ export const updateContactPoint = async (req, res) => {
       return res.status(404).json({ message: 'Contact point not found' });
     }
 
+    const oldName = contactPoint.name; // Capture old name
+
     if (name !== undefined) {
       const trimmedName = name.trim();
       if (!trimmedName) {
@@ -125,6 +128,12 @@ export const updateContactPoint = async (req, res) => {
         contactPoint.name = trimmedName;
         // Update value when name changes
         contactPoint.value = newValue;
+
+        // Update related customers
+        await Customer.updateMany(
+          { contactPoint: oldName, brand: contactPoint.brand },
+          { contactPoint: trimmedName }
+        );
       }
     }
 
