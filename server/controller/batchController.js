@@ -589,8 +589,6 @@ export const mergeStudentAttendance = async (req, res) => {
         const { id: batchId } = req.params;
         const { sourceId, targetId } = req.body;
 
-        console.log(`[Merge] Starting merge: BatchId=${batchId}, SourceId=${sourceId}, TargetId=${targetId}`);
-
         if (sourceId === targetId) {
             return res.status(400).json({ message: "Source and Target students must be different." });
         }
@@ -600,9 +598,7 @@ export const mergeStudentAttendance = async (req, res) => {
         }
 
         const batch = await Batch.findById(batchId);
-        if (!batch) {
-            return res.status(404).json({ message: "Batch not found." });
-        }
+        if (!batch) return res.status(404).json({ message: "Batch not found." });
 
         // Authorization check
         if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
@@ -617,7 +613,7 @@ export const mergeStudentAttendance = async (req, res) => {
         const targetStudent = await BatchStudent.findById(targetId);
 
         if (!sourceStudent || !targetStudent) {
-            return res.status(404).json({ message: `Student not found: Source=${!!sourceStudent}, Target=${!!targetStudent}` });
+            return res.status(404).json({ message: "One or both student batch-enrollment records were not found." });
         }
 
         if (!sourceStudent.batchId || !targetStudent.batchId ||
@@ -628,46 +624,36 @@ export const mergeStudentAttendance = async (req, res) => {
 
         // Find all attendance records for this batch
         const attendanceDocs = await Attendance.find({ batchId });
-        console.log(`[Merge] Found ${attendanceDocs.length} attendance records for batch ${batchId}`);
-
-        const savePromises = [];
+        let updatedCount = 0;
 
         for (const doc of attendanceDocs) {
             if (!doc.records || !Array.isArray(doc.records)) continue;
 
-            // Extra defensive check for null elements in records array
-            const sourceIndex = doc.records.findIndex(r => r && r.studentId && r.studentId.toString() === sourceId);
-            const targetIndex = doc.records.findIndex(r => r && r.studentId && r.studentId.toString() === targetId);
+            let modified = false;
+            const sourceRec = doc.records.find(r => r && r.studentId && r.studentId.toString() === sourceId);
+            const targetRec = doc.records.find(r => r && r.studentId && r.studentId.toString() === targetId);
 
-            if (sourceIndex !== -1) {
-                const sourceRecord = doc.records[sourceIndex];
-
-                if (targetIndex !== -1) {
-                    const targetRecord = doc.records[targetIndex];
-                    // Both exist: Prefer 'Present' if either is 'Present'
-                    if (sourceRecord.status === 'Present' && targetRecord.status !== 'Present') {
-                        targetRecord.status = 'Present';
+            if (sourceRec) {
+                if (targetRec) {
+                    // Both exist: Merge source into target
+                    if (sourceRec.status === 'Present') targetRec.status = 'Present';
+                    if (sourceRec.remarks) {
+                        targetRec.remarks = targetRec.remarks
+                            ? `${targetRec.remarks} | ${sourceRec.remarks}`
+                            : sourceRec.remarks;
                     }
-                    // Merge remarks
-                    if (sourceRecord.remarks) {
-                        targetRecord.remarks = (targetRecord.remarks || "") + (targetRecord.remarks ? " | " : "") + sourceRecord.remarks;
-                    }
-                    // Remove source record
-                    doc.records.splice(sourceIndex, 1);
+                    // Remove source record from the array
+                    doc.records = doc.records.filter(r => r && r.studentId && r.studentId.toString() !== sourceId);
                 } else {
-                    // Only source exists: Transfer it to target
-                    sourceRecord.studentId = targetId;
-                    sourceRecord.studentName = targetStudent.studentName || sourceRecord.studentName;
+                    // Only source exists: Transfer it to target - Explicitly cast to ObjectId to avoid validation issues
+                    sourceRec.studentId = new mongoose.Types.ObjectId(targetId);
+                    sourceRec.studentName = targetStudent.studentName || sourceRec.studentName;
                 }
 
                 doc.markModified('records');
-                savePromises.push(doc.save());
+                await doc.save();
+                updatedCount++;
             }
-        }
-
-        if (savePromises.length > 0) {
-            await Promise.all(savePromises);
-            console.log(`[Merge] Successfully updated ${savePromises.length} attendance records.`);
         }
 
         // Finally remove the source student from the batch
@@ -675,22 +661,25 @@ export const mergeStudentAttendance = async (req, res) => {
 
         // If source was a linked student, check if it's in any other batch
         if (sourceStudent.studentId) {
-            const count = await BatchStudent.countDocuments({ studentId: sourceStudent.studentId });
+            const count = await BatchStudent.countDocuments({
+                studentId: sourceStudent.studentId,
+                _id: { $ne: sourceId }
+            });
             if (count === 0) {
                 await Student.findByIdAndUpdate(sourceStudent.studentId, { batchScheduled: false });
             }
         }
 
         return res.status(200).json({
-            message: "Attendance merged successfully and source student removed.",
-            recordsUpdatedCount: savePromises.length
+            message: "Attendance merged successfully and source student removed from batch.",
+            details: `Updated ${updatedCount} attendance records.`
         });
     } catch (error) {
-        console.error("Error merging attendance:", error);
+        console.error("Critical Merge Error:", error);
         return res.status(500).json({
             message: "Internal server error during attendance merge",
             error: error.message,
-            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            hint: "Please ensure all attendance records for this batch have valid student references."
         });
     }
 };
