@@ -650,6 +650,12 @@ export const mergeStudentAttendance = async (req, res) => {
                     sourceRec.studentName = targetStudent.studentName || sourceRec.studentName;
                 }
 
+                // Fix for: markedBy: Path `markedBy` is required.
+                if (!doc.markedBy) {
+                    doc.markedBy = req.user._id;
+                    doc.markModified('markedBy');
+                }
+
                 doc.markModified('records');
                 await doc.save();
                 updatedCount++;
