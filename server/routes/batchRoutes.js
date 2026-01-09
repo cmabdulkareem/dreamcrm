@@ -10,7 +10,8 @@ import {
     removeStudentFromBatch,
     markAttendance,
     getAttendance,
-    getPublicBatchAttendance
+    getPublicBatchAttendance,
+    mergeStudentAttendance
 } from '../controller/batchController.js';
 import verifyToken from '../middleware/verifyToken.js';
 import { applyBrandFilter } from '../middleware/brandMiddleware.js';
@@ -35,6 +36,7 @@ router.get('/:id/students', getBatchStudents);
 router.post('/:id/students', addStudentToBatch);
 router.put('/students/:studentId', updateBatchStudent);
 router.delete('/students/:studentId', removeStudentFromBatch);
+router.post('/:id/students/merge-attendance', mergeStudentAttendance);
 
 // Attendance operations
 router.post('/:id/attendance', markAttendance);

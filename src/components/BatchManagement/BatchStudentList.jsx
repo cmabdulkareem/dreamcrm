@@ -18,6 +18,7 @@ export default function BatchStudentList({ batchId, batchSubject, batchStartDate
     const [generatingId, setGeneratingId] = useState(null);
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
     const [selectedStudentForProfile, setSelectedStudentForProfile] = useState(null);
+    const [mergeSource, setMergeSource] = useState(null); // ID of student whose attendance will be moved
     const cardRef = React.useRef(null);
 
     // Search & Select States
@@ -194,6 +195,39 @@ export default function BatchStudentList({ batchId, batchSubject, batchStartDate
         }
     };
 
+    const handleMarkForMerge = (student) => {
+        if (mergeSource && mergeSource._id === student._id) {
+            setMergeSource(null);
+        } else {
+            setMergeSource(student);
+            toast.info(`Marked ${student.studentName} as source. Now select the target student.`);
+        }
+    };
+
+    const handleMergeAttendance = async (targetStudent) => {
+        if (!mergeSource) return;
+
+        if (window.confirm(`Are you sure you want to merge all attendance from ${mergeSource.studentName} into ${targetStudent.studentName}? ${mergeSource.studentName} will be removed from this batch.`)) {
+            try {
+                setLoading(true);
+                const response = await axios.post(`${API}/batches/${batchId}/students/merge-attendance`, {
+                    sourceId: mergeSource._id,
+                    targetId: targetStudent._id
+                }, { withCredentials: true });
+
+                toast.success(response.data.message);
+                setMergeSource(null);
+                fetchStudents(); // Refresh list
+            } catch (error) {
+                console.error("Merge error:", error);
+                toast.error(error.response?.data?.message || "Failed to merge attendance.");
+            } finally {
+                setLoading(false);
+            }
+        }
+    };
+
+
     const handleGenerateID = async (student) => {
         setGeneratingId(student._id);
 
@@ -322,6 +356,19 @@ export default function BatchStudentList({ batchId, batchSubject, batchStartDate
 
     return (
         <div className="mt-4">
+            {mergeSource && (
+                <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg flex justify-between items-center animate-pulse">
+                    <div className="text-sm text-blue-700 dark:text-blue-300">
+                        <span className="font-bold">Merge Mode:</span> Select a target student to move <span className="underline">{mergeSource.studentName}'s</span> attendance into.
+                    </div>
+                    <button
+                        onClick={() => setMergeSource(null)}
+                        className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-200"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            )}
             <div className="flex justify-between items-center mb-4">
                 <h6 className="text-sm font-medium text-gray-700 dark:text-gray-300">Total Students: {students.length}</h6>
                 {canEdit && (
@@ -457,6 +504,31 @@ export default function BatchStudentList({ batchId, batchSubject, batchStartDate
                                             <td className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400">{data.parentPhone || '-'}</td>
                                             {canEdit && (
                                                 <td className="px-4 py-2 text-right flex items-center justify-end space-x-2">
+                                                    {mergeSource ? (
+                                                        mergeSource._id !== student._id ? (
+                                                            <button
+                                                                onClick={() => handleMergeAttendance(student)}
+                                                                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-md transition-colors border border-blue-200 bg-blue-50/50"
+                                                                title="Merge Here"
+                                                            >
+                                                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                                                                </svg>
+                                                            </button>
+                                                        ) : (
+                                                            <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-200">Source</span>
+                                                        )
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => handleMarkForMerge(student)}
+                                                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                                                            title="Mark for Attendance Merge"
+                                                        >
+                                                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                                                            </svg>
+                                                        </button>
+                                                    )}
                                                     <button
                                                         onClick={() => handleGenerateID(student)}
                                                         disabled={generatingId === student._id}

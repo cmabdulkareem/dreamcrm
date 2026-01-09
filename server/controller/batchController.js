@@ -581,3 +581,86 @@ export const getPublicBatchAttendance = async (req, res) => {
         return res.status(500).json({ message: "Internal server error" });
     }
 };
+
+// Merge student attendance
+export const mergeStudentAttendance = async (req, res) => {
+    try {
+        const { id: batchId } = req.params;
+        const { sourceId, targetId } = req.body;
+
+        if (!sourceId || !targetId) {
+            return res.status(400).json({ message: "Source and Target student IDs are required." });
+        }
+
+        const batch = await Batch.findById(batchId);
+        if (!batch) {
+            return res.status(404).json({ message: "Batch not found." });
+        }
+
+        // Authorization check
+        if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
+            const isAssignedInstructor = (batch.instructor && batch.instructor.toString() === req.user._id.toString()) ||
+                batch.instructorName === req.user.fullName;
+            if (!isAssignedInstructor) {
+                return res.status(403).json({ message: "Not authorized to perform this action." });
+            }
+        }
+
+        const sourceStudent = await BatchStudent.findById(sourceId);
+        const targetStudent = await BatchStudent.findById(targetId);
+
+        if (!sourceStudent || !targetStudent) {
+            return res.status(404).json({ message: "One or both students not found in this batch." });
+        }
+
+        if (sourceStudent.batchId.toString() !== batchId || targetStudent.batchId.toString() !== batchId) {
+            return res.status(400).json({ message: "Students must belong to the same batch." });
+        }
+
+        // Find all attendance records for this batch
+        const attendanceDocs = await Attendance.find({ batchId });
+
+        for (const doc of attendanceDocs) {
+            const sourceIndex = doc.records.findIndex(r => r.studentId.toString() === sourceId);
+            const targetIndex = doc.records.findIndex(r => r.studentId.toString() === targetId);
+
+            if (sourceIndex !== -1) {
+                const sourceRecord = doc.records[sourceIndex];
+
+                if (targetIndex !== -1) {
+                    // Both exist: Prefer 'Present' if either is 'Present'
+                    if (sourceRecord.status === 'Present' && doc.records[targetIndex].status !== 'Present') {
+                        doc.records[targetIndex].status = 'Present';
+                        doc.records[targetIndex].remarks = (doc.records[targetIndex].remarks || "") + " " + (sourceRecord.remarks || "");
+                    } else if (sourceRecord.status === 'Present') {
+                        // Both present, just merge remarks
+                        doc.records[targetIndex].remarks = (doc.records[targetIndex].remarks || "") + " " + (sourceRecord.remarks || "");
+                    }
+                    // Remove source record
+                    doc.records.splice(sourceIndex, 1);
+                } else {
+                    // Only source exists: Transfer it to target
+                    sourceRecord.studentId = targetId;
+                    sourceRecord.studentName = targetStudent.studentName;
+                }
+                await doc.save();
+            }
+        }
+
+        // Finally remove the source student from the batch
+        await BatchStudent.findByIdAndDelete(sourceId);
+
+        // If source was a linked student, check if it's in any other batch
+        if (sourceStudent.studentId) {
+            const count = await BatchStudent.countDocuments({ studentId: sourceStudent.studentId });
+            if (count === 0) {
+                await Student.findByIdAndUpdate(sourceStudent.studentId, { batchScheduled: false });
+            }
+        }
+
+        return res.status(200).json({ message: "Attendance merged successfully and source student removed." });
+    } catch (error) {
+        console.error("Error merging attendance:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
