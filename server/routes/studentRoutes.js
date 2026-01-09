@@ -17,6 +17,8 @@ const router = express.Router();
 router.use(verifyToken);
 router.use(applyBrandFilter);
 
+router.post('/create', uploadStudentPhoto, createStudent);
+
 router.get('/all', verifyToken, getAllStudents);
 router.get('/get-next-id', verifyToken, getNextStudentId);
 router.get('/:id', verifyToken, getStudentById);
