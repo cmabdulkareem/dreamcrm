@@ -200,7 +200,6 @@ export default function BatchStudentList({ batchId, batchSubject, batchStartDate
             setMergeSource(null);
         } else {
             setMergeSource(student);
-            toast.info(`Marked ${student.studentName} as source. Now select the target student.`);
         }
     };
 
