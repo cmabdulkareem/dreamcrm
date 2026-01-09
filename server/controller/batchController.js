@@ -589,6 +589,8 @@ export const mergeStudentAttendance = async (req, res) => {
         const { id: batchId } = req.params;
         const { sourceId, targetId } = req.body;
 
+        console.log(`[Merge] Starting merge: BatchId=${batchId}, SourceId=${sourceId}, TargetId=${targetId}`);
+
         if (sourceId === targetId) {
             return res.status(400).json({ message: "Source and Target students must be different." });
         }
@@ -615,52 +617,58 @@ export const mergeStudentAttendance = async (req, res) => {
         const targetStudent = await BatchStudent.findById(targetId);
 
         if (!sourceStudent || !targetStudent) {
-            return res.status(404).json({ message: "One or both students not found in this batch." });
+            return res.status(404).json({ message: `Student not found: Source=${!!sourceStudent}, Target=${!!targetStudent}` });
         }
 
         if (!sourceStudent.batchId || !targetStudent.batchId ||
             sourceStudent.batchId.toString() !== batchId ||
             targetStudent.batchId.toString() !== batchId) {
-            return res.status(400).json({ message: "Students must belong to the same batch." });
+            return res.status(400).json({ message: "One or both students do not belong to this specific batch." });
         }
 
         // Find all attendance records for this batch
         const attendanceDocs = await Attendance.find({ batchId });
-        let docsModified = 0;
+        console.log(`[Merge] Found ${attendanceDocs.length} attendance records for batch ${batchId}`);
+
+        const savePromises = [];
 
         for (const doc of attendanceDocs) {
             if (!doc.records || !Array.isArray(doc.records)) continue;
 
-            const sourceIndex = doc.records.findIndex(r => r.studentId && r.studentId.toString() === sourceId);
-            const targetIndex = doc.records.findIndex(r => r.studentId && r.studentId.toString() === targetId);
+            // Extra defensive check for null elements in records array
+            const sourceIndex = doc.records.findIndex(r => r && r.studentId && r.studentId.toString() === sourceId);
+            const targetIndex = doc.records.findIndex(r => r && r.studentId && r.studentId.toString() === targetId);
 
             if (sourceIndex !== -1) {
                 const sourceRecord = doc.records[sourceIndex];
 
                 if (targetIndex !== -1) {
+                    const targetRecord = doc.records[targetIndex];
                     // Both exist: Prefer 'Present' if either is 'Present'
-                    if (sourceRecord.status === 'Present' && doc.records[targetIndex].status !== 'Present') {
-                        doc.records[targetIndex].status = 'Present';
-                        doc.records[targetIndex].remarks = (doc.records[targetIndex].remarks || "") + (sourceRecord.remarks ? " | " + sourceRecord.remarks : "");
-                    } else if (sourceRecord.status === 'Present' || sourceRecord.remarks) {
-                        // Both exist, merge remarks
-                        doc.records[targetIndex].remarks = (doc.records[targetIndex].remarks || "") + (sourceRecord.remarks ? " | " + sourceRecord.remarks : "");
+                    if (sourceRecord.status === 'Present' && targetRecord.status !== 'Present') {
+                        targetRecord.status = 'Present';
+                    }
+                    // Merge remarks
+                    if (sourceRecord.remarks) {
+                        targetRecord.remarks = (targetRecord.remarks || "") + (targetRecord.remarks ? " | " : "") + sourceRecord.remarks;
                     }
                     // Remove source record
                     doc.records.splice(sourceIndex, 1);
                 } else {
                     // Only source exists: Transfer it to target
                     sourceRecord.studentId = targetId;
-                    sourceRecord.studentName = targetStudent.studentName;
+                    sourceRecord.studentName = targetStudent.studentName || sourceRecord.studentName;
                 }
 
-                // Use markModified if doing complex changes or manual manipulation
                 doc.markModified('records');
-                await doc.save();
-                docsModified++;
+                savePromises.push(doc.save());
             }
         }
 
+        if (savePromises.length > 0) {
+            await Promise.all(savePromises);
+            console.log(`[Merge] Successfully updated ${savePromises.length} attendance records.`);
+        }
 
         // Finally remove the source student from the batch
         await BatchStudent.findByIdAndDelete(sourceId);
@@ -673,12 +681,16 @@ export const mergeStudentAttendance = async (req, res) => {
             }
         }
 
-        return res.status(200).json({ message: "Attendance merged successfully and source student removed." });
+        return res.status(200).json({
+            message: "Attendance merged successfully and source student removed.",
+            recordsUpdatedCount: savePromises.length
+        });
     } catch (error) {
         console.error("Error merging attendance:", error);
         return res.status(500).json({
             message: "Internal server error during attendance merge",
-            error: error.message
+            error: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
         });
     }
 };

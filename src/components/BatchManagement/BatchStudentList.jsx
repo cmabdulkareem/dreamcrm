@@ -220,7 +220,8 @@ export default function BatchStudentList({ batchId, batchSubject, batchStartDate
                 fetchStudents(); // Refresh list
             } catch (error) {
                 console.error("Merge error:", error);
-                toast.error(error.response?.data?.message || "Failed to merge attendance.");
+                const errorMsg = error.response?.data?.error || error.response?.data?.message || error.message || "Failed to merge attendance.";
+                toast.error(errorMsg, { autoClose: 5000 });
             } finally {
                 setLoading(false);
             }
