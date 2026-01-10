@@ -38,6 +38,7 @@ export default function ManageStudents() {
   // Modal states
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [selectedStudentForProfile, setSelectedStudentForProfile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [isDateModalOpen, setIsDateModalOpen] = useState(false);
