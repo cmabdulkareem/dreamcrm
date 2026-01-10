@@ -25,6 +25,7 @@ export default function EcommerceMetrics() {
     brandConvertedLeads: 0,  // Start with 0 instead of copying user data
     brandConversionRate: 0,  // Start with 0 instead of copying user data
     totalRevenue: 0,
+    financialYearRevenue: 0,
     currentMonthRevenue: 0,
     lastMonthRevenue: 0,
     revenueGrowth: 0,
@@ -44,9 +45,10 @@ export default function EcommerceMetrics() {
 
   const fetchMetrics = async () => {
     try {
-      const [customersResponse, studentsResponse] = await Promise.all([
+      const [customersResponse, studentsResponse, statsResponse] = await Promise.all([
         axios.get(`${API}/customers/all`, { withCredentials: true }),
-        axios.get(`${API}/students/all`, { withCredentials: true })
+        axios.get(`${API}/students/all`, { withCredentials: true }),
+        axios.get(`${API}/payments/stats/monthly-revenue`, { withCredentials: true })
       ]);
 
       const customers = customersResponse.data.customers;
@@ -85,24 +87,11 @@ export default function EcommerceMetrics() {
       const convertedLeads = customers.filter(c => c.leadStatus === 'converted').length;
       const conversionRate = totalLeads > 0 ? ((convertedLeads / totalLeads) * 100) : 0;
 
-      // Revenue calculations from students
+      // Revenue calculations from stats API
+      const { financialYearRevenue, currentMonthRevenue, lastMonthRevenue } = statsResponse.data;
       const totalRevenue = students.reduce((sum, s) => sum + (s.finalAmount || 0), 0);
 
-      const currentMonthRevenue = students
-        .filter(s => {
-          const createdDate = new Date(s.createdAt);
-          return createdDate.getMonth() === currentMonth &&
-            createdDate.getFullYear() === currentYear;
-        })
-        .reduce((sum, s) => sum + (s.finalAmount || 0), 0);
-
-      const lastMonthRevenue = students
-        .filter(s => {
-          const createdDate = new Date(s.createdAt);
-          return createdDate.getMonth() === lastMonth &&
-            createdDate.getFullYear() === lastMonthYear;
-        })
-        .reduce((sum, s) => sum + (s.finalAmount || 0), 0);
+      // Removed old manual revenue logic as we use statsResponse
 
       const revenueGrowth = lastMonthRevenue === 0
         ? (currentMonthRevenue > 0 ? 100 : 0)
@@ -137,6 +126,7 @@ export default function EcommerceMetrics() {
         brandConvertedLeads: convertedLeads, // Will be updated by fetchBrandConversionMetrics
         brandConversionRate: conversionRate, // Will be updated by fetchBrandConversionMetrics
         totalRevenue,
+        financialYearRevenue,
         currentMonthRevenue,
         lastMonthRevenue,
         revenueGrowth: parseFloat(revenueGrowth.toFixed(2)),
@@ -308,10 +298,10 @@ export default function EcommerceMetrics() {
         <div className="flex items-end justify-between mt-5">
           <div>
             <span className="text-sm text-gray-500 dark:text-gray-400">
-              Total Revenue
+              FY Revenue
             </span>
             <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-              {loading ? <LoadingSpinner className="h-6" size="h-4 w-4" /> : formatCurrency(metrics.totalRevenue)}
+              {loading ? <LoadingSpinner className="h-6" size="h-4 w-4" /> : formatCurrency(metrics.financialYearRevenue)}
             </h4>
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               {formatCurrency(metrics.currentMonthRevenue)} this month

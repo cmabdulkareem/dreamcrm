@@ -3,6 +3,7 @@ import Payment from '../model/paymentModel.js';
 import Student from '../model/studentModel.js';
 import Customer from '../model/customerModel.js';
 import Brand from '../model/brandModel.js';
+import { getFinancialYearRange } from '../utils/dateUtils.js';
 
 // Create new payment
 export const createPayment = async (req, res) => {
@@ -167,10 +168,11 @@ export const getPaymentStats = async (req, res) => {
         const lastMonthStart = new Date(Date.UTC(now.getFullYear(), now.getMonth() - 1, 1));
         const lastMonthEnd = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999));
 
-        // 3. Today Revenue (UTC)
-        // Adjust for potential timezone offset if needed, but assuming daily stats are UTC based
         const todayStart = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
         const todayEnd = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999));
+
+        // 4. Financial Year Revenue (India: April 1 to March 31)
+        const { startDate: fyStart, endDate: fyEnd } = getFinancialYearRange(now);
 
         // Helper to sum
         const sumAmount = async (start, end) => {
@@ -195,8 +197,9 @@ export const getPaymentStats = async (req, res) => {
         const currentMonthRevenue = await sumAmount(currentMonthStart, currentMonthEnd);
         const lastMonthRevenue = await sumAmount(lastMonthStart, lastMonthEnd);
         const todayRevenue = await sumAmount(todayStart, todayEnd);
+        const financialYearRevenue = await sumAmount(fyStart, fyEnd);
 
-        // 4. Last 12 Months Data for Chart
+        // 5. Last 12 Months Data for Chart
         const monthlyRevenue = [];
         const monthNames = [];
 
@@ -217,6 +220,7 @@ export const getPaymentStats = async (req, res) => {
             currentMonthRevenue,
             lastMonthRevenue,
             todayRevenue,
+            financialYearRevenue,
             revenueGraph: {
                 months: monthNames,
                 revenue: monthlyRevenue
