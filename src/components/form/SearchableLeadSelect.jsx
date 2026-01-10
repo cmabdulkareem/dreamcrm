@@ -28,7 +28,9 @@ const SearchableLeadSelect = forwardRef(({
         const name = (lead.fullName || "").toLowerCase();
         const email = (lead.email || "").toLowerCase();
         const phone = (lead.phone1 || "").toLowerCase();
-        return name.includes(term) || email.includes(term) || phone.includes(term);
+        const place = (lead.place || "").toLowerCase();
+        const otherPlace = (lead.otherPlace || "").toLowerCase();
+        return name.includes(term) || email.includes(term) || phone.includes(term) || place.includes(term) || otherPlace.includes(term);
       });
       setFilteredLeads(filtered);
     }
@@ -151,7 +153,7 @@ const SearchableLeadSelect = forwardRef(({
                 >
                   <div className="font-medium">{lead.fullName || "Unnamed Lead"}</div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {lead.email || "No email"} • {lead.phone1 || "No phone"}
+                    {lead.email || "No email"} • {lead.phone1 || "No phone"} {lead.place && <span className="ml-1 text-brand-600 font-medium">• {lead.place === 'Other' ? lead.otherPlace : lead.place}</span>}
                   </div>
                 </button>
               ))

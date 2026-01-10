@@ -25,21 +25,39 @@ const InvoiceGenerator = () => {
         { description: "", quantity: 1, rate: 0, amount: 0 }
     ]);
 
+    // Helper to get date string plus days
+    const getDateWithOffset = (dateStr, days) => {
+        const date = new Date(dateStr);
+        date.setDate(date.getDate() + days);
+        return date.toISOString().split('T')[0];
+    };
+
     const [invoiceData, setInvoiceData] = useState({
         invoiceDate: new Date().toISOString().split('T')[0],
-        dueDate: "",
-        tax: 0,
+        dueDate: getDateWithOffset(new Date(), 7),
+        tax: 18,
         discount: 0,
         notes: "",
         terms: "",
         status: "Draft"
     });
 
-    const [subTotal, setSubTotal] = useState(0);
+    const [subTotal, setSubTotal] = useState(0); // This will store the base (Exclusive) amount
+    const [taxAmount, setTaxAmount] = useState(0);
     const [totalAmount, setTotalAmount] = useState(0);
     const [submitting, setSubmitting] = useState(false);
     const [editId, setEditId] = useState(null);
     const [fetchingInvoice, setFetchingInvoice] = useState(false);
+
+    // Sync due date when invoice date changes
+    useEffect(() => {
+        if (invoiceData.invoiceDate) {
+            setInvoiceData(prev => ({
+                ...prev,
+                dueDate: getDateWithOffset(prev.invoiceDate, 7)
+            }));
+        }
+    }, [invoiceData.invoiceDate]);
 
     // Check for edit mode
     useEffect(() => {
@@ -61,7 +79,7 @@ const InvoiceGenerator = () => {
             setItems(invoice.items);
             setInvoiceData({
                 invoiceDate: invoice.invoiceDate.split('T')[0],
-                dueDate: invoice.dueDate ? invoice.dueDate.split('T')[0] : "",
+                dueDate: invoice.dueDate ? invoice.dueDate.split('T')[0] : getDateWithOffset(invoice.invoiceDate, 7),
                 tax: invoice.tax,
                 discount: invoice.discount,
                 notes: invoice.notes,
@@ -92,17 +110,19 @@ const InvoiceGenerator = () => {
     const performSearch = async () => {
         setSearching(true);
         try {
-            // Include students in the search (some converted leads might have already taken admission)
-            const endpoint = `${API}/customers/converted?includeStudents=true`;
-
-            const response = await axios.get(endpoint, { withCredentials: true });
-            const data = response.data.customers || response.data;
+            // Search only from students as per requirement
+            const response = await axios.get(`${API}/students/all`, { withCredentials: true });
+            const data = response.data.students || [];
 
             const filtered = data.filter(item => {
-                const name = item.fullName || `${item.firstName} ${item.lastName}`;
-                const phone = item.phone || item.phone1;
+                const name = item.fullName || "";
+                const phone = item.phone1 || "";
+                const email = item.email || "";
                 const search = searchQuery.toLowerCase();
-                return name.toLowerCase().includes(search) || (phone && phone.includes(search));
+
+                return name.toLowerCase().includes(search) ||
+                    phone.includes(search) ||
+                    email.toLowerCase().includes(search);
             }).slice(0, 5);
 
             setSearchResults(filtered);
@@ -117,6 +137,14 @@ const InvoiceGenerator = () => {
         setSelectedCustomer(customer);
         setSearchQuery("");
         setSearchResults([]);
+
+        // Autofill first item description with student's course name if it's currently empty
+        const courseName = customer.courseDetails?.courseName || customer.coursePreference;
+        if (items.length > 0 && !items[0].description && courseName) {
+            const newItems = [...items];
+            newItems[0].description = courseName;
+            setItems(newItems);
+        }
     };
 
     const handleItemChange = (index, field, value) => {
@@ -142,14 +170,19 @@ const InvoiceGenerator = () => {
     };
 
     useEffect(() => {
-        const calculatedSubTotal = items.reduce((sum, item) => sum + item.amount, 0);
-        setSubTotal(calculatedSubTotal);
+        // Items sum is now considered Inclusive of Tax
+        const itemsSumInclusive = items.reduce((sum, item) => sum + item.amount, 0);
 
         const taxVal = parseFloat(invoiceData.tax) || 0;
         const discountVal = parseFloat(invoiceData.discount) || 0;
 
-        const taxAmount = (calculatedSubTotal * taxVal) / 100;
-        setTotalAmount(calculatedSubTotal + taxAmount - discountVal);
+        // Extract tax from the total: Amount = Total - (Total / (1 + TaxRate/100))
+        const extractedTax = itemsSumInclusive - (itemsSumInclusive / (1 + taxVal / 100));
+        const baseAmount = itemsSumInclusive - extractedTax;
+
+        setSubTotal(baseAmount);
+        setTaxAmount(extractedTax);
+        setTotalAmount(itemsSumInclusive - discountVal);
     }, [items, invoiceData.tax, invoiceData.discount]);
 
     const handleSubmit = async (e) => {
@@ -168,9 +201,12 @@ const InvoiceGenerator = () => {
             const payload = {
                 ...invoiceData,
                 customer: selectedCustomer._id,
+                customerModel: 'Student', // Search is current restricted to students
                 items,
                 subTotal,
                 totalAmount,
+                tax: invoiceData.tax,
+                taxAmount,
                 brand: selectedBrand?._id || selectedBrand?.id
             };
 
@@ -186,8 +222,8 @@ const InvoiceGenerator = () => {
                 setSelectedCustomer(null);
                 setInvoiceData({
                     invoiceDate: new Date().toISOString().split('T')[0],
-                    dueDate: "",
-                    tax: 0,
+                    dueDate: getDateWithOffset(new Date(), 7),
+                    tax: 18,
                     discount: 0,
                     notes: "",
                     terms: "",
@@ -382,20 +418,13 @@ const InvoiceGenerator = () => {
                         <ComponentCard title="Summary">
                             <div className="space-y-2">
                                 <div className="flex justify-between items-center text-[13px]">
-                                    <span className="text-gray-500 dark:text-gray-400">Sub Total</span>
-                                    <span className="text-gray-900 dark:text-white font-medium">{subTotal.toLocaleString()}</span>
+                                    <span className="text-gray-500 dark:text-gray-400">Base Amount (Tax Excl.)</span>
+                                    <span className="text-gray-900 dark:text-white font-medium">{subTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                 </div>
 
                                 <div className="flex justify-between items-center text-[13px]">
-                                    <span className="text-gray-500 dark:text-gray-400">Tax (%)</span>
-                                    <div className="w-20">
-                                        <input
-                                            type="number"
-                                            className="w-full p-1.5 border border-gray-200 rounded dark:bg-gray-800 dark:border-gray-700 text-right text-[13px] focus:ring-1 focus:ring-brand-500 outline-none"
-                                            value={invoiceData.tax}
-                                            onChange={(e) => setInvoiceData({ ...invoiceData, tax: e.target.value })}
-                                        />
-                                    </div>
+                                    <span className="text-gray-500 dark:text-gray-400">Tax ({invoiceData.tax}% Included)</span>
+                                    <span className="text-gray-900 dark:text-white font-medium">{taxAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                 </div>
 
                                 <div className="flex justify-between items-center text-[13px]">

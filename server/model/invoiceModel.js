@@ -29,8 +29,14 @@ const invoiceSchema = new mongoose.Schema({
     },
     customer: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Customer',
-        required: true
+        required: true,
+        refPath: 'customerModel'
+    },
+    customerModel: {
+        type: String,
+        required: true,
+        enum: ['Customer', 'Student'],
+        default: 'Customer'
     },
     invoiceDate: {
         type: Date,

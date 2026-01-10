@@ -225,8 +225,15 @@ export default function NewStudent() {
         setPhone2(lead.phone2 || "");
         setGender(lead.gender || "");
         setDob(lead.dob ? new Date(lead.dob).toISOString().split('T')[0] : "");
-        setPlace(lead.place || "");
-        setOtherPlace(lead.otherPlace || "");
+        // Check if lead's place is in standard options
+        const standardPlaces = placeOptions.map(p => p.value);
+        if (lead.place && !standardPlaces.includes(lead.place) && lead.place !== "Other") {
+          setPlace("Other");
+          setOtherPlace(lead.place);
+        } else {
+          setPlace(lead.place || "Kasaragod");
+          setOtherPlace(lead.otherPlace || "");
+        }
         setStatus(lead.status || "");
         setEducation(lead.education || "");
         setCoursePreference("");
@@ -740,14 +747,15 @@ export default function NewStudent() {
                     />
                   </div>
                   <div className="w-full md:w-1/4">
-                    <Label htmlFor="otherPlace">Specify other *</Label>
+                    <Label htmlFor="otherPlace">Specify Other Place *</Label>
                     <Input
                       type="text"
                       id="otherPlace"
                       value={otherPlace}
                       onChange={(e) => setOtherPlace(e.target.value)}
-                      error={place === "Other" && !otherPlace.trim() && !!validationErrors.otherPlace}
-                      hint={place === "Other" && !otherPlace.trim() ? validationErrors.otherPlace : ""}
+                      error={!!validationErrors.otherPlace}
+                      hint={validationErrors.otherPlace}
+                      placeholder="Enter village/city name"
                     />
                   </div>
                   <div className="w-full md:w-1/4">

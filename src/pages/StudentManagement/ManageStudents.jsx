@@ -158,8 +158,15 @@ export default function ManageStudents() {
     setPhone2(student.phone2 || "");
     setGender(student.gender || "");
     setDob(student.dob ? new Date(student.dob).toISOString().split('T')[0] : "");
-    setPlace(student.place || "");
-    setOtherPlace(student.otherPlace || "");
+    // Check if place is in standard options
+    const standardPlaces = placeOptions.map(p => p.value);
+    if (student.place && !standardPlaces.includes(student.place) && student.place !== "Other") {
+      setPlace("Other");
+      setOtherPlace(student.place);
+    } else {
+      setPlace(student.place || "Kasaragod");
+      setOtherPlace(student.otherPlace || "");
+    }
     setAddress(student.address || "");
     setAadharCardNumber(student.aadharCardNumber || "");
     setPhoto(null);
@@ -451,7 +458,14 @@ export default function ManageStudents() {
                             >
                               {student.fullName}
                             </span>
-                            <span className="text-xs text-gray-500 dark:text-gray-400">{student.studentId}</span>
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs text-gray-500 dark:text-gray-400">{student.studentId}</span>
+                              {student.place && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+                                  {student.place === 'Other' ? student.otherPlace : student.place}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
@@ -655,12 +669,13 @@ export default function ManageStudents() {
                   />
                 </div>
                 <div>
-                  <Label>Specify other *</Label>
+                  <Label>Specify Other Place *</Label>
                   <Input
                     type="text"
                     value={otherPlace}
                     onChange={(e) => setOtherPlace(e.target.value)}
-                    error={place === "Other" && !otherPlace.trim() && !!validationErrors.otherPlace}
+                    error={!!validationErrors.otherPlace}
+                    placeholder="Enter village/city name"
                   />
                 </div>
                 <div>

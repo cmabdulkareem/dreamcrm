@@ -85,12 +85,15 @@ const InvoiceViewer = ({ invoice, onPrint, onEdit, onMarkAsSent, showHeader = tr
                         </div>
                         <div className="space-y-0.5">
                             <h2 className="text-lg font-bold text-gray-900 dark:text-white print:text-black leading-tight">
-                                {invoice.brand?.name}
+                                {invoice.brand?.name || 'Your Company Name'}
                             </h2>
                             <div className="text-[13px] text-gray-500 dark:text-gray-400 print:text-gray-600 leading-normal max-w-[250px]">
-                                <p>{invoice.brand?.address}</p>
-                                <p>{invoice.brand?.phone}</p>
-                                <p>{invoice.brand?.email}</p>
+                                {invoice.brand?.address && <p>{invoice.brand.address}</p>}
+                                {invoice.brand?.phone && <p>{invoice.brand.phone}</p>}
+                                {invoice.brand?.email && <p>{invoice.brand.email}</p>}
+                                {!invoice.brand?.address && !invoice.brand?.phone && !invoice.brand?.email && (
+                                    <p className="italic text-gray-400">Update brand details in settings</p>
+                                )}
                             </div>
                         </div>
                     </div>

@@ -144,10 +144,22 @@ export const createStudent = async (req, res) => {
 
     await newStudent.save();
 
-    // Mark lead as admission taken (Only if leadId provided)
+    // Mark lead as admission taken and add conversion remark (Only if leadId provided)
     if (leadId && leadId !== "no_lead") {
-      await customerModel.findByIdAndUpdate(leadId, { isAdmissionTaken: true });
+      await customerModel.findByIdAndUpdate(leadId, {
+        isAdmissionTaken: true,
+        $push: {
+          remarks: {
+            updatedOn: new Date(),
+            handledBy: req.user.fullName || "System",
+            remark: "Admission taken. Lead converted to student.",
+            leadStatus: 'converted', // Keep status for consistency in reports
+            isUnread: false
+          }
+        }
+      });
     }
+
 
     return res.status(201).json({
       message: "Student created successfully.",

@@ -54,7 +54,8 @@ export default function LeadOverview() {
     });
   };
 
-  const getLeadStatusLabel = (value) => {
+  const getLeadStatusLabel = (lead) => {
+    if (lead.isAdmissionTaken) return "Converted";
     const statusMap = {
       new: "New Lead",
       contacted: "Contacted",
@@ -65,10 +66,11 @@ export default function LeadOverview() {
       notInterested: "Not Interested",
       lost: "Lost"
     };
-    return statusMap[value] || "New Lead";
+    return statusMap[lead.leadStatus] || "New Lead";
   };
 
-  const getLeadStatusColor = (status) => {
+  const getLeadStatusColor = (lead) => {
+    const status = lead.isAdmissionTaken ? 'converted' : lead.leadStatus;
     if (status === 'converted' || status === 'qualified') return "success";
     if (status === 'negotiation' || status === 'contacted') return "info";
     if (status === 'callBackLater' || status === 'new') return "warning";
@@ -142,9 +144,9 @@ export default function LeadOverview() {
                       <TableCell className="py-3">
                         <Badge
                           size="sm"
-                          color={getLeadStatusColor(row.leadStatus)}
+                          color={getLeadStatusColor(row)}
                         >
-                          {getLeadStatusLabel(row.leadStatus)}
+                          {getLeadStatusLabel(row)}
                         </Badge>
                       </TableCell>
                       <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{formatDate(row.followUpDate)}</TableCell>

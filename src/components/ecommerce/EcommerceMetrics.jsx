@@ -92,15 +92,22 @@ export default function EcommerceMetrics() {
       };
 
       const leadsGrowth = calculateGrowth(currentMonthLeads, lastMonthLeads);
-      const convertedLeads = customers.filter(c => c.leadStatus === 'converted').length;
-      const currentMonthConvertedLeads = customers.filter(c => {
-        const createdDate = new Date(c.createdAt);
-        return c.leadStatus === 'converted' &&
-          createdDate.getMonth() === currentMonth &&
-          createdDate.getFullYear() === currentYear;
+
+      // Total Conversions = Total Students (Converted from Leads + Direct Walk-ins)
+      const convertedLeads = students.length;
+
+      const currentMonthConvertedLeads = students.filter(s => {
+        const docDate = new Date(s.enrollmentDate || s.createdAt);
+        return docDate.getMonth() === currentMonth &&
+          docDate.getFullYear() === currentYear;
       }).length;
 
-      const conversionRate = totalLeads > 0 ? ((convertedLeads / totalLeads) * 100) : 0;
+      // Adjust Total Leads pool to include direct walk-ins (students without leadId)
+      // This ensures conversion rate doesn't exceed 100% and reflects total potential intake
+      const directStudents = students.filter(s => !s.leadId).length;
+      const effectiveTotalLeads = totalLeads + directStudents;
+
+      const conversionRate = effectiveTotalLeads > 0 ? ((convertedLeads / effectiveTotalLeads) * 100) : 0;
 
       // Revenue and Collection calculations from stats API
       const {
@@ -112,7 +119,8 @@ export default function EcommerceMetrics() {
         lastMonthCollection = 0
       } = statsResponse.data;
 
-      const totalRevenue = students.reduce((sum, s) => sum + (parseFloat(s.finalAmount) || 0), 0);
+      const totalRevenueGross = students.reduce((sum, s) => sum + (parseFloat(s.finalAmount) || 0), 0);
+      const totalRevenue = totalRevenueGross / 1.18;
 
       const revenueGrowth = calculateGrowth(currentMonthRevenue, lastMonthRevenue);
       const collectionGrowth = calculateGrowth(currentMonthCollection, lastMonthCollection);
@@ -121,21 +129,21 @@ export default function EcommerceMetrics() {
       const totalStudents = students.length;
 
       const currentMonthStudents = students.filter(s => {
-        const createdDate = new Date(s.createdAt);
-        return createdDate.getMonth() === currentMonth &&
-          createdDate.getFullYear() === currentYear;
+        const enrollmentDate = new Date(s.enrollmentDate || s.createdAt);
+        return enrollmentDate.getMonth() === currentMonth &&
+          enrollmentDate.getFullYear() === currentYear;
       }).length;
 
       const lastMonthStudents = students.filter(s => {
-        const createdDate = new Date(s.createdAt);
-        return createdDate.getMonth() === lastMonth &&
-          createdDate.getFullYear() === lastMonthYear;
+        const enrollmentDate = new Date(s.enrollmentDate || s.createdAt);
+        return enrollmentDate.getMonth() === lastMonth &&
+          enrollmentDate.getFullYear() === lastMonthYear;
       }).length;
 
       const studentsGrowth = calculateGrowth(currentMonthStudents, lastMonthStudents);
 
       setMetrics({
-        totalLeads,
+        totalLeads: effectiveTotalLeads,
         currentMonthLeads,
         lastMonthLeads,
         leadsGrowth: parseFloat(leadsGrowth.toFixed(1)),
@@ -320,7 +328,7 @@ export default function EcommerceMetrics() {
           )}
         </div>
         <div className="mt-5 flex-grow">
-          <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap block">FY Sales Target</span>
+          <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap block">Total Revenue</span>
           <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
             {loading ? <LoadingSpinner className="h-6" size="h-4 w-4" /> : formatCurrency(metrics.financialYearRevenue)}
           </h4>

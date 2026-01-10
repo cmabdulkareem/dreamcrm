@@ -528,7 +528,7 @@ export const getLeaderboard = async (req, res) => {
     // Get all leads (brand specific) with remarks to track conversions
     const allLeads = await customerModel.find(brandQuery)
       .populate('assignedTo', 'fullName email avatar')
-      .select('assignedTo leadStatus createdAt remarks');
+      .select('assignedTo leadStatus createdAt remarks isAdmissionTaken');
 
     // Group by assignedTo user
     const userStats = {};
@@ -558,11 +558,12 @@ export const getLeaderboard = async (req, res) => {
         }
       }
 
-      // Check if lead was converted this month (by checking remarks)
-      if (lead.remarks && lead.remarks.length > 0) {
-        // Find the remark where status was changed to 'converted' this month
+      // Check if lead was converted this month (by checking remarks and isAdmissionTaken)
+      if (lead.isAdmissionTaken && lead.remarks && lead.remarks.length > 0) {
+        // Find the remark where it was converted or admission was taken this month
         const conversionRemark = lead.remarks.find(remark => {
-          if (remark.leadStatus === 'converted' && remark.updatedOn) {
+          // Look for 'converted' status OR specific admission remarks if we add them
+          if ((remark.leadStatus === 'converted' || remark.remark?.includes("Admission taken")) && remark.updatedOn) {
             const updatedDate = new Date(remark.updatedOn);
             return updatedDate.getMonth() === currentMonth &&
               updatedDate.getFullYear() === currentYear;

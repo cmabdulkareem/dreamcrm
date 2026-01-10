@@ -66,12 +66,12 @@ export default function MonthlyTarget() {
         { withCredentials: true }
       );
 
-      const { currentMonthRevenue, lastMonthRevenue, todayRevenue } = statsResponse.data;
+      const { currentMonthCollection, lastMonthCollection, todayRevenue } = statsResponse.data;
 
-      // Calculate growth
-      const revenueGrowth = lastMonthRevenue === 0
-        ? (currentMonthRevenue > 0 ? 100 : 0)
-        : (((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100);
+      // Calculate growth (now based on collections)
+      const revenueGrowth = lastMonthCollection === 0
+        ? (currentMonthCollection > 0 ? 100 : 0)
+        : (((currentMonthCollection - lastMonthCollection) / lastMonthCollection) * 100);
 
       // Get target from API
       // Since we already fetched targets in separate call, we find the current one
@@ -82,14 +82,14 @@ export default function MonthlyTarget() {
       const currentTarget = targets.find(t => t.month === currentMonth && t.year === currentYear);
       let targetRevenue = currentTarget?.targetRevenue || 1000000; // Default 10L
 
-      // Calculate percentage
+      // Calculate percentage based on collections
       const percentage = targetRevenue > 0
-        ? Math.min((currentMonthRevenue / targetRevenue) * 100, 100)
+        ? Math.min((currentMonthCollection / targetRevenue) * 100, 100)
         : 0;
 
       setMetrics({
-        currentMonthRevenue,
-        lastMonthRevenue,
+        currentMonthRevenue: currentMonthCollection, // Variable name kept but maps to collection
+        lastMonthRevenue: lastMonthCollection,
         targetRevenue,
         percentage: parseFloat(percentage.toFixed(2)),
         revenueGrowth: parseFloat(revenueGrowth.toFixed(2)),
@@ -296,8 +296,8 @@ export default function MonthlyTarget() {
           {!loading && (
             <p className="mx-auto mt-10 w-full max-w-[380px] text-center text-sm text-gray-500 sm:text-base">
               {metrics.currentMonthRevenue >= metrics.targetRevenue
-                ? `We earned ${formatCurrency(metrics.currentMonthRevenue)} this month, exceeding our target! Great work!`
-                : `We earned ${formatCurrency(metrics.currentMonthRevenue)} this month, ${formatCurrency(metrics.targetRevenue - metrics.currentMonthRevenue)} away from target. Keep up the good work!`}
+                ? `We collected ${formatCurrency(metrics.currentMonthRevenue)} this month, exceeding our target! Great work!`
+                : `We collected ${formatCurrency(metrics.currentMonthRevenue)} this month, ${formatCurrency(metrics.targetRevenue - metrics.currentMonthRevenue)} away from target. Keep up the good work!`}
             </p>
           )}
         </div>

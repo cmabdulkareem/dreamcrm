@@ -3,6 +3,7 @@ import Payment from '../model/paymentModel.js';
 import Student from '../model/studentModel.js';
 import Customer from '../model/customerModel.js';
 import Brand from '../model/brandModel.js';
+import ReceiptVoucher from '../model/receiptModel.js';
 import { getFinancialYearRange } from '../utils/dateUtils.js';
 
 // Create new payment
@@ -159,24 +160,25 @@ export const getPaymentStats = async (req, res) => {
             }
         }
 
-        // 1. Current Month Revenue (UTC)
+        // 1. Current Month Revenue (Local)
         const now = new Date();
-        const currentMonthStart = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 1));
-        const currentMonthEnd = new Date(Date.UTC(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999));
+        const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
 
-        // 2. Last Month Revenue (UTC)
-        const lastMonthStart = new Date(Date.UTC(now.getFullYear(), now.getMonth() - 1, 1));
-        const lastMonthEnd = new Date(Date.UTC(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999));
+        // 2. Last Month Revenue (Local)
+        const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
 
-        const todayStart = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
-        const todayEnd = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999));
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
 
         // 4. Financial Year Revenue (India: April 1 to March 31)
         const { startDate: fyStart, endDate: fyEnd } = getFinancialYearRange(now);
 
         // Helper to sum from Payments (Collections)
         const sumAmount = async (start, end) => {
-            const result = await Payment.aggregate([
+            // Sum from general Payments
+            const paymentResult = await Payment.aggregate([
                 {
                     $match: {
                         ...brandQuery,
@@ -191,7 +193,28 @@ export const getPaymentStats = async (req, res) => {
                     }
                 }
             ]);
-            return result.length > 0 ? result[0].total : 0;
+
+            // Sum from Invoice Receipts
+            const receiptResult = await ReceiptVoucher.aggregate([
+                {
+                    $match: {
+                        ...brandQuery,
+                        paymentDate: { $gte: start, $lte: end }
+                    }
+                },
+                {
+                    $group: {
+                        _id: null,
+                        total: { $sum: "$amount" }
+                    }
+                }
+            ]);
+
+            const paymentTotal = paymentResult.length > 0 ? paymentResult[0].total : 0;
+            const receiptTotal = receiptResult.length > 0 ? receiptResult[0].total : 0;
+
+            const totalGross = paymentTotal + receiptTotal;
+            return totalGross / 1.18; // Net of 18% tax
         };
 
         // Helper to sum from Students (Sales/Enrollment Revenue)
@@ -210,7 +233,8 @@ export const getPaymentStats = async (req, res) => {
                     }
                 }
             ]);
-            return result.length > 0 ? result[0].total : 0;
+            const totalGross = result.length > 0 ? result[0].total : 0;
+            return totalGross / 1.18; // Net of 18% tax
         };
 
         // In Leads Dashboard, "Revenue" usually refers to enrollment value

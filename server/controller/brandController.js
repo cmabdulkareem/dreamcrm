@@ -12,7 +12,7 @@ export const createBrand = async (req, res) => {
       });
     }
 
-    const { name, description, code } = req.body;
+    const { name, description, code, address, phone, email } = req.body;
 
     // Validate required fields
     if (!name) {
@@ -41,6 +41,9 @@ export const createBrand = async (req, res) => {
       description: description || "",
       code: code.toUpperCase(),
       themeColor: req.body.themeColor || "#ED1164",
+      address: address || "",
+      phone: phone || "",
+      email: email || "",
       createdBy: req.user.id
     });
 
@@ -106,7 +109,7 @@ export const updateBrand = async (req, res) => {
     }
 
     const { id } = req.params;
-    const { name, description, code, isActive } = req.body;
+    const { name, description, code, isActive, address, phone, email } = req.body;
 
     // Validate ID
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -151,6 +154,9 @@ export const updateBrand = async (req, res) => {
     if (description !== undefined) brand.description = description;
     if (req.body.themeColor !== undefined) brand.themeColor = req.body.themeColor;
     if (isActive !== undefined) brand.isActive = isActive;
+    if (address !== undefined) brand.address = address;
+    if (phone !== undefined) brand.phone = phone;
+    if (email !== undefined) brand.email = email;
     brand.updatedAt = Date.now();
 
     await brand.save();

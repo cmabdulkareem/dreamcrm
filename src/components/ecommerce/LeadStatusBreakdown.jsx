@@ -19,12 +19,13 @@ export default function LeadStatusBreakdown() {
 
   const fetchStatusData = async () => {
     try {
-      const response = await axios.get(
-        `${API}/customers/all`,
-        { withCredentials: true }
-      );
+      const [customersRes, studentsRes] = await Promise.all([
+        axios.get(`${API}/customers/all`, { withCredentials: true }),
+        axios.get(`${API}/students/all`, { withCredentials: true })
+      ]);
 
-      const customers = response.data.customers;
+      const customers = customersRes.data.customers;
+      const students = studentsRes.data.students || [];
 
       // Status mapping with colors
       const statusMap = {
@@ -40,10 +41,17 @@ export default function LeadStatusBreakdown() {
 
       // Count leads by status
       const statusCounts = {};
+
+      // 1. Process Customers
       customers.forEach(customer => {
-        const status = customer.leadStatus || 'new';
+        // Priority: if admission taken, it's 'converted'
+        const status = customer.isAdmissionTaken ? 'converted' : (customer.leadStatus || 'new');
         statusCounts[status] = (statusCounts[status] || 0) + 1;
       });
+
+      // 2. Add Direct Students (those without leadId) to 'converted'
+      const directStudentsCount = students.filter(s => !s.leadId).length;
+      statusCounts['converted'] = (statusCounts['converted'] || 0) + directStudentsCount;
 
       // Convert to arrays for chart
       const categories = [];

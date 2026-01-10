@@ -5,14 +5,24 @@ import Invoice from "../model/invoiceModel.js";
 const generateReceiptNumber = async (brandId) => {
     const today = new Date();
     const year = today.getFullYear();
-    const count = await ReceiptVoucher.countDocuments({
+
+    // Find the highest receipt number for this brand and year to avoid duplicates
+    // This is more robust than countDocuments which fails if records are deleted or during race conditions
+    const lastReceipt = await ReceiptVoucher.findOne({
         brand: brandId,
-        paymentDate: {
-            $gte: new Date(year, 0, 1),
-            $lte: new Date(year, 11, 31)
+        receiptNumber: new RegExp(`^REC-${year}-`)
+    }).sort({ receiptNumber: -1 });
+
+    let nextNumber = 1;
+    if (lastReceipt) {
+        const parts = lastReceipt.receiptNumber.split('-');
+        const lastSerial = parseInt(parts[parts.length - 1]);
+        if (!isNaN(lastSerial)) {
+            nextNumber = lastSerial + 1;
         }
-    });
-    return `REC-${year}-${(count + 1).toString().padStart(4, '0')}`;
+    }
+
+    return `REC-${year}-${nextNumber.toString().padStart(4, '0')}`;
 };
 
 export const createReceipt = async (req, res, next) => {

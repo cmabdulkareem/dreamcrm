@@ -26,6 +26,18 @@ const brandSchema = new mongoose.Schema({
     uppercase: true,
     trim: true
   },
+  address: {
+    type: String,
+    default: ""
+  },
+  phone: {
+    type: String,
+    default: ""
+  },
+  email: {
+    type: String,
+    default: ""
+  },
   isActive: {
     type: Boolean,
     default: true

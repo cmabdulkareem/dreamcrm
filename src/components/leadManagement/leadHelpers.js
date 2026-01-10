@@ -12,14 +12,17 @@ export const formatDate = (dateString) => {
 };
 
 // Get lead status label from value
-export const getLeadStatusLabel = (value) => {
+export const getLeadStatusLabel = (lead) => {
+  if (lead?.isAdmissionTaken) return "Converted";
+  const value = typeof lead === 'string' ? lead : lead?.leadStatus;
   if (!value) return "New Lead";
   const option = leadStatusOptions.find(opt => opt.value === value);
   return option ? option.label : value;
 };
 
 // Get lead status color for badge
-export const getLeadStatusColor = (status) => {
+export const getLeadStatusColor = (lead) => {
+  const status = typeof lead === 'string' ? lead : (lead?.isAdmissionTaken ? 'converted' : lead?.leadStatus);
   if (status === 'converted' || status === 'qualified') return "success";
   if (status === 'negotiation' || status === 'contacted') return "info";
   if (status === 'callBackLater' || status === 'new') return "warning";
@@ -38,7 +41,7 @@ export const getLatestRemark = (remarks) => {
 // Check if lead has unread remarks
 export const hasUnreadRemarks = (remarks, userId) => {
   if (!remarks || remarks.length === 0) return false;
-  
+
   // Check if any remark is unread
   return remarks.some(remark => remark.isUnread);
 };
@@ -47,19 +50,19 @@ export const hasUnreadRemarks = (remarks, userId) => {
 export const canViewLead = (lead, user) => {
   // Admins can view all leads
   if (user?.isAdmin) return true;
-  
+
   // Managers can view all leads
   if (user?.roles?.includes('Manager')) return true;
-  
+
   // Check if user is the creator of the lead
   if (lead.handledBy === user?.fullName) return true;
-  
+
   // Check if user is assigned to this lead
   // Handle both populated object (assignedTo._id) and string ObjectId
   const userId = user?.id?.toString() || user?._id?.toString();
   const assignedId = lead.assignedTo?._id?.toString() || lead.assignedTo?.toString();
-  
+
   if (assignedId && assignedId === userId) return true;
-  
+
   return false;
 };

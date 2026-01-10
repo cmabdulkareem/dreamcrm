@@ -24,6 +24,9 @@ const BrandManagement = () => {
     description: "",
     code: "",
     themeColor: "#ED1164",
+    address: "",
+    phone: "",
+    email: "",
     isActive: true
   });
 
@@ -87,6 +90,9 @@ const BrandManagement = () => {
         description: "",
         code: "",
         themeColor: "#ED1164",
+        address: "",
+        phone: "",
+        email: "",
         isActive: true
       });
     } catch (error) {
@@ -102,6 +108,9 @@ const BrandManagement = () => {
       description: brand.description || "",
       code: brand.code || "",
       themeColor: brand.themeColor || "#ED1164",
+      address: brand.address || "",
+      phone: brand.phone || "",
+      email: brand.email || "",
       isActive: brand.isActive !== undefined ? brand.isActive : true
     });
     setShowModal(true);
@@ -141,6 +150,9 @@ const BrandManagement = () => {
       description: "",
       code: "",
       themeColor: "#ED1164",
+      address: "",
+      phone: "",
+      email: "",
       isActive: true
     });
   };
@@ -311,6 +323,40 @@ const BrandManagement = () => {
                         style={{ textTransform: 'uppercase' }}
                       />
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Enter a unique brand code (e.g., ABC, XYZ). Will be converted to uppercase.</p>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="address">Address</Label>
+                      <Input
+                        id="address"
+                        name="address"
+                        value={formData.address}
+                        onChange={handleInputChange}
+                        placeholder="123 Street Name, City, Country"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="phone">Phone</Label>
+                        <Input
+                          id="phone"
+                          name="phone"
+                          value={formData.phone}
+                          onChange={handleInputChange}
+                          placeholder="+1 234 567 890"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="email">Email</Label>
+                        <Input
+                          id="email"
+                          name="email"
+                          value={formData.email}
+                          onChange={handleInputChange}
+                          placeholder="contact@brand.com"
+                        />
+                      </div>
                     </div>
 
                     <div>

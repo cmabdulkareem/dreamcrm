@@ -6,21 +6,22 @@ import API from '../../config/api';
 const StudentProfileModal = ({ isOpen, onClose, student }) => {
     const [detailedStudent, setDetailedStudent] = React.useState(null);
     const [loading, setLoading] = React.useState(false);
+    const [invoices, setInvoices] = React.useState([]);
+    const [loadingInvoices, setLoadingInvoices] = React.useState(false);
 
     React.useEffect(() => {
         if (isOpen && student) {
             fetchStudentDetails();
+            fetchInvoices();
         } else {
             setDetailedStudent(null);
+            setInvoices([]);
         }
     }, [isOpen, student]);
 
     const fetchStudentDetails = async () => {
         try {
             setLoading(true);
-            // Determine the correct MongoDB _id to fetch
-            // Case 1: Populated BatchStudent object (student.studentId is an object with _id)
-            // Case 2: Direct Student object (student._id is the Mongo ID)
             const idToFetch = (student.studentId && typeof student.studentId === 'object' && student.studentId._id)
                 ? student.studentId._id
                 : student._id;
@@ -31,6 +32,22 @@ const StudentProfileModal = ({ isOpen, onClose, student }) => {
             console.error("Failed to fetch student details:", error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchInvoices = async () => {
+        try {
+            setLoadingInvoices(true);
+            const idToFetch = (student.studentId && typeof student.studentId === 'object' && student.studentId._id)
+                ? student.studentId._id
+                : (student._id || student.id);
+
+            const response = await axios.get(`${API}/invoices?customer=${idToFetch}`, { withCredentials: true });
+            setInvoices(response.data);
+        } catch (error) {
+            console.error("Failed to fetch invoices:", error);
+        } finally {
+            setLoadingInvoices(false);
         }
     };
 
@@ -271,6 +288,37 @@ const StudentProfileModal = ({ isOpen, onClose, student }) => {
                                     <DataField label="Enrollment Date" value={formatDate(displayStudent.enrollmentDate)} />
                                     <DataField label="Created By" value={displayStudent.createdBy} />
                                     <DataField label="Registered On" value={formatDate(displayStudent.createdAt)} />
+                                </div>
+                            </section>
+
+                            <section>
+                                <h3 className="text-sm font-bold text-brand-500 dark:text-brand-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                    Linked Invoices
+                                </h3>
+                                <div className="bg-gray-50 dark:bg-gray-800/40 p-4 rounded-2xl space-y-3 border border-gray-100 dark:border-gray-800 max-h-60 overflow-y-auto">
+                                    {loadingInvoices ? (
+                                        <div className="text-xs text-gray-500 italic text-center py-4">Checking for invoices...</div>
+                                    ) : invoices.length > 0 ? (
+                                        <div className="space-y-2">
+                                            {invoices.map((inv) => (
+                                                <div key={inv._id} className="p-2.5 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex justify-between items-center group">
+                                                    <div>
+                                                        <p className="text-xs font-bold text-gray-900 dark:text-white">#{inv.invoiceNumber}</p>
+                                                        <p className="text-[10px] text-gray-500">{new Date(inv.invoiceDate).toLocaleDateString()}</p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="text-xs font-bold text-brand-600">₹{inv.totalAmount.toLocaleString()}</p>
+                                                        <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${inv.status === 'Paid' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                                                            {inv.status}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="text-xs text-gray-400 italic text-center py-4">No invoices registered yet.</div>
+                                    )}
                                 </div>
                             </section>
 
