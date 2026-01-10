@@ -5,18 +5,24 @@ export default function FlipCard({ frontContent, backContent, className = "" }) 
 
   return (
     <div
-      className={`relative cursor-pointer perspective-1000 ${className}`}
+      className={`relative cursor-pointer perspective-1000 h-full w-full ${className}`}
       onMouseEnter={() => setIsFlipped(true)}
       onMouseLeave={() => setIsFlipped(false)}
     >
-      <div className={`relative w-full transition-transform duration-700 transform-style-3d ${isFlipped ? 'rotate-y-180' : ''}`}>
+      <div
+        className={`relative w-full h-full transition-transform duration-700 transform-style-3d ${isFlipped ? 'rotate-y-180' : ''}`}
+        style={{ transformStyle: 'preserve-3d' }}
+      >
         {/* Front Side */}
-        <div className="relative backface-hidden">
+        <div className="relative w-full h-full backface-hidden" style={{ backfaceVisibility: 'hidden' }}>
           {frontContent}
         </div>
 
         {/* Back Side */}
-        <div className="absolute inset-0 backface-hidden rotate-y-180">
+        <div
+          className="absolute inset-0 w-full h-full backface-hidden rotate-y-180"
+          style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+        >
           {backContent}
         </div>
       </div>

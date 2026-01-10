@@ -219,6 +219,11 @@ export const getPaymentStats = async (req, res) => {
         const todayRevenue = await sumAmount(todayStart, todayEnd); // Today's collections
         const financialYearRevenue = await sumStudentRevenue(fyStart, fyEnd);
 
+        // Actual Collections (Received Money)
+        const currentMonthCollection = await sumAmount(currentMonthStart, currentMonthEnd);
+        const lastMonthCollection = await sumAmount(lastMonthStart, lastMonthEnd);
+        const financialYearCollection = await sumAmount(fyStart, fyEnd);
+
         // 5. Last 12 Months Data for Chart
         const monthlyRevenue = [];
         const monthNames = [];
@@ -241,6 +246,9 @@ export const getPaymentStats = async (req, res) => {
             lastMonthRevenue,
             todayRevenue,
             financialYearRevenue,
+            currentMonthCollection,
+            lastMonthCollection,
+            financialYearCollection,
             revenueGraph: {
                 months: monthNames,
                 revenue: monthlyRevenue
