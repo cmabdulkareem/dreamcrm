@@ -174,7 +174,7 @@ export const getPaymentStats = async (req, res) => {
         // 4. Financial Year Revenue (India: April 1 to March 31)
         const { startDate: fyStart, endDate: fyEnd } = getFinancialYearRange(now);
 
-        // Helper to sum
+        // Helper to sum from Payments (Collections)
         const sumAmount = async (start, end) => {
             const result = await Payment.aggregate([
                 {
@@ -194,10 +194,30 @@ export const getPaymentStats = async (req, res) => {
             return result.length > 0 ? result[0].total : 0;
         };
 
-        const currentMonthRevenue = await sumAmount(currentMonthStart, currentMonthEnd);
-        const lastMonthRevenue = await sumAmount(lastMonthStart, lastMonthEnd);
-        const todayRevenue = await sumAmount(todayStart, todayEnd);
-        const financialYearRevenue = await sumAmount(fyStart, fyEnd);
+        // Helper to sum from Students (Sales/Enrollment Revenue)
+        const sumStudentRevenue = async (start, end) => {
+            const result = await Student.aggregate([
+                {
+                    $match: {
+                        ...brandQuery,
+                        enrollmentDate: { $gte: start, $lte: end }
+                    }
+                },
+                {
+                    $group: {
+                        _id: null,
+                        total: { $sum: "$finalAmount" }
+                    }
+                }
+            ]);
+            return result.length > 0 ? result[0].total : 0;
+        };
+
+        // In Leads Dashboard, "Revenue" usually refers to enrollment value
+        const currentMonthRevenue = await sumStudentRevenue(currentMonthStart, currentMonthEnd);
+        const lastMonthRevenue = await sumStudentRevenue(lastMonthStart, lastMonthEnd);
+        const todayRevenue = await sumAmount(todayStart, todayEnd); // Today's collections
+        const financialYearRevenue = await sumStudentRevenue(fyStart, fyEnd);
 
         // 5. Last 12 Months Data for Chart
         const monthlyRevenue = [];
@@ -209,7 +229,7 @@ export const getPaymentStats = async (req, res) => {
             const mStart = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1));
             const mEnd = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0, 23, 59, 59, 999));
 
-            const mRevenue = await sumAmount(mStart, mEnd);
+            const mRevenue = await sumStudentRevenue(mStart, mEnd);
 
             monthNames.push(d.toLocaleDateString('en-US', { month: 'short' }));
             monthlyRevenue.push(mRevenue / 100000); // In Lakhs

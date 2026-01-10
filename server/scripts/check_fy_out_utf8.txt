@@ -1,0 +1,5 @@
+﻿[dotenv@17.2.3] injecting env (10) from server\.env -- tip: ΓÜÖ∩╕Å  write to custom object with { processEnv: myObject }
+FY Range: 2025-04-01T00:00:00.000Z to 2026-03-31T23:59:59.999Z
+Students in FY: 4
+Revenue from Students (Final Amount): 424426
+Revenue from Payments (Completed): 11290
