@@ -343,6 +343,34 @@ export const updateStudent = async (req, res) => {
   }
 };
 
+// Update only enrollment date
+export const updateEnrollmentDate = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { enrollmentDate } = req.body;
+
+    if (!enrollmentDate) {
+      return res.status(400).json({ message: "Enrollment date is required" });
+    }
+
+    const student = await studentModel.findById(id);
+    if (!student) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    student.enrollmentDate = new Date(enrollmentDate);
+    await student.save();
+
+    return res.status(200).json({
+      message: "Enrollment date updated successfully",
+      student
+    });
+  } catch (error) {
+    console.error("Update enrollment date error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
 // Get next student ID for preview
 export const getNextStudentId = async (req, res) => {
   try {

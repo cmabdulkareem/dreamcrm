@@ -38,9 +38,11 @@ export default function ManageStudents() {
   // Modal states
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [selectedStudentForProfile, setSelectedStudentForProfile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [isDateModalOpen, setIsDateModalOpen] = useState(false);
+  const [selectedStudentForDate, setSelectedStudentForDate] = useState(null);
+  const [newEnrollmentDate, setNewEnrollmentDate] = useState("");
 
   // Controlled form states
   const [fullName, setFullName] = useState("");
@@ -178,6 +180,37 @@ export default function ManageStudents() {
     setIsEditModalOpen(false);
     setEditingStudent(null);
     setValidationErrors({});
+  };
+
+  const handleDateClick = (student) => {
+    setSelectedStudentForDate(student);
+    setNewEnrollmentDate(student.enrollmentDate ? new Date(student.enrollmentDate).toISOString().split('T')[0] : "");
+    setIsDateModalOpen(true);
+  };
+
+  const handleSaveDate = async () => {
+    if (!newEnrollmentDate) {
+      toast.error("Please select a date");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      await axios.patch(
+        `${API}/students/update-enrollment-date/${selectedStudentForDate._id}`,
+        { enrollmentDate: newEnrollmentDate },
+        { withCredentials: true }
+      );
+
+      toast.success("Enrollment date updated successfully!");
+      fetchStudents();
+      setIsDateModalOpen(false);
+    } catch (error) {
+      console.error("Error updating enrollment date:", error);
+      toast.error(error.response?.data?.message || "Failed to update date");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // Logic from NewStudent.jsx
@@ -466,6 +499,12 @@ export default function ManageStudents() {
                             >
                               View
                             </button>
+                            <button
+                              onClick={() => handleDateClick(student)}
+                              className="text-amber-600 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-300"
+                            >
+                              Date
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -748,6 +787,39 @@ export default function ManageStudents() {
         onClose={() => setIsProfileModalOpen(false)}
         student={selectedStudentForProfile}
       />
+
+      {/* Change Enrollment Date Modal */}
+      <Modal
+        isOpen={isDateModalOpen}
+        onClose={() => setIsDateModalOpen(false)}
+        className="max-w-[400px] p-6"
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-white">
+            Change Enrollment Date
+          </h2>
+          <button onClick={() => setIsDateModalOpen(false)} className="text-gray-500">✕</button>
+        </div>
+        <p className="text-sm text-gray-500 mb-4">
+          Updating date for: <span className="font-medium text-gray-700 dark:text-gray-300">{selectedStudentForDate?.fullName}</span>
+        </p>
+        <div className="space-y-4">
+          <DatePicker
+            id="quick-enrollment-date"
+            label="New Enrollment Date"
+            value={newEnrollmentDate}
+            onChange={(date, str) => setNewEnrollmentDate(str)}
+          />
+          <div className="flex justify-end gap-3 mt-6">
+            <Button variant="outline" onClick={() => setIsDateModalOpen(false)} disabled={submitting}>
+              Cancel
+            </Button>
+            <Button variant="primary" onClick={handleSaveDate} disabled={submitting}>
+              {submitting ? "Updating..." : "Update Date"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       <ToastContainer position="top-center" className="!z-[999999]" style={{ zIndex: 999999 }} />
     </div>

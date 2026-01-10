@@ -1,4 +1,0 @@
-﻿[dotenv@17.2.3] injecting env (10) from server\.env -- tip: ΓÜÖ∩╕Å  suppress all logs with { quiet: true }
-YASEEN BANNA | 2025-03-05T00:00:00.000Z | 137712
-BHAVYASHREE K B | 2025-03-10T00:00:00.000Z | 206568
-ABDUL SAJAD T A | 2025-04-19T00:00:00.000Z | 137712
