@@ -33,6 +33,7 @@ import callListRoutes from './routes/callListRoutes.js'
 import backupRoutes from './routes/backupRoutes.js'
 import invoiceRoutes from "./routes/invoiceRoutes.js";
 import receiptRoutes from "./routes/receiptRoutes.js";
+import aiRoutes from "./routes/aiRoutes.js";
 
 const app = express()
 
@@ -79,6 +80,7 @@ app.use('/api/call-lists', callListRoutes)
 app.use('/api/backup', backupRoutes)
 app.use('/api/invoices', invoiceRoutes)
 app.use('/api/receipts', receiptRoutes)
+app.use('/api/ai', aiRoutes)
 
 
 
