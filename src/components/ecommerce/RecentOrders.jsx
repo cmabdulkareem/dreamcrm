@@ -208,7 +208,12 @@ export default function RecentOrders() {
   const [hoveredRemarkRow, setHoveredRemarkRow] = useState(null);
   const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0, arrowLeft: 0 });
   const [showTooltip, setShowTooltip] = useState(false);
+  const [showAnalysisTooltip, setShowAnalysisTooltip] = useState(false);
+  const [hoveredAnalysisLeadId, setHoveredAnalysisLeadId] = useState(null);
+  const [analysisCache, setAnalysisCache] = useState({});
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const hoverTimeoutRef = useRef(null);
+  const analysisTimeoutRef = useRef(null);
   const tooltipRef = useRef(null);
 
   // Separate modal states
@@ -443,6 +448,50 @@ export default function RecentOrders() {
     hoverTimeoutRef.current = setTimeout(() => {
       setHoveredRemarkRow(null);
       setShowTooltip(false);
+    }, 100);
+  };
+
+  const handleAnalysisEnter = (e, row) => {
+    // Clear any existing timeout
+    if (analysisTimeoutRef.current) {
+      clearTimeout(analysisTimeoutRef.current);
+    }
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const position = calculateTooltipPosition(rect);
+
+    setTooltipPosition(position);
+    setHoveredAnalysisLeadId(row._id);
+
+    // Initial timeout to show the "Analyzing..." state
+    analysisTimeoutRef.current = setTimeout(async () => {
+      setShowAnalysisTooltip(true);
+
+      if (!analysisCache[row._id]) {
+        setIsAnalyzing(true);
+        try {
+          const response = await axios.get(`${API}/ai/analyze-lead/${row._id}`, { withCredentials: true });
+          setAnalysisCache(prev => ({ ...prev, [row._id]: response.data.analysis }));
+        } catch (error) {
+          console.error("AI Analysis Error:", error);
+          setAnalysisCache(prev => ({ ...prev, [row._id]: "Could not load AI suggestions." }));
+        } finally {
+          setIsAnalyzing(false);
+        }
+      }
+    }, 400); // 400ms delay to avoid calling on accidental hover
+  };
+
+  const handleAnalysisLeave = () => {
+    if (analysisTimeoutRef.current) {
+      clearTimeout(analysisTimeoutRef.current);
+      analysisTimeoutRef.current = null;
+    }
+
+    // Delay hiding
+    analysisTimeoutRef.current = setTimeout(() => {
+      setHoveredAnalysisLeadId(null);
+      setShowAnalysisTooltip(false);
     }, 100);
   };
 
@@ -1215,8 +1264,12 @@ export default function RecentOrders() {
                         </TableCell>
 
                         <TableCell className="py-4">
-                          <div className="flex flex-col min-w-0">
-                            <p className="font-semibold text-gray-800 text-theme-sm dark:text-white/90 truncate">{row.fullName}</p>
+                          <div
+                            className="flex flex-col min-w-0 cursor-help"
+                            onMouseEnter={(e) => handleAnalysisEnter(e, row)}
+                            onMouseLeave={handleAnalysisLeave}
+                          >
+                            <p className="font-semibold text-gray-800 text-theme-sm dark:text-white/90 truncate group-hover/name:text-brand-500 transition-colors">{row.fullName}</p>
                             <p className="text-gray-400 text-xs truncate max-w-[180px]">
                               {row.coursePreference?.join(", ") || "N/A"}
                             </p>
@@ -1341,7 +1394,11 @@ export default function RecentOrders() {
                           onChange={() => handleSelectLead(row._id)}
                           className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
                         />
-                        <div>
+                        <div
+                          className="cursor-help"
+                          onMouseEnter={(e) => handleAnalysisEnter(e, row)}
+                          onMouseLeave={handleAnalysisLeave}
+                        >
                           <h4 className="font-semibold text-gray-800 dark:text-white/90">{row.fullName}</h4>
                           <a href={`tel:${row.phone1}`} className="text-brand-500 text-sm font-medium hover:underline">
                             {row.phone1}
@@ -1509,6 +1566,70 @@ export default function RecentOrders() {
                       )}
                     </div>
                   ))}
+                </div>
+              </div>
+            );
+          })(), document.body)}
+          {/* AI Analysis Tooltip */}
+          {hoveredAnalysisLeadId && showAnalysisTooltip && createPortal((() => {
+            const isAbove = tooltipPosition.transform.includes('-100%') || tooltipPosition.transform === 'translateY(-10px)';
+
+            return (
+              <div
+                ref={tooltipRef}
+                className={`fixed w-80 max-w-[90vw] bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-blue-200 dark:border-blue-900/50 z-[100000] transition-all duration-200 ${showAnalysisTooltip ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
+                style={{
+                  top: `${tooltipPosition.top}px`,
+                  left: `${tooltipPosition.left}px`,
+                  transform: `${tooltipPosition.transform} ${showAnalysisTooltip ? 'scale(1)' : 'scale(0.95)'}`
+                }}
+                onMouseEnter={() => {
+                  if (analysisTimeoutRef.current) {
+                    clearTimeout(analysisTimeoutRef.current);
+                  }
+                }}
+                onMouseLeave={handleAnalysisLeave}
+              >
+                {/* Arrow */}
+                {tooltipPosition.arrowLeft > 0 && (
+                  <div
+                    className={`absolute ${isAbove ? 'bottom-0' : 'top-0'} left-0 w-0 h-0`}
+                    style={{
+                      left: `${tooltipPosition.arrowLeft}px`,
+                      transform: isAbove
+                        ? `translateY(100%) translateX(-50%)`
+                        : `translateY(-100%) translateX(-50%)`
+                    }}
+                  >
+                    <div
+                      className={`w-0 h-0 border-l-[8px] border-r-[8px] ${isAbove
+                        ? 'border-t-[8px] border-t-white dark:border-t-gray-800 border-l-transparent border-r-transparent'
+                        : 'border-b-[8px] border-b-white dark:border-b-gray-800 border-l-transparent border-r-transparent'
+                        }`}
+                    />
+                  </div>
+                )}
+
+                <div className="p-3 border-b border-blue-50 dark:border-blue-900/30 bg-blue-50/50 dark:bg-blue-900/20 rounded-t-lg">
+                  <div className="flex items-center gap-2">
+                    <BoltIcon className="size-4 text-blue-500" />
+                    <h4 className="text-sm font-semibold text-gray-800 dark:text-white">Lead Analysis</h4>
+                    {isAnalyzing && <div className="size-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin ml-auto" />}
+                  </div>
+                </div>
+                <div className="p-4">
+                  {isAnalyzing ? (
+                    <div className="space-y-2 animate-pulse">
+                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full" />
+                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-5/6" />
+                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-4/6" />
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed italic">
+                      "{analysisCache[hoveredAnalysisLeadId] || "Loading suggestion..."}"
+                    </p>
+                  )}
+                  <p className="text-[10px] text-gray-400 mt-3 text-right">System suggestion</p>
                 </div>
               </div>
             );
