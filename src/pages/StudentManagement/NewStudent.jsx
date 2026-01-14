@@ -622,10 +622,11 @@ export default function NewStudent() {
                       type="text"
                       id="firstName"
                       value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
+                      onChange={(e) => setFullName(e.target.value.toUpperCase())}
                       error={!!validationErrors.fullName}
                       hint={validationErrors.fullName}
                       disabled={!!selectedLead && selectedLead !== "no_lead"}
+                      className="uppercase"
                     />
                   </div>
 
@@ -780,10 +781,11 @@ export default function NewStudent() {
                       type="text"
                       id="otherPlace"
                       value={otherPlace}
-                      onChange={(e) => setOtherPlace(e.target.value)}
+                      onChange={(e) => setOtherPlace(e.target.value.toUpperCase())}
                       error={!!validationErrors.otherPlace}
                       hint={validationErrors.otherPlace}
                       placeholder="Enter village/city name"
+                      className="uppercase"
                     />
                   </div>
                   <div className="w-full md:w-1/4">
@@ -792,10 +794,11 @@ export default function NewStudent() {
                       type="text"
                       id="address"
                       value={address}
-                      onChange={(e) => setAddress(e.target.value)}
+                      onChange={(e) => setAddress(e.target.value.toUpperCase())}
                       error={!!validationErrors.address}
                       hint={validationErrors.address}
                       placeholder="Enter full address"
+                      className="uppercase"
                     />
                   </div>
                   <div className="w-full md:w-1/4">

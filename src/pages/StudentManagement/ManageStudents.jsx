@@ -594,9 +594,10 @@ export default function ManageStudents() {
                   <Input
                     type="text"
                     value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
+                    onChange={(e) => setFullName(e.target.value.toUpperCase())}
                     error={!!validationErrors.fullName}
                     hint={validationErrors.fullName}
+                    className="uppercase"
                   />
                 </div>
                 <div>
@@ -702,9 +703,10 @@ export default function ManageStudents() {
                   <Input
                     type="text"
                     value={otherPlace}
-                    onChange={(e) => setOtherPlace(e.target.value)}
+                    onChange={(e) => setOtherPlace(e.target.value.toUpperCase())}
                     error={!!validationErrors.otherPlace}
                     placeholder="Enter village/city name"
+                    className="uppercase"
                   />
                 </div>
                 <div>
@@ -712,8 +714,9 @@ export default function ManageStudents() {
                   <Input
                     type="text"
                     value={address}
-                    onChange={(e) => setAddress(e.target.value)}
+                    onChange={(e) => setAddress(e.target.value.toUpperCase())}
                     error={!!validationErrors.address}
+                    className="uppercase"
                   />
                 </div>
                 <div>
