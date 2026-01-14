@@ -410,6 +410,13 @@ const AppSidebar = () => {
                       }
                     }
 
+                    // RESTRICTION: Counsellor should not see "New Student"
+                    if (isCounsellor(user) && !isManager(user)) {
+                      if (subItem.name === "New Student (beta)") {
+                        return null;
+                      }
+                    }
+
                     return (
                       <li key={subItem.name} className={subItemDisabledClass}>
                         <Link

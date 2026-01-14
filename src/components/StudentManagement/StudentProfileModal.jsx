@@ -9,6 +9,10 @@ const StudentProfileModal = ({ isOpen, onClose, student }) => {
     const [invoices, setInvoices] = React.useState([]);
     const [loadingInvoices, setLoadingInvoices] = React.useState(false);
 
+    const handlePrint = () => {
+        window.print();
+    };
+
     React.useEffect(() => {
         if (isOpen && student) {
             fetchStudentDetails();
@@ -105,236 +109,418 @@ const StudentProfileModal = ({ isOpen, onClose, student }) => {
         </div>
     );
 
-    const AttendanceBar = ({ percentage }) => {
-        const num = parseFloat(percentage) || 0;
-        let color = 'bg-red-500';
-        if (num >= 75) color = 'bg-green-500';
-        else if (num >= 50) color = 'bg-yellow-500';
 
-        return (
-            <div className="mt-2">
-                <div className="flex justify-between text-xs mb-1">
-                    <span className="font-medium text-gray-700 dark:text-gray-300">Attendance</span>
-                    <span className="font-bold text-gray-900 dark:text-white">{num}%</span>
-                </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
-                    <div className={`${color} h-2.5 rounded-full`} style={{ width: `${num}%` }}></div>
-                </div>
-            </div>
-        );
-    };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} showCloseButton={true} className="max-w-4xl !p-0 overflow-hidden bg-white dark:bg-gray-900 shadow-2xl">
-            {/* Main scrollable container */}
-            <div className="max-h-[85vh] overflow-y-auto custom-scrollbar">
-                {/* Header / Banner */}
-                <div className="relative h-32 bg-gradient-to-r from-brand-500 to-brand-700">
-                    {/* The Modal component provides a close button, but we can have our own or use theirs */}
+        <Modal isOpen={isOpen} onClose={onClose} showCloseButton={true} className="max-w-5xl !p-0 overflow-hidden bg-white dark:bg-gray-900 shadow-2xl">
+            {/* Header / Actions - Hidden in Print */}
+            <div className="flex justify-between items-center px-6 py-3 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 print:hidden">
+                <h2 className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-widest">Student Profile Viewer</h2>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={handlePrint}
+                        className="flex items-center gap-2 px-4 py-1.5 bg-brand-500 hover:bg-brand-600 text-white rounded-lg text-xs font-bold transition-colors shadow-sm"
+                    >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                        </svg>
+                        PRINT REPORT
+                    </button>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
                 </div>
+            </div>
 
-                <div className="px-5 pb-8 sm:px-8">
-                    {/* Profile Summary Section */}
-                    <div className="relative -mt-16 flex flex-col sm:flex-row items-center sm:items-end gap-6 mb-8 text-center sm:text-left">
-                        <div className="relative">
-                            <img
-                                src={getPhotoUrl(displayStudent.photo)}
-                                alt={displayStudent.fullName}
-                                className="h-32 w-32 rounded-3xl object-cover border-4 border-white dark:border-gray-900 shadow-lg"
-                                onError={(e) => { e.target.src = "/images/user/user-01.jpg"; }}
-                            />
-                            <div className="absolute -bottom-2 -right-2 bg-green-500 h-6 w-6 rounded-full border-4 border-white dark:border-gray-900"></div>
-                        </div>
-                        <div className="flex-grow pb-2">
-                            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{displayStudent.fullName}</h2>
-                            <div className="flex items-center justify-center sm:justify-start gap-3 text-sm text-gray-500 dark:text-gray-400">
-                                <span className="font-mono bg-brand-50 dark:bg-gray-800 px-2 py-0.5 rounded text-brand-600 dark:text-brand-400 font-bold tracking-wider">
-                                    {displayStudent.studentId}
-                                </span>
-                                <span>•</span>
-                                <span className="font-medium text-gray-700 dark:text-gray-300">
-                                    {displayStudent.brand?.name || (typeof displayStudent.brand === 'string' ? displayStudent.brand : 'N/A')}
-                                </span>
+            {/* Main scrollable container */}
+            <div className="max-h-[85vh] overflow-y-auto custom-scrollbar bg-gray-100/50 dark:bg-gray-900/50 p-4 sm:p-8" id="report-print-area">
+                <div className="w-full max-w-[210mm] mx-auto bg-white dark:bg-gray-900 shadow-xl border border-gray-200 dark:border-gray-800 rounded-sm overflow-hidden flex flex-col">
+
+                    {/* Official Letterhead Header */}
+                    <div className="p-6 sm:p-8 border-b-4 border-brand-500 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-brand-500/5 rounded-full -mr-32 -mt-32"></div>
+                        <div className="relative flex flex-col sm:flex-row justify-between items-start gap-4">
+                            <div className="flex gap-6 items-center">
+                                {displayStudent.brand?.logo ? (
+                                    <img
+                                        src={getPhotoUrl(displayStudent.brand.logo)}
+                                        alt="Brand Logo"
+                                        className="h-20 w-auto object-contain"
+                                    />
+                                ) : (
+                                    <div className="h-20 w-20 bg-brand-500 rounded-2xl flex items-center justify-center text-white text-4xl font-black shadow-lg shadow-brand-200">
+                                        {displayStudent.brand?.name?.charAt(0) || 'D'}
+                                    </div>
+                                )}
+                                <div>
+                                    <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tighter leading-none">
+                                        {displayStudent.brand?.name || 'DREAM CRM'}
+                                    </h1>
+                                    <div className="mt-2 text-[11px] text-gray-500 dark:text-gray-400 font-medium uppercase tracking-widest leading-relaxed max-w-[300px]">
+                                        {displayStudent.brand?.address || 'Official Training Partner'}
+                                        {displayStudent.brand?.phone && <><br />Contact: {displayStudent.brand.phone}</>}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <h2 className="text-3xl font-light text-gray-300 dark:text-gray-700 uppercase tracking-[0.2em] mb-1">REPORT</h2>
+                                <div className="inline-block px-3 py-1 bg-gray-900 text-white dark:bg-white dark:text-gray-900 text-[10px] font-black uppercase tracking-[0.3em] rounded-sm">
+                                    Official Document
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        {/* Left Column: Personal Info */}
-                        <div className="space-y-6">
-                            <section>
-                                <h3 className="text-sm font-bold text-brand-500 dark:text-brand-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                                    Personal Details
-                                </h3>
-                                <div className="bg-gray-50 dark:bg-gray-800/40 p-4 rounded-2xl space-y-1 border border-gray-100 dark:border-gray-800">
-                                    <DataField label="Email Address" value={displayStudent.email} />
-                                    <DataField label="Primary Phone" value={displayStudent.phone1} />
-                                    <DataField label="Alternate Phone" value={displayStudent.phone2} />
-                                    <DataField label="Date of Birth" value={formatDate(displayStudent.dob)} />
-                                    <DataField label="Gender" value={displayStudent.gender?.toUpperCase()} />
-                                    <DataField label="Aadhar Number" value={displayStudent.aadharCardNumber} />
-                                </div>
-                            </section>
+                    <div className="p-6 sm:p-8 flex-grow flex flex-col gap-6">
 
-                            <section>
-                                <h3 className="text-sm font-bold text-brand-500 dark:text-brand-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                    Address & Place
-                                </h3>
-                                <div className="bg-gray-50 dark:bg-gray-800/40 p-4 rounded-2xl space-y-1 border border-gray-100 dark:border-gray-800">
-                                    <DataField label="Place" value={displayStudent.place === 'Other' ? displayStudent.otherPlace : displayStudent.place} />
-                                    <DataField label="Full Address" value={displayStudent.address} />
-                                </div>
-                            </section>
-                        </div>
+                        {/* Title & Student Core Info */}
+                        <div className="text-center">
+                            <h3 className="text-xl font-bold text-gray-900 dark:text-white uppercase tracking-[0.5em] mb-8 border-b border-gray-100 dark:border-gray-800 pb-4">
+                                Student Progress Report
+                            </h3>
 
-                        {/* Middle Column: Academic & Status */}
-                        <div className="space-y-6">
-                            <section>
-                                <h3 className="text-sm font-bold text-brand-500 dark:text-brand-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l9-5-9-5-9 5 9 5z" /><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222" /></svg>
-                                    Academic Profile
-                                </h3>
-                                <div className="bg-gray-50 dark:bg-gray-800/40 p-4 rounded-2xl space-y-1 border border-gray-100 dark:border-gray-800">
-                                    <div className="py-2 border-b border-gray-100 dark:border-gray-800">
-                                        <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Current Status</span>
-                                        <StatusBadge status={displayStudent.status} />
-                                    </div>
-                                    <DataField label="Education" value={displayStudent.education} />
-                                    <DataField
-                                        label="Primary Course"
-                                        value={displayStudent.courseDetails ? `${displayStudent.courseDetails.courseCode} - ${displayStudent.courseDetails.courseName}` : displayStudent.coursePreference}
+                            <div className="grid grid-cols-1 md:grid-cols-4 print:grid-cols-4 gap-8 items-center text-left">
+                                <div className="flex justify-center md:justify-start print:justify-start">
+                                    <img
+                                        src={getPhotoUrl(displayStudent.photo)}
+                                        alt={displayStudent.fullName}
+                                        className="h-32 w-32 rounded-sm object-cover border-4 border-gray-50 dark:border-gray-800 shadow-md gray-scale"
+                                        onError={(e) => { e.target.src = "/images/user/user-01.jpg"; }}
                                     />
-                                    {displayStudent.additionalCourseDetails && displayStudent.additionalCourseDetails.length > 0 && (
-                                        <div className="py-2">
-                                            <span className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">Additional Courses</span>
-                                            <div className="flex flex-wrap gap-2 mt-1">
-                                                {displayStudent.additionalCourseDetails.map((course, idx) => (
-                                                    <span key={idx} className="text-xs bg-brand-50 text-brand-600 dark:bg-brand-900/20 dark:text-brand-300 px-2 py-1 rounded-lg">
-                                                        {course.courseCode}
-                                                    </span>
-                                                ))}
+                                </div>
+                                <div className="md:col-span-3 print:col-span-3 grid grid-cols-2 gap-y-4 gap-x-12">
+                                    <div className="space-y-0.5 border-b border-gray-50 dark:border-gray-800 pb-2">
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase">Student Name</span>
+                                        <p className="text-lg font-black text-gray-900 dark:text-white uppercase">{displayStudent.fullName}</p>
+                                    </div>
+                                    <div className="space-y-0.5 border-b border-gray-50 dark:border-gray-800 pb-2 text-right">
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase">Student ID</span>
+                                        <p className="text-lg font-mono font-black text-brand-600">{displayStudent.studentId}</p>
+                                    </div>
+                                    <div className="space-y-0.5 border-b border-gray-50 dark:border-gray-800 pb-2">
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase">Enrollment Date</span>
+                                        <p className="text-sm font-bold text-gray-700 dark:text-gray-300">{formatDate(displayStudent.enrollmentDate)}</p>
+                                    </div>
+                                    <div className="space-y-0.5 border-b border-gray-50 dark:border-gray-800 pb-2">
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase">Current Status</span>
+                                        <p className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase">{displayStudent.status || 'Active'}</p>
+                                    </div>
+                                    <div className="space-y-0.5 border-b border-gray-50 dark:border-gray-800 pb-2 text-right">
+                                        <div className="flex flex-col items-end">
+                                            <span className="text-[10px] font-bold text-gray-400 uppercase">Average Attendance</span>
+                                            <span className={`text-md font-black ${parseFloat(displayStudent.averageAttendance) >= 75 ? 'text-green-600' : 'text-red-600'}`}>
+                                                {displayStudent.averageAttendance || '0.00'}%
+                                            </span>
+                                            <div className="w-24 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full mt-1 overflow-hidden">
+                                                <div
+                                                    className={`h-full ${parseFloat(displayStudent.averageAttendance) >= 75 ? 'bg-green-500' : 'bg-red-500'}`}
+                                                    style={{ width: `${displayStudent.averageAttendance || 0}%` }}
+                                                ></div>
                                             </div>
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
-                            </section>
-
-                            <section>
-                                <h3 className="text-sm font-bold text-brand-500 dark:text-brand-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                    Batch Attendance
-                                </h3>
-                                <div className="bg-gray-50 dark:bg-gray-800/40 p-4 rounded-2xl space-y-4 border border-gray-100 dark:border-gray-800">
-                                    {loading ? (
-                                        <div className="text-center py-4 text-sm text-gray-500">Loading attendance data...</div>
-                                    ) : displayStudent.batchHistory && displayStudent.batchHistory.length > 0 ? (
-                                        displayStudent.batchHistory.map((batch, index) => (
-                                            <div key={index} className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm">
-                                                <div className="flex justify-between items-start mb-2">
-                                                    <div>
-                                                        <h4 className="text-sm font-bold text-gray-900 dark:text-white">{batch.batchName}</h4>
-                                                        <p className="text-xs text-gray-500">{batch.subject}</p>
-                                                    </div>
-                                                    <span className="text-[10px] bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded text-gray-600 dark:text-gray-400">
-                                                        {formatDate(batch.startDate)}
-                                                    </span>
-                                                </div>
-                                                <AttendanceBar percentage={batch.attendancePercentage} />
-                                                <div className="mt-2 text-xs text-gray-500 flex gap-3">
-                                                    <span>Total: <b>{batch.attendanceDetails?.length || 0}</b></span>
-                                                    <span className="text-green-600">Present: <b>{batch.attendanceDetails?.filter(r => r.status === 'Present').length || 0}</b></span>
-                                                </div>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <div className="text-sm text-gray-500 italic">No batch enrollment history found.</div>
-                                    )}
-                                </div>
-                            </section>
+                            </div>
                         </div>
 
-                        {/* Right Column: Financials */}
-                        <div className="space-y-6">
-                            <section>
-                                <h3 className="text-sm font-bold text-brand-500 dark:text-brand-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                    Financial Summary
-                                </h3>
-                                <div className="bg-brand-500 p-6 rounded-3xl text-white shadow-xl shadow-brand-100 dark:shadow-none mb-4">
-                                    <span className="text-xs opacity-80 uppercase tracking-widest font-bold">Final Amount Payable</span>
-                                    <div className="text-4xl font-black mt-1">₹{displayStudent.finalAmount?.toLocaleString()}</div>
-                                    <div className="mt-4 pt-4 border-t border-white/20 flex justify-between items-center text-sm">
-                                        <span>Discount Applied</span>
-                                        <span className="font-bold">{displayStudent.discountPercentage}% (₹{displayStudent.discountAmount?.toLocaleString()})</span>
+                        {/* Student Bio-Data Section */}
+                        <section>
+                            <h4 className="text-[11px] font-black text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 px-4 py-2 uppercase tracking-[0.2em] mb-4 border-l-4 border-brand-500">
+                                Bio-Data & Contact Records
+                            </h4>
+                            <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-12 gap-y-6">
+                                <div className="space-y-1">
+                                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Email Address</span>
+                                    <p className="text-xs font-bold text-gray-800 dark:text-gray-200">{displayStudent.email || '-'}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Primary Contact</span>
+                                    <p className="text-xs font-bold text-gray-800 dark:text-gray-200">{displayStudent.phone1 || '-'}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Date of Birth</span>
+                                    <p className="text-xs font-bold text-gray-800 dark:text-gray-200">{formatDate(displayStudent.dob)}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Gender</span>
+                                    <p className="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase">{displayStudent.gender || '-'}</p>
+                                </div>
+                                <div className="space-y-1 col-span-2">
+                                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Permanent Address</span>
+                                    <p className="text-xs font-medium text-gray-800 dark:text-gray-200 leading-relaxed italic">{displayStudent.address || '-'}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Place / Region</span>
+                                    <p className="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase">
+                                        {displayStudent.place === 'Other' ? displayStudent.otherPlace : displayStudent.place}
+                                    </p>
+                                </div>
+                                <div className="space-y-1">
+                                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Identification (Aadhar)</span>
+                                    <p className="text-xs font-bold text-gray-800 dark:text-gray-200">{displayStudent.aadharCardNumber || '-'}</p>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* Course Information Section */}
+                        <section>
+                            <h4 className="text-[11px] font-black text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 px-4 py-2 uppercase tracking-[0.2em] mb-4 border-l-4 border-brand-500">
+                                Academic Curriculum
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="p-4 border border-gray-100 dark:border-gray-800 rounded-sm">
+                                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Primary Specialization</span>
+                                    <p className="text-md font-black text-gray-800 dark:text-gray-200 mt-1 uppercase">
+                                        {displayStudent.courseDetails ? `${displayStudent.courseDetails.courseCode} - ${displayStudent.courseDetails.courseName}` : displayStudent.coursePreference}
+                                    </p>
+                                    <div className="mt-2 text-[11px] text-gray-500 flex gap-4 font-bold">
+                                        <span>Duration: {displayStudent.courseDetails?.duration || '-'} Months</span>
+                                        <span>Mode: {displayStudent.courseDetails?.mode || '-'}</span>
                                     </div>
                                 </div>
-                                <div className="bg-gray-50 dark:bg-gray-800/40 p-4 rounded-2xl space-y-1 border border-gray-100 dark:border-gray-800">
-                                    <DataField label="Total Course Value" value={`₹${displayStudent.totalCourseValue?.toLocaleString()}`} />
-                                    <div className="py-2 flex items-center justify-between">
-                                        <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Batch Scheduled</span>
-                                        <span className={`h-3 w-3 rounded-full ${displayStudent.batchScheduled ? 'bg-green-500' : 'bg-red-500'}`} title={displayStudent.batchScheduled ? 'Scheduled' : 'Not Scheduled'}></span>
-                                    </div>
-                                </div>
-                            </section>
-
-                            <section>
-                                <h3 className="text-sm font-bold text-brand-500 dark:text-brand-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                                    Enrollment Info
-                                </h3>
-                                <div className="bg-gray-50 dark:bg-gray-800/40 p-4 rounded-2xl space-y-1 border border-gray-100 dark:border-gray-800">
-                                    <DataField label="Enrollment Date" value={formatDate(displayStudent.enrollmentDate)} />
-                                    <DataField label="Created By" value={displayStudent.createdBy} />
-                                    <DataField label="Registered On" value={formatDate(displayStudent.createdAt)} />
-                                </div>
-                            </section>
-
-                            <section>
-                                <h3 className="text-sm font-bold text-brand-500 dark:text-brand-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                                    Linked Invoices
-                                </h3>
-                                <div className="bg-gray-50 dark:bg-gray-800/40 p-4 rounded-2xl space-y-3 border border-gray-100 dark:border-gray-800 max-h-60 overflow-y-auto">
-                                    {loadingInvoices ? (
-                                        <div className="text-xs text-gray-500 italic text-center py-4">Checking for invoices...</div>
-                                    ) : invoices.length > 0 ? (
-                                        <div className="space-y-2">
-                                            {invoices.map((inv) => (
-                                                <div key={inv._id} className="p-2.5 bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex justify-between items-center group">
-                                                    <div>
-                                                        <p className="text-xs font-bold text-gray-900 dark:text-white">#{inv.invoiceNumber}</p>
-                                                        <p className="text-[10px] text-gray-500">{new Date(inv.invoiceDate).toLocaleDateString()}</p>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <p className="text-xs font-bold text-brand-600">₹{inv.totalAmount.toLocaleString()}</p>
-                                                        <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${inv.status === 'Paid' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                                                            {inv.status}
-                                                        </span>
-                                                    </div>
-                                                </div>
+                                {displayStudent.additionalCourseDetails && displayStudent.additionalCourseDetails.length > 0 && (
+                                    <div className="p-4 border border-gray-100 dark:border-gray-800 rounded-sm">
+                                        <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Additional Modules</span>
+                                        <div className="flex flex-wrap gap-2 mt-2">
+                                            {displayStudent.additionalCourseDetails.map((course, idx) => (
+                                                <span key={idx} className="text-[10px] bg-gray-100 dark:bg-gray-800 font-bold px-2 py-1 border border-gray-200 dark:border-gray-700">
+                                                    {course.courseCode} - {course.courseName}
+                                                </span>
                                             ))}
                                         </div>
-                                    ) : (
-                                        <div className="text-xs text-gray-400 italic text-center py-4">No invoices registered yet.</div>
-                                    )}
-                                </div>
-                            </section>
+                                    </div>
+                                )}
+                            </div>
+                        </section>
 
-                            <div className="bg-white dark:bg-gray-800 border border-dashed border-gray-200 dark:border-gray-700 p-6 rounded-3xl flex flex-col items-center justify-center text-center opacity-70">
-                                <div className="bg-gray-100 dark:bg-gray-900 p-4 rounded-2xl mb-3">
-                                    <svg className="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                    </svg>
+                        {/* Attendance & Records Section */}
+                        <section>
+                            <h4 className="text-[11px] font-black text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 px-4 py-2 uppercase tracking-[0.2em] mb-4 border-l-4 border-brand-500">
+                                Attendance & Performance Summary
+                            </h4>
+                            {displayStudent.batchHistory && displayStudent.batchHistory.length > 0 ? (
+                                <div className="overflow-hidden border border-gray-100 dark:border-gray-800 rounded-sm">
+                                    <table className="w-full text-left text-[11px]">
+                                        <thead className="bg-gray-50 dark:bg-gray-800 uppercase text-gray-500">
+                                            <tr>
+                                                <th className="px-4 py-3 font-black">Batch Name</th>
+                                                <th className="px-4 py-3 font-black">Subject / Module</th>
+                                                <th className="px-4 py-3 font-black">Instructor</th>
+                                                <th className="px-4 py-3 font-black text-center">Attendance</th>
+                                                <th className="px-4 py-3 font-black text-right">Score</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                                            {displayStudent.batchHistory.map((batch, index) => (
+                                                <tr key={index} className="text-gray-700 dark:text-gray-300">
+                                                    <td className="px-4 py-3 font-bold">{batch.batchName}</td>
+                                                    <td className="px-4 py-3">{batch.subject}</td>
+                                                    <td className="px-4 py-3">{batch.instructorName || 'N/A'}</td>
+                                                    <td className="px-4 py-3 text-center">
+                                                        <span className={`px-2 py-0.5 rounded-full font-bold ${parseFloat(batch.attendancePercentage) >= 75 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                                            {batch.attendancePercentage}%
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right font-bold">-</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
                                 </div>
-                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">OFFICIAL DATASHEET</span>
-                                <span className="text-[9px] text-gray-400 mt-1">System Generated Record</span>
+                            ) : (
+                                <div className="p-8 text-center border border-dashed border-gray-200 dark:border-gray-800 rounded-sm italic text-gray-400 text-xs">
+                                    No batch history records available for this period.
+                                </div>
+                            )}
+                        </section>
+
+                        {/* Financial Statement Section */}
+                        <section>
+                            <h4 className="text-[11px] font-black text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 px-4 py-2 uppercase tracking-[0.2em] mb-4 border-l-4 border-brand-500">
+                                Official Financial Statement
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-3 print:grid-cols-3 gap-8">
+                                <div className="md:col-span-2 print:col-span-2 grid grid-cols-2 gap-4">
+                                    <div className="p-4 bg-gray-50 dark:bg-gray-800/50">
+                                        <span className="text-[9px] font-bold text-gray-400 uppercase">Fee Calculation Basis</span>
+                                        <p className="text-md font-black text-gray-800 mt-1 uppercase">
+                                            {displayStudent.feeType === 'singleShot' ? 'Single Shot Payment Plan' : 'Standard Installment Plan'}
+                                        </p>
+                                    </div>
+                                    <div className="p-4 bg-gray-50 dark:bg-gray-800/50 text-right">
+                                        <span className="text-[9px] font-bold text-gray-400 uppercase">Discount Category</span>
+                                        <p className="text-md font-black text-gray-800 mt-1 italic">
+                                            {displayStudent.discountPercentage > 0 ? `PROMOTIONAL (${displayStudent.discountPercentage}%)` : 'NONE'}
+                                        </p>
+                                    </div>
+
+                                    <div className="col-span-2 p-4 border border-gray-100 dark:border-gray-800">
+                                        <div className="flex justify-between text-xs font-bold py-1">
+                                            <span className="text-gray-500 uppercase">Gross Course Value</span>
+                                            <span className="text-gray-900">₹{displayStudent.totalCourseValue?.toLocaleString()}</span>
+                                        </div>
+                                        <div className="flex justify-between text-xs font-bold py-1 border-b border-gray-50 pb-2">
+                                            <span className="text-red-500 uppercase">Scholarship / Discount</span>
+                                            <span className="text-red-500">- ₹{displayStudent.discountAmount?.toLocaleString()}</span>
+                                        </div>
+                                        <div className="flex justify-between text-md font-black py-3">
+                                            <span className="text-gray-900 uppercase">Net Amount Payable</span>
+                                            <span className="text-brand-600">₹{displayStudent.finalAmount?.toLocaleString()}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col justify-center items-center p-6 border-2 border-brand-500/20 bg-brand-500/5 rounded-sm text-center">
+                                    <span className="text-[10px] font-bold text-brand-600 uppercase tracking-widest mb-2 font-mono">Current Status</span>
+                                    <div className="w-16 h-16 rounded-full border-4 border-brand-500 flex items-center justify-center mb-2">
+                                        <svg className="h-8 w-8 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </div>
+                                    <span className="text-xl font-black text-gray-900 uppercase">Registered</span>
+                                    <span className="text-[10px] text-gray-400 mt-1 font-mono">{formatDate(new Date())}</span>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* Recent Transactions Section */}
+                        <section className="pt-4">
+                            <h4 className="text-[11px] font-black text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800 px-4 py-2 uppercase tracking-[0.2em] mb-4 border-l-4 border-brand-500">
+                                Recent Payment History / Invoices
+                            </h4>
+                            {invoices.length > 0 ? (
+                                <div className="overflow-hidden border border-gray-100 dark:border-gray-800 rounded-sm">
+                                    <table className="w-full text-left text-[11px]">
+                                        <thead className="bg-gray-50 dark:bg-gray-800 uppercase text-gray-500">
+                                            <tr>
+                                                <th className="px-4 py-3 font-black">Date</th>
+                                                <th className="px-4 py-3 font-black">Invoice Number</th>
+                                                <th className="px-4 py-3 font-black">Description</th>
+                                                <th className="px-4 py-3 font-black text-center">Status</th>
+                                                <th className="px-4 py-3 font-black text-right">Amount Paid</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                                            {invoices.map((inv) => (
+                                                <tr key={inv._id} className="text-gray-700 dark:text-gray-300">
+                                                    <td className="px-4 py-3">{new Date(inv.invoiceDate).toLocaleDateString()}</td>
+                                                    <td className="px-4 py-3 font-bold">#{inv.invoiceNumber}</td>
+                                                    <td className="px-4 py-3 uppercase text-[10px]">{inv.items?.[0]?.description || 'Course Fees'}</td>
+                                                    <td className="px-4 py-3 text-center">
+                                                        <span className={`px-2 py-0.5 rounded-full font-bold uppercase text-[9px] ${inv.status === 'Paid' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>
+                                                            {inv.status}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-right font-black">
+                                                        ₹{inv.totalAmount?.toLocaleString()}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ) : (
+                                <div className="p-8 text-center border border-dashed border-gray-200 dark:border-gray-800 rounded-sm italic text-gray-400 text-xs">
+                                    No financial transactions or invoices recorded yet.
+                                </div>
+                            )}
+                        </section>
+
+                        {/* Summary Footer */}
+                        <div className="mt-8 grid grid-cols-2 gap-20">
+                            <div className="text-center">
+                                <div className="border-b border-gray-300 h-16 mb-2"></div>
+                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Student Signature</span>
+                            </div>
+                            <div className="text-center">
+                                <div className="border-b border-gray-300 h-16 mb-2 relative">
+                                    {/* Optional Stamp placeholder */}
+                                    <div className="absolute top-0 right-0 w-20 h-20 border-2 border-brand-500/20 rounded-full flex items-center justify-center opacity-10 -rotate-12 translate-x-4 -translate-y-4">
+                                        <span className="text-[8px] font-black text-brand-500 text-center uppercase tracking-tighter">Dream CRM<br />Official Seal</span>
+                                    </div>
+                                </div>
+                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Authorized Signatory</span>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    {/* Official Footer */}
+                    <div className="bg-gray-900 text-white p-4 sm:p-6">
+                        <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                            <div className="text-[9px] font-black uppercase tracking-[0.3em] opacity-50">
+                                Generated Automatically via Dream CRM Systems
+                            </div>
+                            <div className="text-[10px] font-medium opacity-80 flex gap-4">
+                                <span>Report Ref: {displayStudent.studentId}-{new Date().getFullYear()}</span>
+                                <span>|</span>
+                                <span>© {new Date().getFullYear()} {displayStudent.brand?.name || 'Dream CRM'}</span>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+
+            {/* Print Styles */}
+            <style dangerouslySetInnerHTML={{
+                __html: `
+@media print {
+    @page {
+        margin: 0;
+        size: A4;
+    }
+    body {
+        margin: 0;
+        padding: 0;
+        background: white !important;
+        transform: scale(0.95);
+        transform-origin: top left;
+        width: 100%;
+        height: 100%;
+    }
+
+    /* Force background colors and grayscale */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* Hide everything except report area */
+    body * {
+        visibility: hidden !important;
+    }
+
+    #report-print-area, #report-print-area * {
+        visibility: visible !important;
+    }
+
+    #report-print-area {
+        position: fixed !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: white !important;
+        z-index: 2147483647 !important;
+        overflow: visible !important;
+    }
+
+    .print\\:hidden {
+        display: none !important;
+    }
+
+
+
+    /* Custom scrollbar reset */
+    .custom-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+}
+` }} />
         </Modal>
     );
 };

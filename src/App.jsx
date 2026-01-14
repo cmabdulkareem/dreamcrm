@@ -2,7 +2,7 @@ import { lazy, Suspense, useContext } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoutes from "./routes/ProtectedRoutes";
 import { AuthContext } from "./context/AuthContext";
-import { hasRole, isManager, isOwner } from "./utils/roleHelpers";
+import { hasRole, isManager, isOwner, isCounsellor as checkIsCounsellor } from "./utils/roleHelpers";
 import { NotificationProvider } from "./context/NotificationContext";
 import { ChatProvider } from "./context/ChatContext";
 import { CalendarProvider } from "./context/calendarContext";
@@ -71,6 +71,7 @@ function App() {
   const { user } = useContext(AuthContext);
   const isFaculty = user && hasRole(user, "Instructor") && !isManager(user) && !user.isAdmin && !isOwner(user);
   const isAC = user && hasRole(user, "Academic Coordinator");
+  const isCounsellor = user && hasRole(user, "Counsellor");
 
   return (
     <>
@@ -134,7 +135,7 @@ function App() {
                     <Route path="/lead-management" element={<ProtectedRoutes>{isAC ? <Navigate to="/batch-management" replace /> : <ManageLeads />}</ProtectedRoutes>} />
                     <Route path="/lead-management/call-list" element={<ProtectedRoutes><Suspense fallback={<LoadingSpinner />}><CallList /></Suspense></ProtectedRoutes>} />
                     <Route path="/lead-blank" element={<ProtectedRoutes><LeadBlank /></ProtectedRoutes>} />
-                    <Route path="/new-student" element={<ProtectedRoutes><NewStudent /></ProtectedRoutes>} />
+                    <Route path="/new-student" element={<ProtectedRoutes>{(isAC || isCounsellor) ? <Navigate to="/manage-students" replace /> : <NewStudent />}</ProtectedRoutes>} />
                     <Route path="/manage-students" element={<ProtectedRoutes><ManageStudents /></ProtectedRoutes>} />
                     <Route path="/batch-management" element={<ProtectedRoutes><BatchManagement /></ProtectedRoutes>} />
                     <Route path="/student-birthdays" element={<ProtectedRoutes><StudentBirthdays /></ProtectedRoutes>} />

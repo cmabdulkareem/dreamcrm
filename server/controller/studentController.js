@@ -59,6 +59,7 @@ export const createStudent = async (req, res) => {
       discountAmount,
       finalAmount,
       enrollmentDate,
+      feeType,
       leadId,
       brandId
     } = req.body;
@@ -137,6 +138,7 @@ export const createStudent = async (req, res) => {
       discountAmount: parseFloat(discountAmount) || 0,
       finalAmount: parseFloat(finalAmount) || 0,
       enrollmentDate: new Date(enrollmentDate),
+      feeType: feeType || 'normal',
       leadId: (leadId && leadId !== "no_lead") ? leadId : null,
       createdBy: req.user.fullName || req.user.email,
       brand: brandId
@@ -250,26 +252,101 @@ export const getStudentById = async (req, res) => {
 
     const batchEnrollments = await BatchStudent.find({ studentId: id }).populate('batchId');
 
+    let totalAggregatedWorkingDays = 0;
+    let totalAggregatedAbsents = 0;
+
     const batchHistory = await Promise.all(batchEnrollments.map(async (enrollment) => {
-      if (!enrollment.batchId) return null;
-
       const batch = enrollment.batchId;
+      if (!batch) return null;
 
-      // Fetch attendance records for this student in this batch
+      // Fetch all attendance dates for this batch to identify unmarked days vs days student joined late
+      const allBatchAttendance = await Attendance.find({ batchId: batch._id }).select("date records.studentId");
+      const batchAttendanceMap = {};
+      allBatchAttendance.forEach(doc => {
+        const dStr = new Date(doc.date).toDateString();
+        batchAttendanceMap[dStr] = {
+          wasBatchAttended: true,
+          studentsInRecord: new Set(doc.records.map(r => r.studentId?.toString()))
+        };
+      });
+
+      const today = new Date();
+      const todayNormalized = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const batchStart = new Date(batch.startDate);
+      const batchStartNormalized = new Date(batchStart.getFullYear(), batchStart.getMonth(), batchStart.getDate());
+
       const attendanceRecords = await Attendance.find({
         batchId: batch._id,
-        'records.studentId': enrollment._id // Link is via BatchStudent ID in records
-      }).select('date records.$');
+        "records.studentId": enrollment._id,
+      }).select("date records.$");
 
-      const attendanceData = attendanceRecords.map(record => ({
-        date: record.date,
-        status: record.records[0]?.status,
-        remarks: record.records[0]?.remarks
-      }));
+      // Find earliest mark date
+      let earliestMarkDate = null;
+      const studentStatusMap = {};
+      attendanceRecords.forEach((r) => {
+        const d = new Date(r.date);
+        studentStatusMap[d.toDateString()] = r.records[0]?.status;
+        if (!earliestMarkDate || d < earliestMarkDate) {
+          earliestMarkDate = d;
+        }
+      });
 
-      const totalClasses = attendanceRecords.length;
-      const presentCount = attendanceData.filter(r => r.status === 'Present').length;
-      const attendancePercentage = totalClasses > 0 ? ((presentCount / totalClasses) * 100).toFixed(2) : 0;
+      const studentJoinedDate = new Date(enrollment.createdAt);
+      studentJoinedDate.setHours(0, 0, 0, 0);
+
+      // Effective Start is earliest of Join Date or First Mark, but at least Batch Start
+      let effectiveStart = earliestMarkDate && earliestMarkDate < studentJoinedDate ? earliestMarkDate : studentJoinedDate;
+      effectiveStart = new Date(effectiveStart.getFullYear(), effectiveStart.getMonth(), effectiveStart.getDate());
+      if (effectiveStart < batchStartNormalized) effectiveStart = batchStartNormalized;
+
+      let absentCount = 0;
+      let totalWorkingDays = 0;
+      const oneDay = 24 * 60 * 60 * 1000;
+
+      // Loop from the START OF THE BATCH
+      const totalDays = Math.max(0, Math.floor((todayNormalized - batchStartNormalized) / oneDay) + 1);
+
+      for (let i = 0; i < totalDays; i++) {
+        const d = new Date(batchStartNormalized.getTime() + i * oneDay);
+        const dStr = d.toDateString();
+        const status = studentStatusMap[dStr];
+
+        let isSession = false;
+        let finalStatus = status;
+
+        if (status) {
+          if (status !== "Holiday") isSession = true;
+        } else if (d >= effectiveStart) {
+          isSession = true;
+          if (d.getDay() === 0) { // Sunday Rule
+            const prevDate = new Date(d.getTime() - oneDay);
+            const nextDate = new Date(d.getTime() + oneDay);
+            const isPrevInRange = prevDate >= effectiveStart;
+            const isNextInRange = nextDate <= todayNormalized;
+            const isPrevAbsent = isPrevInRange && studentStatusMap[prevDate.toDateString()] === "Absent";
+            const isNextAbsent = isNextInRange && studentStatusMap[nextDate.toDateString()] === "Absent";
+
+            let isSundayAbsent = false;
+            if (isPrevInRange && isNextInRange) isSundayAbsent = isPrevAbsent && isNextAbsent;
+            else if (isPrevInRange) isSundayAbsent = isPrevAbsent;
+            else if (isNextInRange) isSundayAbsent = isNextAbsent;
+
+            finalStatus = isSundayAbsent ? "Absent" : "Present";
+          } else {
+            finalStatus = "Present";
+          }
+        }
+
+        if (isSession) {
+          totalWorkingDays++;
+          if (finalStatus === "Absent") absentCount++;
+        }
+      }
+
+      totalAggregatedWorkingDays += totalWorkingDays;
+      totalAggregatedAbsents += absentCount;
+
+      const attendancePercentage = totalWorkingDays > 0 ? (((totalWorkingDays - absentCount) / totalWorkingDays) * 100).toFixed(2) : "0.00";
 
       return {
         batchId: batch._id,
@@ -279,13 +356,24 @@ export const getStudentById = async (req, res) => {
         startDate: batch.startDate,
         expectedEndDate: batch.expectedEndDate,
         attendancePercentage,
-        attendanceDetails: attendanceData.sort((a, b) => new Date(b.date) - new Date(a.date))
+        attendanceDetails: attendanceRecords.map(r => ({
+          date: r.date,
+          status: r.records[0]?.status,
+          remarks: r.records[0]?.remarks
+        })).sort((a, b) => new Date(b.date) - new Date(a.date)),
       };
     }));
 
-    studentObj.batchHistory = batchHistory.filter(b => b !== null);
+    const filteredBatchHistory = batchHistory.filter((b) => b !== null);
+    const averageAttendance = totalAggregatedWorkingDays > 0 ? (((totalAggregatedWorkingDays - totalAggregatedAbsents) / totalAggregatedWorkingDays) * 100).toFixed(2) : "0.00";
 
-    return res.status(200).json({ student: studentObj });
+    return res.status(200).json({
+      student: {
+        ...studentObj,
+        batchHistory: filteredBatchHistory,
+        averageAttendance,
+      },
+    });
   } catch (error) {
     console.error("Error fetching student:", error);
     return res.status(500).json({ message: "Internal server error" });

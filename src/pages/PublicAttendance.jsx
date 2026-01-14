@@ -44,39 +44,141 @@ export default function PublicAttendance() {
 
     const processAttendance = () => {
         if (!data) return { studentMap: {}, statsMap: {}, monthlySummary: {}, dailyStats: {} };
-        const { students, attendance } = data;
+        const { students, attendance, batch } = data;
         const studentMap = {};
         const statsMap = {};
         const monthlySummary = { present: 0, absent: 0, late: 0, excused: 0, holiday: 0 };
         const dailyStats = {};
 
+        const today = new Date();
+        const todayNormalized = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const batchStart = batch?.startDate ? new Date(batch.startDate) : new Date(0);
+        const batchStartNormalized = new Date(batchStart.getFullYear(), batchStart.getMonth(), batchStart.getDate());
+
+        // Initialize maps
         students.forEach(s => {
             studentMap[s._id] = {};
             statsMap[s._id] = { present: 0, absent: 0, late: 0, excused: 0, holiday: 0, totalSessions: 0 };
         });
 
+        const earliestMarkMap = {};
+
+        // 1. Map existing attendance data
         attendance.forEach(record => {
-            const day = new Date(record.date).getDate();
+            const recordDate = new Date(record.date);
+            const day = recordDate.getDate();
+
             record.records.forEach(studentRec => {
                 if (studentMap[studentRec.studentId]) {
                     studentMap[studentRec.studentId][day] = studentRec.status;
-                    const s = statsMap[studentRec.studentId];
-                    if (!dailyStats[day]) dailyStats[day] = { present: 0, absent: 0, late: 0, excused: 0, holiday: 0 };
 
-                    if (studentRec.status === 'Holiday') {
-                        s.holiday++;
-                        monthlySummary.holiday++;
-                        dailyStats[day].holiday++;
-                    } else {
-                        s.totalSessions++;
-                        if (studentRec.status === 'Present') { s.present++; monthlySummary.present++; dailyStats[day].present++; }
-                        else if (studentRec.status === 'Absent') { s.absent++; monthlySummary.absent++; dailyStats[day].absent++; }
-                        else if (studentRec.status === 'Late') { s.late++; monthlySummary.late++; dailyStats[day].late++; }
-                        else if (studentRec.status === 'Excused') { s.excused++; monthlySummary.excused++; dailyStats[day].excused++; }
+                    if (!earliestMarkMap[studentRec.studentId] || recordDate < earliestMarkMap[studentRec.studentId]) {
+                        earliestMarkMap[studentRec.studentId] = recordDate;
                     }
                 }
             });
         });
+
+        // 2. Process each day of the month
+        for (let day = 1; day <= daysInMonth; day++) {
+            const currentDate = new Date(selectedYear, selectedMonth - 1, day);
+
+            // Only consider dates within [batchStart, today]
+            if (currentDate >= batchStartNormalized && currentDate <= todayNormalized) {
+
+                if (!dailyStats[day]) {
+                    dailyStats[day] = { present: 0, absent: 0, late: 0, excused: 0, holiday: 0 };
+                }
+
+                students.forEach(student => {
+                    const studentJoinDate = new Date(student.createdAt);
+                    studentJoinDate.setHours(0, 0, 0, 0);
+
+                    let studentEffectiveStart = studentJoinDate;
+                    if (earliestMarkMap[student._id] && earliestMarkMap[student._id] < studentEffectiveStart) {
+                        studentEffectiveStart = new Date(earliestMarkMap[student._id]);
+                        studentEffectiveStart.setHours(0, 0, 0, 0);
+                    }
+
+                    if (studentEffectiveStart < batchStartNormalized) {
+                        studentEffectiveStart = batchStartNormalized;
+                    }
+
+                    const sStats = statsMap[student._id];
+                    let status = studentMap[student._id][day];
+
+                    let isConsideredSession = false;
+                    let finalStatus = status;
+
+                    if (status) {
+                        if (status !== 'Holiday') {
+                            isConsideredSession = true;
+                        }
+                    } else if (currentDate >= studentEffectiveStart) {
+                        isConsideredSession = true;
+
+                        if (currentDate.getDay() === 0) { // Sunday Rule
+                            const satInMonth = day > 1;
+                            const monInMonth = day < daysInMonth;
+                            const yesterday = new Date(currentDate.getTime() - 86400000);
+                            const tomorrow = new Date(currentDate.getTime() + 86400000);
+                            const satInRange = yesterday >= studentEffectiveStart;
+                            const monInRange = tomorrow <= todayNormalized;
+
+                            const satAbsent = satInMonth && satInRange && (studentMap[student._id][day - 1] === 'Absent');
+                            const monAbsent = monInMonth && monInRange && (studentMap[student._id][day + 1] === 'Absent');
+
+                            let isSundayAbsent = false;
+                            if (satInRange && monInRange) {
+                                isSundayAbsent = satAbsent && monAbsent;
+                            } else if (satInRange) {
+                                isSundayAbsent = satAbsent;
+                            } else if (monInRange) {
+                                isSundayAbsent = monAbsent;
+                            }
+
+                            finalStatus = isSundayAbsent ? 'Absent' : 'Present';
+                            studentMap[student._id][day] = finalStatus;
+                        } else {
+                            finalStatus = 'Present';
+                            studentMap[student._id][day] = 'Present';
+                        }
+                    }
+
+                    if (!isConsideredSession) {
+                        if (status === 'Holiday') {
+                            sStats.holiday++;
+                            monthlySummary.holiday++;
+                            dailyStats[day].holiday++;
+                        }
+                        return;
+                    }
+
+                    // Process working day
+                    sStats.totalSessions++;
+                    if (finalStatus === 'Absent') {
+                        sStats.absent++;
+                        monthlySummary.absent++;
+                        dailyStats[day].absent++;
+                    } else {
+                        sStats.present++;
+                        if (finalStatus === 'Present') {
+                            monthlySummary.present++;
+                            dailyStats[day].present++;
+                        } else if (finalStatus === 'Late') {
+                            sStats.late++;
+                            monthlySummary.late++;
+                            dailyStats[day].late++;
+                        } else if (finalStatus === 'Excused') {
+                            sStats.excused++;
+                            monthlySummary.excused++;
+                            dailyStats[day].excused++;
+                        }
+                    }
+                });
+            }
+        }
+
         return { studentMap, statsMap, monthlySummary, dailyStats };
     };
 

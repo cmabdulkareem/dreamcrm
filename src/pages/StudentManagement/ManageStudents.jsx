@@ -11,6 +11,7 @@ import axios from "axios";
 import { AuthContext } from "../../context/AuthContext";
 import { useNotifications } from "../../context/NotificationContext";
 import StudentProfileModal from "../../components/StudentManagement/StudentProfileModal.jsx";
+import { hasRole, isCounsellor } from "../../utils/roleHelpers";
 
 import API from "../../config/api";
 import { Modal } from "../../components/ui/modal";
@@ -32,12 +33,14 @@ export default function ManageStudents() {
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
   const { addNotification, areToastsEnabled } = useNotifications();
+  const isUserCounsellor = user && isCounsellor(user);
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Modal states
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
+  const [isViewOnly, setIsViewOnly] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [selectedStudentForProfile, setSelectedStudentForProfile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -76,6 +79,7 @@ export default function ManageStudents() {
   const [discountAmount, setDiscountAmount] = useState("");
   const [enrollmentDate, setEnrollmentDate] = useState("");
   const [studentId, setStudentId] = useState("");
+  const [feeType, setFeeType] = useState("normal"); // 'singleShot' or 'normal'
   const [selectedBrand, setSelectedBrand] = useState("");
 
   const [courses, setCourses] = useState([]);
@@ -156,12 +160,49 @@ export default function ManageStudents() {
     navigate("/new-student");
   };
 
-  const handleViewStudent = (student) => {
+  const handleViewProfile = (student) => {
     setSelectedStudentForProfile(student);
     setIsProfileModalOpen(true);
   };
 
+  const handleViewStudent = (student) => {
+    // Reuse Edit Logic but in View Mode
+    setEditingStudent(student);
+    setFullName(student.fullName || "");
+    setEmail(student.email || "");
+    setPhone1(student.phone1 || "");
+    setPhone2(student.phone2 || "");
+    setGender(student.gender || "");
+    setDob(student.dob ? new Date(student.dob).toISOString().split('T')[0] : "");
+    const standardPlaces = placeOptions.map(p => p.value);
+    if (student.place && !standardPlaces.includes(student.place) && student.place !== "Other") {
+      setPlace("Other");
+      setOtherPlace(student.place);
+    } else {
+      setPlace(student.place || "Kasaragod");
+      setOtherPlace(student.otherPlace || "");
+    }
+    setAddress(student.address || "");
+    setAadharCardNumber(student.aadharCardNumber || "");
+    setPhoto(null);
+    setPhotoPreview(student.photo ? getPhotoUrl(student.photo) : "");
+    setStatus(student.status || "");
+    setEducation(student.education || "");
+    setCoursePreference(student.coursePreference || "");
+    setAdditionalCourses(student.additionalCourses || []);
+    setDiscountPercentage(student.discountPercentage || 0);
+    setDiscountAmount(student.discountAmount || 0);
+    setEnrollmentDate(student.enrollmentDate ? new Date(student.enrollmentDate).toISOString().split('T')[0] : "");
+    setStudentId(student.studentId || "");
+    setFeeType(student.feeType || "normal");
+    setSelectedBrand(student.brand?._id || student.brand || "");
+
+    setIsViewOnly(true);
+    setIsEditModalOpen(true);
+  };
+
   const handleEditClick = (student) => {
+    setIsViewOnly(false);
     setEditingStudent(student);
     setFullName(student.fullName || "");
     setEmail(student.email || "");
@@ -190,6 +231,7 @@ export default function ManageStudents() {
     setDiscountAmount(student.discountAmount || 0);
     setEnrollmentDate(student.enrollmentDate ? new Date(student.enrollmentDate).toISOString().split('T')[0] : "");
     setStudentId(student.studentId || "");
+    setFeeType(student.feeType || "normal");
     setSelectedBrand(student.brand?._id || student.brand || "");
 
     setValidationErrors({});
@@ -199,6 +241,7 @@ export default function ManageStudents() {
   const handleCancelEdit = () => {
     setIsEditModalOpen(false);
     setEditingStudent(null);
+    setIsViewOnly(false);
     setValidationErrors({});
   };
 
@@ -207,6 +250,8 @@ export default function ManageStudents() {
     setNewEnrollmentDate(student.enrollmentDate ? new Date(student.enrollmentDate).toISOString().split('T')[0] : "");
     setIsDateModalOpen(true);
   };
+
+
 
   const handleSaveDate = async () => {
     if (!newEnrollmentDate) {
@@ -238,14 +283,18 @@ export default function ManageStudents() {
     let total = 0;
     if (coursePreference) {
       const primaryCourse = courses.find(course => course._id === coursePreference);
-      if (primaryCourse) total += primaryCourse.normalFee || 0;
+      if (primaryCourse) {
+        total += (feeType === 'singleShot' ? primaryCourse.singleShotFee : primaryCourse.normalFee) || 0;
+      }
     }
     additionalCourses.forEach(courseId => {
       const course = courses.find(course => course._id === courseId);
-      if (course) total += course.normalFee || 0;
+      if (course) {
+        total += (feeType === 'singleShot' ? course.singleShotFee : course.normalFee) || 0;
+      }
     });
     return total;
-  }, [coursePreference, additionalCourses, courses]);
+  }, [coursePreference, additionalCourses, courses, feeType]);
 
   const handleDiscountPercentageChange = useCallback((value) => {
     setDiscountPercentage(value);
@@ -278,7 +327,7 @@ export default function ManageStudents() {
         setDiscountAmount(amount.toFixed(2));
       }
     }
-  }, [coursePreference, additionalCourses, courses, isEditModalOpen]);
+  }, [coursePreference, additionalCourses, courses, isEditModalOpen, feeType]);
 
   const calculateFinalAmount = useCallback(() => {
     const total = calculateTotalValue();
@@ -354,6 +403,7 @@ export default function ManageStudents() {
       formData.append("coursePreference", coursePreference);
       formData.append("additionalCourses", JSON.stringify(additionalCourses.filter(c => c)));
       formData.append("totalCourseValue", calculateTotalValue());
+      formData.append("feeType", feeType);
       formData.append("discountPercentage", discountPercentage || 0);
       formData.append("discountAmount", discountAmount || 0);
       formData.append("finalAmount", calculateFinalAmount());
@@ -501,9 +551,11 @@ export default function ManageStudents() {
               className="w-full"
             />
           </div>
-          <Button variant="primary" onClick={handleAddStudent} className="whitespace-nowrap">
-            Add New Student
-          </Button>
+          {!isUserCounsellor && (
+            <Button variant="primary" onClick={handleAddStudent} className="whitespace-nowrap">
+              Add New Student
+            </Button>
+          )}
         </div>
 
         <ComponentCard title="Student List">
@@ -560,7 +612,7 @@ export default function ManageStudents() {
                           <div className="flex flex-col">
                             <span
                               className="font-medium text-gray-900 dark:text-white cursor-pointer hover:text-indigo-600 transition-colors"
-                              onClick={() => handleViewStudent(student)}
+                              onClick={() => handleViewProfile(student)}
                             >
                               {student.fullName}
                             </span>
@@ -600,6 +652,9 @@ export default function ManageStudents() {
                           <div className="flex flex-col">
                             <span className="font-medium text-gray-900 dark:text-white text-xs">Final: ₹{student.finalAmount || 0}</span>
                             <span className="text-[10px] text-gray-500 dark:text-gray-400 line-through">Val: ₹{student.totalCourseValue || 0}</span>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full mt-1 w-fit ${student.feeType === 'singleShot' ? 'bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400' : 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'}`}>
+                              {student.feeType === 'singleShot' ? 'Single Shot' : 'Normal Fee'}
+                            </span>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
@@ -612,24 +667,28 @@ export default function ManageStudents() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex space-x-2">
-                            <button
-                              onClick={() => handleEditClick(student)}
-                              className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
-                            >
-                              Edit
-                            </button>
+                            {!isUserCounsellor && (
+                              <button
+                                onClick={() => handleEditClick(student)}
+                                className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
+                              >
+                                Edit
+                              </button>
+                            )}
                             <button
                               onClick={() => handleViewStudent(student)}
                               className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
                             >
                               View
                             </button>
-                            <button
-                              onClick={() => handleDateClick(student)}
-                              className="text-amber-600 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-300"
-                            >
-                              Date
-                            </button>
+                            {!isUserCounsellor && (
+                              <button
+                                onClick={() => handleDateClick(student)}
+                                className="text-amber-600 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-300"
+                              >
+                                Date
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -703,7 +762,7 @@ export default function ManageStudents() {
       >
         <div className="flex items-center justify-between mb-6">
           <h2 className="mb-2 font-semibold text-gray-800 dark:text-white/90 modal-title text-theme-xl lg:text-2xl">
-            Edit Student: <span className="text-gray-500">{studentId}</span>
+            {isViewOnly ? "View Student" : "Edit Student"}: <span className="text-gray-500">{studentId}</span>
           </h2>
           <button
             onClick={handleCancelEdit}
@@ -737,6 +796,27 @@ export default function ManageStudents() {
                   />
                 </div>
                 <div>
+                  <Label>Full Name *</Label>
+                  <Input
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value.toUpperCase())}
+                    error={!!validationErrors.fullName}
+                    hint={validationErrors.fullName}
+                    className="uppercase"
+                    disabled={isViewOnly}
+                  />
+                </div>
+                <div>
+                  <Label>Brand *</Label>
+                  <Select
+                    options={brands.map(b => ({ value: b._id, label: `${b.name} (${b.code})` }))}
+                    value={selectedBrand}
+                    onChange={setSelectedBrand}
+                    disabled={isViewOnly}
+                  />
+                </div>
+                <div>
                   <Label>Email *</Label>
                   <Input
                     type="email"
@@ -744,6 +824,7 @@ export default function ManageStudents() {
                     onChange={(e) => setEmail(e.target.value)}
                     error={!!validationErrors.email}
                     hint={validationErrors.email}
+                    disabled={isViewOnly}
                   />
                 </div>
                 <div>
@@ -759,7 +840,7 @@ export default function ManageStudents() {
                     <button
                       type="button"
                       onClick={triggerFileSelect}
-                      className="w-16 h-16 overflow-hidden border-2 border-dashed border-gray-300 rounded-full cursor-pointer hover:border-brand-500 transition-colors flex items-center justify-center"
+                      className={`w-16 h-16 overflow-hidden border-2 border-dashed border-gray-300 rounded-full cursor-pointer hover:border-brand-500 transition-colors flex items-center justify-center ${isViewOnly ? 'pointer-events-none opacity-60' : ''}`}
                     >
                       {photoPreview ? (
                         <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
@@ -767,7 +848,7 @@ export default function ManageStudents() {
                         <div className="text-xs text-gray-400 text-center">No Photo</div>
                       )}
                     </button>
-                    {photoPreview && (
+                    {photoPreview && !isViewOnly && (
                       <button
                         type="button"
                         onClick={() => { setPhoto(null); setPhotoPreview(""); }}
@@ -788,6 +869,7 @@ export default function ManageStudents() {
                     value={phone1}
                     onChange={setPhone1}
                     error={!!validationErrors.phone1}
+                    disabled={isViewOnly}
                   />
                 </div>
                 <div>
@@ -796,6 +878,7 @@ export default function ManageStudents() {
                     countries={countries}
                     value={phone2}
                     onChange={setPhone2}
+                    disabled={isViewOnly}
                   />
                 </div>
                 <div>
@@ -804,6 +887,7 @@ export default function ManageStudents() {
                     options={enquirerGender}
                     value={gender}
                     onChange={setGender}
+                    disabled={isViewOnly}
                   />
                 </div>
                 <div>
@@ -812,6 +896,7 @@ export default function ManageStudents() {
                     label="Date of Birth"
                     value={dob}
                     onChange={(date, str) => setDob(str)}
+                    disabled={isViewOnly}
                   />
                 </div>
               </div>
@@ -824,6 +909,7 @@ export default function ManageStudents() {
                     value={place}
                     onChange={setPlace}
                     error={!!validationErrors.place}
+                    disabled={isViewOnly}
                   />
                 </div>
                 <div>
@@ -835,6 +921,7 @@ export default function ManageStudents() {
                     error={!!validationErrors.otherPlace}
                     placeholder="Enter village/city name"
                     className="uppercase"
+                    disabled={isViewOnly}
                   />
                 </div>
                 <div>
@@ -845,6 +932,7 @@ export default function ManageStudents() {
                     onChange={(e) => setAddress(e.target.value.toUpperCase())}
                     error={!!validationErrors.address}
                     className="uppercase"
+                    disabled={isViewOnly}
                   />
                 </div>
                 <div>
@@ -855,6 +943,7 @@ export default function ManageStudents() {
                     onChange={(e) => setAadharCardNumber(e.target.value.replace(/\D/g, ''))}
                     maxLength="12"
                     error={!!validationErrors.aadharCardNumber}
+                    disabled={isViewOnly}
                   />
                 </div>
               </div>
@@ -866,6 +955,7 @@ export default function ManageStudents() {
                     options={enquirerStatus}
                     value={status}
                     onChange={setStatus}
+                    disabled={isViewOnly}
                   />
                 </div>
                 <div>
@@ -874,14 +964,28 @@ export default function ManageStudents() {
                     options={enquirerEducation}
                     value={education}
                     onChange={setEducation}
+                    disabled={isViewOnly}
                   />
                 </div>
-                <div className="md:col-span-2">
+                <div>
                   <Label>Primary Course *</Label>
                   <SearchableCourseSelect
                     value={coursePreference}
                     onChange={setCoursePreference}
                     error={!!validationErrors.coursePreference}
+                    disabled={isViewOnly}
+                  />
+                </div>
+                <div>
+                  <Label>Fee Type *</Label>
+                  <Select
+                    options={[
+                      { value: 'normal', label: 'Normal Fee' },
+                      { value: 'singleShot', label: 'Single Shot' }
+                    ]}
+                    value={feeType}
+                    onChange={setFeeType}
+                    disabled={isViewOnly}
                   />
                 </div>
               </div>
@@ -889,9 +993,11 @@ export default function ManageStudents() {
               <div className="space-y-4">
                 <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-800 p-2 rounded">
                   <Label className="!mb-0">Additional Courses</Label>
-                  <Button type="button" variant="outline" size="sm" onClick={handleAddAdditionalCourse}>
-                    Add Course
-                  </Button>
+                  {!isViewOnly && (
+                    <Button type="button" variant="outline" size="sm" onClick={handleAddAdditionalCourse}>
+                      Add Course
+                    </Button>
+                  )}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {additionalCourses.map((courseId, index) => (
@@ -900,11 +1006,14 @@ export default function ManageStudents() {
                         <SearchableCourseSelect
                           value={courseId}
                           onChange={(val) => handleAdditionalCourseChange(index, val)}
+                          disabled={isViewOnly}
                         />
                       </div>
-                      <Button type="button" variant="outline" size="sm" onClick={() => handleRemoveAdditionalCourse(index)}>
-                        Remove
-                      </Button>
+                      {!isViewOnly && (
+                        <Button type="button" variant="outline" size="sm" onClick={() => handleRemoveAdditionalCourse(index)}>
+                          Remove
+                        </Button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -917,11 +1026,11 @@ export default function ManageStudents() {
                 </div>
                 <div>
                   <Label>Discount (%)</Label>
-                  <Input type="number" value={discountPercentage} onChange={(e) => handleDiscountPercentageChange(e.target.value)} step="any" placeholder="0.00" />
+                  <Input type="number" value={discountPercentage} onChange={(e) => handleDiscountPercentageChange(e.target.value)} step="any" placeholder="0.00" disabled={isViewOnly} />
                 </div>
                 <div>
                   <Label>Discount (₹)</Label>
-                  <Input type="number" value={discountAmount} onChange={(e) => handleDiscountAmountChange(e.target.value)} step="any" />
+                  <Input type="number" value={discountAmount} onChange={(e) => handleDiscountAmountChange(e.target.value)} step="any" disabled={isViewOnly} />
                 </div>
                 <div>
                   <Label>Final Amount (₹)</Label>
@@ -937,6 +1046,7 @@ export default function ManageStudents() {
                     value={enrollmentDate}
                     onChange={(date, str) => setEnrollmentDate(str)}
                     error={!!validationErrors.enrollmentDate}
+                    disabled={isViewOnly}
                   />
                 </div>
                 <div>
@@ -950,11 +1060,13 @@ export default function ManageStudents() {
 
         <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-gray-100 dark:border-gray-800">
           <Button variant="outline" onClick={handleCancelEdit} disabled={submitting}>
-            Cancel
+            {isViewOnly ? "Close" : "Cancel"}
           </Button>
-          <Button variant="primary" onClick={handleSaveEdit} disabled={submitting}>
-            {submitting ? "Saving..." : "Save Changes"}
-          </Button>
+          {!isViewOnly && (
+            <Button variant="primary" onClick={handleSaveEdit} disabled={submitting}>
+              {submitting ? "Saving..." : "Save Changes"}
+            </Button>
+          )}
         </div>
       </Modal>
 

@@ -95,6 +95,11 @@ const studentSchema = new mongoose.Schema({
   batchScheduled: {
     type: Boolean,
     default: false
+  },
+  feeType: {
+    type: String,
+    enum: ['singleShot', 'normal'],
+    default: 'normal'
   }
 }, {
   timestamps: true

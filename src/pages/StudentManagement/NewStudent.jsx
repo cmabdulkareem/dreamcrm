@@ -57,6 +57,7 @@ export default function NewStudent() {
   const [discountAmount, setDiscountAmount] = useState(""); // Discount amount
   const [enrollmentDate, setEnrollmentDate] = useState(new Date().toISOString().split('T')[0]);
   const [studentId, setStudentId] = useState("");
+  const [feeType, setFeeType] = useState("normal"); // 'singleShot' or 'normal'
   const [emailError, setEmailError] = useState(false);
   const [convertedLeads, setConvertedLeads] = useState([]);
   const [courses, setCourses] = useState([]); // Course data from API
@@ -165,7 +166,7 @@ export default function NewStudent() {
     if (coursePreference) {
       const primaryCourse = courses.find(course => course._id === coursePreference);
       if (primaryCourse) {
-        total += primaryCourse.normalFee || 0;
+        total += (feeType === 'singleShot' ? primaryCourse.singleShotFee : primaryCourse.normalFee) || 0;
       }
     }
 
@@ -173,12 +174,12 @@ export default function NewStudent() {
     additionalCourses.forEach(courseId => {
       const course = courses.find(course => course._id === courseId);
       if (course) {
-        total += course.normalFee || 0;
+        total += (feeType === 'singleShot' ? course.singleShotFee : course.normalFee) || 0;
       }
     });
 
     return total;
-  }, [coursePreference, additionalCourses, courses]);
+  }, [coursePreference, additionalCourses, courses, feeType]);
 
   // Handle discount percentage change
   const handleDiscountPercentageChange = useCallback((value) => {
@@ -211,7 +212,7 @@ export default function NewStudent() {
       const amount = (total * parseFloat(discountPercentage)) / 100;
       setDiscountAmount(amount.toFixed(2));
     }
-  }, [coursePreference, additionalCourses, courses]); // Recalculate when selection changes
+  }, [coursePreference, additionalCourses, courses, feeType]); // Recalculate when selection changes
 
   // Calculate final amount after discount
   const calculateFinalAmount = useCallback(() => {
@@ -376,6 +377,7 @@ export default function NewStudent() {
     setDiscountAmount("");
     setEnrollmentDate("");
     setStudentId("");
+    setFeeType("normal");
     setSelectedBrand("");
     setEmailError(false);
     setValidationErrors({});
@@ -501,6 +503,7 @@ export default function NewStudent() {
       formData.append("coursePreference", coursePreference);
       formData.append("additionalCourses", JSON.stringify(additionalCourses.filter(course => course))); // Filter out empty values
       formData.append("totalCourseValue", calculateTotalValue());
+      formData.append("feeType", feeType);
       formData.append("discountPercentage", discountPercentage || 0);
       formData.append("discountAmount", discountAmount || 0);
       formData.append("finalAmount", calculateFinalAmount());
@@ -838,13 +841,24 @@ export default function NewStudent() {
                       disabled={!!selectedLead && selectedLead !== "no_lead"}
                     />
                   </div>
-                  <div className="w-full md:w-1/2">
+                  <div className="w-full md:w-1/4">
                     <Label>Primary Course *</Label>
                     <SearchableCourseSelect
                       value={coursePreference}
                       onChange={setCoursePreference}
                       placeholder="Search and select a course..."
                       error={!!validationErrors.coursePreference}
+                    />
+                  </div>
+                  <div className="w-full md:w-1/4">
+                    <Label>Fee Type *</Label>
+                    <Select
+                      options={[
+                        { value: 'normal', label: 'Normal Fee' },
+                        { value: 'singleShot', label: 'Single Shot' }
+                      ]}
+                      value={feeType}
+                      onChange={setFeeType}
                     />
                   </div>
                 </div>
