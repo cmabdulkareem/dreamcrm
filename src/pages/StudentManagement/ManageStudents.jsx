@@ -45,6 +45,16 @@ export default function ManageStudents() {
   const [selectedStudentForDate, setSelectedStudentForDate] = useState(null);
   const [newEnrollmentDate, setNewEnrollmentDate] = useState("");
 
+  // Search and Filter states
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterCourse, setFilterCourse] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+  const [filterBatchStatus, setFilterBatchStatus] = useState("");
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   // Controlled form states
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -414,6 +424,39 @@ export default function ManageStudents() {
     return `${baseUrl}${photoPath}`;
   };
 
+  // Filter students
+  const filteredStudents = students.filter(student => {
+    const matchesSearch =
+      student.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.studentId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      student.phone1?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesCourse = filterCourse === "" || student.coursePreference === filterCourse;
+    const matchesStatus = filterStatus === "" || student.status === filterStatus;
+    const matchesBatchStatus =
+      filterBatchStatus === "" ||
+      (filterBatchStatus === "assigned" && student.batchScheduled) ||
+      (filterBatchStatus === "unassigned" && !student.batchScheduled);
+
+    return matchesSearch && matchesCourse && matchesStatus && matchesBatchStatus;
+  });
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredStudents.slice(indexOfFirstItem, indexOfLastItem);
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterCourse, filterStatus, filterBatchStatus]);
+
   return (
     <div>
       <PageMeta
@@ -423,8 +466,42 @@ export default function ManageStudents() {
       <PageBreadcrumb pageTitle="Manage Students" />
 
       <div className="space-y-6">
-        <div className="flex justify-end">
-          <Button variant="primary" onClick={handleAddStudent}>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 w-full md:w-auto flex-grow max-w-5xl">
+            <Input
+              type="text"
+              placeholder="Search by name, ID, email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full"
+            />
+            <Select
+              options={[{ label: "All Courses", value: "" }, ...courses.map(c => ({ label: c.courseName, value: c._id }))]}
+              value={filterCourse}
+              onChange={(value) => setFilterCourse(value)}
+              className="w-full"
+            />
+            <Select
+              options={[
+                { label: "All Status", value: "" },
+                ...enquirerStatus.map(s => ({ label: s.label, value: s.value }))
+              ]}
+              value={filterStatus}
+              onChange={(value) => setFilterStatus(value)}
+              className="w-full"
+            />
+            <Select
+              options={[
+                { label: "All Batch Status", value: "" },
+                { label: "Assigned", value: "assigned" },
+                { label: "Unassigned", value: "unassigned" }
+              ]}
+              value={filterBatchStatus}
+              onChange={(value) => setFilterBatchStatus(value)}
+              className="w-full"
+            />
+          </div>
+          <Button variant="primary" onClick={handleAddStudent} className="whitespace-nowrap">
             Add New Student
           </Button>
         </div>
@@ -464,9 +541,9 @@ export default function ManageStudents() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-900 dark:divide-gray-700">
-                  {students.length > 0 ? (
-                    students.map((student) => (
-                      <tr key={student._id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                  {currentItems.length > 0 ? (
+                    currentItems.map((student) => (
+                      <tr key={student._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex-shrink-0 h-10 w-10">
                             <img
@@ -559,13 +636,60 @@ export default function ManageStudents() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="9" className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                        No students found
+                      <td colSpan="5" className="px-6 py-10 text-center text-gray-500">
+                        {searchTerm || filterCourse || filterStatus || filterBatchStatus
+                          ? "No students match your search/filters"
+                          : "No students registered yet"}
                       </td>
                     </tr>
                   )}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {!loading && filteredStudents.length > itemsPerPage && (
+            <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-100 dark:border-gray-800 pt-6">
+              <p className="text-sm text-gray-500">
+                Showing <span className="font-medium text-gray-900 dark:text-gray-200">{indexOfFirstItem + 1}</span> to{" "}
+                <span className="font-medium text-gray-900 dark:text-gray-200">
+                  {Math.min(indexOfLastItem, filteredStudents.length)}
+                </span>{" "}
+                of <span className="font-medium text-gray-900 dark:text-gray-200">{filteredStudents.length}</span> students
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage === 1}
+                  onClick={() => handlePageChange(currentPage - 1)}
+                >
+                  Previous
+                </Button>
+                <div className="flex items-center gap-1">
+                  {[...Array(totalPages)].map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => handlePageChange(i + 1)}
+                      className={`min-w-[32px] h-8 rounded-lg text-sm font-medium transition-colors ${currentPage === i + 1
+                          ? "bg-brand-500 text-white"
+                          : "text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+                        }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={currentPage === totalPages}
+                  onClick={() => handlePageChange(currentPage + 1)}
+                >
+                  Next
+                </Button>
+              </div>
             </div>
           )}
         </ComponentCard>
