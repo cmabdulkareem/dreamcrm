@@ -129,8 +129,8 @@ function App() {
                     </Route>
 
                     {/* Forms */}
-                    <Route path="/new-lead" element={<ProtectedRoutes><NewLead /></ProtectedRoutes>} />
-                    <Route path="/lead-management" element={<ProtectedRoutes><ManageLeads /></ProtectedRoutes>} />
+                    <Route path="/new-lead" element={<ProtectedRoutes>{isAC ? <Navigate to="/batch-management" replace /> : <NewLead />}</ProtectedRoutes>} />
+                    <Route path="/lead-management" element={<ProtectedRoutes>{isAC ? <Navigate to="/batch-management" replace /> : <ManageLeads />}</ProtectedRoutes>} />
                     <Route path="/lead-management/call-list" element={<ProtectedRoutes><Suspense fallback={<LoadingSpinner />}><CallList /></Suspense></ProtectedRoutes>} />
                     <Route path="/lead-blank" element={<ProtectedRoutes><LeadBlank /></ProtectedRoutes>} />
                     <Route path="/new-student" element={<ProtectedRoutes><NewStudent /></ProtectedRoutes>} />

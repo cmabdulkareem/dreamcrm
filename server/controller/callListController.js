@@ -23,7 +23,10 @@ export const getAllCallLists = async (req, res) => {
         let finalQuery = { ...brandFilter };
 
         // Role-based base query restriction WITHIN the brand
-        if (!isOwner(req.user) && !isManager(req.user)) {
+        const { hasRole } = await import("../utils/roleHelpers.js");
+        const isACRole = hasRole(req.user, "Academic Coordinator");
+
+        if ((!isOwner(req.user) && !isManager(req.user)) || isACRole) {
             finalQuery = {
                 ...brandFilter,
                 $or: [
