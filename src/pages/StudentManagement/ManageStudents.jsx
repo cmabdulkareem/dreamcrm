@@ -489,9 +489,13 @@ export default function ManageStudents() {
                             </span>
                             <div className="flex items-center gap-1">
                               <span className="text-xs text-gray-500 dark:text-gray-400">{student.studentId}</span>
-                              {student.place && (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
-                                  {student.place === 'Other' ? student.otherPlace : student.place}
+                              {student.batchScheduled ? (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-success-50 text-success-600 dark:bg-success-900/20 dark:text-success-400">
+                                  Batch Assigned
+                                </span>
+                              ) : (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-error-50 text-error-600 dark:bg-error-900/20 dark:text-error-400">
+                                  Unassigned
                                 </span>
                               )}
                             </div>
