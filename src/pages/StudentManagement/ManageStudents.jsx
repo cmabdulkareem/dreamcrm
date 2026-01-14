@@ -564,14 +564,14 @@ export default function ManageStudents() {
                             >
                               {student.fullName}
                             </span>
-                            <div className="flex items-center gap-1">
-                              <span className="text-xs text-gray-500 dark:text-gray-400">{student.studentId}</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">{student.studentId}</span>
+                            <div className="mt-1">
                               {student.batchScheduled ? (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-success-50 text-success-600 dark:bg-success-900/20 dark:text-success-400">
+                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-success-50 text-success-600 dark:bg-success-900/20 dark:text-success-400 whitespace-nowrap inline-block">
                                   Batch Assigned
                                 </span>
                               ) : (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-error-50 text-error-600 dark:bg-error-900/20 dark:text-error-400">
+                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-error-50 text-error-600 dark:bg-error-900/20 dark:text-error-400 whitespace-nowrap inline-block">
                                   Unassigned
                                 </span>
                               )}
@@ -673,8 +673,8 @@ export default function ManageStudents() {
                       key={i}
                       onClick={() => handlePageChange(i + 1)}
                       className={`min-w-[32px] h-8 rounded-lg text-sm font-medium transition-colors ${currentPage === i + 1
-                          ? "bg-brand-500 text-white"
-                          : "text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+                        ? "bg-brand-500 text-white"
+                        : "text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
                         }`}
                     >
                       {i + 1}
