@@ -790,7 +790,7 @@ export default function ManageStudents() {
                 </div>
                 <div>
                   <Label>Discount (₹)</Label>
-                  <Input type="number" value={discountAmount} onChange={(e) => handleDiscountAmountChange(e.target.value)} />
+                  <Input type="number" value={discountAmount} onChange={(e) => handleDiscountAmountChange(e.target.value)} step="any" />
                 </div>
                 <div>
                   <Label>Final Amount (₹)</Label>

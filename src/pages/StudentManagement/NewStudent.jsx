@@ -914,6 +914,7 @@ export default function NewStudent() {
                       onChange={(e) => handleDiscountAmountChange(e.target.value)}
                       placeholder="0"
                       min="0"
+                      step="any"
                     />
                   </div>
                   <div>
