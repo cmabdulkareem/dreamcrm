@@ -52,6 +52,7 @@ const navItems = [
       { name: "New Student (beta)", path: "/new-student", pro: false },
       { name: "Manage Students (beta)", path: "/manage-students", pro: false },
       { name: "Batch Management", path: "/batch-management", pro: false },
+      { name: "Birthday Calendar", path: "/student-birthdays", pro: false },
 
     ],
   },
@@ -390,7 +391,7 @@ const AppSidebar = () => {
 
                     // RESTRICTION: Academic Coordinator only sees Batch Management, Edit Profile, Cold Call list and personal Leave Management
                     if (hasRole(user, "Academic Coordinator")) {
-                      const allowedSubItemsAC = ["Batch Management", "Edit Profile", "Apply Leave", "My Leaves", "Cold Call list"];
+                      const allowedSubItemsAC = ["Batch Management", "Edit Profile", "Apply Leave", "My Leaves", "Cold Call list", "Birthday Calendar"];
                       if (!allowedSubItemsAC.includes(subItem.name)) {
                         return null;
                       }
