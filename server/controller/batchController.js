@@ -36,11 +36,24 @@ export const getAllBatches = async (req, res) => {
 
         const batches = await Batch.find(finalQuery).sort({ createdAt: -1 }).populate('brand', 'name code');
 
-        // Self-healing: Ensure all batches have a shareToken
+        // Self-healing: Ensure all batches have a shareToken and instructors are correctly linked by ID
         let updated = false;
         for (let batch of batches) {
+            let batchModified = false;
+
+            // Fix shareToken
             if (!batch.shareToken) {
                 batch.shareToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+                batchModified = true;
+            }
+
+            // Fix missing instructor ID if instructorName matches current user
+            if (!batch.instructor && batch.instructorName === req.user.fullName) {
+                batch.instructor = req.user.id || req.user._id;
+                batchModified = true;
+            }
+
+            if (batchModified) {
                 await batch.save();
                 updated = true;
             }
