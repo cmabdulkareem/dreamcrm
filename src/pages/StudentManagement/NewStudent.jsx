@@ -198,7 +198,7 @@ export default function NewStudent() {
     const total = calculateTotalValue();
     if (total > 0 && value !== "") {
       const percentage = (parseFloat(value) / total) * 100;
-      setDiscountPercentage(percentage.toFixed(2));
+      setDiscountPercentage(parseFloat(percentage.toFixed(4)).toString());
     } else if (value === "") {
       setDiscountPercentage("");
     }
@@ -900,9 +900,10 @@ export default function NewStudent() {
                       type="number"
                       value={discountPercentage}
                       onChange={(e) => handleDiscountPercentageChange(e.target.value)}
-                      placeholder="0"
+                      placeholder="0.00"
                       min="0"
                       max="100"
+                      step="any"
                     />
                   </div>
                   <div>

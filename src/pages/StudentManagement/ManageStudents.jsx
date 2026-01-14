@@ -253,7 +253,7 @@ export default function ManageStudents() {
     const total = calculateTotalValue();
     if (total > 0 && value !== "") {
       const percentage = (parseFloat(value) / total) * 100;
-      setDiscountPercentage(percentage.toFixed(2));
+      setDiscountPercentage(parseFloat(percentage.toFixed(4)).toString());
     } else if (value === "") {
       setDiscountPercentage("");
     }
@@ -786,7 +786,7 @@ export default function ManageStudents() {
                 </div>
                 <div>
                   <Label>Discount (%)</Label>
-                  <Input type="number" value={discountPercentage} onChange={(e) => handleDiscountPercentageChange(e.target.value)} />
+                  <Input type="number" value={discountPercentage} onChange={(e) => handleDiscountPercentageChange(e.target.value)} step="any" placeholder="0.00" />
                 </div>
                 <div>
                   <Label>Discount (₹)</Label>
