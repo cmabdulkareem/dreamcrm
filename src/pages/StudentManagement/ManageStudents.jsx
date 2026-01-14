@@ -63,6 +63,7 @@ export default function ManageStudents() {
   const [coursePreference, setCoursePreference] = useState("");
   const [additionalCourses, setAdditionalCourses] = useState([]);
   const [discountPercentage, setDiscountPercentage] = useState("");
+  const [discountAmount, setDiscountAmount] = useState("");
   const [enrollmentDate, setEnrollmentDate] = useState("");
   const [studentId, setStudentId] = useState("");
   const [selectedBrand, setSelectedBrand] = useState("");
@@ -176,6 +177,7 @@ export default function ManageStudents() {
     setCoursePreference(student.coursePreference || "");
     setAdditionalCourses(student.additionalCourses || []);
     setDiscountPercentage(student.discountPercentage || 0);
+    setDiscountAmount(student.discountAmount || 0);
     setEnrollmentDate(student.enrollmentDate ? new Date(student.enrollmentDate).toISOString().split('T')[0] : "");
     setStudentId(student.studentId || "");
     setSelectedBrand(student.brand?._id || student.brand || "");
@@ -235,17 +237,44 @@ export default function ManageStudents() {
     return total;
   }, [coursePreference, additionalCourses, courses]);
 
-  const calculateDiscountAmount = useCallback(() => {
+  const handleDiscountPercentageChange = useCallback((value) => {
+    setDiscountPercentage(value);
     const total = calculateTotalValue();
-    const discount = parseFloat(discountPercentage) || 0;
-    return (total * discount / 100);
-  }, [calculateTotalValue, discountPercentage]);
+    if (total > 0 && value !== "") {
+      const amount = (total * parseFloat(value)) / 100;
+      setDiscountAmount(amount.toFixed(2));
+    } else if (value === "") {
+      setDiscountAmount("");
+    }
+  }, [calculateTotalValue]);
+
+  const handleDiscountAmountChange = useCallback((value) => {
+    setDiscountAmount(value);
+    const total = calculateTotalValue();
+    if (total > 0 && value !== "") {
+      const percentage = (parseFloat(value) / total) * 100;
+      setDiscountPercentage(percentage.toFixed(2));
+    } else if (value === "") {
+      setDiscountPercentage("");
+    }
+  }, [calculateTotalValue]);
+
+  // Sync discounts when total value changes in modal
+  useEffect(() => {
+    if (isEditModalOpen) {
+      const total = calculateTotalValue();
+      if (discountPercentage !== "" && total > 0) {
+        const amount = (total * parseFloat(discountPercentage)) / 100;
+        setDiscountAmount(amount.toFixed(2));
+      }
+    }
+  }, [coursePreference, additionalCourses, courses, isEditModalOpen]);
 
   const calculateFinalAmount = useCallback(() => {
     const total = calculateTotalValue();
-    const discount = calculateDiscountAmount();
+    const discount = parseFloat(discountAmount) || 0;
     return total - discount;
-  }, [calculateTotalValue, calculateDiscountAmount]);
+  }, [calculateTotalValue, discountAmount]);
 
   const handlePhotoChange = useCallback((e) => {
     const file = e.target.files[0];
@@ -316,7 +345,7 @@ export default function ManageStudents() {
       formData.append("additionalCourses", JSON.stringify(additionalCourses.filter(c => c)));
       formData.append("totalCourseValue", calculateTotalValue());
       formData.append("discountPercentage", discountPercentage || 0);
-      formData.append("discountAmount", calculateDiscountAmount());
+      formData.append("discountAmount", discountAmount || 0);
       formData.append("finalAmount", calculateFinalAmount());
       formData.append("enrollmentDate", enrollmentDate);
       formData.append("brandId", selectedBrand);
@@ -757,15 +786,15 @@ export default function ManageStudents() {
                 </div>
                 <div>
                   <Label>Discount (%)</Label>
-                  <Input type="number" value={discountPercentage} onChange={(e) => setDiscountPercentage(e.target.value)} />
+                  <Input type="number" value={discountPercentage} onChange={(e) => handleDiscountPercentageChange(e.target.value)} />
                 </div>
                 <div>
                   <Label>Discount (₹)</Label>
-                  <Input type="text" value={calculateDiscountAmount()} readOnly className="bg-white dark:bg-gray-900" />
+                  <Input type="number" value={discountAmount} onChange={(e) => handleDiscountAmountChange(e.target.value)} />
                 </div>
                 <div>
                   <Label>Final Amount (₹)</Label>
-                  <Input type="text" value={calculateFinalAmount()} readOnly className="bg-white dark:bg-gray-900 font-bold text-brand-600" />
+                  <Input type="text" value={calculateFinalAmount().toFixed(2)} readOnly className="bg-white dark:bg-gray-900 font-bold text-brand-600" />
                 </div>
               </div>
 

@@ -54,6 +54,7 @@ export default function NewStudent() {
   const [coursePreference, setCoursePreference] = useState(""); // Primary course
   const [additionalCourses, setAdditionalCourses] = useState([]); // Additional courses
   const [discountPercentage, setDiscountPercentage] = useState(""); // Discount percentage
+  const [discountAmount, setDiscountAmount] = useState(""); // Discount amount
   const [enrollmentDate, setEnrollmentDate] = useState(new Date().toISOString().split('T')[0]);
   const [studentId, setStudentId] = useState("");
   const [emailError, setEmailError] = useState(false);
@@ -179,19 +180,45 @@ export default function NewStudent() {
     return total;
   }, [coursePreference, additionalCourses, courses]);
 
-  // Calculate discount amount
-  const calculateDiscountAmount = useCallback(() => {
+  // Handle discount percentage change
+  const handleDiscountPercentageChange = useCallback((value) => {
+    setDiscountPercentage(value);
     const total = calculateTotalValue();
-    const discount = parseFloat(discountPercentage) || 0;
-    return (total * discount / 100);
-  }, [calculateTotalValue, discountPercentage]);
+    if (total > 0 && value !== "") {
+      const amount = (total * parseFloat(value)) / 100;
+      setDiscountAmount(amount.toFixed(2));
+    } else if (value === "") {
+      setDiscountAmount("");
+    }
+  }, [calculateTotalValue]);
+
+  // Handle discount amount change
+  const handleDiscountAmountChange = useCallback((value) => {
+    setDiscountAmount(value);
+    const total = calculateTotalValue();
+    if (total > 0 && value !== "") {
+      const percentage = (parseFloat(value) / total) * 100;
+      setDiscountPercentage(percentage.toFixed(2));
+    } else if (value === "") {
+      setDiscountPercentage("");
+    }
+  }, [calculateTotalValue]);
+
+  // Sync discounts when total value changes
+  useEffect(() => {
+    const total = calculateTotalValue();
+    if (discountPercentage !== "" && total > 0) {
+      const amount = (total * parseFloat(discountPercentage)) / 100;
+      setDiscountAmount(amount.toFixed(2));
+    }
+  }, [coursePreference, additionalCourses, courses]); // Recalculate when selection changes
 
   // Calculate final amount after discount
   const calculateFinalAmount = useCallback(() => {
     const total = calculateTotalValue();
-    const discount = calculateDiscountAmount();
+    const discount = parseFloat(discountAmount) || 0;
     return total - discount;
-  }, [calculateTotalValue, calculateDiscountAmount]);
+  }, [calculateTotalValue, discountAmount]);
 
   // Add additional course
   const handleAddAdditionalCourse = () => {
@@ -346,6 +373,7 @@ export default function NewStudent() {
     setCoursePreference("");
     setAdditionalCourses([]);
     setDiscountPercentage("");
+    setDiscountAmount("");
     setEnrollmentDate("");
     setStudentId("");
     setSelectedBrand("");
@@ -474,7 +502,7 @@ export default function NewStudent() {
       formData.append("additionalCourses", JSON.stringify(additionalCourses.filter(course => course))); // Filter out empty values
       formData.append("totalCourseValue", calculateTotalValue());
       formData.append("discountPercentage", discountPercentage || 0);
-      formData.append("discountAmount", calculateDiscountAmount());
+      formData.append("discountAmount", discountAmount || 0);
       formData.append("finalAmount", calculateFinalAmount());
       formData.append("enrollmentDate", enrollmentDate);
       formData.append("leadId", selectedLead === "no_lead" ? "" : selectedLead);
@@ -543,7 +571,7 @@ export default function NewStudent() {
     additionalCourses,
     calculateTotalValue,
     discountPercentage,
-    calculateDiscountAmount,
+    discountAmount,
     calculateFinalAmount,
     enrollmentDate,
     selectedLead,
@@ -871,7 +899,7 @@ export default function NewStudent() {
                     <Input
                       type="number"
                       value={discountPercentage}
-                      onChange={(e) => setDiscountPercentage(e.target.value)}
+                      onChange={(e) => handleDiscountPercentageChange(e.target.value)}
                       placeholder="0"
                       min="0"
                       max="100"
@@ -880,19 +908,20 @@ export default function NewStudent() {
                   <div>
                     <Label>Discount Amount (₹)</Label>
                     <Input
-                      type="text"
-                      value={calculateDiscountAmount()}
-                      readOnly
-                      className="bg-gray-100 dark:bg-gray-800"
+                      type="number"
+                      value={discountAmount}
+                      onChange={(e) => handleDiscountAmountChange(e.target.value)}
+                      placeholder="0"
+                      min="0"
                     />
                   </div>
                   <div>
                     <Label>Final Amount (₹)</Label>
                     <Input
                       type="text"
-                      value={calculateFinalAmount()}
+                      value={calculateFinalAmount().toFixed(2)}
                       readOnly
-                      className="bg-gray-100 dark:bg-gray-800"
+                      className="bg-gray-100 dark:bg-gray-800 font-bold"
                     />
                   </div>
                 </div>
