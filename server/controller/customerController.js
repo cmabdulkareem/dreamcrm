@@ -103,6 +103,28 @@ export const createCustomer = async (req, res) => {
       .populate('assignedTo', 'fullName email')
       .populate('assignedBy', 'fullName email');
 
+    // Emit Real-time Notification to Brand
+    try {
+      if (newCustomer.brand) {
+        const creatorName = req.user.fullName || "Unknown";
+        const notificationData = {
+          type: 'lead_created',
+          title: `New Lead Created`,
+          message: `${creatorName} created a new lead: ${newCustomer.fullName}`,
+          actionUrl: `/lead-management?leadId=${newCustomer._id}`,
+          metadata: { leadId: newCustomer._id },
+          userName: creatorName
+        };
+
+        emitSocketNotification({
+          brandId: newCustomer.brand,
+          notification: notificationData
+        });
+      }
+    } catch (notifError) {
+      console.error('Error sending create notification:', notifError);
+    }
+
     return res.status(201).json({
       message: "Lead created successfully.",
       customer: updatedCustomer
@@ -232,6 +254,31 @@ export const updateCustomer = async (req, res) => {
       .populate('assignedTo', 'fullName email')
       .populate('assignedBy', 'fullName email');
 
+    // Emit Real-time Notification for Update
+    try {
+      // Only emit if significant changes (optional, but requested "any activity")
+      // We'll limit to brand-wide broadcast to avoid noise, but user asked for "everyone within the brand".
+      // Let's emit a generic update notification
+      if (customer.brand) {
+        const updaterName = req.user.fullName || "Unknown";
+        const notificationData = {
+          type: 'lead_updated',
+          title: `Lead Updated`,
+          message: `${updaterName} updated lead: ${customer.fullName}`,
+          actionUrl: `/lead-management?leadId=${customer._id}`,
+          metadata: { leadId: customer._id },
+          userName: updaterName
+        };
+
+        emitSocketNotification({
+          brandId: customer.brand,
+          notification: notificationData
+        });
+      }
+    } catch (notifError) {
+      console.error('Error sending update notification:', notifError);
+    }
+
     return res.status(200).json({
       message: "Customer updated successfully.",
       customer: updatedCustomer
@@ -281,6 +328,28 @@ export const addRemark = async (req, res) => {
     const updatedCustomer = await customerModel.findById(id)
       .populate('assignedTo', 'fullName email')
       .populate('assignedBy', 'fullName email');
+
+    // Emit Real-time Notification for Remark
+    try {
+      if (customer.brand) {
+        const updaterName = req.user.fullName || "Unknown";
+        const notificationData = {
+          type: 'lead_remark',
+          title: `New Remark`,
+          message: `${updaterName} added a remark to: ${customer.fullName}`,
+          actionUrl: `/lead-management?leadId=${customer._id}`,
+          metadata: { leadId: customer._id },
+          userName: updaterName
+        };
+
+        emitSocketNotification({
+          brandId: customer.brand,
+          notification: notificationData
+        });
+      }
+    } catch (notifError) {
+      console.error('Error sending remark notification:', notifError);
+    }
 
     return res.status(200).json({
       message: "Remark added successfully.",
@@ -402,16 +471,27 @@ export const assignLead = async (req, res) => {
       const notificationData = {
         type: 'lead_assigned',
         title: `New Lead Assigned`,
-        message: `${assignerName} assigned you a lead: ${customer.fullName}`,
+        message: `${assignerName} assigned a lead to ${assignedUser.fullName}: ${customer.fullName}`,
         actionUrl: `/lead-management?leadId=${customer._id}`,
         metadata: { leadId: customer._id },
         userName: assignerName // Sender name
       };
 
-      emitSocketNotification({
-        recipients: [assignedTo],
-        notification: notificationData
-      });
+      // Broadcast to Brand (everyone sees who got assigned what)
+      if (customer.brand) {
+        emitSocketNotification({
+          brandId: customer.brand,
+          recipients: [assignedTo], // Also explicitly notify assignee (though they are in brand) - socket.js handles broadcasting logic effectively
+          notification: notificationData
+        });
+      } else {
+        // Fallback to just assignee if no brand
+        emitSocketNotification({
+          recipients: [assignedTo],
+          notification: notificationData
+        });
+      }
+
     } catch (notifError) {
       console.error('Error sending notification:', notifError);
     }

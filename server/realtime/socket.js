@@ -60,6 +60,8 @@ export default function setupSocket(server) {
 				}
 			}
 		})
+
+
 	})
 
 	return io
@@ -85,74 +87,4 @@ export function emitNotification({ recipients, brandId, notification }) {
 	}
 }
 
-// Export function to emit messages to users
-export function emitMessageToUsers(userIds, messageData) {
-	if (!ioInstance) {
-		console.error('Socket.IO not initialized')
-		return
-	}
 
-	try {
-		const userIdsArray = Array.isArray(userIds) ? userIds : [userIds]
-		userIdsArray.forEach((userId) => {
-			const userIdStr = String(userId)
-			ioInstance.to(`user:${userIdStr}`).emit('newMessage', messageData)
-		})
-	} catch (error) {
-		console.error('Error emitting message:', error)
-	}
-}
-
-// Export function to emit chat update to users
-export function emitChatUpdateToUsers(userIds, chatData) {
-	if (!ioInstance) {
-		console.error('Socket.IO not initialized')
-		return
-	}
-
-	try {
-		const userIdsArray = Array.isArray(userIds) ? userIds : [userIds]
-		userIdsArray.forEach((userId) => {
-			const userIdStr = String(userId)
-			ioInstance.to(`user:${userIdStr}`).emit('chatUpdated', chatData)
-		})
-	} catch (error) {
-		console.error('Error emitting chat update:', error)
-	}
-}
-
-// Export function to emit message update (edit)
-export function emitMessageUpdate(userIds, messageData) {
-	if (!ioInstance) {
-		console.error('Socket.IO not initialized')
-		return
-	}
-
-	try {
-		const userIdsArray = Array.isArray(userIds) ? userIds : [userIds]
-		userIdsArray.forEach((userId) => {
-			const userIdStr = String(userId)
-			ioInstance.to(`user:${userIdStr}`).emit('messageUpdated', messageData)
-		})
-	} catch (error) {
-		console.error('Error emitting message update:', error)
-	}
-}
-
-// Export function to emit message deletion
-export function emitMessageDelete(userIds, messageId, chatId) {
-	if (!ioInstance) {
-		console.error('Socket.IO not initialized')
-		return
-	}
-
-	try {
-		const userIdsArray = Array.isArray(userIds) ? userIds : [userIds]
-		userIdsArray.forEach((userId) => {
-			const userIdStr = String(userId)
-			ioInstance.to(`user:${userIdStr}`).emit('messageDeleted', { messageId, chatId })
-		})
-	} catch (error) {
-		console.error('Error emitting message deletion:', error)
-	}
-}

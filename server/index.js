@@ -20,7 +20,7 @@ import profileRoutes from './routes/profileRoute.js'
 import studentRoutes from './routes/studentRoutes.js'
 import courseRoutes from './routes/courseRoutes.js'
 import contactPointRoutes from './routes/contactPointRoute.js'
-import chatRoutes from './routes/chatRoutes.js'
+
 import eventRoutes from './routes/eventRoutes.js'
 import leaveRoutes from './routes/leaveRoutes.js'
 import announcementRoutes from './routes/announcementRoutes.js'
@@ -68,7 +68,7 @@ app.use('/api/students', studentRoutes)
 app.use('/api/courses', courseRoutes)
 app.use('/api/course-categories', courseCategoryRoutes)
 app.use('/api/contact-points', contactPointRoutes)
-app.use('/api/chats', chatRoutes)
+
 app.use('/api/events', eventRoutes)
 app.use('/api/leaves', leaveRoutes)
 app.use('/api/announcements', announcementRoutes)
