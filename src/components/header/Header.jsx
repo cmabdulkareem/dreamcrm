@@ -1,6 +1,6 @@
 import { useState, useContext } from "react";
 import { ThemeToggleButton } from "../common/ThemeToggleButton";
-import { useChat } from "../../context/ChatContext";
+
 import { useNotifications } from "../../context/NotificationContext"; // Import useNotifications
 import UserDropdown from "./UserDropdown";
 import NotificationDropdown from "./NotificationDropdown"; // Import NotificationDropdown
@@ -9,7 +9,7 @@ import AnimatedAnnouncement from "./AnimatedAnnouncement";
 
 const Header = ({ onClick, onToggle }) => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
-  const { hasUnreadMessages, toggleChat } = useChat();
+
   const { hasUnread } = useNotifications(); // Use notifications context
 
   const toggleApplicationMenu = () => {
@@ -161,21 +161,7 @@ const Header = ({ onClick, onToggle }) => {
               {/* Notification Dropdown */}
               <NotificationDropdown />
 
-              {/* Chat Notification Icon */}
-              <button
-                onClick={toggleChat}
-                className="relative flex h-10 w-10 items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-              >
-                <svg className="h-5 w-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-                {hasUnreadMessages && (
-                  <span className="absolute -top-1 -right-1 flex h-4 w-4">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-4 w-4 bg-green-500"></span>
-                  </span>
-                )}
-              </button>
+
 
               {/* <!-- Dark Mode Toggler --> */}
               <ThemeToggleButton />

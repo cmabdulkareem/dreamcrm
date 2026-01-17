@@ -31,10 +31,7 @@ const navItems = [
   {
     icon: <GridIcon />,
     name: "Dashboard",
-    subItems: [{ name: "Leads & Conversions", path: "/", pro: false },
-    { name: "Student Performance (beta)", path: "/students-overview", pro: false },
-    { name: "Revenue Snapshot (beta)", path: "/revenue-overview", pro: false }
-    ],
+    subItems: [{ name: "Leads & Conversions", path: "/", pro: false }],
   },
   {
     name: "Lead Management",
@@ -220,8 +217,7 @@ const AppSidebar = () => {
       "Sign Up",  // If present
       "Dashboard",
       "Leads & Conversions",
-      "Student Performance (beta)",
-      "Revenue Snapshot (beta)",
+
       "App Backup"
     ];
     return globalModules.includes(name);
@@ -410,9 +406,10 @@ const AppSidebar = () => {
                       }
                     }
 
-                    // RESTRICTION: Counsellor should not see "New Student"
+                    // RESTRICTION: Counsellor should only see "Batch Management" and "Birthday Calendar"
                     if (isCounsellor(user) && !isManager(user)) {
-                      if (subItem.name === "New Student (beta)") {
+                      const allowedForCounsellor = ["Batch Management", "Birthday Calendar"];
+                      if (!allowedForCounsellor.includes(subItem.name)) {
                         return null;
                       }
                     }

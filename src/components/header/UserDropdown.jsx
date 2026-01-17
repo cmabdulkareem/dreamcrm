@@ -4,7 +4,7 @@ import axios from "axios";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { AuthContext } from "../../context/AuthContext";
-import { useChat } from "../../context/ChatContext";
+
 import { getAvatarUrl } from "../../utils/imageHelper";
 
 import API from "../../config/api";
@@ -12,7 +12,7 @@ import API from "../../config/api";
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const { user, logout } = useContext(AuthContext);
-  const { setUserOffline } = useChat();
+
   const navigate = useNavigate();
 
   function toggleDropdown() {
@@ -25,8 +25,7 @@ export default function UserDropdown() {
 
   const handleLogout = async () => {
     try {
-      // Mark user as offline in chat system before logging out
-      setUserOffline();
+
 
       // Call logout API
       await axios.get(`${API}/users/logout`, {

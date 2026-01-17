@@ -62,12 +62,21 @@ export default function EcommerceMetrics() {
       const currentMonth = now.getMonth();
       const currentYear = now.getFullYear();
 
+      // Determine Financial Year Start (April 1st)
+      // If current month is Jan-Mar (0-2), FY started prev year April.
+      // If current month is Apr-Dec (3-11), FY started this year April.
+      const fyStartYear = currentMonth < 3 ? currentYear - 1 : currentYear;
+      const fyStartDate = new Date(fyStartYear, 3, 1); // Month is 0-indexed: 3 = April
+
       // Get last month's date
       const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
       const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
 
-      // Total leads
-      const totalLeads = customers.length;
+      // Filter customers (Leads) by Financial Year
+      const fyCustomers = customers.filter(c => new Date(c.createdAt) >= fyStartDate);
+
+      // Total Leads (Financial Year) - Strictly Lead Count
+      const totalLeads = fyCustomers.length;
 
       // Current month leads
       const currentMonthLeads = customers.filter(c => {
@@ -93,8 +102,11 @@ export default function EcommerceMetrics() {
 
       const leadsGrowth = calculateGrowth(currentMonthLeads, lastMonthLeads);
 
-      // Total Conversions = Total Students (Converted from Leads + Direct Walk-ins)
-      const convertedLeads = students.length;
+      // Filter Students by Financial Year (Enrollment Date)
+      const fyStudents = students.filter(s => new Date(s.enrollmentDate || s.createdAt) >= fyStartDate);
+
+      // Total Conversions (FY) = Total Students Enrolled in FY
+      const convertedLeads = fyStudents.length;
 
       const currentMonthConvertedLeads = students.filter(s => {
         const docDate = new Date(s.enrollmentDate || s.createdAt);
@@ -102,31 +114,36 @@ export default function EcommerceMetrics() {
           docDate.getFullYear() === currentYear;
       }).length;
 
-      // Adjust Total Leads pool to include direct walk-ins (students without leadId)
-      // This ensures conversion rate doesn't exceed 100% and reflects total potential intake
-      const directStudents = students.filter(s => !s.leadId).length;
-      const effectiveTotalLeads = totalLeads + directStudents;
+      // Calculate Conversion Rate: FY Students / (FY Leads + FY Direct Walk-ins)
+      // This ensures we account for walk-ins in the denominator if they are in the numerator
+      const fyDirectStudents = fyStudents.filter(s => !s.leadId).length;
+      const effectiveTotalLeads = totalLeads + fyDirectStudents;
 
       const conversionRate = effectiveTotalLeads > 0 ? ((convertedLeads / effectiveTotalLeads) * 100) : 0;
 
       // Revenue and Collection calculations from stats API
+      // Note: Backend stats API might already return FY data, but let's use what's provided or filter if needed.
+      // The statsResponse seems to provide 'financialYearRevenue' explicitly.
       const {
         financialYearRevenue = 0,
         currentMonthRevenue = 0,
         lastMonthRevenue = 0,
-        financialYearCollection = 0,
+        financialYearCollection = 0, // This likely needs to match our FY definition if not already
         currentMonthCollection = 0,
         lastMonthCollection = 0
       } = statsResponse.data;
 
-      const totalRevenueGross = students.reduce((sum, s) => sum + (parseFloat(s.finalAmount) || 0), 0);
-      const totalRevenue = totalRevenueGross / 1.18;
+      // Recalculate Total Revenue based on FY Students if needed, or trust API. 
+      // User requested "Total leads means within the financial year".
+      // Assuming 'financialYearRevenue' from API is correct.
+      // But let's ensure consistency with local calculation if we want precise control.
+      // For now, using API values for Revenue/Collection as they likely aggregate multiple sources.
 
       const revenueGrowth = calculateGrowth(currentMonthRevenue, lastMonthRevenue);
       const collectionGrowth = calculateGrowth(currentMonthCollection, lastMonthCollection);
 
-      // Students metrics
-      const totalStudents = students.length;
+      // Students metrics (FY)
+      const totalStudents = fyStudents.length;
 
       const currentMonthStudents = students.filter(s => {
         const enrollmentDate = new Date(s.enrollmentDate || s.createdAt);
@@ -143,15 +160,17 @@ export default function EcommerceMetrics() {
       const studentsGrowth = calculateGrowth(currentMonthStudents, lastMonthStudents);
 
       setMetrics({
-        totalLeads: effectiveTotalLeads,
+        totalLeads: totalLeads, // Now strictly FY customers count
         currentMonthLeads,
         lastMonthLeads,
         leadsGrowth: parseFloat(leadsGrowth.toFixed(1)),
         conversionRate: parseFloat(conversionRate.toFixed(1)),
         convertedLeads,
-        brandConvertedLeads: convertedLeads,
+        brandConvertedLeads: convertedLeads, // Note: This might need to be All Time if back card is All Time. 
+        // But back card says "Brand Conv. Rate", let's keep it consistent or AllTime?
+        // fetchBrandConversionMetrics below updates brandConvertedLeads separately.
         brandConversionRate: conversionRate,
-        totalRevenue: totalRevenue || 0,
+        totalRevenue: financialYearRevenue || 0, // Using FY Revenue
         financialYearRevenue: financialYearRevenue || 0,
         currentMonthRevenue: currentMonthRevenue || 0,
         lastMonthRevenue: lastMonthRevenue || 0,

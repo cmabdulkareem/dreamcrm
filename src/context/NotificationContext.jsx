@@ -59,12 +59,15 @@ export const NotificationProvider = ({ children }) => {
     newSocket.on('connect', () => {
       console.log('Socket connected:', newSocket.id);
       // Register user with roles and brands
+      // Safe check for user.brands
+      const assignedBrands = Array.isArray(user.brands) ? user.brands : [];
+
       newSocket.emit('register', {
         userId: user._id || user.id,
         fullName: user.fullName,
         isAdmin: user.isAdmin,
         roles: user.roles,
-        assignedBrands: user.brands
+        assignedBrands: assignedBrands
       });
     });
 

@@ -16,15 +16,7 @@ const InstallPWA = () => {
         const isSecure = window.isSecureContext;
         const isInAppBrowser = /FBAN|FBAV|Instagram|LinkedIn|Twitter|WhatsApp/i.test(navigator.userAgent);
 
-        console.log('%c[PWA Debug]', 'color: #ee46bc; font-weight: bold;', {
-            isIOS,
-            isStandalone,
-            isMobile,
-            isSecure,
-            isInAppBrowser,
-            userAgent: navigator.userAgent,
-            location: window.location.href
-        });
+
 
         if (isInAppBrowser && !isStandalone && !sessionStorage.getItem('pwa_prompt_shown')) {
             sessionStorage.setItem('pwa_prompt_shown', 'true');

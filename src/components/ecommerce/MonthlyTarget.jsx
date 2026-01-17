@@ -307,9 +307,9 @@ export default function MonthlyTarget() {
           {/* Target */}
           <div>
             <p className="mb-1 text-center text-gray-500 text-theme-xs dark:text-gray-400 sm:text-sm">Target</p>
-            <p className="flex items-center justify-center gap-1 text-base font-semibold text-gray-800 dark:text-white/90 sm:text-lg">
+            <div className="flex items-center justify-center gap-1 text-base font-semibold text-gray-800 dark:text-white/90 sm:text-lg">
               {loading ? <LoadingSpinner className="h-4 w-4" size="h-3 w-3" /> : formatCurrency(metrics.targetRevenue)}
-            </p>
+            </div>
           </div>
 
           <div className="w-px bg-gray-200 h-7 dark:bg-gray-800"></div>
@@ -317,9 +317,9 @@ export default function MonthlyTarget() {
           {/* Revenue */}
           <div>
             <p className="mb-1 text-center text-gray-500 text-theme-xs dark:text-gray-400 sm:text-sm">Achieved</p>
-            <p className="flex items-center justify-center gap-1 text-base font-semibold text-gray-800 dark:text-white/90 sm:text-lg">
+            <div className="flex items-center justify-center gap-1 text-base font-semibold text-gray-800 dark:text-white/90 sm:text-lg">
               {loading ? <LoadingSpinner className="h-4 w-4" size="h-3 w-3" /> : formatCurrency(metrics.currentMonthRevenue)}
-            </p>
+            </div>
           </div>
 
           <div className="w-px bg-gray-200 h-7 dark:bg-gray-800"></div>
@@ -327,9 +327,9 @@ export default function MonthlyTarget() {
           {/* Today */}
           <div>
             <p className="mb-1 text-center text-gray-500 text-theme-xs dark:text-gray-400 sm:text-sm">Today</p>
-            <p className="flex items-center justify-center gap-1 text-base font-semibold text-gray-800 dark:text-white/90 sm:text-lg">
+            <div className="flex items-center justify-center gap-1 text-base font-semibold text-gray-800 dark:text-white/90 sm:text-lg">
               {loading ? <LoadingSpinner className="h-4 w-4" size="h-3 w-3" /> : formatCurrency(metrics.todayRevenue)}
-            </p>
+            </div>
           </div>
         </div>
 
