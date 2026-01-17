@@ -3,6 +3,8 @@ import axios from 'axios';
 import { useParams } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import QRCode from "react-qr-code";
+import html2canvas from "html2canvas";
 import LoadingSpinner from '../components/common/LoadingSpinner';
 
 import API from "../config/api";
@@ -169,15 +171,50 @@ END:VCALENDAR`;
     document.body.removeChild(link);
   };
 
+  // 4. Download Ticket as Image
+  const downloadTicket = async () => {
+    const ticketElement = document.getElementById('ticket-node');
+    if (!ticketElement) return;
+
+    try {
+      // Add a class to hide elements during capture
+      ticketElement.classList.add('capturing-ticket');
+
+      const canvas = await html2canvas(ticketElement, {
+        scale: 2, // High resolution
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        ignoreElements: (element) => element.classList.contains('no-print') // Exclude calendar buttons
+      });
+
+      // Remove class after capture
+      ticketElement.classList.remove('capturing-ticket');
+
+      const dataUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = `${event.eventName.replace(/\s+/g, '_')}_Ticket.png`;
+      link.href = dataUrl;
+      link.click();
+
+      toast.success("Ticket downloaded successfully!");
+    } catch (error) {
+      console.error("Error downloading ticket:", error);
+      toast.error("Failed to download ticket.");
+      ticketElement.classList.remove('capturing-ticket');
+    }
+  };
+
   // --- Success View (Ticket Style) ---
   if (registered) {
     // Generate a random ticket number if one isn't provided by backend
     const ticketNumber = Math.random().toString(36).substr(2, 9).toUpperCase();
+    const verificationLink = `${window.location.origin}/events/verify-ticket/${registrationId}`;
 
     return (
       <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
         <div className="max-w-xl w-full">
-          <div className="bg-white rounded-3xl shadow-2xl overflow-hidden relative">
+          {/* Ticket Container */}
+          <div id="ticket-node" className="bg-white rounded-3xl shadow-2xl overflow-hidden relative">
             {/* Top Pattern */}
             <div className="h-32 bg-brand-600 relative overflow-hidden">
               <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
@@ -213,13 +250,26 @@ END:VCALENDAR`;
                     })}
                   </p>
 
-                  <div className="flex flex-col items-center justify-center gap-2 mt-6 pt-6 border-t border-gray-200 border-dashed">
+                  {/* QR Code Section */}
+                  <div className="flex flex-col items-center justify-center my-6">
+                    <div className="p-3 bg-white rounded-xl shadow-sm border border-gray-200">
+                      <QRCode
+                        size={128}
+                        style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                        value={verificationLink}
+                        viewBox={`0 0 128 128`}
+                      />
+                    </div>
+                    <span className="text-xs text-gray-400 mt-2 uppercase tracking-wide">Scan at entrance</span>
+                  </div>
+
+                  <div className="flex flex-col items-center justify-center gap-2 mt-4 pt-4 border-t border-gray-200 border-dashed">
                     <span className="text-xs text-gray-400 uppercase tracking-widest font-bold">Ticket Number</span>
                     <span className="font-mono text-2xl font-bold text-gray-800 tracking-wider">{ticketNumber}</span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3">
+                <div className="grid grid-cols-1 gap-3 no-print">
                   <h4 className="text-center text-sm font-semibold text-gray-500 uppercase tracking-wider mb-1">Add to Calendar</h4>
 
                   <div className="grid grid-cols-3 gap-3">
@@ -264,11 +314,21 @@ END:VCALENDAR`;
                       <span className="text-xs font-bold text-gray-700 group-hover:text-gray-900">iCal</span>
                     </button>
                   </div>
-
-                  <p className="text-center text-gray-400 text-xs mt-2">
-                    Or check your email for confirmation details.
-                  </p>
                 </div>
+
+                {/* Download Ticket Button */}
+                <div className="mt-6 pt-6 border-t border-gray-100 no-print">
+                  <button
+                    onClick={downloadTicket}
+                    className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-brand-600 text-white rounded-xl font-bold hover:bg-brand-700 transition-colors shadow-lg shadow-brand-500/30"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Download Ticket
+                  </button>
+                </div>
+
               </div>
             </div>
 

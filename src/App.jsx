@@ -65,6 +65,7 @@ const InvoiceDetails = lazy(() => import("./pages/Finance/InvoiceDetails"));
 
 import BrandManagement from "./components/brandManagement/BrandManagement";
 import PublicAttendance from "./pages/PublicAttendance";
+const VerifyTicket = lazy(() => import("./pages/EventManagement/VerifyTicket"));
 
 
 function App() {
@@ -163,6 +164,9 @@ function App() {
                 {/* Public Routes */}
                 <Route path="/event-registration/:link" element={<EventRegistration />} />
                 <Route path="/public/attendance/:shareToken" element={<PublicAttendance />} />
+
+                {/* Protected Verification Route */}
+                <Route path="/events/verify-ticket/:registrationId" element={<ProtectedRoutes><VerifyTicket /></ProtectedRoutes>} />
               </Routes>
             </Router>
 

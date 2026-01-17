@@ -201,6 +201,9 @@ const EventRegistrations = () => {
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Registration Date
                     </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Status
+                    </th>
                     {event?.registrationFields?.map((field, index) => (
                       <th key={index} scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                         {field.fieldName}
@@ -228,6 +231,14 @@ const EventRegistrations = () => {
                         <div className="text-sm text-gray-500 dark:text-gray-300">
                           {new Date(registration.createdAt).toLocaleDateString()}
                         </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${registration.attended
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-gray-100 text-gray-800'
+                          }`}>
+                          {registration.attended ? 'Attended' : 'Registered'}
+                        </span>
                       </td>
                       {event?.registrationFields?.map((field, index) => {
                         const fieldData = registration.registrationData.find(

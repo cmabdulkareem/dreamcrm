@@ -11,7 +11,8 @@ import {
   getEventRegistrations,
   uploadEventBanner,
   uploadEventBannerMiddleware,
-  uploadEventBannerMiddleware
+  uploadEventBannerMiddleware,
+  verifyAttendance
 } from '../controller/eventController.js';
 import verifyToken from '../middleware/verifyToken.js';
 
@@ -39,5 +40,8 @@ router.patch('/toggle-status/:id', toggleEventStatus);
 
 // Banner upload route
 router.post('/upload-banner/:id', verifyToken, uploadEventBannerMiddleware, uploadEventBanner);
+
+// Attendance Verification Route
+router.patch('/attendance/verify/:registrationId', verifyToken, verifyAttendance);
 
 export default router;

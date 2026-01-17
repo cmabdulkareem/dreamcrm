@@ -25,6 +25,10 @@ const eventRegistrationSchema = new mongoose.Schema({
   registrantName: {
     type: String,
     required: true
+  },
+  attended: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true
