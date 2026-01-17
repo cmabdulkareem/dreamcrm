@@ -377,3 +377,40 @@ export const uploadEventBanner = async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
+// Verify Attendance
+export const verifyAttendance = async (req, res) => {
+  try {
+    // Check if user has admin, manager, or counselor access
+    if (!hasAdminOrManagerOrCounsellorAccess(req.user)) {
+      return res.status(403).json({ message: "Access denied. Admin, Manager, or Counselor privileges required." });
+    }
+
+    const { registrationId } = req.params;
+
+    const registration = await eventRegistrationModel.findById(registrationId);
+    if (!registration) {
+      return res.status(404).json({ message: "Registration not found." });
+    }
+
+    if (registration.attended) {
+      return res.status(200).json({
+        message: "Participant has already been marked as attended.",
+        registration,
+        alreadyAttended: true
+      });
+    }
+
+    registration.attended = true;
+    await registration.save();
+
+    return res.status(200).json({
+      message: "Attendance verified successfully.",
+      registration,
+      alreadyAttended: false
+    });
+  } catch (error) {
+    console.error("Error verifying attendance:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
