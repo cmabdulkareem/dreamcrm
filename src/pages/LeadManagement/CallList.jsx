@@ -311,6 +311,35 @@ export default function CallList() {
         }
     };
 
+    const handleBulkDelete = async () => {
+        if (selectedIds.length === 0) {
+            toast.error("Please select entries to delete.");
+            return;
+        }
+
+        if (!window.confirm(`Are you sure you want to delete ${selectedIds.length} entries? This action cannot be undone.`)) {
+            return;
+        }
+
+        try {
+            setIsSubmitting(true);
+            await axios.post(
+                `${API}/call-lists/bulk-delete`,
+                { ids: selectedIds },
+                { withCredentials: true }
+            );
+
+            toast.success("Bulk delete successful!");
+            setSelectedIds([]); // Clear selection
+            fetchCallLists();
+        } catch (error) {
+            console.error("Error in bulk delete:", error);
+            toast.error(error.response?.data?.message || "Failed to perform bulk delete.");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
 
     const filteredData = callLists; // Search and filtering now handled by server
 
