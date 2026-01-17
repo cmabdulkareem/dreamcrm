@@ -158,15 +158,15 @@ function App() {
                 <Route path="/reset-password/:token" element={<ResetPassword />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
 
+                {/* Protected Verification Route */}
+                <Route path="/events/verify-ticket/:registrationId" element={<ProtectedRoutes><VerifyTicket /></ProtectedRoutes>} />
+
                 {/* Fallback Route */}
                 <Route path="*" element={<NotFound />} />
 
                 {/* Public Routes */}
                 <Route path="/event-registration/:link" element={<EventRegistration />} />
                 <Route path="/public/attendance/:shareToken" element={<PublicAttendance />} />
-
-                {/* Protected Verification Route */}
-                <Route path="/events/verify-ticket/:registrationId" element={<ProtectedRoutes><VerifyTicket /></ProtectedRoutes>} />
               </Routes>
             </Router>
 
