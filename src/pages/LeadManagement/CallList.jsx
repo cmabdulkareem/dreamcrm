@@ -49,6 +49,7 @@ export default function CallList() {
 
     // Pagination & Filtering states
     const [page, setPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(50);
     const [pagination, setPagination] = useState({ totalItems: 0, totalPages: 1, currentPage: 1 });
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
@@ -67,14 +68,15 @@ export default function CallList() {
     }, [search]);
 
 
-    const canDelete = isOwner(user);
+
+    const canDelete = isOwner(user) || isManager(user);
 
     useEffect(() => {
         fetchCallLists();
         if (isOwner(user) || isManager(user)) {
             fetchUsers();
         }
-    }, [user, page, debouncedSearch, startDate, endDate, creatorFilter, assigneeFilter, sortBy, sortOrder]);
+    }, [user, page, itemsPerPage, debouncedSearch, startDate, endDate, creatorFilter, assigneeFilter, sortBy, sortOrder]);
 
     const fetchUsers = async () => {
         try {
@@ -94,7 +96,7 @@ export default function CallList() {
             setLoading(true);
             const params = new URLSearchParams({
                 page,
-                limit: 50,
+                limit: itemsPerPage,
                 sortBy,
                 sortOrder
             });
@@ -427,6 +429,16 @@ export default function CallList() {
                         >
                             Update Selected
                         </Button>
+                        {canDelete && (
+                            <Button
+                                variant="outline"
+                                loading={isSubmitting}
+                                onClick={handleBulkDelete}
+                                className="whitespace-nowrap h-[38px] mb-[1px] text-red-500 border-red-200 hover:bg-red-50 dark:border-red-900/30 dark:hover:bg-red-900/20"
+                            >
+                                Delete Selected
+                            </Button>
+                        )}
                     </div>
                 </div>
             )}
@@ -653,7 +665,7 @@ export default function CallList() {
                                                     />
                                                 </TableCell>
                                             )}
-                                            <TableCell className="py-5 px-4 text-gray-500 text-sm font-semibold">{(page - 1) * 50 + index + 1}</TableCell>
+                                            <TableCell className="py-5 px-4 text-gray-500 text-sm font-semibold">{(page - 1) * itemsPerPage + index + 1}</TableCell>
                                             <TableCell className="py-5 px-4">
                                                 <div className="flex flex-col gap-0.5">
                                                     <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{formatDate(entry.createdAt)}</div>
@@ -711,55 +723,69 @@ export default function CallList() {
                         {pagination.totalPages > 1 && (
                             <div className="mt-6 flex flex-col md:flex-row items-center justify-between gap-4 border-t border-gray-100 dark:border-gray-800 pt-6">
                                 <p className="text-sm text-gray-500">
-                                    Showing <span className="font-medium">{(page - 1) * 50 + 1}</span> to <span className="font-medium">{Math.min(page * 50, pagination.totalItems)}</span> of <span className="font-medium">{pagination.totalItems}</span> results
+                                    Showing <span className="font-medium">{(page - 1) * itemsPerPage + 1}</span> to <span className="font-medium">{Math.min(page * itemsPerPage, pagination.totalItems)}</span> of <span className="font-medium">{pagination.totalItems}</span> results
                                 </p>
-                                <div className="flex items-center gap-2">
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        disabled={page === 1}
-                                        onClick={() => setPage(p => Math.max(1, p - 1))}
+                                <div className="flex items-center gap-4">
+                                    <select
+                                        value={itemsPerPage}
+                                        onChange={(e) => {
+                                            setItemsPerPage(Number(e.target.value));
+                                            setPage(1);
+                                        }}
+                                        className="h-8 rounded-lg border border-gray-300 bg-white px-2 text-sm text-gray-700 focus:border-brand-500 focus:ring focus:ring-brand-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 outline-none transition-all"
                                     >
-                                        Previous
-                                    </Button>
-                                    <div className="flex items-center gap-1">
-                                        {[...Array(pagination.totalPages)].map((_, i) => {
-                                            const pageNum = i + 1;
-                                            // Show only first, last, and pages around current page
-                                            if (
-                                                pageNum === 1 ||
-                                                pageNum === pagination.totalPages ||
-                                                (pageNum >= page - 1 && pageNum <= page + 1)
-                                            ) {
-                                                return (
-                                                    <button
-                                                        key={pageNum}
-                                                        onClick={() => setPage(pageNum)}
-                                                        className={`size-8 rounded-lg text-sm font-medium transition-colors ${page === pageNum
-                                                            ? 'bg-brand-500 text-white'
-                                                            : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5'
-                                                            }`}
-                                                    >
-                                                        {pageNum}
-                                                    </button>
-                                                );
-                                            } else if (
-                                                pageNum === page - 2 ||
-                                                pageNum === page + 2
-                                            ) {
-                                                return <span key={pageNum} className="px-1 text-gray-400">...</span>;
-                                            }
-                                            return null;
-                                        })}
+                                        <option value={50}>50 per page</option>
+                                        <option value={100}>100 per page</option>
+                                        <option value={500}>500 per page</option>
+                                    </select>
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            disabled={page === 1}
+                                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                                        >
+                                            Previous
+                                        </Button>
+                                        <div className="flex items-center gap-1">
+                                            {[...Array(pagination.totalPages)].map((_, i) => {
+                                                const pageNum = i + 1;
+                                                // Show only first, last, and pages around current page
+                                                if (
+                                                    pageNum === 1 ||
+                                                    pageNum === pagination.totalPages ||
+                                                    (pageNum >= page - 1 && pageNum <= page + 1)
+                                                ) {
+                                                    return (
+                                                        <button
+                                                            key={pageNum}
+                                                            onClick={() => setPage(pageNum)}
+                                                            className={`size-8 rounded-lg text-sm font-medium transition-colors ${page === pageNum
+                                                                ? 'bg-brand-500 text-white'
+                                                                : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5'
+                                                                }`}
+                                                        >
+                                                            {pageNum}
+                                                        </button>
+                                                    );
+                                                } else if (
+                                                    pageNum === page - 2 ||
+                                                    pageNum === page + 2
+                                                ) {
+                                                    return <span key={pageNum} className="px-1 text-gray-400">...</span>;
+                                                }
+                                                return null;
+                                            })}
+                                        </div>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            disabled={page === pagination.totalPages}
+                                            onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
+                                        >
+                                            Next
+                                        </Button>
                                     </div>
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        disabled={page === pagination.totalPages}
-                                        onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
-                                    >
-                                        Next
-                                    </Button>
                                 </div>
                             </div>
                         )}

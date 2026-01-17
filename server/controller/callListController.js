@@ -205,9 +205,9 @@ export const deleteCallList = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Check if user is owner
-        if (!isOwner(req.user)) {
-            return res.status(403).json({ message: "Only owners can delete call list entries." });
+        // Check if user is owner or manager
+        if (!isOwner(req.user) && !isManager(req.user)) {
+            return res.status(403).json({ message: "Only owners and managers can delete call list entries." });
         }
 
         const query = { _id: id, ...req.brandFilter };
@@ -368,6 +368,37 @@ export const bulkAssignCallLists = async (req, res) => {
         });
     } catch (error) {
         console.error("Error bulk assigning call lists:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+// Bulk delete call list entries
+export const bulkDeleteCallLists = async (req, res) => {
+    try {
+        const { ids } = req.body;
+
+        if (!isOwner(req.user) && !isManager(req.user)) {
+            return res.status(403).json({ message: "Only owners and managers can bulk delete call lists." });
+        }
+
+        if (!ids || !Array.isArray(ids) || ids.length === 0) {
+            return res.status(400).json({ message: "No entries selected for deletion." });
+        }
+
+        // Ensure we only delete items in the current brand's context
+        const query = {
+            ...req.brandFilter,
+            _id: { $in: ids }
+        };
+
+        const result = await CallList.deleteMany(query);
+
+        return res.status(200).json({
+            message: `Successfully deleted ${result.deletedCount} entries.`,
+            deletedCount: result.deletedCount
+        });
+    } catch (error) {
+        console.error("Error bulk deleting call lists:", error);
         return res.status(500).json({ message: "Internal server error" });
     }
 };

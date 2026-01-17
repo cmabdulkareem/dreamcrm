@@ -6,7 +6,8 @@ import {
     deleteCallList,
     importCallLists,
     updateCallListStatus,
-    bulkAssignCallLists
+    bulkAssignCallLists,
+    bulkDeleteCallLists
 } from '../controller/callListController.js';
 import verifyToken from '../middleware/verifyToken.js';
 import { applyBrandFilter } from '../middleware/brandMiddleware.js';
@@ -25,5 +26,6 @@ router.delete('/:id', deleteCallList); // Owner check is in controller
 router.post('/import', importCallLists);
 router.patch('/:id/status', updateCallListStatus);
 router.post('/bulk-assign', bulkAssignCallLists);
+router.post('/bulk-delete', bulkDeleteCallLists);
 
 export default router;
