@@ -14,6 +14,7 @@ import { useModal } from '../../hooks/useModal';
 import Label from '../../components/form/Label';
 import Input from '../../components/form/input/InputField';
 import PhoneInput from '../../components/form/group-input/PhoneInput';
+import RangeDatePicker from '../../components/form/RangeDatePicker';
 import API from '../../config/api';
 import { AuthContext } from '../../context/AuthContext';
 import { isOwner, isManager } from '../../utils/roleHelpers';
@@ -21,6 +22,14 @@ import { CloseIcon, DownloadIcon, FileIcon } from '../../icons';
 import { countries, callListStatusOptions } from '../../data/DataSets';
 
 export default function CallList() {
+    // Get initial date range (current month)
+    const getInitialMonthRange = () => {
+        const now = new Date();
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+        const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        return [firstDay, lastDay];
+    };
+
     const { user, selectedBrand } = useContext(AuthContext);
     const [callLists, setCallLists] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -51,8 +60,9 @@ export default function CallList() {
     const [page, setPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(50);
     const [pagination, setPagination] = useState({ totalItems: 0, totalPages: 1, currentPage: 1 });
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
+
+    const [dateRange, setDateRange] = useState(getInitialMonthRange());
+    const [stats, setStats] = useState([]);
     const [creatorFilter, setCreatorFilter] = useState('');
     const [assigneeFilter, setAssigneeFilter] = useState('');
     const [sortBy, setSortBy] = useState('createdAt');
@@ -76,7 +86,7 @@ export default function CallList() {
         if (isOwner(user) || isManager(user)) {
             fetchUsers();
         }
-    }, [user, page, itemsPerPage, debouncedSearch, startDate, endDate, creatorFilter, assigneeFilter, sortBy, sortOrder]);
+    }, [user, page, itemsPerPage, debouncedSearch, dateRange, creatorFilter, assigneeFilter, sortBy, sortOrder]);
 
     const fetchUsers = async () => {
         try {
@@ -101,14 +111,17 @@ export default function CallList() {
                 sortOrder
             });
             if (debouncedSearch) params.append('search', debouncedSearch);
-            if (startDate) params.append('startDate', startDate);
-            if (endDate) params.append('endDate', endDate);
+            if (dateRange && dateRange.length > 0) {
+                if (dateRange[0]) params.append('startDate', dateRange[0].toISOString());
+                if (dateRange[1]) params.append('endDate', dateRange[1].toISOString());
+            }
             if (creatorFilter) params.append('creator', creatorFilter);
             if (assigneeFilter) params.append('assignedTo', assigneeFilter);
 
             const response = await axios.get(`${API}/call-lists?${params.toString()}`, { withCredentials: true });
             setCallLists(response.data.callLists);
             setPagination(response.data.pagination);
+            setStats(response.data.stats || []);
         } catch (error) {
             console.error("Error fetching call lists:", error);
             toast.error("Failed to load call lists.");
@@ -394,6 +407,19 @@ export default function CallList() {
             />
             <PageBreadcrumb pageTitle="Cold Call list" />
 
+            {/* Stats Summary */}
+            {stats.length > 0 && (
+                <div className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-2 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">SUMMARY:</span>
+                    {stats.map((stat) => (
+                        <div key={stat._id} className="flex items-center gap-1.5">
+                            <span className="text-xs font-medium text-gray-700 dark:text-gray-300 capitalize">{stat._id || 'Pending'}:</span>
+                            <span className="text-xs font-semibold text-brand-600 dark:text-brand-400">{stat.count}</span>
+                        </div>
+                    ))}
+                </div>
+            )}
+
             {selectedIds.length > 0 && (
                 <div className="mb-6 p-4 bg-brand-50/50 dark:bg-brand-500/5 border border-brand-100 dark:border-brand-500/20 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4">
                     <div className="flex items-center gap-3">
@@ -501,28 +527,16 @@ export default function CallList() {
                             />
                         </div>
                         <div className="flex gap-3">
-                            <div className="w-44">
-                                <Label className="text-xs">Start Date</Label>
-                                <Input
-                                    type="date"
-                                    value={startDate}
-                                    onChange={(e) => {
-                                        setStartDate(e.target.value);
+                            <div className="w-full sm:w-64">
+                                <Label className="text-xs">Date Range</Label>
+                                <RangeDatePicker
+                                    id="dateFilter"
+                                    value={dateRange}
+                                    onChange={(dates) => {
+                                        setDateRange(dates);
                                         setPage(1);
                                     }}
-                                    className="h-10"
-                                />
-                            </div>
-                            <div className="w-44">
-                                <Label className="text-xs">End Date</Label>
-                                <Input
-                                    type="date"
-                                    value={endDate}
-                                    onChange={(e) => {
-                                        setEndDate(e.target.value);
-                                        setPage(1);
-                                    }}
-                                    className="h-10"
+                                    placeholder="Select date range"
                                 />
                             </div>
                         </div>
@@ -570,8 +584,7 @@ export default function CallList() {
                             variant="outline"
                             size="sm"
                             onClick={() => {
-                                setStartDate('');
-                                setEndDate('');
+                                setDateRange(getInitialMonthRange());
                                 setCreatorFilter('');
                                 setAssigneeFilter('');
                                 setSearch('');
@@ -584,253 +597,255 @@ export default function CallList() {
                     </div>
                 </div>
 
-                {loading ? (
-                    <LoadingSpinner />
-                ) : filteredData.length > 0 ? (
-                    <div className="space-y-4">
-                        {/* Mobile view Cards */}
-                        <div className="grid grid-cols-1 gap-4 md:hidden">
-                            {filteredData.map((entry, index) => (
-                                <div key={entry._id} className="bg-white dark:bg-white/[0.03] border border-gray-100 dark:border-gray-800 rounded-xl p-4 shadow-sm">
-                                    <div className="flex justify-between items-start mb-3">
-                                        <div className="flex items-center gap-2">
-                                            {(isOwner(user) || isManager(user)) && (
-                                                <input
-                                                    type="checkbox"
-                                                    className="size-5 rounded border-gray-300 text-brand-500 focus:ring-brand-500 cursor-pointer"
-                                                    checked={selectedIds.includes(entry._id)}
-                                                    onChange={(e) => toggleSelect(entry._id, index, e)}
-                                                />
-                                            )}
-                                            <span className="text-xs font-bold text-gray-400">#{index + 1}</span>
-                                            <h3 className="font-semibold text-gray-800 dark:text-white">{entry.name || 'Unnamed'}</h3>
-                                        </div>
-                                        {renderStatus(entry)}
-                                    </div>
-
-                                    <div className="space-y-2 mb-4">
-                                        {entry.phoneNumber && (
-                                            <div className="flex items-center gap-2 text-sm">
-                                                <span className="text-gray-500 dark:text-gray-400">Phone:</span>
-                                                <a
-                                                    href={`tel:${entry.phoneNumber}`}
-                                                    className="text-brand-500 hover:underline font-medium"
-                                                >
-                                                    {entry.phoneNumber}
-                                                </a>
-                                            </div>
-                                        )}
-                                        {entry.socialMediaId && (
-                                            <div className="flex items-center gap-2 text-sm">
-                                                <span className="text-gray-500 dark:text-gray-400">Social:</span>
-                                                <span className="text-gray-700 dark:text-gray-300">{entry.socialMediaId}</span>
-                                            </div>
-                                        )}
-                                        <div className="flex items-center gap-2 text-sm">
-                                            <span className="text-gray-500 dark:text-gray-400">Assigned:</span>
-                                            <span className="text-gray-700 dark:text-gray-300">{entry.assignedTo?.fullName || 'Unassigned'}</span>
-                                        </div>
-                                        {entry.source && (
-                                            <div className="flex items-center gap-2 text-sm">
-                                                <span className="text-gray-500 dark:text-gray-400">Source:</span>
-                                                <span className="text-gray-700 dark:text-gray-300">{entry.source}</span>
-                                            </div>
-                                        )}
-                                        {entry.purpose && (
-                                            <div className="flex items-center gap-2 text-sm">
-                                                <span className="text-gray-500 dark:text-gray-400">Purpose:</span>
-                                                <span className="text-gray-700 dark:text-gray-300">{entry.purpose}</span>
-                                            </div>
-                                        )}
-                                        {entry.remarks && (
-                                            <div className="mt-2 p-2 bg-gray-50 dark:bg-white/[0.02] rounded text-xs text-gray-600 dark:text-gray-400 italic">
-                                                "{entry.remarks}"
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="flex justify-between items-center pt-3 border-t border-gray-50 dark:border-gray-800">
-                                        <span className="text-[10px] text-gray-400">{formatDate(entry.createdAt)}</span>
-                                        {renderActions(entry)}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* Desktop view Table */}
-                        <div className="hidden md:block overflow-x-auto">
-                            <Table className="min-w-[1100px]">
-                                <TableHeader className="border-gray-200 dark:border-gray-700 border-y bg-gray-50 dark:bg-gray-800/50">
-                                    <TableRow>
-                                        {(isOwner(user) || isManager(user)) && (
-                                            <TableCell isHeader className="py-5 px-4 font-bold text-gray-700 text-start text-sm dark:text-gray-300">
-                                                <input
-                                                    type="checkbox"
-                                                    className="size-5 rounded border-gray-300 text-brand-500 focus:ring-brand-500 cursor-pointer"
-                                                    checked={selectedIds.length === filteredData.length && filteredData.length > 0}
-                                                    onChange={toggleSelectAll}
-                                                />
-                                            </TableCell>
-                                        )}
-                                        <TableCell isHeader className="py-5 px-4 font-bold text-gray-700 text-start text-sm dark:text-gray-300 w-16">#</TableCell>
-                                        <TableCell isHeader className="py-5 px-4 font-bold text-gray-700 text-start text-sm dark:text-gray-300 min-w-[220px]">Contact Details</TableCell>
-                                        <TableCell isHeader className="py-5 px-4 font-bold text-gray-700 text-start text-sm dark:text-gray-300 min-w-[120px]">Assigned To</TableCell>
-                                        <TableCell isHeader className="py-5 px-4 font-bold text-gray-700 text-start text-sm dark:text-gray-300 min-w-[140px]">Source / Purpose</TableCell>
-                                        <TableCell isHeader className="py-5 px-4 font-bold text-gray-700 text-start text-sm dark:text-gray-300 min-w-[200px]">Remarks</TableCell>
-                                        <TableCell isHeader className="py-5 px-4 font-bold text-gray-700 text-start text-sm dark:text-gray-300 min-w-[140px]">Status</TableCell>
-                                        <TableCell isHeader className="py-5 px-4 font-bold text-gray-700 text-start text-sm dark:text-gray-300 min-w-[100px]">Actions</TableCell>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
-                                    {filteredData.map((entry, index) => (
-                                        <TableRow key={entry._id} className="transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/30">
-                                            {(isOwner(user) || isManager(user)) && (
-                                                <TableCell className="py-5 px-4">
+                {
+                    loading ? (
+                        <LoadingSpinner />
+                    ) : filteredData.length > 0 ? (
+                        <div className="space-y-4">
+                            {/* Mobile view Cards */}
+                            <div className="grid grid-cols-1 gap-4 md:hidden">
+                                {filteredData.map((entry, index) => (
+                                    <div key={entry._id} className="bg-white dark:bg-white/[0.03] border border-gray-100 dark:border-gray-800 rounded-xl p-4 shadow-sm">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div className="flex items-center gap-2">
+                                                {(isOwner(user) || isManager(user)) && (
                                                     <input
                                                         type="checkbox"
                                                         className="size-5 rounded border-gray-300 text-brand-500 focus:ring-brand-500 cursor-pointer"
                                                         checked={selectedIds.includes(entry._id)}
                                                         onChange={(e) => toggleSelect(entry._id, index, e)}
                                                     />
+                                                )}
+                                                <span className="text-xs font-bold text-gray-400">#{index + 1}</span>
+                                                <h3 className="font-semibold text-gray-800 dark:text-white">{entry.name || 'Unnamed'}</h3>
+                                            </div>
+                                            {renderStatus(entry)}
+                                        </div>
+
+                                        <div className="space-y-2 mb-4">
+                                            {entry.phoneNumber && (
+                                                <div className="flex items-center gap-2 text-sm">
+                                                    <span className="text-gray-500 dark:text-gray-400">Phone:</span>
+                                                    <a
+                                                        href={`tel:${entry.phoneNumber}`}
+                                                        className="text-brand-500 hover:underline font-medium"
+                                                    >
+                                                        {entry.phoneNumber}
+                                                    </a>
+                                                </div>
+                                            )}
+                                            {entry.socialMediaId && (
+                                                <div className="flex items-center gap-2 text-sm">
+                                                    <span className="text-gray-500 dark:text-gray-400">Social:</span>
+                                                    <span className="text-gray-700 dark:text-gray-300">{entry.socialMediaId}</span>
+                                                </div>
+                                            )}
+                                            <div className="flex items-center gap-2 text-sm">
+                                                <span className="text-gray-500 dark:text-gray-400">Assigned:</span>
+                                                <span className="text-gray-700 dark:text-gray-300">{entry.assignedTo?.fullName || 'Unassigned'}</span>
+                                            </div>
+                                            {entry.source && (
+                                                <div className="flex items-center gap-2 text-sm">
+                                                    <span className="text-gray-500 dark:text-gray-400">Source:</span>
+                                                    <span className="text-gray-700 dark:text-gray-300">{entry.source}</span>
+                                                </div>
+                                            )}
+                                            {entry.purpose && (
+                                                <div className="flex items-center gap-2 text-sm">
+                                                    <span className="text-gray-500 dark:text-gray-400">Purpose:</span>
+                                                    <span className="text-gray-700 dark:text-gray-300">{entry.purpose}</span>
+                                                </div>
+                                            )}
+                                            {entry.remarks && (
+                                                <div className="mt-2 p-2 bg-gray-50 dark:bg-white/[0.02] rounded text-xs text-gray-600 dark:text-gray-400 italic">
+                                                    "{entry.remarks}"
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="flex justify-between items-center pt-3 border-t border-gray-50 dark:border-gray-800">
+                                            <span className="text-[10px] text-gray-400">{formatDate(entry.createdAt)}</span>
+                                            {renderActions(entry)}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Desktop view Table */}
+                            <div className="hidden md:block overflow-x-auto">
+                                <Table className="min-w-[1100px]">
+                                    <TableHeader className="border-gray-200 dark:border-gray-700 border-y bg-gray-50 dark:bg-gray-800/50">
+                                        <TableRow>
+                                            {(isOwner(user) || isManager(user)) && (
+                                                <TableCell isHeader className="py-5 px-4 font-bold text-gray-700 text-start text-sm dark:text-gray-300">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="size-5 rounded border-gray-300 text-brand-500 focus:ring-brand-500 cursor-pointer"
+                                                        checked={selectedIds.length === filteredData.length && filteredData.length > 0}
+                                                        onChange={toggleSelectAll}
+                                                    />
                                                 </TableCell>
                                             )}
-                                            <TableCell className="py-5 px-4 text-gray-500 text-sm font-semibold">{(page - 1) * itemsPerPage + index + 1}</TableCell>
-                                            <TableCell className="py-5 px-4">
-                                                <div className="flex flex-col gap-0.5">
-                                                    <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{formatDate(entry.createdAt)}</div>
-                                                    <div className="text-gray-900 text-base font-bold dark:text-white">{entry.name || 'Unnamed'}</div>
-                                                    {entry.phoneNumber && (
-                                                        <a href={`tel:${entry.phoneNumber}`} className="text-brand-600 hover:text-brand-700 hover:underline font-semibold text-sm flex items-center gap-1.5">
-                                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
-                                                            {entry.phoneNumber}
-                                                        </a>
-                                                    )}
-                                                    {entry.socialMediaId && (
-                                                        <div className="text-gray-600 text-xs dark:text-gray-400 flex items-center gap-1.5">
-                                                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" /></svg>
-                                                            {entry.socialMediaId}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="py-5 px-4 text-gray-700 text-sm dark:text-gray-300">{entry.assignedTo?.fullName || 'Unassigned'}</TableCell>
-                                            <TableCell className="py-5 px-4">
-                                                <div className="flex flex-col gap-0.5">
-                                                    {entry.source && (
-                                                        <div className="flex items-center gap-1.5">
-                                                            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">Source:</span>
-                                                            <span className="text-sm text-gray-700 dark:text-gray-300">{entry.source}</span>
-                                                        </div>
-                                                    )}
-                                                    {entry.purpose && (
-                                                        <div className="flex items-center gap-1.5">
-                                                            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">Purpose:</span>
-                                                            <span className="text-sm text-gray-700 dark:text-gray-300">{entry.purpose}</span>
-                                                        </div>
-                                                    )}
-                                                    {!entry.source && !entry.purpose && <span className="text-gray-400">-</span>}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="py-5 px-4 text-gray-700 text-sm dark:text-gray-300">
-                                                <div className="max-w-[250px]" title={entry.remarks}>
-                                                    {entry.remarks || '-'}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="py-5 px-4">
-                                                {renderStatus(entry)}
-                                            </TableCell>
-                                            <TableCell className="py-5 px-4">
-                                                {renderActions(entry)}
-                                            </TableCell>
+                                            <TableCell isHeader className="py-5 px-4 font-bold text-gray-700 text-start text-sm dark:text-gray-300 w-16">#</TableCell>
+                                            <TableCell isHeader className="py-5 px-4 font-bold text-gray-700 text-start text-sm dark:text-gray-300 min-w-[220px]">Contact Details</TableCell>
+                                            <TableCell isHeader className="py-5 px-4 font-bold text-gray-700 text-start text-sm dark:text-gray-300 min-w-[120px]">Assigned To</TableCell>
+                                            <TableCell isHeader className="py-5 px-4 font-bold text-gray-700 text-start text-sm dark:text-gray-300 min-w-[140px]">Source / Purpose</TableCell>
+                                            <TableCell isHeader className="py-5 px-4 font-bold text-gray-700 text-start text-sm dark:text-gray-300 min-w-[200px]">Remarks</TableCell>
+                                            <TableCell isHeader className="py-5 px-4 font-bold text-gray-700 text-start text-sm dark:text-gray-300 min-w-[140px]">Status</TableCell>
+                                            <TableCell isHeader className="py-5 px-4 font-bold text-gray-700 text-start text-sm dark:text-gray-300 min-w-[100px]">Actions</TableCell>
                                         </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </div>
+                                    </TableHeader>
+                                    <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
+                                        {filteredData.map((entry, index) => (
+                                            <TableRow key={entry._id} className="transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/30">
+                                                {(isOwner(user) || isManager(user)) && (
+                                                    <TableCell className="py-5 px-4">
+                                                        <input
+                                                            type="checkbox"
+                                                            className="size-5 rounded border-gray-300 text-brand-500 focus:ring-brand-500 cursor-pointer"
+                                                            checked={selectedIds.includes(entry._id)}
+                                                            onChange={(e) => toggleSelect(entry._id, index, e)}
+                                                        />
+                                                    </TableCell>
+                                                )}
+                                                <TableCell className="py-5 px-4 text-gray-500 text-sm font-semibold">{(page - 1) * itemsPerPage + index + 1}</TableCell>
+                                                <TableCell className="py-5 px-4">
+                                                    <div className="flex flex-col gap-0.5">
+                                                        <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{formatDate(entry.createdAt)}</div>
+                                                        <div className="text-gray-900 text-base font-bold dark:text-white">{entry.name || 'Unnamed'}</div>
+                                                        {entry.phoneNumber && (
+                                                            <a href={`tel:${entry.phoneNumber}`} className="text-brand-600 hover:text-brand-700 hover:underline font-semibold text-sm flex items-center gap-1.5">
+                                                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                                                                {entry.phoneNumber}
+                                                            </a>
+                                                        )}
+                                                        {entry.socialMediaId && (
+                                                            <div className="text-gray-600 text-xs dark:text-gray-400 flex items-center gap-1.5">
+                                                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" /></svg>
+                                                                {entry.socialMediaId}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="py-5 px-4 text-gray-700 text-sm dark:text-gray-300">{entry.assignedTo?.fullName || 'Unassigned'}</TableCell>
+                                                <TableCell className="py-5 px-4">
+                                                    <div className="flex flex-col gap-0.5">
+                                                        {entry.source && (
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">Source:</span>
+                                                                <span className="text-sm text-gray-700 dark:text-gray-300">{entry.source}</span>
+                                                            </div>
+                                                        )}
+                                                        {entry.purpose && (
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">Purpose:</span>
+                                                                <span className="text-sm text-gray-700 dark:text-gray-300">{entry.purpose}</span>
+                                                            </div>
+                                                        )}
+                                                        {!entry.source && !entry.purpose && <span className="text-gray-400">-</span>}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="py-5 px-4 text-gray-700 text-sm dark:text-gray-300">
+                                                    <div className="max-w-[250px]" title={entry.remarks}>
+                                                        {entry.remarks || '-'}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="py-5 px-4">
+                                                    {renderStatus(entry)}
+                                                </TableCell>
+                                                <TableCell className="py-5 px-4">
+                                                    {renderActions(entry)}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
 
-                        {/* Pagination */}
-                        {pagination.totalPages > 1 && (
-                            <div className="mt-6 flex flex-col md:flex-row items-center justify-between gap-4 border-t border-gray-100 dark:border-gray-800 pt-6">
-                                <p className="text-sm text-gray-500">
-                                    Showing <span className="font-medium">{(page - 1) * itemsPerPage + 1}</span> to <span className="font-medium">{Math.min(page * itemsPerPage, pagination.totalItems)}</span> of <span className="font-medium">{pagination.totalItems}</span> results
-                                </p>
-                                <div className="flex items-center gap-4">
-                                    <select
-                                        value={itemsPerPage}
-                                        onChange={(e) => {
-                                            setItemsPerPage(Number(e.target.value));
-                                            setPage(1);
-                                        }}
-                                        className="h-8 rounded-lg border border-gray-300 bg-white px-2 text-sm text-gray-700 focus:border-brand-500 focus:ring focus:ring-brand-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 outline-none transition-all"
-                                    >
-                                        <option value={50}>50 per page</option>
-                                        <option value={100}>100 per page</option>
-                                        <option value={500}>500 per page</option>
-                                    </select>
-                                    <div className="flex items-center gap-2">
-                                        <Button
-                                            size="sm"
-                                            variant="outline"
-                                            disabled={page === 1}
-                                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                            {/* Pagination */}
+                            {pagination.totalPages > 1 && (
+                                <div className="mt-6 flex flex-col md:flex-row items-center justify-between gap-4 border-t border-gray-100 dark:border-gray-800 pt-6">
+                                    <p className="text-sm text-gray-500">
+                                        Showing <span className="font-medium">{(page - 1) * itemsPerPage + 1}</span> to <span className="font-medium">{Math.min(page * itemsPerPage, pagination.totalItems)}</span> of <span className="font-medium">{pagination.totalItems}</span> results
+                                    </p>
+                                    <div className="flex items-center gap-4">
+                                        <select
+                                            value={itemsPerPage}
+                                            onChange={(e) => {
+                                                setItemsPerPage(Number(e.target.value));
+                                                setPage(1);
+                                            }}
+                                            className="h-8 rounded-lg border border-gray-300 bg-white px-2 text-sm text-gray-700 focus:border-brand-500 focus:ring focus:ring-brand-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 outline-none transition-all"
                                         >
-                                            Previous
-                                        </Button>
-                                        <div className="flex items-center gap-1">
-                                            {[...Array(pagination.totalPages)].map((_, i) => {
-                                                const pageNum = i + 1;
-                                                // Show only first, last, and pages around current page
-                                                if (
-                                                    pageNum === 1 ||
-                                                    pageNum === pagination.totalPages ||
-                                                    (pageNum >= page - 1 && pageNum <= page + 1)
-                                                ) {
-                                                    return (
-                                                        <button
-                                                            key={pageNum}
-                                                            onClick={() => setPage(pageNum)}
-                                                            className={`size-8 rounded-lg text-sm font-medium transition-colors ${page === pageNum
-                                                                ? 'bg-brand-500 text-white'
-                                                                : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5'
-                                                                }`}
-                                                        >
-                                                            {pageNum}
-                                                        </button>
-                                                    );
-                                                } else if (
-                                                    pageNum === page - 2 ||
-                                                    pageNum === page + 2
-                                                ) {
-                                                    return <span key={pageNum} className="px-1 text-gray-400">...</span>;
-                                                }
-                                                return null;
-                                            })}
+                                            <option value={50}>50 per page</option>
+                                            <option value={100}>100 per page</option>
+                                            <option value={500}>500 per page</option>
+                                        </select>
+                                        <div className="flex items-center gap-2">
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                disabled={page === 1}
+                                                onClick={() => setPage(p => Math.max(1, p - 1))}
+                                            >
+                                                Previous
+                                            </Button>
+                                            <div className="flex items-center gap-1">
+                                                {[...Array(pagination.totalPages)].map((_, i) => {
+                                                    const pageNum = i + 1;
+                                                    // Show only first, last, and pages around current page
+                                                    if (
+                                                        pageNum === 1 ||
+                                                        pageNum === pagination.totalPages ||
+                                                        (pageNum >= page - 1 && pageNum <= page + 1)
+                                                    ) {
+                                                        return (
+                                                            <button
+                                                                key={pageNum}
+                                                                onClick={() => setPage(pageNum)}
+                                                                className={`size-8 rounded-lg text-sm font-medium transition-colors ${page === pageNum
+                                                                    ? 'bg-brand-500 text-white'
+                                                                    : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5'
+                                                                    }`}
+                                                            >
+                                                                {pageNum}
+                                                            </button>
+                                                        );
+                                                    } else if (
+                                                        pageNum === page - 2 ||
+                                                        pageNum === page + 2
+                                                    ) {
+                                                        return <span key={pageNum} className="px-1 text-gray-400">...</span>;
+                                                    }
+                                                    return null;
+                                                })}
+                                            </div>
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                disabled={page === pagination.totalPages}
+                                                onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
+                                            >
+                                                Next
+                                            </Button>
                                         </div>
-                                        <Button
-                                            size="sm"
-                                            variant="outline"
-                                            disabled={page === pagination.totalPages}
-                                            onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
-                                        >
-                                            Next
-                                        </Button>
                                     </div>
                                 </div>
-                            </div>
-                        )}
-                    </div>
-                ) : (
-                    <div className="text-center py-10">
-                        <p className="text-gray-500 dark:text-gray-400 mb-4">No call list entries found.</p>
-                        <Button variant="outline" onClick={openAddModal}>
-                            Add your first entry
-                        </Button>
-                    </div>
-                )}
-            </ComponentCard>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="text-center py-10">
+                            <p className="text-gray-500 dark:text-gray-400 mb-4">No call list entries found.</p>
+                            <Button variant="outline" onClick={openAddModal}>
+                                Add your first entry
+                            </Button>
+                        </div>
+                    )
+                }
+            </ComponentCard >
 
             {/* Add Modal */}
-            <Modal isOpen={isAddOpen} onClose={closeAddModal} className="max-w-2xl p-6">
+            < Modal isOpen={isAddOpen} onClose={closeAddModal} className="max-w-2xl p-6" >
                 <h2 className="text-xl font-semibold text-gray-800 dark:text-white/90 mb-4">Add Call List Entry</h2>
                 <div className="space-y-4">
                     <div>
@@ -915,10 +930,10 @@ export default function CallList() {
                         <Button variant="primary" onClick={handleAdd} loading={isSubmitting}>Add Entry</Button>
                     </div>
                 </div>
-            </Modal>
+            </Modal >
 
             {/* Edit Modal */}
-            <Modal isOpen={isEditOpen} onClose={closeEditModal} className="max-w-2xl p-6">
+            < Modal isOpen={isEditOpen} onClose={closeEditModal} className="max-w-2xl p-6" >
                 <h2 className="text-xl font-semibold text-gray-800 dark:text-white/90 mb-4">Edit Call List Entry</h2>
                 <div className="space-y-4">
                     <div>
@@ -1003,10 +1018,10 @@ export default function CallList() {
                         <Button variant="primary" onClick={handleUpdate} loading={isSubmitting}>Update Entry</Button>
                     </div>
                 </div>
-            </Modal>
+            </Modal >
 
             {/* Delete Modal */}
-            <Modal isOpen={isDeleteOpen} onClose={closeDeleteModal} className="max-w-md p-6">
+            < Modal isOpen={isDeleteOpen} onClose={closeDeleteModal} className="max-w-md p-6" >
                 <h4 className="text-lg font-semibold text-gray-800 dark:text-white/90 mb-2">Confirm Delete</h4>
                 <p className="text-gray-600 dark:text-gray-400 mb-4">
                     Are you sure you want to delete this call list entry?
@@ -1015,10 +1030,10 @@ export default function CallList() {
                     <Button variant="outline" onClick={closeDeleteModal}>Cancel</Button>
                     <Button variant="danger" onClick={confirmDelete}>Delete</Button>
                 </div>
-            </Modal>
+            </Modal >
 
             {/* Import Modal */}
-            <Modal
+            < Modal
                 isOpen={isImportOpen}
                 onClose={closeImportModal}
                 className="max-w-xl p-0 overflow-hidden"
@@ -1194,9 +1209,9 @@ export default function CallList() {
                         Confirm Import
                     </Button>
                 </div>
-            </Modal>
+            </Modal >
 
             <ToastContainer position="top-center" autoClose={3000} className="!z-[999999]" style={{ zIndex: 999999 }} />
-        </div>
+        </div >
     );
 }

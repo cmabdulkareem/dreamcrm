@@ -101,7 +101,11 @@ export const getAllCallLists = async (req, res) => {
                 totalPages: Math.ceil(totalItems / limitInt),
                 currentPage: parseInt(page),
                 limit: limitInt
-            }
+            },
+            stats: await CallList.aggregate([
+                { $match: finalQuery },
+                { $group: { _id: "$status", count: { $sum: 1 } } }
+            ])
         });
     } catch (error) {
         console.error("Error fetching call lists:", error);
