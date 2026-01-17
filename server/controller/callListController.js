@@ -1,5 +1,30 @@
 import CallList from '../model/callListModel.js';
+import mongoose from 'mongoose';
 import { isOwner, isManager } from '../utils/roleHelpers.js';
+
+// Helper to cast fields to ObjectId for aggregation
+const castQueryForAggregation = (query) => {
+    if (query === null || typeof query !== 'object') return query;
+    if (query instanceof mongoose.Types.ObjectId) return query;
+    if (query instanceof RegExp || query instanceof Date) return query;
+
+    if (Array.isArray(query)) {
+        return query.map(item => castQueryForAggregation(item));
+    }
+
+    const casted = {};
+    for (const key in query) {
+        const value = query[key];
+        if (typeof value === 'string' && /^[0-9a-fA-F]{24}$/.test(value)) {
+            casted[key] = new mongoose.Types.ObjectId(value);
+        } else if (typeof value === 'object' && value !== null) {
+            casted[key] = castQueryForAggregation(value);
+        } else {
+            casted[key] = value;
+        }
+    }
+    return casted;
+};
 
 // Get all call lists with pagination and advanced filtering
 export const getAllCallLists = async (req, res) => {
@@ -12,6 +37,7 @@ export const getAllCallLists = async (req, res) => {
             endDate,
             creator,
             assignedTo: filterAssignedTo,
+            status,
             sortBy = 'createdAt',
             sortOrder = 'desc'
         } = req.query;
@@ -20,25 +46,21 @@ export const getAllCallLists = async (req, res) => {
         const limitInt = parseInt(limit);
 
         const brandFilter = req.brandFilter || {};
-        let finalQuery = { ...brandFilter };
 
-        // Role-based base query restriction WITHIN the brand
+        // 1. Role-based base query restriction (Security)
         const { hasRole } = await import("../utils/roleHelpers.js");
         const isACRole = hasRole(req.user, "Academic Coordinator");
 
+        let baseQuery = { ...brandFilter };
         if ((!isOwner(req.user) && !isManager(req.user)) || isACRole) {
-            finalQuery = {
-                ...brandFilter,
-                $or: [
-                    { assignedTo: req.user.id },
-                    { createdBy: req.user.id }
-                ]
-            };
+            baseQuery.$or = [
+                { assignedTo: req.user.id },
+                { createdBy: req.user.id }
+            ];
         }
 
-        // Apply additional filters
-        const filters = [];
-
+        // 2. Build statsQuery: Only based on selected date range (plus brand/security)
+        const statsQuery = { ...baseQuery };
         if (startDate || endDate) {
             const dateQuery = {};
             if (startDate) dateQuery.$gte = new Date(startDate);
@@ -47,24 +69,28 @@ export const getAllCallLists = async (req, res) => {
                 end.setHours(23, 59, 59, 999);
                 dateQuery.$lte = end;
             }
-            filters.push({ createdAt: dateQuery });
+            statsQuery.createdAt = dateQuery;
         }
 
+        // 3. Build finalQuery for table: includes statsQuery + fine-grained filters
+        let finalQuery = { ...statsQuery };
+        const otherFilters = [];
+
         if (creator) {
-            filters.push({ createdBy: creator });
+            otherFilters.push({ createdBy: creator });
         }
 
         if (filterAssignedTo) {
             if (filterAssignedTo === 'unassigned') {
-                filters.push({ assignedTo: null });
+                otherFilters.push({ assignedTo: null });
             } else {
-                filters.push({ assignedTo: filterAssignedTo });
+                otherFilters.push({ assignedTo: filterAssignedTo });
             }
         }
 
         if (search) {
             const searchRegex = new RegExp(search, 'i');
-            filters.push({
+            otherFilters.push({
                 $or: [
                     { name: searchRegex },
                     { phoneNumber: searchRegex },
@@ -76,12 +102,15 @@ export const getAllCallLists = async (req, res) => {
             });
         }
 
-        if (filters.length > 0) {
-            // Combine role-based query with filters
+        if (status) {
+            otherFilters.push({ status });
+        }
+
+        if (otherFilters.length > 0) {
             finalQuery = {
                 $and: [
                     finalQuery,
-                    ...filters
+                    ...otherFilters
                 ]
             };
         }
@@ -103,7 +132,7 @@ export const getAllCallLists = async (req, res) => {
                 limit: limitInt
             },
             stats: await CallList.aggregate([
-                { $match: finalQuery },
+                { $match: castQueryForAggregation(statsQuery) },
                 { $group: { _id: "$status", count: { $sum: 1 } } }
             ])
         });
