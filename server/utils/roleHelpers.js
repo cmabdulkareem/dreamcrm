@@ -104,12 +104,14 @@ export function isManager(user) {
 export function isInstructor(user) {
   if (!user) return false;
 
+  const userRoles = Array.isArray(user.roles) ? user.roles : (typeof user.roles === 'string' ? [user.roles] : []);
   return userRoles.includes('Instructor');
 }
 
 
-   * Check if user has counsellor privileges
-  */
+/**
+ * Check if user has counsellor privileges
+ */
 export function isCounsellor(user) {
   if (!user) return false;
 
