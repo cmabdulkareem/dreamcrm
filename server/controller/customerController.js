@@ -1,7 +1,7 @@
 import customerModel from "../model/customerModel.js";
 import userModel from "../model/userModel.js";
 import { emitNotification as emitSocketNotification } from '../realtime/socket.js';
-import { isAdmin } from "../utils/roleHelpers.js";
+import { isAdmin, isCounsellor } from "../utils/roleHelpers.js";
 import { isManager } from "../middleware/roleMiddleware.js";
 
 // Create new customer/lead
@@ -150,8 +150,10 @@ export const getAllCustomers = async (req, res) => {
 
     let query = { ...req.brandFilter };
 
-    // If user is not admin or manager, only show leads assigned to them
-    if (!hasAdminAccess && !hasManagerAccess) {
+    const hasCounsellorAccess = isCounsellor(req.user);
+
+    // If user is not admin, manager, or counsellor, only show leads assigned to them
+    if (!hasAdminAccess && !hasManagerAccess && !hasCounsellorAccess) {
       query.assignedTo = req.user.id; // Only leads assigned to the user
     }
 
@@ -182,8 +184,10 @@ export const getConvertedCustomers = async (req, res) => {
       query.isAdmissionTaken = { $ne: true };
     }
 
-    // If user is not admin or manager, only show leads assigned to them
-    if (!hasAdminAccess && !hasManagerAccess) {
+    const hasCounsellorAccess = isCounsellor(req.user);
+
+    // If user is not admin, manager, or counsellor, only show leads assigned to them
+    if (!hasAdminAccess && !hasManagerAccess && !hasCounsellorAccess) {
       query.assignedTo = req.user.id; // Only leads assigned to the user
     }
 
@@ -410,10 +414,10 @@ export const assignLead = async (req, res) => {
     const { assignedTo, assignmentRemark } = req.body;
     const assignedBy = req.user.id; // Get the assigning user from token
 
-    // Check if user has permission to assign leads (Admin or Manager)
-    const isAuthorized = isAdmin(req.user) || isManager(req.user);
+    // Check if user has permission to assign leads (Admin, Manager, or Counsellor)
+    const isAuthorized = isAdmin(req.user) || isManager(req.user) || isCounsellor(req.user);
     if (!isAuthorized) {
-      return res.status(403).json({ message: "Access denied. Only Admins and Managers can assign leads." });
+      return res.status(403).json({ message: "Access denied. Only Admins, Managers, and Counsellors can assign leads." });
     }
 
     // Validate assignedTo user exists
