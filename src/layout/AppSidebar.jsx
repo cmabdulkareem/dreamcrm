@@ -408,7 +408,7 @@ const AppSidebar = () => {
 
                     // RESTRICTION: Counsellor should only see "Batch Management" and "Birthday Calendar"
                     if (isCounsellor(user) && !isManager(user)) {
-                      const allowedForCounsellor = ["Batch Management", "Birthday Calendar"];
+                      const allowedForCounsellor = ["Batch Management", "Birthday Calendar", "New Lead", "Manage Leads", "Cold Call list"];
                       if (!allowedForCounsellor.includes(subItem.name)) {
                         return null;
                       }
