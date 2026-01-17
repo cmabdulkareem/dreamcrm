@@ -5,7 +5,8 @@ import Attendance from '../model/attendanceModel.js';
 import Student from '../model/studentModel.js';
 import User from '../model/userModel.js';
 import courseModel from '../model/courseModel.js';
-import { isAdmin, isOwner, hasRole, isManager, isInstructor } from '../utils/roleHelpers.js';
+import { isAdmin, isOwner, hasRole, isManager, isInstructor, isCounsellor } from '../utils/roleHelpers.js';
+
 import { emitNotification } from '../realtime/socket.js';
 
 // Get all batches for current user's brand
@@ -235,7 +236,7 @@ export const getBatchStudents = async (req, res) => {
         }
 
         // Authorization check
-        if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
+        if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user) && !isCounsellor(req.user)) {
             const userId = (req.user.id || req.user._id).toString();
             const isAssignedInstructor = batch.instructor && batch.instructor.toString() === userId;
             if (!isAssignedInstructor) {
@@ -485,7 +486,7 @@ export const getAttendance = async (req, res) => {
         }
 
         // Authorization check
-        if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
+        if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user) && !isCounsellor(req.user)) {
             const userId = (req.user.id || req.user._id).toString();
             const isAssignedInstructor = batch.instructor && batch.instructor.toString() === userId;
             if (!isAssignedInstructor) {
