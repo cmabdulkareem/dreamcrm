@@ -40,7 +40,7 @@ router.patch('/toggle-status/:id', toggleEventStatus);
 // Banner upload route
 router.post('/upload-banner/:id', verifyToken, uploadEventBannerMiddleware, uploadEventBanner);
 
-// Attendance Verification Route
-router.patch('/attendance/verify/:registrationId', verifyToken, verifyAttendance);
+// Attendance Verification Route (Public)
+router.patch('/attendance/verify/:registrationId', verifyAttendance);
 
 export default router;

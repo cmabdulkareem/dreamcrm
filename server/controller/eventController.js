@@ -381,10 +381,7 @@ export const uploadEventBanner = async (req, res) => {
 // Verify Attendance
 export const verifyAttendance = async (req, res) => {
   try {
-    // Check if user has admin, manager, or counselor access
-    if (!hasAdminOrManagerOrCounsellorAccess(req.user)) {
-      return res.status(403).json({ message: "Access denied. Admin, Manager, or Counselor privileges required." });
-    }
+    // Public access - no role check required
 
     const { registrationId } = req.params;
 
