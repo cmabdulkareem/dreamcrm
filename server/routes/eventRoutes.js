@@ -11,7 +11,6 @@ import {
   getEventRegistrations,
   uploadEventBanner,
   uploadEventBannerMiddleware,
-  uploadEventBannerMiddleware,
   verifyAttendance
 } from '../controller/eventController.js';
 import verifyToken from '../middleware/verifyToken.js';
