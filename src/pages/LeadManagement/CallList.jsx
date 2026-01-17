@@ -469,7 +469,7 @@ export default function CallList() {
                 title="Cold Call list | DreamCRM"
                 description="Manage customer contact information"
             />
-            <PageBreadcrumb pageTitle="Cold Call list" />
+            <PageBreadcrumb pageTitle="Manage Your Cold Call Lists Here" />
 
             <div className="rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6">
                 <div className="mb-6">

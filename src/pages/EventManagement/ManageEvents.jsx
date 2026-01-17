@@ -496,13 +496,7 @@ const ManageEvents = () => {
   return (
     <>
       <PageMeta title="Manage Events - CRM" />
-      <PageBreadcrumb
-        items={[
-          { name: 'Dashboard', path: '/' },
-          { name: 'Events', path: '/events' },
-          { name: 'Manage Events' }
-        ]}
-      />
+      <PageBreadcrumb pageTitle="Manage Your Events Here" />
       <ToastContainer position="top-center" className="!z-[999999]" style={{ zIndex: 999999 }} />
 
       {!isManager(user) && (

@@ -10,6 +10,7 @@ import {
   registerForEvent,
   getEventRegistrations,
   uploadEventBanner,
+  uploadEventBannerMiddleware,
   uploadEventBannerMiddleware
 } from '../controller/eventController.js';
 import verifyToken from '../middleware/verifyToken.js';

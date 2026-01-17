@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
 import sharp from 'sharp';
 import fs from 'fs';
+import archiver from 'archiver';
 import { hasAdminOrManagerOrCounsellorAccess } from '../utils/roleHelpers.js';
 
 // Configure multer for banner uploads
@@ -375,18 +376,4 @@ export const uploadEventBanner = async (req, res) => {
 
     return res.status(500).json({ message: "Internal server error" });
   }
-};
-
-export default {
-  getAllEvents,
-  getEventById,
-  getEventByLink,
-  createEvent,
-  updateEvent,
-  deleteEvent,
-  toggleEventStatus,
-  registerForEvent,
-  getEventRegistrations,
-  uploadEventBanner,
-  uploadEventBannerMiddleware
 };

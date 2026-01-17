@@ -6,6 +6,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import ComponentCard from '../../components/common/ComponentCard';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import PageMeta from '../../components/common/PageMeta';
+import PageBreadcrumb from '../../components/common/PageBreadCrumb';
 import useGoBack from '../../hooks/useGoBack';
 
 import API from "../../config/api";
@@ -125,23 +126,19 @@ const EventRegistrations = () => {
   return (
     <>
       <PageMeta title={`Registrations - ${event?.eventName || 'Event'} - CRM`} />
+      <PageBreadcrumb
+        items={[
+          { name: 'Home', path: '/' },
+          { name: 'Manage Events', path: '/events' },
+          { name: event?.eventName || 'Event Registrations' }
+        ]}
+      />
 
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
-          <div>
-            <button
-              onClick={goBack}
-              className="flex items-center text-brand-500 hover:text-brand-600 mb-2 transition-colors"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
-              </svg>
-              Back to Events
-            </button>
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
-              {event?.eventName} - Registrations
-            </h1>
-          </div>
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
+            {event?.eventName} - Registrations
+          </h1>
           <button
             onClick={exportToCSV}
             className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md flex items-center transition duration-300"

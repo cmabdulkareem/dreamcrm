@@ -3,7 +3,7 @@ import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useNavigate } from 'react-router-dom';
-import ReactCrop from 'react-image-crop';
+import ReactCrop, { centerCrop, makeAspectCrop, convertToPixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import ComponentCard from '../../components/common/ComponentCard';
 import PageMeta from '../../components/common/PageMeta';
@@ -51,20 +51,13 @@ const CreateEvent = () => {
 
   // Banner image state
   const [bannerPreview, setBannerPreview] = useState(null);
-  const [crop, setCrop] = useState({
-    unit: '%',
-    x: 0,
-    y: 0,
-    width: 100,
-    height: 56.25, // 16:9 aspect ratio
-    aspect: 16 / 9
-  });
-
-  const [completedCrop, setCompletedCrop] = useState(null);
+  const [crop, setCrop] = useState();
+  const [completedCrop, setCompletedCrop] = useState();
   const [croppedBannerUrl, setCroppedBannerUrl] = useState(null);
   const [croppedBannerBlob, setCroppedBannerBlob] = useState(null);
 
   const imgRef = useRef(null);
+
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
 
@@ -200,48 +193,54 @@ const CreateEvent = () => {
     }
   };
 
-  const onImageLoad = useCallback((img) => {
-    if (img) {
-      imgRef.current = img;
-    }
-  }, []);
+  const onImageLoad = (e) => {
+    const { naturalWidth: width, naturalHeight: height } = e.currentTarget;
+    const crop = centerCrop(
+      makeAspectCrop(
+        {
+          unit: '%',
+          width: 90,
+        },
+        16 / 9,
+        width,
+        height
+      ),
+      width,
+      height
+    );
+    setCrop(crop);
+    setCompletedCrop(crop);
+  };
 
-  const getCroppedImg = (image, crop, fileName) => {
+  const getCroppedImg = async (image, crop) => {
     const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx || !crop) {
+      throw new Error('No context or crop');
+    }
+
     const scaleX = image.naturalWidth / image.width;
     const scaleY = image.naturalHeight / image.height;
+    const pixelRatio = window.devicePixelRatio;
 
-    let cropX, cropY, cropWidth, cropHeight;
+    canvas.width = Math.floor(crop.width * scaleX * pixelRatio);
+    canvas.height = Math.floor(crop.height * scaleY * pixelRatio);
 
-    if (crop.unit === '%' || crop.unit === undefined) {
-      cropX = (crop.x / 100) * image.width;
-      cropY = (crop.y / 100) * image.height;
-      cropWidth = (crop.width / 100) * image.width;
-      cropHeight = (crop.height / 100) * image.height;
-    } else {
-      cropX = crop.x;
-      cropY = crop.y;
-      cropWidth = crop.width;
-      cropHeight = crop.height;
-    }
+    ctx.scale(pixelRatio, pixelRatio);
+    ctx.imageSmoothingQuality = 'high';
 
-    const targetRatio = 16 / 9;
-    if (cropWidth / cropHeight > targetRatio) {
-      cropWidth = cropHeight * targetRatio;
-    } else {
-      cropHeight = cropWidth / targetRatio;
-    }
-
-    canvas.width = cropWidth;
-    canvas.height = cropHeight;
-    const ctx = canvas.getContext('2d');
+    const cropX = crop.x * scaleX;
+    const cropY = crop.y * scaleY;
+    const cropWidth = crop.width * scaleX;
+    const cropHeight = crop.height * scaleY;
 
     ctx.drawImage(
       image,
-      cropX * scaleX,
-      cropY * scaleY,
-      cropWidth * scaleX,
-      cropHeight * scaleY,
+      cropX,
+      cropY,
+      cropWidth,
+      cropHeight,
       0,
       0,
       cropWidth,
@@ -249,14 +248,17 @@ const CreateEvent = () => {
     );
 
     return new Promise((resolve, reject) => {
-      canvas.toBlob(blob => {
-        if (!blob) {
-          reject(new Error('Canvas is empty'));
-          return;
-        }
-        blob.name = fileName;
-        resolve(blob);
-      }, 'image/jpeg', 0.8);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            reject(new Error('Canvas is empty'));
+            return;
+          }
+          resolve(blob);
+        },
+        'image/jpeg',
+        0.95
+      );
     });
   };
 
@@ -273,43 +275,28 @@ const CreateEvent = () => {
     reader.onload = (e) => {
       setBannerPreview(e.target.result);
       setCroppedBannerUrl(null);
-      setCrop({
-        unit: '%',
-        x: 0,
-        y: 0,
-        width: 100,
-        height: 56.25,
-        aspect: 16 / 9
-      });
-      setCompletedCrop({
-        unit: '%',
-        x: 0,
-        y: 0,
-        width: 100,
-        height: 56.25,
-        aspect: 16 / 9
-      });
+      setCrop(undefined);
+      setCompletedCrop(undefined);
     };
     reader.readAsDataURL(file);
   };
 
   const handleCropComplete = async () => {
-    const cropToUse = completedCrop || crop;
-
-    if (!imgRef.current) return;
+    if (!completedCrop || !imgRef.current) return;
 
     try {
-      const croppedBlob = await getCroppedImg(
-        imgRef.current,
-        cropToUse,
-        'banner.jpg'
+      const pixelCrop = convertToPixelCrop(
+        completedCrop,
+        imgRef.current.naturalWidth,
+        imgRef.current.naturalHeight
       );
 
+      const croppedBlob = await getCroppedImg(imgRef.current, pixelCrop);
       setCroppedBannerBlob(croppedBlob);
       setCroppedBannerUrl(URL.createObjectURL(croppedBlob));
     } catch (e) {
       console.error('Error cropping image:', e);
-      toast.error("Failed to crop image");
+      toast.error("Failed to crop image. Please try again.");
     }
   };
 
@@ -341,13 +328,7 @@ const CreateEvent = () => {
   return (
     <div className="max-w-(--breakpoint-2xl) mx-auto pb-20">
       <PageMeta title="Create Event - CRM" />
-      <PageBreadcrumb
-        items={[
-          { name: 'Dashboard', path: '/' },
-          { name: 'Events', path: '/events' },
-          { name: 'Create Event' }
-        ]}
-      />
+      <PageBreadcrumb pageTitle="Create Your Event Here" />
       <ToastContainer position="top-right" className="!z-[999999]" />
 
       <form onSubmit={handleSubmit} className="mt-6 flex flex-col lg:flex-row gap-8">
@@ -381,111 +362,133 @@ const CreateEvent = () => {
                 </div>
               </div>
 
-              <div>
-                <Label htmlFor="eventDescription">Event Description</Label>
-                <textarea
-                  id="eventDescription"
-                  name="eventDescription"
-                  placeholder="Tell people what this event is about..."
-                  value={formData.eventDescription}
-                  onChange={handleInputChange}
-                  rows="4"
-                  className="w-full px-4 py-3 border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-hidden focus:ring-4 focus:ring-brand-500/10 dark:bg-gray-900 dark:text-white transition-all resize-none shadow-theme-xs"
-                ></textarea>
-              </div>
-
-              <div className="w-full md:w-1/2">
-                <Label htmlFor="maxRegistrations">Maximum Registrations</Label>
-                <div className="relative">
-                  <Input
-                    type="number"
-                    id="maxRegistrations"
-                    name="maxRegistrations"
-                    value={formData.maxRegistrations}
-                    onChange={handleInputChange}
-                    min="0"
-                  />
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">
-                    0 = Unlimited
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                {/* Left side: Description & Capacity */}
+                <div className="lg:col-span-6 space-y-6">
+                  <div>
+                    <Label htmlFor="eventDescription">Event Description</Label>
+                    <textarea
+                      id="eventDescription"
+                      name="eventDescription"
+                      placeholder="Tell people what this event is about..."
+                      value={formData.eventDescription}
+                      onChange={handleInputChange}
+                      rows="5"
+                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-hidden focus:ring-4 focus:ring-brand-500/10 dark:bg-gray-900 dark:text-white transition-all resize-none shadow-theme-xs"
+                    ></textarea>
                   </div>
-                </div>
-              </div>
-            </div>
-          </ComponentCard>
 
-          {/* Section 2: Event Banner */}
-          <ComponentCard title="2. Event Media" desc="Upload a banner image to make your event stand out.">
-            <div className="space-y-4">
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleBannerUpload}
-                accept="image/*"
-                className="hidden"
-              />
-
-              {bannerPreview ? (
-                <div className="space-y-4">
-                  {!croppedBannerUrl ? (
-                    <div className="relative group">
-                      <div className="w-full overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-950">
-                        <ReactCrop
-                          crop={crop}
-                          onChange={(c) => setCrop(c)}
-                          onComplete={(c) => setCompletedCrop(c)}
-                          aspect={16 / 9}
-                          minWidth={100}
-                          ruleOfThirds
-                        >
-                          <img
-                            ref={onImageLoad}
-                            src={bannerPreview}
-                            alt="To be cropped"
-                            className="w-full h-auto max-h-[500px] object-contain"
-                          />
-                        </ReactCrop>
-                      </div>
-                      <div className="flex justify-end gap-3 mt-4">
-                        <Button variant="outline" size="sm" onClick={removeBanner} startIcon={<TrashBinIcon className="size-4" />}>
-                          Cancel
-                        </Button>
-                        <Button variant="primary" size="sm" onClick={handleCropComplete} startIcon={<CheckCircleIcon className="size-4" />}>
-                          Apply Crop
-                        </Button>
+                  <div className="w-full max-w-xs">
+                    <Label htmlFor="maxRegistrations">Maximum Registrations</Label>
+                    <div className="relative">
+                      <Input
+                        type="number"
+                        id="maxRegistrations"
+                        name="maxRegistrations"
+                        value={formData.maxRegistrations}
+                        onChange={handleInputChange}
+                        min="0"
+                        className="!pr-20"
+                      />
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-medium text-gray-400 pointer-events-none uppercase tracking-wider">
+                        0 = ∞
                       </div>
                     </div>
-                  ) : (
-                    <div className="relative group">
-                      <div className="aspect-video w-full overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-800 relative shadow-lg">
-                        <img
-                          src={croppedBannerUrl}
-                          alt="Banner Preview"
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
-                          <Button variant="primary" size="sm" onClick={triggerBannerUpload} startIcon={<PencilIcon className="size-4" />}>
-                            Change Image
-                          </Button>
-                          <Button variant="danger" size="sm" onClick={removeBanner} startIcon={<TrashBinIcon className="size-4" />}>
-                            Remove
-                          </Button>
+                  </div>
+                </div>
+
+                {/* Right side: Event Media (Red Area) */}
+                <div className="lg:col-span-6">
+                  <Label>Event Banner</Label>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleBannerUpload}
+                    accept="image/*"
+                    className="hidden"
+                  />
+
+                  {bannerPreview ? (
+                    <div className="space-y-4">
+                      {!croppedBannerUrl ? (
+                        <div className="space-y-3">
+                          <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-900 p-4 overflow-auto">
+                            <div style={{ width: 'fit-content', margin: '0 auto' }}>
+                              <ReactCrop
+                                crop={crop}
+                                onChange={(c) => setCrop(c)}
+                                onComplete={(c) => setCompletedCrop(c)}
+                                aspect={16 / 9}
+                              >
+                                <img
+                                  ref={imgRef}
+                                  src={bannerPreview}
+                                  alt="To be cropped"
+                                  onLoad={onImageLoad}
+                                  style={{
+                                    maxHeight: '500px',
+                                    width: 'auto',
+                                    display: 'block'
+                                  }}
+                                />
+                              </ReactCrop>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={removeBanner}
+                              startIcon={<TrashBinIcon className="size-3.5" />}
+                              className="flex-1 text-xs"
+                            >
+                              Discard
+                            </Button>
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={handleCropComplete}
+                              startIcon={<CheckCircleIcon className="size-3.5" />}
+                              className="flex-1 text-xs"
+                            >
+                              Confirm
+                            </Button>
+                          </div>
                         </div>
+                      ) : (
+                        <div className="relative group">
+                          <div className="aspect-video w-full overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-800 relative shadow-sm">
+                            <img
+                              src={croppedBannerUrl}
+                              alt="Banner Preview"
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                              <Button variant="primary" size="sm" onClick={triggerBannerUpload} startIcon={<PencilIcon className="size-3.5" />} className="!h-8 !px-3 text-[10px]">
+                                Change
+                              </Button>
+                              <Button variant="danger" size="sm" onClick={removeBanner} startIcon={<TrashBinIcon className="size-3.5" />} className="!h-8 !px-3 text-[10px]">
+                                Remove
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div
+                      onClick={triggerBannerUpload}
+                      className="border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl h-[200px] flex flex-col items-center justify-center bg-gray-50/50 dark:bg-white/[0.02] cursor-pointer hover:border-brand-500 hover:bg-brand-50/10 transition-all group"
+                    >
+                      <div className="size-10 rounded-full bg-white dark:bg-gray-900 shadow-theme-xs flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                        <PlusIcon className="size-5 text-brand-500" />
                       </div>
+                      <p className="text-gray-700 dark:text-white/90 font-semibold text-xs mb-1">Upload banner</p>
+                      <p className="text-[10px] text-gray-400">16:9 ratio</p>
                     </div>
                   )}
                 </div>
-              ) : (
-                <div
-                  onClick={triggerBannerUpload}
-                  className="border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl p-12 flex flex-col items-center justify-center bg-gray-50/50 dark:bg-white/[0.02] cursor-pointer hover:border-brand-500 hover:bg-brand-50/10 transition-all group"
-                >
-                  <div className="size-16 rounded-full bg-white dark:bg-gray-900 shadow-theme-md flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <PlusIcon className="size-8 text-brand-500" />
-                  </div>
-                  <p className="text-gray-700 dark:text-white/90 font-semibold mb-1">Click to upload banner</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">16:9 ratio recommended (e.g. 1920x1080)</p>
-                </div>
-              )}
+              </div>
             </div>
           </ComponentCard>
 
@@ -646,103 +649,124 @@ const CreateEvent = () => {
         </div>
 
         {/* Right Side: Live Preview (Sticky) */}
-        <div className="w-full lg:w-2/5">
-          <div className="sticky top-6 space-y-6">
-            <div className="bg-gray-900 border border-gray-800 rounded-3xl overflow-hidden shadow-2xl ring-8 ring-gray-900/50">
-              <div className="bg-gray-800 px-6 py-4 flex items-center justify-between border-b border-gray-700">
-                <div className="flex gap-1.5">
-                  <div className="size-3 rounded-full bg-red-500/80"></div>
-                  <div className="size-3 rounded-full bg-yellow-500/80"></div>
-                  <div className="size-3 rounded-full bg-green-500/80"></div>
-                </div>
-                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em] ml-4">Registration Form Preview</span>
-                <div className="flex gap-2">
-                  <div className="size-4 rounded-full bg-gray-700"></div>
+        <div className="w-full lg:w-2/5 flex justify-center">
+          <div className="sticky top-6 w-full max-w-[390px]">
+            {/* iPhone Frame */}
+            <div className="relative bg-black rounded-[50px] p-3 shadow-2xl border-[6px] border-gray-900 shadow-brand-500/10">
+
+              {/* iPhone Buttons - Volume Drop/Power */}
+              <div className="absolute -left-[10px] top-32 w-[4px] h-16 bg-gray-800 rounded-l-md"></div>
+              <div className="absolute -left-[10px] top-52 w-[4px] h-12 bg-gray-800 rounded-l-md"></div>
+              <div className="absolute -right-[10px] top-40 w-[4px] h-20 bg-gray-800 rounded-r-md"></div>
+
+              {/* Dynamic Island */}
+              <div className="absolute top-6 left-1/2 -translate-x-1/2 w-28 h-7 bg-black rounded-full z-50 flex items-center justify-end px-4 gap-1.5 shadow-lg shadow-black/20">
+                <div className="size-1.5 rounded-full bg-blue-500/20"></div>
+                <div className="size-2 rounded-full bg-green-500/40 blur-[1px]"></div>
+              </div>
+
+              {/* Status Bar Elements */}
+              <div className="absolute top-8 left-10 text-[10px] font-bold text-black z-40">9:41</div>
+              <div className="absolute top-8 right-10 flex gap-1 z-40">
+                <div className="w-4 h-2 rounded-[2px] border border-black/20 relative">
+                  <div className="absolute right-0.5 top-0.5 bottom-0.5 left-0.5 bg-black rounded-[0.5px]"></div>
                 </div>
               </div>
 
-              <div className="max-h-[700px] overflow-y-auto bg-white p-0 scrollbar-hide">
-                {/* Simulated Header */}
-                <div className="relative">
-                  {croppedBannerUrl ? (
-                    <img src={croppedBannerUrl} alt="Preview Header" className="w-full aspect-video object-cover" />
-                  ) : (
-                    <div className="aspect-video bg-gray-100 flex items-center justify-center text-gray-300">
-                      <FileIcon className="size-16" />
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6">
-                    <h2 className="text-white text-xl font-bold leading-tight">
+              {/* Main Content Area */}
+              <div className="bg-white rounded-[40px] overflow-hidden shadow-inner h-[760px] flex flex-col scrollbar-hide">
+                <div className="flex-1 overflow-y-auto scrollbar-hide">
+                  {/* Simulated Header Banner */}
+                  <div className="relative">
+                    {croppedBannerUrl ? (
+                      <img src={croppedBannerUrl} alt="Preview Header" className="w-full aspect-video object-cover" />
+                    ) : (
+                      <div className="aspect-video bg-gray-100 flex items-center justify-center text-gray-300">
+                        <FileIcon className="size-16" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Event Title & Date Below Banner */}
+                  <div className="px-6 pt-6 pb-2">
+                    <h2 className="text-gray-900 text-xl font-bold leading-tight">
                       {formData.eventName || "Your Event Brand Here"}
                     </h2>
-                    <div className="flex items-center gap-2 text-white/70 text-sm mt-2 font-medium">
-                      <CalendarIcon className="size-4" />
+                    <div className="flex items-center gap-2 text-gray-500 text-xs mt-2 font-medium">
+                      <CalendarIcon className="size-4 text-brand-500" />
                       {formData.eventDate ? new Date(formData.eventDate).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' }) : "Select a date..."}
+                    </div>
+                  </div>
+
+                  {/* Simulated Form Body */}
+                  <div className="px-6 pb-6 pt-2 space-y-6">
+                    {formData.eventDescription && (
+                      <p className="text-gray-500 text-sm leading-relaxed border-b border-gray-100 pb-5 whitespace-pre-wrap italic">
+                        {formData.eventDescription}
+                      </p>
+                    )}
+
+                    <div className="space-y-4">
+                      {formData.registrationFields.length > 0 ? (
+                        formData.registrationFields.map((field, idx) => (
+                          <div key={idx} className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-gray-800 uppercase tracking-wider flex items-center gap-1">
+                              {field.fieldName || `Untitled Field ${idx + 1}`}
+                              {field.isRequired && <span className="text-red-500">*</span>}
+                            </label>
+                            {field.fieldType === 'textarea' ? (
+                              <div className="w-full h-20 bg-gray-50/50 border border-gray-100 rounded-xl"></div>
+                            ) : field.fieldType === 'select' ? (
+                              <div className="w-full h-10 px-4 bg-gray-50/50 border border-gray-100 rounded-xl flex items-center justify-between text-gray-400 text-[11px]">
+                                Select from options...
+                                <ChevronDownIcon className="size-3.5" />
+                              </div>
+                            ) : (
+                              <div className="w-full h-10 px-4 bg-gray-50/50 border border-gray-100 rounded-xl flex items-center text-gray-400 text-[11px]">
+                                {field.fieldType === 'date' ? 'YYYY-MM-DD' : field.fieldType === 'number' ? '0' : `Enter ${field.fieldName.toLowerCase()}...`}
+                              </div>
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-10 border-2 border-dashed border-gray-50 rounded-3xl">
+                          <p className="text-gray-400 text-[11px]">Add fields to see the form preview</p>
+                        </div>
+                      )}
+
+                      <div className="pt-4">
+                        <div className="w-full py-3.5 bg-brand-500 text-white rounded-2xl font-bold text-center text-sm shadow-lg shadow-brand-500/30">
+                          Register Now
+                        </div>
+                        <p className="text-[9px] text-center text-gray-400 mt-4 px-4 leading-tight">
+                          By clicking register you agree to our terms of service and privacy policy.
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                {/* Simulated Form Body */}
-                <div className="p-8 space-y-6">
-                  {formData.eventDescription && (
-                    <p className="text-gray-500 text-sm leading-relaxed border-b border-gray-100 pb-6 whitespace-pre-wrap">
-                      {formData.eventDescription}
-                    </p>
-                  )}
-
-                  <div className="space-y-5">
-                    {formData.registrationFields.length > 0 ? (
-                      formData.registrationFields.map((field, idx) => (
-                        <div key={idx} className="space-y-1.5">
-                          <label className="text-xs font-bold text-gray-900 flex items-center gap-1">
-                            {field.fieldName || `Untitled Field ${idx + 1}`}
-                            {field.isRequired && <span className="text-red-500">*</span>}
-                          </label>
-                          {field.fieldType === 'textarea' ? (
-                            <div className="w-full h-24 bg-gray-50 border border-gray-200 rounded-lg"></div>
-                          ) : field.fieldType === 'select' ? (
-                            <div className="w-full h-11 px-4 bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-between text-gray-400 text-sm">
-                              Select from options...
-                              <ChevronDownIcon className="size-4" />
-                            </div>
-                          ) : (
-                            <div className="w-full h-11 px-4 bg-gray-50 border border-gray-200 rounded-lg flex items-center text-gray-400 text-sm">
-                              {field.fieldType === 'date' ? 'YYYY-MM-DD' : field.fieldType === 'number' ? '0' : `Enter ${field.fieldName.toLowerCase()}...`}
-                            </div>
-                          )}
-                        </div>
-                      ))
-                    ) : (
-                      <div className="text-center py-12 border-2 border-dashed border-gray-100 rounded-3xl">
-                        <p className="text-gray-400 text-sm">Add fields to see the form preview</p>
-                      </div>
-                    )}
-
-                    <div className="pt-4">
-                      <div className="w-full py-4 bg-brand-500 text-white rounded-xl font-bold text-center shadow-lg shadow-brand-500/30">
-                        Register Now
-                      </div>
-                      <p className="text-[10px] text-center text-gray-400 mt-4 px-6 italic">By registering, you agree to the event terms and conditions.</p>
-                    </div>
-                  </div>
+                {/* Home Indicator */}
+                <div className="h-8 flex items-end justify-center pb-2 bg-white">
+                  <div className="w-32 h-1.5 bg-gray-200 rounded-full"></div>
                 </div>
               </div>
             </div>
 
-            <div className="flex gap-4 p-2">
+            <div className="flex gap-4 mt-8 px-1">
               <Button
                 variant="outline"
-                className="flex-1 !rounded-2xl !py-4 font-bold"
+                className="flex-1 !rounded-[20px] !py-4 text-xs font-bold"
                 onClick={() => navigate('/events')}
               >
-                Discard Changes
+                Cancel
               </Button>
               <Button
                 type="submit"
-                className="flex-2 !rounded-2xl !py-4 font-bold shadow-xl shadow-brand-500/20"
-                startIcon={<CheckCircleIcon className="size-5" />}
+                className="flex-2 !rounded-[20px] !py-4 text-xs font-bold shadow-lg shadow-brand-500/20"
+                startIcon={<CheckCircleIcon className="size-4" />}
               >
-                Publish Event
+                Create Event
               </Button>
             </div>
           </div>
