@@ -25,6 +25,9 @@ import { applyBrandFilter } from '../middleware/brandMiddleware.js';
 router.get('/public/:link', getEventByLink);
 router.post('/register/:link', registerForEvent);
 
+// Attendance Verification Route (Public)
+router.patch('/attendance/verify/:registrationId', verifyAttendance);
+
 // Protected routes (admin only)
 router.use(verifyToken);
 router.use(applyBrandFilter); // Apply brand filter
@@ -40,7 +43,6 @@ router.patch('/toggle-status/:id', toggleEventStatus);
 // Banner upload route
 router.post('/upload-banner/:id', verifyToken, uploadEventBannerMiddleware, uploadEventBanner);
 
-// Attendance Verification Route (Public)
-router.patch('/attendance/verify/:registrationId', verifyAttendance);
+
 
 export default router;
