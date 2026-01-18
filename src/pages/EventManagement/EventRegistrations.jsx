@@ -151,7 +151,7 @@ const EventRegistrations = () => {
         </div>
 
         <ComponentCard className="mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="border rounded-lg p-4">
               <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300">Total Registrations</h3>
               <p className="text-3xl font-bold text-brand-500">{registrations.length}</p>
