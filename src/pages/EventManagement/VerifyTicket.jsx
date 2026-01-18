@@ -14,6 +14,7 @@ const VerifyTicket = () => {
     const [registrationData, setRegistrationData] = useState(null);
     const [pin, setPin] = useState('');
 
+    // Force refresh: 2026-01-18
     const handleVerify = async (e) => {
         e.preventDefault();
 
@@ -53,9 +54,9 @@ const VerifyTicket = () => {
 
                 {/* Header */}
                 <div className={`py-6 px-8 text-center ${status === 'input_pin' || status === 'verifying' ? 'bg-blue-600' :
-                        status === 'success' ? 'bg-green-600' :
-                            status === 'warning' ? 'bg-yellow-500' :
-                                'bg-red-600'
+                    status === 'success' ? 'bg-green-600' :
+                        status === 'warning' ? 'bg-yellow-500' :
+                            'bg-red-600'
                     }`}>
                     <h1 className="text-2xl font-bold text-white uppercase tracking-wider">
                         Ticket Verification
