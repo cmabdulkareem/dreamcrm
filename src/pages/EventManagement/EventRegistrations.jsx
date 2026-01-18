@@ -171,6 +171,12 @@ const EventRegistrations = () => {
                 {event?.isActive ? 'Active' : 'Inactive'}
               </span>
             </div>
+            <div className="border rounded-lg p-4">
+              <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300">Event PIN</h3>
+              <p className="text-3xl font-bold text-gray-800 dark:text-white tracking-widest">
+                {event?.eventPin || 'XXXX'}
+              </p>
+            </div>
           </div>
         </ComponentCard>
 
@@ -234,8 +240,8 @@ const EventRegistrations = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${registration.attended
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-gray-100 text-gray-800'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-gray-100 text-gray-800'
                           }`}>
                           {registration.attended ? 'Attended' : 'Registered'}
                         </span>

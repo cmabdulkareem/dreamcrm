@@ -30,6 +30,8 @@ axios.defaults.withCredentials = true;
 
 import API from "../../config/api";
 
+const generatePin = () => Math.floor(1000 + Math.random() * 9000).toString();
+
 const CreateEvent = () => {
   const { user } = useContext(AuthContext);
   const [formData, setFormData] = useState({
@@ -37,7 +39,7 @@ const CreateEvent = () => {
     eventDescription: '',
     eventDate: '',
     maxRegistrations: 0,
-    eventPin: '1234', // Default PIN
+    eventPin: generatePin(), // Auto-generate PIN
     registrationFields: [
       { fieldName: 'Full Name', fieldType: 'text', isRequired: true },
       { fieldName: 'Email', fieldType: 'email', isRequired: true }
