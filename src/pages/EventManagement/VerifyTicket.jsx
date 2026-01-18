@@ -31,8 +31,16 @@ const VerifyTicket = () => {
 
             } catch (error) {
                 console.error("Verification error:", error);
-                setStatus('error');
-                setMessage(error.response?.data?.message || "Failed to verify ticket. Invalid or expired.");
+                if (error.response?.status === 401 || error.response?.status === 403) {
+                    setStatus('error');
+                    setMessage("Authentication required. Redirecting to login...");
+                    setTimeout(() => {
+                        navigate('/signin', { state: { from: `/events/verify-ticket/${registrationId}` } });
+                    }, 2000);
+                } else {
+                    setStatus('error');
+                    setMessage(error.response?.data?.message || "Failed to verify ticket. Invalid or expired.");
+                }
             }
         };
 
@@ -47,9 +55,9 @@ const VerifyTicket = () => {
 
                 {/* Header */}
                 <div className={`py-6 px-8 text-center ${status === 'verifying' ? 'bg-blue-600' :
-                        status === 'success' ? 'bg-green-600' :
-                            status === 'warning' ? 'bg-yellow-500' :
-                                'bg-red-600'
+                    status === 'success' ? 'bg-green-600' :
+                        status === 'warning' ? 'bg-yellow-500' :
+                            'bg-red-600'
                     }`}>
                     <h1 className="text-2xl font-bold text-white uppercase tracking-wider">
                         Ticket Verification

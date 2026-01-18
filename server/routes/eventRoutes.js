@@ -25,8 +25,7 @@ import { applyBrandFilter } from '../middleware/brandMiddleware.js';
 router.get('/public/:link', getEventByLink);
 router.post('/register/:link', registerForEvent);
 
-// Attendance Verification Route (Public)
-router.patch('/attendance/verify/:registrationId', verifyAttendance);
+// Attendance Verification Route (Public) -- REMOVED
 
 // Protected routes (admin only)
 router.use(verifyToken);
@@ -42,6 +41,9 @@ router.patch('/toggle-status/:id', toggleEventStatus);
 
 // Banner upload route
 router.post('/upload-banner/:id', verifyToken, uploadEventBannerMiddleware, uploadEventBanner);
+
+// Attendance Verification Route (Protected)
+router.patch('/attendance/verify/:registrationId', verifyAttendance);
 
 
 
