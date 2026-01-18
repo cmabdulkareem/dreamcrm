@@ -106,8 +106,14 @@ export const createEvent = async (req, res) => {
       eventDescription,
       eventDate,
       registrationFields,
-      maxRegistrations
+      maxRegistrations,
+      eventPin
     } = req.body;
+
+    // Validate PIN (must be 4 digits)
+    if (!eventPin || !/^\d{4}$/.test(eventPin)) {
+      return res.status(400).json({ message: "Event PIN must be exactly 4 digits." });
+    }
 
     // Generate a unique registration link
     const registrationLink = crypto.randomBytes(16).toString('hex');
@@ -119,6 +125,7 @@ export const createEvent = async (req, res) => {
       registrationFields,
       registrationLink,
       maxRegistrations: parseInt(maxRegistrations) || 0,
+      eventPin,
       brand: req.brandFilter?.brand || req.headers['x-brand-id'] || null // Strict brand assignment
     });
 
@@ -158,6 +165,11 @@ export const updateEvent = async (req, res) => {
         event[key] = parseInt(updateData[key]) || 0;
       } else if (key === 'isActive') {
         event[key] = updateData[key] === 'true' || updateData[key] === true;
+      } else if (key === 'eventPin') {
+        // Validate PIN
+        if (updateData[key] && /^\d{4}$/.test(updateData[key])) {
+          event[key] = updateData[key];
+        }
       } else if (key !== '_id' && key !== '__v' && key !== 'registrationLink') {
         event[key] = updateData[key];
       }
@@ -378,16 +390,32 @@ export const uploadEventBanner = async (req, res) => {
   }
 };
 
-// Verify Attendance
+// Verify Attendance with PIN
 export const verifyAttendance = async (req, res) => {
   try {
-    // Public access - no role check required
+    // Public access - but protected by PIN
 
     const { registrationId } = req.params;
+    const { pin } = req.body;
+
+    if (!pin) {
+      return res.status(400).json({ message: "PIN is required." });
+    }
 
     const registration = await eventRegistrationModel.findById(registrationId);
     if (!registration) {
       return res.status(404).json({ message: "Registration not found." });
+    }
+
+    // Find the event to check the PIN
+    const event = await eventModel.findById(registration.eventId);
+    if (!event) {
+      return res.status(404).json({ message: "Associated event not found." });
+    }
+
+    // Check PIN
+    if (event.eventPin !== pin) {
+      return res.status(401).json({ message: "Invalid PIN." });
     }
 
     if (registration.attended) {

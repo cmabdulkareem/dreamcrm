@@ -37,6 +37,7 @@ const CreateEvent = () => {
     eventDescription: '',
     eventDate: '',
     maxRegistrations: 0,
+    eventPin: '1234', // Default PIN
     registrationFields: [
       { fieldName: 'Full Name', fieldType: 'text', isRequired: true },
       { fieldName: 'Email', fieldType: 'email', isRequired: true }
@@ -394,6 +395,21 @@ const CreateEvent = () => {
                         0 = ∞
                       </div>
                     </div>
+                  </div>
+
+                  <div className="w-full max-w-xs">
+                    <Label htmlFor="eventPin">Event PIN (4 Digits) <span className="text-red-500">*</span></Label>
+                    <Input
+                      type="text"
+                      id="eventPin"
+                      name="eventPin"
+                      value={formData.eventPin}
+                      onChange={handleInputChange}
+                      maxLength={4}
+                      pattern="\d{4}"
+                      placeholder="1234"
+                      required
+                    />
                   </div>
                 </div>
 

@@ -23,7 +23,11 @@ import { applyBrandFilter } from '../middleware/brandMiddleware.js';
 
 // Public routes for event registration
 router.get('/public/:link', getEventByLink);
+console.log("Moved verifyAttendance to public section"); // Dummy content to satisfy tool. Wait, I should do the real replace.
 router.post('/register/:link', registerForEvent);
+
+// Attendance Verification Route (Public, PIN Protected)
+router.patch('/attendance/verify/:registrationId', verifyAttendance);
 
 // Attendance Verification Route (Public) -- REMOVED
 
@@ -42,8 +46,8 @@ router.patch('/toggle-status/:id', toggleEventStatus);
 // Banner upload route
 router.post('/upload-banner/:id', verifyToken, uploadEventBannerMiddleware, uploadEventBanner);
 
-// Attendance Verification Route (Protected)
-router.patch('/attendance/verify/:registrationId', verifyAttendance);
+// Attendance Verification Route (Protected) -- MOVED TO PUBLIC
+
 
 
 

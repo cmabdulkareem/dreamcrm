@@ -42,6 +42,13 @@ const eventSchema = new mongoose.Schema({
     type: String,
     unique: true
   },
+  eventPin: {
+    type: String,
+    required: true,
+    minlength: 4,
+    maxlength: 4,
+    default: '0000'
+  },
   maxRegistrations: {
     type: Number,
     default: 0 // 0 means unlimited

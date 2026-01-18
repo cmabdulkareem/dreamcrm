@@ -30,7 +30,9 @@ const ManageEvents = () => {
     eventName: '',
     eventDescription: '',
     eventDate: '',
+    eventDate: '',
     maxRegistrations: 0,
+    eventPin: '',
     registrationFields: [
       { fieldName: 'Full Name', fieldType: 'text', isRequired: true },
       { fieldName: 'Email', fieldType: 'email', isRequired: true }
@@ -170,7 +172,9 @@ const ManageEvents = () => {
       eventName: '',
       eventDescription: '',
       eventDate: '',
+      eventDate: '',
       maxRegistrations: 0,
+      eventPin: '',
       registrationFields: [
         { fieldName: 'Full Name', fieldType: 'text', isRequired: true },
         { fieldName: 'Email', fieldType: 'email', isRequired: true }
@@ -210,7 +214,9 @@ const ManageEvents = () => {
         eventName: event.eventName || '',
         eventDescription: event.eventDescription || '',
         eventDate: event.eventDate ? new Date(event.eventDate).toISOString().split('T')[0] : '',
+        eventDate: event.eventDate ? new Date(event.eventDate).toISOString().split('T')[0] : '',
         maxRegistrations: event.maxRegistrations || 0,
+        eventPin: event.eventPin || '',
         registrationFields: event.registrationFields || [
           { fieldName: 'Full Name', fieldType: 'text', isRequired: true },
           { fieldName: 'Email', fieldType: 'email', isRequired: true }
@@ -535,147 +541,164 @@ const ManageEvents = () => {
 
               <div className="flex flex-col md:flex-row gap-6">
                 <div className="w-full md:w-1/2">
-                  <div>
-                    <Label htmlFor="eventDescription">Event Description</Label>
-                    <textarea
-                      id="eventDescription"
-                      name="eventDescription"
-                      value={formData.eventDescription}
-                      onChange={handleInputChange}
-                      rows="3"
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-hidden focus:ring-3 focus:ring-brand-500/20 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 bg-transparent text-gray-800 focus:border-brand-300 dark:border-gray-700 dark:focus:border-brand-800 rounded-lg shadow-theme-xs"
-                    ></textarea>
-                  </div>
-                  <div>
-                    <Label htmlFor="maxRegistrations">Max Registrations (0 for unlimited)</Label>
-                    <Input
-                      type="number"
-                      id="maxRegistrations"
-                      name="maxRegistrations"
-                      value={formData.maxRegistrations}
-                      onChange={handleInputChange}
-                      min="0"
-                    />
-                  </div>
-                  <div>
-                    <div className="space-y-4">
-                      <div className="space-y-3">
-                        <Label>Registration Fields</Label>
-                        {formData.registrationFields.map((field, index) => (
-                          <div key={index} className="flex flex-col md:flex-row gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <div className="w-full md:w-2/5">
-                              <Label>Field Name</Label>
-                              <Input
-                                type="text"
-                                value={field.fieldName}
-                                onChange={(e) => handleFieldChange(index, 'fieldName', e.target.value)}
-                                placeholder="Field Name"
-                              />
-                            </div>
-                            <div className="w-full md:w-2/5">
-                              <Label>Field Type</Label>
-                              <Select
-                                options={[
-                                  { value: "text", label: "Text" },
-                                  { value: "email", label: "Email" },
-                                  { value: "number", label: "Number" },
-                                  { value: "textarea", label: "Textarea" },
-                                  { value: "select", label: "Select" }
-                                ]}
-                                value={field.fieldType}
-                                onChange={(value) => handleFieldChange(index, 'fieldType', value)}
-                              />
-                              {field.fieldType === 'select' && (
-                                <div className="mt-2">
-                                  <Label>Options (comma separated)</Label>
-                                  <Input
-                                    type="text"
-                                    value={field.options ? field.options.join(', ') : ''}
-                                    onChange={(e) => handleFieldChange(index, 'options', e.target.value.split(',').map(opt => opt.trim()))}
-                                    placeholder="Option 1, Option 2, Option 3"
-                                  />
-                                </div>
-                              )}
-                            </div>
-                            <div className="w-full md:w-1/5 flex items-end">
-                              <div className="flex items-center">
-                                <input
-                                  type="checkbox"
-                                  checked={field.isRequired}
-                                  onChange={(e) => handleFieldChange(index, 'isRequired', e.target.checked)}
-                                  className="mr-2 h-5 w-5 text-brand-500 rounded focus:ring-brand-500"
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="eventDescription">Event Description</Label>
+                      <textarea
+                        id="eventDescription"
+                        name="eventDescription"
+                        value={formData.eventDescription}
+                        onChange={handleInputChange}
+                        rows="3"
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-hidden focus:ring-3 focus:ring-brand-500/20 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 bg-transparent text-gray-800 focus:border-brand-300 dark:border-gray-700 dark:focus:border-brand-800 rounded-lg shadow-theme-xs"
+                      ></textarea>
+                    </div>
+                    <div className="flex gap-4">
+                      <div className="w-1/2">
+                        <Label htmlFor="maxRegistrations">Max Registrations</Label>
+                        <Input
+                          type="number"
+                          id="maxRegistrations"
+                          name="maxRegistrations"
+                          value={formData.maxRegistrations}
+                          onChange={handleInputChange}
+                          min="0"
+                        />
+                      </div>
+                      <div className="w-1/2">
+                        <Label htmlFor="eventPin">Event PIN (4 Digits)</Label>
+                        <Input
+                          type="text"
+                          id="eventPin"
+                          name="eventPin"
+                          value={formData.eventPin}
+                          onChange={handleInputChange}
+                          maxLength={4}
+                          pattern="\d{4}"
+                          placeholder="1234"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="space-y-4">
+                        <div className="space-y-3">
+                          <Label>Registration Fields</Label>
+                          {formData.registrationFields.map((field, index) => (
+                            <div key={index} className="flex flex-col md:flex-row gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                              <div className="w-full md:w-2/5">
+                                <Label>Field Name</Label>
+                                <Input
+                                  type="text"
+                                  value={field.fieldName}
+                                  onChange={(e) => handleFieldChange(index, 'fieldName', e.target.value)}
+                                  placeholder="Field Name"
                                 />
-                                <Label className="mb-0">Required</Label>
+                              </div>
+                              <div className="w-full md:w-2/5">
+                                <Label>Field Type</Label>
+                                <Select
+                                  options={[
+                                    { value: "text", label: "Text" },
+                                    { value: "email", label: "Email" },
+                                    { value: "number", label: "Number" },
+                                    { value: "textarea", label: "Textarea" },
+                                    { value: "select", label: "Select" }
+                                  ]}
+                                  value={field.fieldType}
+                                  onChange={(value) => handleFieldChange(index, 'fieldType', value)}
+                                />
+                                {field.fieldType === 'select' && (
+                                  <div className="mt-2">
+                                    <Label>Options (comma separated)</Label>
+                                    <Input
+                                      type="text"
+                                      value={field.options ? field.options.join(', ') : ''}
+                                      onChange={(e) => handleFieldChange(index, 'options', e.target.value.split(',').map(opt => opt.trim()))}
+                                      placeholder="Option 1, Option 2, Option 3"
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                              <div className="w-full md:w-1/5 flex items-end">
+                                <div className="flex items-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={field.isRequired}
+                                    onChange={(e) => handleFieldChange(index, 'isRequired', e.target.checked)}
+                                    className="mr-2 h-5 w-5 text-brand-500 rounded focus:ring-brand-500"
+                                  />
+                                  <Label className="mb-0">Required</Label>
+                                </div>
+                              </div>
+                              <div className="w-full md:w-auto flex items-end">
+                                <button
+                                  type="button"
+                                  onClick={() => removeRegistrationField(index)}
+                                  className="text-red-500 hover:text-red-700 px-3 py-2"
+                                >
+                                  Remove
+                                </button>
                               </div>
                             </div>
-                            <div className="w-full md:w-auto flex items-end">
-                              <button
-                                type="button"
-                                onClick={() => removeRegistrationField(index)}
-                                className="text-red-500 hover:text-red-700 px-3 py-2"
-                              >
-                                Remove
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
 
-                      <div className="flex flex-col md:flex-row gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                        <div className="w-full md:w-2/5">
-                          <Input
-                            type="text"
-                            name="fieldName"
-                            value={newField.fieldName}
-                            onChange={(e) => setNewField({ ...newField, fieldName: e.target.value })}
-                            placeholder="New Field Name"
-                          />
-                        </div>
-                        <div className="w-full md:w-2/5">
-                          <Select
-                            options={[
-                              { value: "text", label: "Text" },
-                              { value: "email", label: "Email" },
-                              { value: "number", label: "Number" },
-                              { value: "date", label: "Date" },
-                              { value: "textarea", label: "Textarea" },
-                              { value: "select", label: "Select" }
-                            ]}
-                            value={newField.fieldType}
-                            onChange={(value) => setNewField({ ...newField, fieldType: value })}
-                          />
-                          {newField.fieldType === 'select' && (
-                            <div className="mt-2">
-                              <Label>Options (comma separated)</Label>
-                              <Input
-                                type="text"
-                                value={newField.options ? newField.options.join(', ') : ''}
-                                onChange={(e) => setNewField({ ...newField, options: e.target.value.split(',').map(opt => opt.trim()) })}
-                                placeholder="Option 1, Option 2, Option 3"
-                              />
-                            </div>
-                          )}
-                        </div>
-                        <div className="w-full md:w-1/5 flex items-end">
-                          <div className="flex items-center">
-                            <input
-                              type="checkbox"
-                              name="isRequired"
-                              checked={newField.isRequired}
-                              onChange={(e) => setNewField({ ...newField, isRequired: e.target.checked })}
-                              className="mr-2 h-5 w-5 text-brand-500 rounded focus:ring-brand-500"
+                        <div className="flex flex-col md:flex-row gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                          <div className="w-full md:w-2/5">
+                            <Input
+                              type="text"
+                              name="fieldName"
+                              value={newField.fieldName}
+                              onChange={(e) => setNewField({ ...newField, fieldName: e.target.value })}
+                              placeholder="New Field Name"
                             />
-                            <span className="text-sm">Required</span>
                           </div>
-                        </div>
-                        <div className="w-full md:w-auto flex items-end">
-                          <button
-                            type="button"
-                            onClick={addRegistrationField}
-                            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm"
-                          >
-                            Add Field
-                          </button>
+                          <div className="w-full md:w-2/5">
+                            <Select
+                              options={[
+                                { value: "text", label: "Text" },
+                                { value: "email", label: "Email" },
+                                { value: "number", label: "Number" },
+                                { value: "date", label: "Date" },
+                                { value: "textarea", label: "Textarea" },
+                                { value: "select", label: "Select" }
+                              ]}
+                              value={newField.fieldType}
+                              onChange={(value) => setNewField({ ...newField, fieldType: value })}
+                            />
+                            {newField.fieldType === 'select' && (
+                              <div className="mt-2">
+                                <Label>Options (comma separated)</Label>
+                                <Input
+                                  type="text"
+                                  value={newField.options ? newField.options.join(', ') : ''}
+                                  onChange={(e) => setNewField({ ...newField, options: e.target.value.split(',').map(opt => opt.trim()) })}
+                                  placeholder="Option 1, Option 2, Option 3"
+                                />
+                              </div>
+                            )}
+                          </div>
+                          <div className="w-full md:w-1/5 flex items-end">
+                            <div className="flex items-center">
+                              <input
+                                type="checkbox"
+                                name="isRequired"
+                                checked={newField.isRequired}
+                                onChange={(e) => setNewField({ ...newField, isRequired: e.target.checked })}
+                                className="mr-2 h-5 w-5 text-brand-500 rounded focus:ring-brand-500"
+                              />
+                              <span className="text-sm">Required</span>
+                            </div>
+                          </div>
+                          <div className="w-full md:w-auto flex items-end">
+                            <button
+                              type="button"
+                              onClick={addRegistrationField}
+                              className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm"
+                            >
+                              Add Field
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -828,7 +851,7 @@ const ManageEvents = () => {
               </button>
             </div>
           </form>
-        </ComponentCard>
+        </ComponentCard >
       ) : (
         <ComponentCard title="Manage Events">
           <div className="container mx-auto px-4 py-8">

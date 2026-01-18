@@ -1,63 +1,61 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import API from '../../config/api';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
+import Input from '../../components/form/input/InputField';
+import Button from '../../components/ui/button/Button';
 
 const VerifyTicket = () => {
     const { registrationId } = useParams();
     const navigate = useNavigate();
-    const [status, setStatus] = useState('verifying'); // verifying, success, error
+    const [status, setStatus] = useState('input_pin'); // input_pin, verifying, success, error, warning
     const [message, setMessage] = useState('');
     const [registrationData, setRegistrationData] = useState(null);
+    const [pin, setPin] = useState('');
 
-    useEffect(() => {
-        const verifyAttendance = async () => {
-            try {
-                const response = await axios.patch(
-                    `${API}/events/attendance/verify/${registrationId}`,
-                    {},
-                    { withCredentials: true }
-                );
+    const handleVerify = async (e) => {
+        e.preventDefault();
 
-                setStatus('success');
-                setMessage(response.data.message);
-                setRegistrationData(response.data.registration);
-
-                // If already attended, we might want to show a warning style but still "success" in finding record
-                if (response.data.alreadyAttended) {
-                    setStatus('warning');
-                }
-
-            } catch (error) {
-                console.error("Verification error:", error);
-                if (error.response?.status === 401 || error.response?.status === 403) {
-                    setStatus('error');
-                    setMessage("Authentication required. Redirecting to login...");
-                    setTimeout(() => {
-                        navigate('/signin', { state: { from: `/events/verify-ticket/${registrationId}` } });
-                    }, 2000);
-                } else {
-                    setStatus('error');
-                    setMessage(error.response?.data?.message || "Failed to verify ticket. Invalid or expired.");
-                }
-            }
-        };
-
-        if (registrationId) {
-            verifyAttendance();
+        if (!pin || pin.length !== 4) {
+            setMessage("Please enter a valid 4-digit PIN.");
+            return;
         }
-    }, [registrationId]);
+
+        setStatus('verifying');
+        setMessage('');
+
+        try {
+            const response = await axios.patch(
+                `${API}/events/attendance/verify/${registrationId}`,
+                { pin },
+                { withCredentials: true }
+            );
+
+            setStatus('success');
+            setMessage(response.data.message);
+            setRegistrationData(response.data.registration);
+
+            if (response.data.alreadyAttended) {
+                setStatus('warning');
+            }
+
+        } catch (error) {
+            console.error("Verification error:", error);
+            setStatus('error');
+            setMessage(error.response?.data?.message || "Failed to verify ticket. Invalid PIN or expired.");
+        }
+    };
 
     return (
         <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
             <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
 
                 {/* Header */}
-                <div className={`py-6 px-8 text-center ${status === 'verifying' ? 'bg-blue-600' :
-                    status === 'success' ? 'bg-green-600' :
-                        status === 'warning' ? 'bg-yellow-500' :
-                            'bg-red-600'
+                <div className={`py-6 px-8 text-center ${status === 'input_pin' || status === 'verifying' ? 'bg-blue-600' :
+                        status === 'success' ? 'bg-green-600' :
+                            status === 'warning' ? 'bg-yellow-500' :
+                                'bg-red-600'
                     }`}>
                     <h1 className="text-2xl font-bold text-white uppercase tracking-wider">
                         Ticket Verification
@@ -67,10 +65,37 @@ const VerifyTicket = () => {
                 {/* Content */}
                 <div className="p-8 text-center">
 
-                    {status === 'verifying' && (
-                        <div className="py-8">
-                            <LoadingSpinner />
-                            <p className="mt-4 text-gray-600 font-medium">Verifying ticket details...</p>
+                    {(status === 'input_pin' || status === 'verifying') && (
+                        <div className="animate-fade-in-up">
+                            <p className="text-gray-600 mb-6">Please enter the 4-digit Event PIN to verify attendance.</p>
+
+                            <form onSubmit={handleVerify} className="space-y-4">
+                                <Input
+                                    type="text"
+                                    value={pin}
+                                    onChange={(e) => setPin(e.target.value)}
+                                    placeholder="Enter PIN (e.g., 1234)"
+                                    className="text-center text-2xl tracking-widest"
+                                    maxLength={4}
+                                    pattern="\d{4}"
+                                    autoFocus
+                                    disabled={status === 'verifying'}
+                                />
+
+                                {status === 'verifying' ? (
+                                    <div className="flex justify-center py-2">
+                                        <LoadingSpinner />
+                                    </div>
+                                ) : (
+                                    <Button
+                                        type="submit"
+                                        className="w-full !rounded-xl !py-3 text-lg font-bold shadow-lg shadow-blue-500/20"
+                                    >
+                                        Verify Attendance
+                                    </Button>
+                                )}
+                            </form>
+                            {message && <p className="text-red-500 mt-4 font-medium">{message}</p>}
                         </div>
                     )}
 
@@ -129,12 +154,13 @@ const VerifyTicket = () => {
                             </div>
                             <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
                             <p className="text-red-500 font-medium mb-6">{message}</p>
-                            <button
-                                onClick={() => navigate('/')}
-                                className="text-gray-600 underline hover:text-gray-800"
+                            <Button
+                                onClick={() => { setStatus('input_pin'); setMessage(''); setPin(''); }}
+                                variant="outline"
+                                className="w-full"
                             >
-                                Return to Dashboard
-                            </button>
+                                Try Again
+                            </Button>
                         </div>
                     )}
 
@@ -149,6 +175,11 @@ const VerifyTicket = () => {
                         >
                             Back to Events
                         </button>
+                    )}
+                    {(status === 'input_pin' || status === 'error') && (
+                        <div className="text-xs text-gray-400">
+                            Secure Verification System
+                        </div>
                     )}
                 </div>
             </div>
