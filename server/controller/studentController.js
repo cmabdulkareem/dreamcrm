@@ -13,7 +13,8 @@ const __dirname = path.dirname(__filename);
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, "../uploads"));
+    const studentPhotosDir = process.env.STUDENT_PHOTOS_UPLOAD_DIR || path.join(__dirname, "../uploads");
+    cb(null, studentPhotosDir);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1E9);
