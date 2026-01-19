@@ -9,13 +9,10 @@ import sharp from 'sharp';
 
 const router = express.Router();
 
-// Get absolute path for uploads directory
-const profilesUploadDir = '/var/www/uploads/profiles';
+import { getUploadDir, getUploadUrl } from '../utils/uploadHelper.js';
 
-// Ensure uploads directory exists
-if (!fs.existsSync(profilesUploadDir)) {
-  fs.mkdirSync(profilesUploadDir, { recursive: true });
-}
+// Get absolute path for uploads directory
+const profilesUploadDir = getUploadDir('profiles');
 
 // Configure multer for file upload
 const storage = multer.diskStorage({
@@ -107,7 +104,7 @@ router.post('/upload-avatar', verifyToken, upload.single('avatar'), async (req, 
       }
 
       // Update user with new avatar path
-      const avatarPath = `/uploads/profiles/${compressedFileName}`;
+      const avatarPath = getUploadUrl('profiles', compressedFileName);
       const user = await User.findByIdAndUpdate(
         req.user.id,
         { avatar: avatarPath },
@@ -130,7 +127,7 @@ router.post('/upload-avatar', verifyToken, upload.single('avatar'), async (req, 
     } catch (sharpError) {
       console.error('Error processing image with sharp:', sharpError);
       // If sharp fails, try to use original file
-      const avatarPath = `/uploads/profiles/${req.file.filename}`;
+      const avatarPath = getUploadUrl('profiles', req.file.filename);
       const user = await User.findByIdAndUpdate(
         req.user.id,
         { avatar: avatarPath },

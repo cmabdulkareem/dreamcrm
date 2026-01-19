@@ -47,10 +47,13 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }))
 app.use(cors(corsOptions))
 app.use(compression())
 
+import { getBaseUploadDir } from './utils/uploadHelper.js';
+
 // Serve static files from uploads directory
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-app.use('/uploads', express.static('/var/www/uploads'));
+
+app.use('/uploads', express.static(getBaseUploadDir()));
 
 // Serve static files from dist directory (built React app)
 app.use(express.static(path.join(__dirname, '../dist')));

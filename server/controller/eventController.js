@@ -10,15 +10,10 @@ import fs from 'fs';
 import archiver from 'archiver';
 import { hasAdminOrManagerOrCounsellorAccess } from '../utils/roleHelpers.js';
 
-// Configure multer for banner uploads
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { getUploadDir, getUploadUrl } from '../utils/uploadHelper.js';
 
-// Ensure the banners directory exists
-const bannersDir = path.join(__dirname, "../uploads/banners");
-if (!fs.existsSync(bannersDir)) {
-  fs.mkdirSync(bannersDir, { recursive: true });
-}
+// Configure multer for banner uploads
+const bannersDir = getUploadDir('banners');
 
 const bannerStorage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -360,7 +355,7 @@ export const uploadEventBanner = async (req, res) => {
     fs.unlinkSync(req.file.path);
 
     // Save the compressed file path in the database (relative path for web access)
-    const bannerImageUrl = `/var/www/uploads/banners/${compressedFileName}`;
+    const bannerImageUrl = getUploadUrl('banners', compressedFileName);
 
     event.bannerImage = bannerImageUrl;
     await event.save();

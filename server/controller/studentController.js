@@ -8,13 +8,11 @@ import { fileURLToPath } from "url";
 import { v4 as uuidv4 } from "uuid";
 
 // Configure multer for file uploads
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { getUploadDir, getUploadUrl } from "../utils/uploadHelper.js";
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const studentPhotosDir = process.env.STUDENT_PHOTOS_UPLOAD_DIR || path.join(__dirname, "../uploads");
-    cb(null, studentPhotosDir);
+    cb(null, getUploadDir('student_photos'));
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1E9);
@@ -101,7 +99,7 @@ export const createStudent = async (req, res) => {
     // Handle photo upload
     let photoPath = null;
     if (req.file) {
-      photoPath = `/uploads/${req.file.filename}`;
+      photoPath = getUploadUrl('student_photos', req.file.filename);
     }
 
     // Parse additional courses if provided as JSON string
@@ -399,7 +397,7 @@ export const updateStudent = async (req, res) => {
 
     // Handle photo upload
     if (req.file) {
-      updateData.photo = `/uploads/${req.file.filename}`;
+      updateData.photo = getUploadUrl('student_photos', req.file.filename);
     }
 
     // Parse additional courses if provided as JSON string
