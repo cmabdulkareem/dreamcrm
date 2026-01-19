@@ -75,25 +75,18 @@ const InvoiceViewer = ({ invoice, onPrint, onEdit, onMarkAsSent, showHeader = tr
                 <div className="flex justify-between items-start mb-10">
                     <div className="flex flex-col gap-4">
                         <div className="flex items-center gap-3">
-                            {invoice.brand?.logo ? (
-                                <img src={invoice.brand.logo} alt="Brand Logo" className="h-14 w-auto" />
-                            ) : (
-                                <div className="w-14 h-14 bg-green-500 rounded-full flex items-center justify-center text-white text-3xl font-bold">
-                                    {invoice.brand?.name?.charAt(0)}
-                                </div>
-                            )}
+                            <img src="/images/logo/logo.svg" alt="DreamCRM Logo" className="h-10 w-auto print:h-12" />
                         </div>
                         <div className="space-y-0.5">
                             <h2 className="text-lg font-bold text-gray-900 dark:text-white print:text-black leading-tight">
-                                {invoice.brand?.name || 'Your Company Name'}
+                                {invoice.brand?.name || 'DreamCRM'}
                             </h2>
                             <div className="text-[13px] text-gray-500 dark:text-gray-400 print:text-gray-600 leading-normal max-w-[250px]">
-                                {invoice.brand?.address && <p>{invoice.brand.address}</p>}
+                                <p>3rd Floor, Square 9 Mall,</p>
+                                <p>New Bus Stand Jn, Kasaragod.</p>
+                                <p>Kerala - 671121</p>
                                 {invoice.brand?.phone && <p>{invoice.brand.phone}</p>}
                                 {invoice.brand?.email && <p>{invoice.brand.email}</p>}
-                                {!invoice.brand?.address && !invoice.brand?.phone && !invoice.brand?.email && (
-                                    <p className="italic text-gray-400">Update brand details in settings</p>
-                                )}
                             </div>
                         </div>
                     </div>
