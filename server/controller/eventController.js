@@ -360,7 +360,7 @@ export const uploadEventBanner = async (req, res) => {
     fs.unlinkSync(req.file.path);
 
     // Save the compressed file path in the database (relative path for web access)
-    const bannerImageUrl = `/uploads/banners/${compressedFileName}`;
+    const bannerImageUrl = `/var/www/uploads/banners/${compressedFileName}`;
 
     event.bannerImage = bannerImageUrl;
     await event.save();

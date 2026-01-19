@@ -10,9 +10,7 @@ import sharp from 'sharp';
 const router = express.Router();
 
 // Get absolute path for uploads directory
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const profilesUploadDir = path.join(__dirname, '../uploads/profiles');
+const profilesUploadDir = '/var/www/uploads/profiles';
 
 // Ensure uploads directory exists
 if (!fs.existsSync(profilesUploadDir)) {
@@ -32,7 +30,7 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ 
+const upload = multer({
   storage: storage,
   limits: {
     fileSize: 5 * 1024 * 1024 // 5MB limit
@@ -87,7 +85,7 @@ router.post('/upload-avatar', verifyToken, upload.single('avatar'), async (req, 
       // Determine output format based on original file type
       const isPng = fileExt === '.png' || req.file.mimetype === 'image/png';
       const isWebP = fileExt === '.webp' || req.file.mimetype === 'image/webp';
-      
+
       let sharpInstance = sharp(originalFilePath)
         .resize(800, 800, { fit: 'inside', withoutEnlargement: true });
 
@@ -124,10 +122,10 @@ router.post('/upload-avatar', verifyToken, upload.single('avatar'), async (req, 
         return res.status(404).json({ message: 'User not found' });
       }
 
-      res.status(200).json({ 
+      res.status(200).json({
         message: 'Avatar uploaded and compressed successfully',
         avatar: avatarPath,
-        user 
+        user
       });
     } catch (sharpError) {
       console.error('Error processing image with sharp:', sharpError);
@@ -146,15 +144,15 @@ router.post('/upload-avatar', verifyToken, upload.single('avatar'), async (req, 
         return res.status(404).json({ message: 'User not found' });
       }
 
-      res.status(200).json({ 
+      res.status(200).json({
         message: 'Avatar uploaded successfully (compression skipped)',
         avatar: avatarPath,
-        user 
+        user
       });
     }
   } catch (error) {
     console.error('Error uploading avatar:', error);
-    
+
     // Clean up file if it exists
     if (req.file && req.file.path && fs.existsSync(req.file.path)) {
       try {
@@ -163,8 +161,8 @@ router.post('/upload-avatar', verifyToken, upload.single('avatar'), async (req, 
         console.error('Error cleaning up file:', unlinkError);
       }
     }
-    
-    res.status(500).json({ 
+
+    res.status(500).json({
       message: 'Failed to upload avatar',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });

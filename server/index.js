@@ -34,7 +34,6 @@ import backupRoutes from './routes/backupRoutes.js'
 import invoiceRoutes from "./routes/invoiceRoutes.js";
 import receiptRoutes from "./routes/receiptRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
-
 const app = express()
 
 // Trust proxy is required for Render/Heroku to correctly detect protocol (http vs https)
@@ -51,7 +50,7 @@ app.use(compression())
 // Serve static files from uploads directory
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static('/var/www/uploads'));
 
 // Serve static files from dist directory (built React app)
 app.use(express.static(path.join(__dirname, '../dist')));
@@ -85,24 +84,30 @@ app.use('/api/ai', aiRoutes)
 
 
 // Catch-all route to serve index.html for client-side routing
-app.use((req, res) => {
-  // Don't serve index.html for API routes
+app.use((req, res, next) => {
+  // Do not hijack API routes
   if (req.path.startsWith('/api/')) {
-    res.status(404).send('Not Found');
-    return;
+    return next();
+  }
+
+  // Do not hijack uploaded files
+  if (req.path.startsWith('/uploads/')) {
+    return next();
   }
 
   const indexPath = path.join(__dirname, '../dist/index.html');
+
   if (fs.existsSync(indexPath)) {
-    res.sendFile(indexPath);
-  } else {
-    // If dist/index.html doesn't exist, we might be in dev mode
-    res.status(404).json({
-      message: 'Resource not found',
-      env: process.env.NODE_ENV,
-      hint: 'If you are in development, make sure you are accessing the frontend via the dev server (usually port 5173).'
-    });
+    return res.sendFile(indexPath);
   }
+
+  // Dev / fallback case
+  res.status(404).json({
+    message: 'Resource not found',
+    env: process.env.NODE_ENV,
+    hint:
+      'If you are in development, access frontend via dev server (e.g. http://localhost:5173)'
+  });
 });
 
 const PORT = process.env.PORT || 3000
