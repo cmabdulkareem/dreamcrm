@@ -40,7 +40,7 @@ const navItems = [
       { name: "New Lead", path: "/new-lead", pro: false },
       { name: "Manage Leads", path: "/lead-management", pro: false },
       { name: "Cold Call list", path: "/lead-management/call-list", pro: false },
-      { name: "Reports", path: "/reports", pro: false },
+      { name: "Reports (beta)", path: "/reports", pro: false },
     ],
   },
   {
