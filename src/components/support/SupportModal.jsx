@@ -4,7 +4,7 @@ import Button from '../ui/Button';
 import Label from '../form/Label';
 import Input from '../form/Input';
 import axios from 'axios';
-import { toast } from 'react-hot-toast';
+import { toast } from 'react-toastify';
 import { API } from '../../config/api';
 
 const SupportModal = ({ isOpen, onClose }) => {
