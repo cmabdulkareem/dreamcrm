@@ -63,6 +63,7 @@ const InvoiceList = lazy(() => import("./pages/Finance/InvoiceList"));
 const InvoiceGenerator = lazy(() => import("./pages/Finance/InvoiceGenerator"));
 const InvoiceDetails = lazy(() => import("./pages/Finance/InvoiceDetails"));
 const SupportDashboard = lazy(() => import("./pages/Support/SupportDashboard"));
+const CreateSupportRequest = lazy(() => import("./pages/Support/CreateSupportRequest"));
 
 import BrandManagement from "./components/brandManagement/BrandManagement";
 import PublicAttendance from "./pages/PublicAttendance";
@@ -150,7 +151,8 @@ function App() {
                   <Route path="/bar-chart" element={<ProtectedRoutes><BarChart /></ProtectedRoutes>} />
                   <Route path="/marketing-materials" element={<ProtectedRoutes><Images /></ProtectedRoutes>} />
                   <Route path="/course-curriculum" element={<ProtectedRoutes><Images /></ProtectedRoutes>} />
-                  <Route path="/support-dashboard" element={<ProtectedRoutes requireManager={true}><Suspense fallback={<LoadingSpinner />}><SupportDashboard /></Suspense></ProtectedRoutes>} />
+                  <Route path="/support-dashboard" element={<ProtectedRoutes><Suspense fallback={<LoadingSpinner />}><SupportDashboard /></Suspense></ProtectedRoutes>} />
+                  <Route path="/support/new" element={<ProtectedRoutes><Suspense fallback={<LoadingSpinner />}><CreateSupportRequest /></Suspense></ProtectedRoutes>} />
                 </Route>
 
                 {/* Auth Layout */}

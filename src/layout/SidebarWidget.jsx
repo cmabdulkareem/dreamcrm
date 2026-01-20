@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
-import SupportModal from '../components/support/SupportModal';
+import React from 'react';
+import { Link } from 'react-router-dom';
 
 export default function SidebarWidget() {
-  const [isSupportOpen, setIsSupportOpen] = useState(false);
   return (
     <div
       className={`
@@ -14,14 +13,12 @@ export default function SidebarWidget() {
       <p className="mb-4 text-gray-500 text-theme-sm dark:text-gray-400">
         Contact system admin on <br />+91 9746801032 or request a feature here
       </p>
-      <button
-        onClick={() => setIsSupportOpen(true)}
+      <Link
+        to="/support/new"
         className="flex w-full items-center justify-center p-3 font-medium text-white rounded-lg bg-brand-500 text-theme-sm hover:bg-brand-600 transition-colors"
       >
         Feature Requests & Support
-      </button>
-
-      <SupportModal isOpen={isSupportOpen} onClose={() => setIsSupportOpen(false)} />
+      </Link>
     </div>
   );
 }

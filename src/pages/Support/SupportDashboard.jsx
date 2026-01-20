@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import API from '../../config/api';
@@ -77,6 +78,9 @@ const SupportDashboard = () => {
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Support & Feature Requests</h1>
                     <p className="text-gray-500 dark:text-gray-400 mt-1">Track and manage system suggestions and issues.</p>
                 </div>
+                <Link to="/support/new">
+                    <Button variant="primary" size="sm">+ New Request</Button>
+                </Link>
             </div>
 
             <div className="space-y-6">
