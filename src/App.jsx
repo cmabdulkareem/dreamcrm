@@ -39,6 +39,7 @@ const LeaveManagement = lazy(() => import("./pages/LeaveManagement"));
 const NewLead = lazy(() => import("./pages/LeadManagement/NewLead"));
 const ManageLeads = lazy(() => import("./pages/LeadManagement/ManageLeads"));
 const CallList = lazy(() => import("./pages/LeadManagement/CallList"));
+const Reports = lazy(() => import("./pages/Reports/Reports"));
 const LeadBlank = lazy(() => import("./pages/LeadManagement/LeadBlank"));
 const NewStudent = lazy(() => import("./pages/StudentManagement/NewStudent"));
 const ManageStudents = lazy(() => import("./pages/StudentManagement/ManageStudents"));
@@ -131,6 +132,7 @@ function App() {
                   <Route path="/new-lead" element={<ProtectedRoutes>{isAC ? <Navigate to="/batch-management" replace /> : <NewLead />}</ProtectedRoutes>} />
                   <Route path="/lead-management" element={<ProtectedRoutes>{isAC ? <Navigate to="/batch-management" replace /> : <ManageLeads />}</ProtectedRoutes>} />
                   <Route path="/lead-management/call-list" element={<ProtectedRoutes><Suspense fallback={<LoadingSpinner />}><CallList /></Suspense></ProtectedRoutes>} />
+                  <Route path="/reports" element={<ProtectedRoutes><Suspense fallback={<LoadingSpinner />}><Reports /></Suspense></ProtectedRoutes>} />
                   <Route path="/lead-blank" element={<ProtectedRoutes><LeadBlank /></ProtectedRoutes>} />
                   <Route path="/new-student" element={<ProtectedRoutes>{isAC ? <Navigate to="/manage-students" replace /> : isCounsellor ? <Navigate to="/batch-management" replace /> : <NewStudent />}</ProtectedRoutes>} />
                   <Route path="/manage-students" element={<ProtectedRoutes>{isCounsellor ? <Navigate to="/batch-management" replace /> : <ManageStudents />}</ProtectedRoutes>} />

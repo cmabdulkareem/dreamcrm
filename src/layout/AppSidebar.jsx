@@ -40,6 +40,7 @@ const navItems = [
       { name: "New Lead", path: "/new-lead", pro: false },
       { name: "Manage Leads", path: "/lead-management", pro: false },
       { name: "Cold Call list", path: "/lead-management/call-list", pro: false },
+      { name: "Reports", path: "/reports", pro: false },
     ],
   },
   {
@@ -414,6 +415,7 @@ const AppSidebar = () => {
                         "New Lead",
                         "Manage Leads",
                         "Cold Call list",
+                        "Reports",
                         "Leads & Conversions",
                         "Apply Leave",
                         "My Leaves",
