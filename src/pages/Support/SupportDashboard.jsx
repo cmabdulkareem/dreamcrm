@@ -165,7 +165,6 @@ const SupportDashboard = () => {
                         <TableHeader className="border-b border-gray-100 dark:border-gray-800">
                             <TableRow>
                                 <TableCell isHeader className="px-5 py-3 text-left font-semibold text-gray-500 text-xs uppercase">ID</TableCell>
-                                {isDev && <TableCell isHeader className="px-5 py-3 text-left font-semibold text-gray-500 text-xs uppercase">Brand</TableCell>}
                                 <TableCell isHeader className="px-5 py-3 text-left font-semibold text-gray-500 text-xs uppercase">Request</TableCell>
                                 <TableCell isHeader className="px-5 py-3 text-left font-semibold text-gray-500 text-xs uppercase">Votes</TableCell>
                                 <TableCell isHeader className="px-5 py-3 text-left font-semibold text-gray-500 text-xs uppercase">Status</TableCell>
@@ -176,7 +175,7 @@ const SupportDashboard = () => {
                         <TableBody>
                             {requests.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={isDev ? 7 : 6} className="px-5 py-10 text-center text-gray-500">
+                                    <TableCell colSpan={6} className="px-5 py-10 text-center text-gray-500">
                                         No requests found.
                                     </TableCell>
                                 </TableRow>
@@ -186,11 +185,6 @@ const SupportDashboard = () => {
                                         <TableCell className="px-5 py-4 text-xs font-medium text-gray-400">
                                             #{req._id.slice(-6).toUpperCase()}
                                         </TableCell>
-                                        {isDev && (
-                                            <TableCell className="px-5 py-4 text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                                {req.brand?.name || 'Main'}
-                                            </TableCell>
-                                        )}
                                         <TableCell className="px-5 py-4">
                                             <div className="flex flex-col">
                                                 <span className="text-sm font-bold text-gray-800 dark:text-white mb-0.5 line-clamp-1">{req.title}</span>
