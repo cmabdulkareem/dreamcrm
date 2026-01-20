@@ -10,7 +10,7 @@ import RangeDatePicker from "../../components/form/RangeDatePicker";
 import Select from "../../components/form/Select";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "../../components/ui/table";
 import Badge from "../../components/ui/badge/Badge";
-import { DownloadIcon, ChevronDownIcon, ChevronUpIcon } from "../../icons";
+import { DownloadIcon, ChevronDownIcon, ChevronUpIcon, ShootingStarIcon } from "../../icons";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Papa from "papaparse";
@@ -20,6 +20,8 @@ import API from "../../config/api";
 import { leadStatusOptions, leadPotentialOptions, callListStatusOptions } from "../../data/DataSets";
 import { formatDate } from "../../components/leadManagement/leadHelpers";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
+import { Modal } from "../../components/ui/modal";
+import { useModal } from "../../hooks/useModal";
 
 export default function Reports() {
     const { user } = useContext(AuthContext);
@@ -44,6 +46,16 @@ export default function Reports() {
     // Options
     const [campaignOptions, setCampaignOptions] = useState([]);
     const [userOptions, setUserOptions] = useState([]);
+
+    // Support Request Modal
+    const supportModal = useModal();
+    const [newRequest, setNewRequest] = useState({
+        title: '',
+        description: '',
+        type: 'feature',
+        priority: 'medium'
+    });
+    const [creating, setCreating] = useState(false);
 
     useEffect(() => {
         fetchCampaigns();
@@ -276,10 +288,44 @@ export default function Reports() {
         toast.success("PDF exported successfully!");
     };
 
+    // Create support request
+    const handleCreateRequest = async (e) => {
+        e.preventDefault();
+        if (!newRequest.title.trim() || !newRequest.description.trim()) {
+            toast.error("Title and description are required.");
+            return;
+        }
+
+        setCreating(true);
+        try {
+            await axios.post(`${API}/support`, newRequest, { withCredentials: true });
+            toast.success("Idea submitted successfully!");
+            setNewRequest({ title: '', description: '', type: 'feature', priority: 'medium' });
+            supportModal.closeModal();
+        } catch (error) {
+            console.error("Error submitting idea:", error);
+            toast.error(error.response?.data?.message || "Failed to submit idea.");
+        } finally {
+            setCreating(false);
+        }
+    };
+
     return (
         <div>
             <PageMeta title="Reports | DreamCRM" description="Generate reports for leads and cold call lists" />
-            <PageBreadcrumb pageTitle="Reports" />
+
+            {/* Breadcrumb with Share Idea Button */}
+            <div className="flex items-center justify-between mb-6">
+                <PageBreadcrumb pageTitle="Reports" />
+                <Button
+                    size="sm"
+                    variant="primary"
+                    onClick={supportModal.openModal}
+                    startIcon={<ShootingStarIcon className="size-4" />}
+                >
+                    Share Idea
+                </Button>
+            </div>
 
             {/* Tab Navigation */}
             <div className="mb-6 border-b border-gray-200 dark:border-gray-800">
@@ -287,8 +333,8 @@ export default function Reports() {
                     <button
                         onClick={() => setActiveTab("leads")}
                         className={`pb-3 px-4 font-medium transition-colors ${activeTab === "leads"
-                                ? "text-brand-500 border-b-2 border-brand-500"
-                                : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                            ? "text-brand-500 border-b-2 border-brand-500"
+                            : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
                             }`}
                     >
                         Lead Reports
@@ -296,8 +342,8 @@ export default function Reports() {
                     <button
                         onClick={() => setActiveTab("calls")}
                         className={`pb-3 px-4 font-medium transition-colors ${activeTab === "calls"
-                                ? "text-brand-500 border-b-2 border-brand-500"
-                                : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                            ? "text-brand-500 border-b-2 border-brand-500"
+                            : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
                             }`}
                     >
                         Cold Call Reports
@@ -520,6 +566,60 @@ export default function Reports() {
                     )}
                 </div>
             </ComponentCard>
+
+            {/* Share Idea Modal */}
+            <Modal
+                isOpen={supportModal.isOpen}
+                onClose={supportModal.closeModal}
+                title="Share Your Idea"
+                size="md"
+            >
+                <form onSubmit={handleCreateRequest} className="space-y-4">
+                    <div>
+                        <Label htmlFor="title">Title *</Label>
+                        <Input
+                            id="title"
+                            type="text"
+                            value={newRequest.title}
+                            onChange={(e) => setNewRequest({ ...newRequest, title: e.target.value })}
+                            placeholder="Brief title for your idea"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <Label htmlFor="description">Description *</Label>
+                        <textarea
+                            id="description"
+                            value={newRequest.description}
+                            onChange={(e) => setNewRequest({ ...newRequest, description: e.target.value })}
+                            placeholder="Describe your idea in detail..."
+                            rows={5}
+                            required
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 dark:bg-gray-800 dark:text-white"
+                        />
+                    </div>
+                    <div>
+                        <Label htmlFor="priority">Priority</Label>
+                        <Select
+                            options={[
+                                { value: 'low', label: 'Low' },
+                                { value: 'medium', label: 'Medium' },
+                                { value: 'high', label: 'High' }
+                            ]}
+                            value={newRequest.priority}
+                            onChange={(value) => setNewRequest({ ...newRequest, priority: value })}
+                        />
+                    </div>
+                    <div className="flex gap-2 justify-end pt-4">
+                        <Button type="button" variant="outline" onClick={supportModal.closeModal}>
+                            Cancel
+                        </Button>
+                        <Button type="submit" variant="primary" disabled={creating}>
+                            {creating ? 'Submitting...' : 'Submit Idea'}
+                        </Button>
+                    </div>
+                </form>
+            </Modal>
 
             <ToastContainer position="top-center" className="!z-[999999]" style={{ zIndex: 999999 }} />
         </div>
