@@ -36,7 +36,12 @@ export const createSupportRequest = async (req, res) => {
 // Get all requests for the brand (with role-based filtering if needed)
 export const getAllSupportRequests = async (req, res) => {
     try {
-        const brandFilter = req.brandFilter || {};
+        let brandFilter = req.brandFilter || {};
+
+        // Developer sees everything across all brands
+        if (isDeveloper(req.user)) {
+            brandFilter = {};
+        }
 
         // Non-admin/manager/developer users only see their own requests
         let query = { ...brandFilter };
@@ -47,6 +52,7 @@ export const getAllSupportRequests = async (req, res) => {
         const requests = await Support.find(query)
             .populate('createdBy', 'fullName')
             .populate('responses.sender', 'fullName')
+            .populate('brand', 'name') // Populate brand name for developer view
             .sort({ createdAt: -1 });
 
         res.status(200).json(requests);
