@@ -34,6 +34,7 @@ const callListSchema = new mongoose.Schema({
     status: {
         type: String,
         enum: [
+            'pending',
             'interested-wants-details',
             'very-interested',
             'neutral',
@@ -46,7 +47,7 @@ const callListSchema = new mongoose.Schema({
             'invalid-number',
             'call-dropped'
         ],
-        default: 'neutral'
+        default: 'pending'
     },
     brand: {
         type: mongoose.Schema.Types.ObjectId,

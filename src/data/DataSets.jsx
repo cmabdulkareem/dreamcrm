@@ -267,7 +267,8 @@ const leadPotentialOptions = [
 ];
 
 const callListStatusOptions = [
-  { value: 'neutral', label: 'Neutral – Needs follow-up', color: '#A3A3A3' },
+  { value: 'pending', label: 'Pending', color: '#A3A3A3' },
+  { value: 'neutral', label: 'Neutral – Needs follow-up', color: '#737373' },
   { value: 'interested-wants-details', label: 'Interested – Wants details', color: '#38BDF8' },
   { value: 'very-interested', label: 'Very Interested – Ready for next step', color: '#22C55E' },
   { value: 'not-interested', label: 'Not Interested', color: '#EF4444' },

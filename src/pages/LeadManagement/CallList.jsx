@@ -91,9 +91,9 @@ export default function CallList() {
 
         // Add counts from backend
         stats.forEach(stat => {
-            const statusKey = (stat._id || 'neutral').toLowerCase();
+            const statusKey = (stat._id || 'pending').toLowerCase();
             total += stat.count;
-            if (statusKey === 'neutral') pending = stat.count;
+            if (statusKey === 'pending') pending = stat.count;
 
             if (result[statusKey]) {
                 result[statusKey].count = stat.count;
@@ -101,7 +101,7 @@ export default function CallList() {
                 result[statusKey] = {
                     count: stat.count,
                     color: '#A3A3A3',
-                    label: stat._id || 'Neutral'
+                    label: stat._id || 'Pending'
                 };
             }
         });
