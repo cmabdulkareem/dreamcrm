@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import Modal from '../ui/modal';
-import Button from '../ui/Button';
+import { Modal } from '../ui/modal';
+import Button from '../ui/button/Button';
 import Label from '../form/Label';
-import Input from '../form/Input';
+import Input from '../form/input/InputField';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { API } from '../../config/api';

@@ -30,7 +30,6 @@ const ManageEvents = () => {
     eventName: '',
     eventDescription: '',
     eventDate: '',
-    eventDate: '',
     maxRegistrations: 0,
     eventPin: '',
     registrationFields: [
@@ -172,7 +171,6 @@ const ManageEvents = () => {
       eventName: '',
       eventDescription: '',
       eventDate: '',
-      eventDate: '',
       maxRegistrations: 0,
       eventPin: '',
       registrationFields: [
@@ -213,7 +211,6 @@ const ManageEvents = () => {
       setFormData({
         eventName: event.eventName || '',
         eventDescription: event.eventDescription || '',
-        eventDate: event.eventDate ? new Date(event.eventDate).toISOString().split('T')[0] : '',
         eventDate: event.eventDate ? new Date(event.eventDate).toISOString().split('T')[0] : '',
         maxRegistrations: event.maxRegistrations || 0,
         eventPin: event.eventPin || '',
