@@ -85,7 +85,7 @@ export const saveLeadChanges = async (
       education,
       otherEducation,
       contactPoint,
-      otherContactPoint: contactPoint === "other" ? otherContactPoint : "",
+      otherContactPoint: (contactPoint === "other" || contactPoint?.toLowerCase() === "reference" || contactPoint?.toLowerCase() === "referance") ? otherContactPoint : "",
       campaign,
       handledBy: user?.fullName || handledByPerson,
       followUpDate: leadStatus === "converted" ? null : followUpDate, // Clear followUpDate for converted leads

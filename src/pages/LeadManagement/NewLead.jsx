@@ -336,7 +336,11 @@ export default function FormElements() {
     }
 
     // Add validation for other contact point or reference
-    if ((contactPoint === "other" || contactPoint?.toLowerCase() === "reference") && !otherContactPoint.trim()) {
+    const requiresOther = contactPoint === "other" ||
+      contactPoint?.toLowerCase() === "reference" ||
+      contactPoint?.toLowerCase() === "referance";
+
+    if (requiresOther && !otherContactPoint.trim()) {
       errors.otherContactPoint = "Please specify details";
     }
 
@@ -412,7 +416,7 @@ export default function FormElements() {
       otherEducation: otherEducation, // Always save user input for otherEducation
       coursePreference: selectedValues,
       contactPoint,
-      otherContactPoint: (contactPoint === "other" || contactPoint?.toLowerCase() === "reference") ? otherContactPoint : "", // Restore conditional logic
+      otherContactPoint: (contactPoint === "other" || contactPoint?.toLowerCase() === "reference" || contactPoint?.toLowerCase() === "referance") ? otherContactPoint : "", // Restore conditional logic
       campaign,
       handledBy: user?.fullName || "Unknown",
       leadRemarks,
@@ -668,15 +672,15 @@ export default function FormElements() {
                     />
                   </div>
                   <div className="w-full">
-                    <Label htmlFor="otherContactPoint" required={contactPoint === "other" || contactPoint?.toLowerCase() === "reference"}>Specify other</Label>
+                    <Label htmlFor="otherContactPoint" required={contactPoint === "other" || contactPoint?.toLowerCase() === "reference" || contactPoint?.toLowerCase() === "referance"}>Specify other</Label>
                     <Input
                       type="text"
                       id="otherContactPoint"
                       value={otherContactPoint}
                       onChange={(e) => setOtherContactPoint(e.target.value)}
-                      disabled={contactPoint !== "other" && contactPoint?.toLowerCase() !== "reference"}
-                      error={(contactPoint === "other" || contactPoint?.toLowerCase() === "reference") && !otherContactPoint.trim() && !!validationErrors.otherContactPoint}
-                      hint={(contactPoint === "other" || contactPoint?.toLowerCase() === "reference") && !otherContactPoint.trim() ? validationErrors.otherContactPoint : ""}
+                      disabled={contactPoint !== "other" && contactPoint?.toLowerCase() !== "reference" && contactPoint?.toLowerCase() !== "referance"}
+                      error={(contactPoint === "other" || contactPoint?.toLowerCase() === "reference" || contactPoint?.toLowerCase() === "referance") && !otherContactPoint.trim() && !!validationErrors.otherContactPoint}
+                      hint={(contactPoint === "other" || contactPoint?.toLowerCase() === "reference" || contactPoint?.toLowerCase() === "referance") && !otherContactPoint.trim() ? validationErrors.otherContactPoint : ""}
                     />
                   </div>
                   <div className="w-full">

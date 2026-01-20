@@ -1289,11 +1289,13 @@ export default function RecentOrders() {
                         <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                           <div className="flex flex-col gap-0.5">
                             <p>{row.contactPoint || "N/A"}</p>
-                            {row.contactPoint?.toLowerCase() === "other" && row.otherContactPoint && (
-                              <p className="text-gray-400 text-xs truncate max-w-[150px]">
-                                {row.otherContactPoint}
-                              </p>
-                            )}
+                            {(row.contactPoint?.toLowerCase() === "other" ||
+                              row.contactPoint?.toLowerCase() === "reference" ||
+                              row.contactPoint?.toLowerCase() === "referance") && row.otherContactPoint && (
+                                <p className="text-gray-400 text-xs truncate max-w-[150px]">
+                                  {row.otherContactPoint}
+                                </p>
+                              )}
                           </div>
                         </TableCell>
                         <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{row.campaign || "N/A"}</TableCell>
@@ -1789,7 +1791,7 @@ export default function RecentOrders() {
                       id="otherContactPoint"
                       value={otherContactPoint}
                       onChange={(e) => setOtherContactPoint(e.target.value)}
-                      disabled={contactPoint !== "other"}
+                      disabled={contactPoint !== "other" && contactPoint?.toLowerCase() !== "reference" && contactPoint?.toLowerCase() !== "referance"}
                     />
                   </div>
                 </div>

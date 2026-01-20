@@ -249,7 +249,10 @@ export const prepareLeadForEdit = (row, setters) => {
   if (typeof setContactPoint === 'function') {
     // Use dynamic contact points if available, otherwise fall back to static
     const contactPointsToUse = setters.contactPointOptions || contactPoints;
+    const cpValue = row.contactPoint?.toLowerCase();
+    const isSpecialCP = cpValue === "other" || cpValue === "reference" || cpValue === "referance";
     const matchedCP = contactPointsToUse.find(opt => opt.value === row.contactPoint);
+
     if (matchedCP || !row.contactPoint) {
       setContactPoint(row.contactPoint || "");
     } else {
@@ -257,7 +260,10 @@ export const prepareLeadForEdit = (row, setters) => {
     }
   }
   if (typeof setOtherContactPoint === 'function') {
-    if (row.contactPoint === "other") {
+    const cpValue = row.contactPoint?.toLowerCase();
+    const isSpecialCP = cpValue === "other" || cpValue === "reference" || cpValue === "referance";
+
+    if (isSpecialCP) {
       setOtherContactPoint(row.otherContactPoint || "");
     } else {
       // Use dynamic contact points if available, otherwise fall back to static
