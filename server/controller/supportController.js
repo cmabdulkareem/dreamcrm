@@ -1,5 +1,5 @@
 import Support from '../model/supportModel.js';
-import { isOwner, isManager } from '../utils/roleHelpers.js';
+import { isOwner, isManager, isDeveloper } from '../utils/roleHelpers.js';
 
 // Create a new support request
 export const createSupportRequest = async (req, res) => {
@@ -38,9 +38,9 @@ export const getAllSupportRequests = async (req, res) => {
     try {
         const brandFilter = req.brandFilter || {};
 
-        // Non-admin/manager users only see their own requests
+        // Non-admin/manager/developer users only see their own requests
         let query = { ...brandFilter };
-        if (!isOwner(req.user) && !isManager(req.user)) {
+        if (!isOwner(req.user) && !isManager(req.user) && !isDeveloper(req.user)) {
             query.createdBy = req.user.id;
         }
 
@@ -62,8 +62,8 @@ export const updateSupportStatus = async (req, res) => {
         const { id } = req.params;
         const { status } = req.body;
 
-        if (!isOwner(req.user) && !isManager(req.user)) {
-            return res.status(403).json({ message: "Forbidden: Only admins can update status." });
+        if (!isOwner(req.user) && !isManager(req.user) && !isDeveloper(req.user)) {
+            return res.status(403).json({ message: "Forbidden: Only admins or developer can update status." });
         }
 
         const request = await Support.findOneAndUpdate(

@@ -166,7 +166,8 @@ export const signInUser = async (req, res) => {
         id: user._id,
         roles: user.roles,
         isAdmin: user.isAdmin,
-        fullName: user.fullName
+        fullName: user.fullName,
+        email: user.email
       },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
@@ -278,7 +279,8 @@ export const authCheck = async (req, res) => {
         id: user._id,
         roles: user.roles,
         isAdmin: user.isAdmin,
-        fullName: user.fullName
+        fullName: user.fullName,
+        email: user.email
       },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }

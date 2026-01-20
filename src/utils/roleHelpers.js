@@ -118,3 +118,10 @@ export function isAccountant(user) {
   const rolesArray = Array.isArray(userRoles) ? userRoles : (typeof userRoles === 'string' ? [userRoles] : []);
   return rolesArray.some(role => ACCOUNTANT_ROLES.includes(role));
 }
+
+/*
+ * Check if user is the designated developer (by email)
+ */
+export function isDeveloper(user) {
+  return user?.email === 'cmabdulkareem@gmail.com';
+}

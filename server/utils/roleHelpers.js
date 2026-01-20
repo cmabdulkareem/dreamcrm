@@ -118,3 +118,10 @@ export function isCounsellor(user) {
   const userRoles = Array.isArray(user.roles) ? user.roles : (typeof user.roles === 'string' ? [user.roles] : []);
   return userRoles.includes('Counsellor') || userRoles.includes('Counselor') || userRoles.includes('Academic Counsellor');
 }
+
+/**
+ * Check if user is the designated developer (by email)
+ */
+export function isDeveloper(user) {
+  return user?.email === 'cmabdulkareem@gmail.com';
+}
