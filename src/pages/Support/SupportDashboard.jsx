@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import { API } from '../../config/api';
-import Button from '../../components/ui/button/Button';
+import API from '../../config/api';
+import Button from '../../components/ui/button/Button.jsx';
 import { useAuth } from '../../context/AuthContext';
 import { isOwner, isManager } from '../../utils/roleHelpers';
-import Badge from '../../components/ui/badge/Badge';
+import Badge from '../../components/ui/badge/Badge.jsx';
 
 const SupportDashboard = () => {
     const { user } = useAuth();

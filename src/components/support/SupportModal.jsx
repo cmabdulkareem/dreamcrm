@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Modal } from '../ui/modal';
-import Button from '../ui/button/Button';
+import Button from '../ui/button/Button.jsx';
 import Label from '../form/Label';
 import Input from '../form/input/InputField';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import { API } from '../../config/api';
+import API from '../../config/api';
 
 const SupportModal = ({ isOpen, onClose }) => {
     const [title, setTitle] = useState('');
