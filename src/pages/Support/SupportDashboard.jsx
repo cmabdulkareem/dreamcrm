@@ -164,7 +164,6 @@ const SupportDashboard = () => {
                     <Table>
                         <TableHeader className="border-b border-gray-100 dark:border-gray-800">
                             <TableRow>
-                                <TableCell isHeader className="px-5 py-3 text-left font-semibold text-gray-500 text-xs uppercase">ID</TableCell>
                                 <TableCell isHeader className="px-5 py-3 text-left font-semibold text-gray-500 text-xs uppercase">Request</TableCell>
                                 <TableCell isHeader className="px-5 py-3 text-left font-semibold text-gray-500 text-xs uppercase">Votes</TableCell>
                                 <TableCell isHeader className="px-5 py-3 text-left font-semibold text-gray-500 text-xs uppercase">Status</TableCell>
@@ -182,11 +181,9 @@ const SupportDashboard = () => {
                             ) : (
                                 requests.map((req) => (
                                     <TableRow key={req._id} className="hover:bg-gray-50 dark:hover:bg-white/[0.02] cursor-pointer" onClick={() => handleViewRequest(req)}>
-                                        <TableCell className="px-5 py-4 text-xs font-medium text-gray-400">
-                                            #{req._id.slice(-6).toUpperCase()}
-                                        </TableCell>
                                         <TableCell className="px-5 py-4">
                                             <div className="flex flex-col">
+                                                <span className="text-xs font-medium text-gray-800 dark:text-white mb-0.5 line-clamp-1">#{req._id.slice(-6).toUpperCase()}</span>
                                                 <span className="text-sm font-bold text-gray-800 dark:text-white mb-0.5 line-clamp-1">{req.title}</span>
                                                 <span className="text-xs text-gray-400">By {req.createdBy?.fullName}</span>
                                             </div>
