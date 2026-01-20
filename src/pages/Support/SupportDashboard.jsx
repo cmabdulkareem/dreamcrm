@@ -219,7 +219,7 @@ const SupportDashboard = () => {
                                 </p>
                             </div>
 
-                            {(isOwner(user) || isManager(user) || isDeveloper(user)) && (
+                            {isDev && (
                                 <div className="flex gap-2">
                                     <select
                                         className="text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5 outline-none focus:ring-2 focus:ring-brand-500"

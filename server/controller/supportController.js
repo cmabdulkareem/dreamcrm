@@ -43,11 +43,8 @@ export const getAllSupportRequests = async (req, res) => {
             brandFilter = {};
         }
 
-        // Non-admin/manager/developer users only see their own requests
+        // All users see all requests within their brand (developer sees global)
         let query = { ...brandFilter };
-        if (!isOwner(req.user) && !isManager(req.user) && !isDeveloper(req.user)) {
-            query.createdBy = req.user.id;
-        }
 
         const requests = await Support.find(query)
             .populate('createdBy', 'fullName')
@@ -68,8 +65,8 @@ export const updateSupportStatus = async (req, res) => {
         const { id } = req.params;
         const { status } = req.body;
 
-        if (!isOwner(req.user) && !isManager(req.user) && !isDeveloper(req.user)) {
-            return res.status(403).json({ message: "Forbidden: Only admins or developer can update status." });
+        if (!isDeveloper(req.user)) {
+            return res.status(403).json({ message: "Forbidden: Only the developer can update status." });
         }
 
         const request = await Support.findOneAndUpdate(
