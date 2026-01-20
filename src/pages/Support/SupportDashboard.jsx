@@ -76,8 +76,8 @@ const SupportDashboard = () => {
 
     return (
         <div className="space-y-6">
-            <PageMeta title="Support & Feature Requests | DreamCRM" />
-            <PageBreadcrumb pageTitle="Support & Feature Requests" />
+            <PageMeta title="Feature Request & Support | DreamCRM" />
+            <PageBreadcrumb pageTitle="Feature Request & Support" />
 
             <div className="flex justify-end">
                 <Link to="/support/new">
