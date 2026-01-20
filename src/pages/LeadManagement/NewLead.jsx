@@ -317,6 +317,10 @@ export default function FormElements() {
       errors.otherPlace = "Please specify the place";
     }
 
+    if (!status) {
+      errors.status = "Current Status is required";
+    }
+
     if (!education) {
       errors.education = "Education is required";
     } else if (education === "Other" && !otherEducation.trim()) {
@@ -502,7 +506,7 @@ export default function FormElements() {
               <div className="space-y-6">
                 <div className="flex flex-col md:flex-row gap-4">
                   <div className="w-full md:w-1/2">
-                    <Label htmlFor="firstName">Full Name *</Label>
+                    <Label htmlFor="firstName" required={true}>Full Name</Label>
                     <Input
                       type="text"
                       id="firstName"
@@ -529,7 +533,7 @@ export default function FormElements() {
                 {/* Phones */}
                 <div className="flex flex-col md:flex-row gap-4">
                   <div className="w-full md:w-1/2">
-                    <Label>Phone *</Label>
+                    <Label required={true}>Phone</Label>
                     <PhoneInput
                       id="new-lead-phone"
                       selectPosition="end"
@@ -573,7 +577,7 @@ export default function FormElements() {
                     />
                   </div>
                   <div className="w-full md:w-1/4">
-                    <Label>Place *</Label>
+                    <Label required={true}>Place</Label>
                     <Select
                       options={placeOptions}
                       value={place}
@@ -598,16 +602,18 @@ export default function FormElements() {
                 {/* Status, Education - removed Remarks */}
                 <div className="flex flex-col md:flex-row gap-4">
                   <div className="w-full md:w-1/3">
-                    <Label>Current Status</Label>
+                    <Label required={true}>Current Status</Label>
                     <Select
                       options={enquirerStatus}
                       value={status}
                       placeholder="Select Status"
                       onChange={setStatus}
+                      error={!!validationErrors.status}
+                      hint={validationErrors.status}
                     />
                   </div>
                   <div className="w-full md:w-1/3">
-                    <Label>Education *</Label>
+                    <Label required={true}>Education</Label>
                     <Select
                       options={enquirerEducation}
                       value={education}
@@ -638,7 +644,8 @@ export default function FormElements() {
               <div className="space-y-6">
                 <div>
                   <MultiSelect
-                    label="Course Preference *"
+                    label="Course Preference"
+                    required={true}
                     id="new-lead-course-preference"
                     options={courseOptions}
                     selectedValues={selectedValues}
@@ -650,7 +657,7 @@ export default function FormElements() {
 
                 <div className="flex flex-col md:flex-row gap-4">
                   <div className="w-full">
-                    <Label>Contact Point *</Label>
+                    <Label required={true}>Contact Point</Label>
                     <Select
                       options={contactPointOptions}
                       value={contactPoint}
@@ -661,7 +668,7 @@ export default function FormElements() {
                     />
                   </div>
                   <div className="w-full">
-                    <Label htmlFor="otherContactPoint">Specify other *</Label>
+                    <Label htmlFor="otherContactPoint" required={true}>Specify other</Label>
                     <Input
                       type="text"
                       id="otherContactPoint"
@@ -673,7 +680,7 @@ export default function FormElements() {
                     />
                   </div>
                   <div className="w-full">
-                    <Label>Campaign *</Label>
+                    <Label required={true}>Campaign</Label>
                     <Select
                       options={campaignOptions}
                       value={campaign}
@@ -690,7 +697,8 @@ export default function FormElements() {
                   <div className="w-full md:w-1/3">
                     <DatePicker
                       id="followupDate"
-                      label="Next Follow Up Date *"
+                      label="Next Follow Up Date"
+                      required={true}
                       value={followUpDate}
                       disablePastDates={true} // Hide past dates completely
                       onChange={(date, str) => setFollowUpDate(str)}
@@ -699,7 +707,7 @@ export default function FormElements() {
                     />
                   </div>
                   <div className="w-full md:w-2/3">
-                    <Label htmlFor="leadRemarks">Remarks *</Label>
+                    <Label htmlFor="leadRemarks" required={true}>Remarks</Label>
                     <Input
                       type="text"
                       id="leadRemarks"
@@ -712,7 +720,7 @@ export default function FormElements() {
                 </div>
                 <div className="flex flex-col md:flex-row gap-4">
                   <div className="w-full">
-                    <Label>Lead Potential *</Label>
+                    <Label required={true}>Lead Potential</Label>
                     <Select
                       options={leadPotentialOptions}
                       value={leadPotential}

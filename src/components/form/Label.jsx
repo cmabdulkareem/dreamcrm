@@ -1,7 +1,7 @@
 import { twMerge } from "tailwind-merge";
 import { clsx } from "clsx";
 
-const Label = ({ htmlFor, children, className }) => {
+const Label = ({ htmlFor, children, className, required }) => {
   return (
     <label
       htmlFor={htmlFor}
@@ -13,6 +13,7 @@ const Label = ({ htmlFor, children, className }) => {
       )}
     >
       {children}
+      {required && <span className="text-red-500 ml-1">*</span>}
     </label>
   );
 };

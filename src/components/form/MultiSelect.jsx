@@ -7,6 +7,7 @@ const MultiSelect = ({
   selectedValues,
   onChange,
   disabled = false,
+  required = false,
 }) => {
   // Use controlled mode if selectedValues is provided
   const isControlled = selectedValues !== undefined && selectedValues !== null;
@@ -72,6 +73,7 @@ const MultiSelect = ({
     <div className="w-full">
       <label className="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
         {label}
+        {required && <span className="text-red-500 ml-1">*</span>}
       </label>
 
       <div className={`relative inline-block w-full ${isOpen ? "z-50" : "z-20"}`}>
@@ -162,8 +164,8 @@ const MultiSelect = ({
                   >
                     <div
                       className={`relative flex w-full items-center p-2 pl-2 ${selectedOptions.includes(option.value)
-                          ? "bg-primary/10"
-                          : ""
+                        ? "bg-primary/10"
+                        : ""
                         }`}
                     >
                       <div className="mx-2 leading-6 text-gray-800 dark:text-white/90">

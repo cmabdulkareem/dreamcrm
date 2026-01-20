@@ -14,6 +14,7 @@ export default function DatePicker({
   placeholder = "dd/mm/yyyy",
   minDate,
   disablePastDates,
+  required = false,
 }) {
   const dateValue = value || defaultDate;
   const fp = useRef(null);
@@ -177,7 +178,7 @@ export default function DatePicker({
 
   return (
     <div>
-      {label && <Label htmlFor={id}>{label}</Label>}
+      {label && <Label htmlFor={id} required={required}>{label}</Label>}
 
       <div className="relative" id={`${id}-wrapper`}>
         <input
