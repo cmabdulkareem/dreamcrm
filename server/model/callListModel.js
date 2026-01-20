@@ -33,8 +33,20 @@ const callListSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ['pending', 'called', 'wrong-number', 'not-picked', 'busy', 'interested', 'not-interested'],
-        default: 'pending'
+        enum: [
+            'interested-wants-details',
+            'very-interested',
+            'neutral',
+            'not-interested',
+            'callback-requested',
+            'copied-to-lead',
+            'no-answer',
+            'busy',
+            'switched-off',
+            'invalid-number',
+            'call-dropped'
+        ],
+        default: 'neutral'
     },
     brand: {
         type: mongoose.Schema.Types.ObjectId,

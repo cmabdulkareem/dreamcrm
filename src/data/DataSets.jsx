@@ -267,14 +267,17 @@ const leadPotentialOptions = [
 ];
 
 const callListStatusOptions = [
-  { value: 'pending', label: 'Pending', color: 'bg-gray-100 text-gray-700' },
-  { value: 'called', label: 'Called', color: 'bg-blue-100 text-blue-700' },
-  { value: 'wrong-number', label: 'Wrong Number', color: 'bg-red-100 text-red-700' },
-  { value: 'not-picked', label: 'Not Picked', color: 'bg-orange-100 text-orange-700' },
-  { value: 'busy', label: 'Busy', color: 'bg-yellow-100 text-yellow-700' },
-  { value: 'interested', label: 'Interested', color: 'bg-green-100 text-green-700' },
-  { value: 'not-interested', label: 'Not Interested', color: 'bg-red-100 text-red-700' },
-  { value: 'copied-to-leads', label: 'Copied to Leads', color: 'bg-purple-100 text-purple-700' },
+  { value: 'neutral', label: 'Neutral – Needs follow-up', color: '#A3A3A3' },
+  { value: 'interested-wants-details', label: 'Interested – Wants details', color: '#38BDF8' },
+  { value: 'very-interested', label: 'Very Interested – Ready for next step', color: '#22C55E' },
+  { value: 'not-interested', label: 'Not Interested', color: '#EF4444' },
+  { value: 'callback-requested', label: 'Call back requested', color: '#8B5CF6' },
+  { value: 'copied-to-lead', label: 'Copied to New Lead', color: '#0EA5E9' },
+  { value: 'no-answer', label: 'No answer', color: '#FB923C' },
+  { value: 'busy', label: 'Busy', color: '#F97316' },
+  { value: 'switched-off', label: 'Switched Off', color: '#64748B' },
+  { value: 'invalid-number', label: 'Invalid / Wrong number', color: '#7F1D1D' },
+  { value: 'call-dropped', label: 'Call Dropped', color: '#DC2626' },
 ];
 
 export {

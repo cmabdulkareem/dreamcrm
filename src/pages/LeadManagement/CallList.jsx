@@ -91,14 +91,18 @@ export default function CallList() {
 
         // Add counts from backend
         stats.forEach(stat => {
-            const statusKey = (stat._id || 'pending').toLowerCase();
+            const statusKey = (stat._id || 'neutral').toLowerCase();
             total += stat.count;
-            if (statusKey === 'pending') pending = stat.count;
+            if (statusKey === 'neutral') pending = stat.count;
 
             if (result[statusKey]) {
                 result[statusKey].count = stat.count;
             } else {
-                result[statusKey] = { count: stat.count, color: 'bg-gray-100 text-gray-700', label: stat._id || 'Pending' };
+                result[statusKey] = {
+                    count: stat.count,
+                    color: '#A3A3A3',
+                    label: stat._id || 'Neutral'
+                };
             }
         });
 
@@ -440,7 +444,10 @@ export default function CallList() {
 
         return (
             <div className="flex flex-col gap-1.5 min-w-[130px]">
-                <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider w-fit ${currentStatus.color || 'bg-gray-100 text-gray-700'}`}>
+                <span
+                    className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider w-fit text-white shadow-sm"
+                    style={{ backgroundColor: currentStatus.color || '#A3A3A3' }}
+                >
                     {currentStatus.label}
                 </span>
                 <div className="relative group">
@@ -539,7 +546,10 @@ export default function CallList() {
                         </span>
                         {summaryData.map((stat, idx) => (
                             <div key={idx} className="flex items-center gap-1.5 group transition-all">
-                                <span className={`size-1.5 rounded-full ${stat.color?.split(' ')[0] || 'bg-gray-400'} shadow-sm group-hover:scale-125 transition-transform`} />
+                                <span
+                                    className="size-1.5 rounded-full shadow-sm group-hover:scale-125 transition-transform"
+                                    style={{ backgroundColor: stat.color || '#A3A3A3' }}
+                                />
                                 <span className="text-[11px] font-medium text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-200 transition-colors uppercase tracking-tight">{stat.label}:</span>
                                 <span className="text-xs font-bold text-gray-800 dark:text-white">{stat.count}</span>
                             </div>
