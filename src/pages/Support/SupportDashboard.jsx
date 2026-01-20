@@ -13,6 +13,8 @@ import ComponentCard from '../../components/common/ComponentCard';
 import { Table, TableBody, TableCell, TableHeader, TableRow } from '../../components/ui/table';
 import { Modal } from '../../components/ui/modal';
 import { useModal } from '../../hooks/useModal';
+import Label from '../../components/form/Label';
+import Input from '../../components/form/input/InputField';
 
 const SupportDashboard = () => {
     const { user } = useAuth();
@@ -21,7 +23,19 @@ const SupportDashboard = () => {
     const [selectedRequest, setSelectedRequest] = useState(null);
     const [replyMessage, setReplyMessage] = useState('');
     const [submittingReply, setSubmittingReply] = useState(false);
-    const { isOpen, openModal, closeModal } = useModal();
+
+    // Request Detail Modal
+    const detailModal = useModal();
+
+    // Create Request Modal
+    const createModal = useModal();
+    const [newRequest, setNewRequest] = useState({
+        title: '',
+        description: '',
+        type: 'issue',
+        priority: 'medium'
+    });
+    const [creating, setCreating] = useState(false);
 
     const fetchRequests = async () => {
         try {
@@ -38,6 +52,28 @@ const SupportDashboard = () => {
     useEffect(() => {
         fetchRequests();
     }, []);
+
+    const handleCreateRequest = async (e) => {
+        e.preventDefault();
+        if (!newRequest.title.trim() || !newRequest.description.trim()) {
+            toast.error("Title and description are required.");
+            return;
+        }
+
+        setCreating(true);
+        try {
+            await axios.post(`${API}/support`, newRequest, { withCredentials: true });
+            toast.success("Request submitted successfully!");
+            setNewRequest({ title: '', description: '', type: 'issue', priority: 'medium' });
+            createModal.closeModal();
+            fetchRequests();
+        } catch (error) {
+            console.error("Error submitting support request:", error);
+            toast.error(error.response?.data?.message || "Failed to submit request.");
+        } finally {
+            setCreating(false);
+        }
+    };
 
     const handleStatusUpdate = async (id, newStatus, e) => {
         if (e) e.stopPropagation();
@@ -73,16 +109,16 @@ const SupportDashboard = () => {
 
     const handleViewRequest = (req) => {
         setSelectedRequest(req);
-        openModal();
+        detailModal.openModal();
     };
 
     const getStatusColor = (status) => {
         switch (status) {
-            case 'developing': return 'blue';
-            case 'fixing': return 'orange';
-            case 'done': return 'green';
             case 'pending': return 'warning';
-            default: return 'gray';
+            case 'developing': return 'info';
+            case 'fixing': return 'primary';
+            case 'done': return 'success';
+            default: return 'light';
         }
     };
 
@@ -96,9 +132,9 @@ const SupportDashboard = () => {
             <PageBreadcrumb pageTitle="Feature Request & Support" />
 
             <div className="flex justify-end">
-                <Link to="/support/new">
-                    <Button variant="primary" size="sm">+ New Request</Button>
-                </Link>
+                <Button variant="primary" size="sm" onClick={createModal.openModal}>
+                    + New Request
+                </Button>
             </div>
 
             <ComponentCard title="Recent Requests">
@@ -163,7 +199,7 @@ const SupportDashboard = () => {
 
             {/* Request Detail Modal */}
             {selectedRequest && (
-                <Modal isOpen={isOpen} onClose={closeModal} className="max-w-3xl">
+                <Modal isOpen={detailModal.isOpen} onClose={detailModal.closeModal} className="max-w-3xl">
                     <div className="p-6">
                         <div className="flex justify-between items-start mb-6">
                             <div>
@@ -238,7 +274,7 @@ const SupportDashboard = () => {
                                     onChange={(e) => setReplyMessage(e.target.value)}
                                 />
                                 <div className="flex justify-end gap-2">
-                                    <Button size="sm" variant="outline" onClick={closeModal}>Close</Button>
+                                    <Button size="sm" variant="outline" onClick={detailModal.closeModal}>Close</Button>
                                     <Button size="sm" variant="primary" loading={submittingReply} onClick={handleReply}>Send Response</Button>
                                 </div>
                             </div>
@@ -246,6 +282,81 @@ const SupportDashboard = () => {
                     </div>
                 </Modal>
             )}
+
+            {/* Create Request Modal */}
+            <Modal isOpen={createModal.isOpen} onClose={createModal.closeModal} className="max-w-2xl">
+                <div className="p-6">
+                    <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">New Support Request</h3>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 font-medium">
+                        Have a suggestion or found a bug? Let us know! Your feedback helps us improve the system.
+                    </p>
+
+                    <form onSubmit={handleCreateRequest} className="space-y-5">
+                        <div>
+                            <Label htmlFor="title" required>Title</Label>
+                            <Input
+                                id="title"
+                                placeholder="Brief title of your request"
+                                value={newRequest.title}
+                                onChange={(e) => setNewRequest({ ...newRequest, title: e.target.value })}
+                                required
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <Label htmlFor="type">Type</Label>
+                                <select
+                                    id="type"
+                                    className="w-full h-11 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 outline-none focus:ring-2 focus:ring-brand-500"
+                                    value={newRequest.type}
+                                    onChange={(e) => setNewRequest({ ...newRequest, type: e.target.value })}
+                                >
+                                    <option value="issue">Issue / Problem</option>
+                                    <option value="feature-request">Feature Request</option>
+                                    <option value="bug">Bug Report</option>
+                                </select>
+                            </div>
+                            <div>
+                                <Label htmlFor="priority">Priority</Label>
+                                <select
+                                    id="priority"
+                                    className="w-full h-11 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 outline-none focus:ring-2 focus:ring-brand-500"
+                                    value={newRequest.priority}
+                                    onChange={(e) => setNewRequest({ ...newRequest, priority: e.target.value })}
+                                >
+                                    <option value="low">Low</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="high">High</option>
+                                    <option value="critical">Critical</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <Label htmlFor="description" required>Description</Label>
+                            <textarea
+                                id="description"
+                                rows={4}
+                                className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-transparent px-3 py-2 text-sm text-gray-700 dark:text-gray-300 outline-none focus:ring-2 focus:ring-brand-500"
+                                placeholder="Please provide details about your request..."
+                                value={newRequest.description}
+                                onChange={(e) => setNewRequest({ ...newRequest, description: e.target.value })}
+                                required
+                            />
+                        </div>
+
+                        <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+                            <Button variant="outline" type="button" onClick={createModal.closeModal}>
+                                Cancel
+                            </Button>
+                            <Button variant="primary" type="submit" loading={creating}>
+                                Submit Request
+                            </Button>
+                        </div>
+                    </form>
+                </div>
+            </Modal>
         </div>
     );
 };

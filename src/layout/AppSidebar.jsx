@@ -91,7 +91,6 @@ const navItems = [
     subItems: [
       { name: "Blank Page", path: "/blank", pro: false },
       { name: "404 Error", path: "/error-404", pro: false },
-      { name: "Support Portal", path: "/support-dashboard", pro: false },
     ],
   },
 ];
@@ -396,11 +395,6 @@ const AppSidebar = () => {
 
                     // RESTRICTION: Only Owner, HR can see "Manage Leaves"
                     if (subItem.name === "Manage Leaves" && !(hasRole(user, "Owner") || hasRole(user, "HR"))) {
-                      return null;
-                    }
-
-                    // RESTRICTION: Support Portal only for developer, owner, manager
-                    if (subItem.name === "Support Portal" && !(isOwner(user) || isManager(user) || isDeveloper(user))) {
                       return null;
                     }
 

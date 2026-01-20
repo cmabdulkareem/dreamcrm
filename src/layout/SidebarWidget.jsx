@@ -14,7 +14,7 @@ export default function SidebarWidget() {
         Contact system admin on <br />+91 9746801032 or request a feature here
       </p>
       <Link
-        to="/support/new"
+        to="/support-dashboard"
         className="flex w-full items-center justify-center p-3 font-medium text-white rounded-lg bg-brand-500 text-theme-sm hover:bg-brand-600 transition-colors"
       >
         Feature Requests & Support
