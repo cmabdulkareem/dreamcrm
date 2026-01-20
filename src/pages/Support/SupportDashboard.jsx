@@ -154,7 +154,12 @@ const SupportDashboard = () => {
             <PageBreadcrumb pageTitle="Feature Request & Support" />
 
             <div className="flex justify-end">
-                <Button variant="primary" size="sm" onClick={createModal.openModal}>
+                <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={createModal.openModal}
+                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 border-0 shadow-lg hover:shadow-xl transition-all duration-200"
+                >
                     + New Request
                 </Button>
             </div>

@@ -15,7 +15,7 @@ export default function SidebarWidget() {
       </p>
       <Link
         to="/support-dashboard"
-        className="flex w-full items-center justify-center p-3 font-medium text-white rounded-lg bg-brand-500 text-theme-sm hover:bg-brand-600 transition-colors"
+        className="flex w-full items-center justify-center p-3 font-medium text-white rounded-lg bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-theme-sm shadow-lg hover:shadow-xl transition-all duration-200"
       >
         Feature Requests & Support
       </Link>
