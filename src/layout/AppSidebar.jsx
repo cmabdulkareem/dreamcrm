@@ -24,7 +24,7 @@ import {
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import SidebarWidget from "./SidebarWidget";
-import { isManager, hasRole, isAccountant, isCounsellor, isAdmin, isDeveloper } from "../utils/roleHelpers";
+import { isManager, hasRole, isAccountant, isCounsellor, isAdmin, isDeveloper, isOwner } from "../utils/roleHelpers";
 
 
 const navItems = [
