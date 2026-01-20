@@ -51,6 +51,10 @@ const supportSchema = new mongoose.Schema({
         ref: 'User',
         required: true
     },
+    upvotes: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
     responses: [responseSchema]
 }, { timestamps: true });
 

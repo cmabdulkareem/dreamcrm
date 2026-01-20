@@ -117,3 +117,37 @@ export const addSupportResponse = async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 };
+
+// Toggle upvote
+export const toggleUpvote = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user.id;
+
+        let brandFilter = req.brandFilter || {};
+        if (isDeveloper(req.user)) {
+            brandFilter = {};
+        }
+
+        const request = await Support.findOne({ _id: id, ...brandFilter });
+        if (!request) {
+            return res.status(404).json({ message: "Request not found." });
+        }
+
+        const upvoteIndex = request.upvotes.indexOf(userId);
+        if (upvoteIndex === -1) {
+            request.upvotes.push(userId);
+        } else {
+            request.upvotes.splice(upvoteIndex, 1);
+        }
+
+        await request.save();
+        res.status(200).json({
+            message: upvoteIndex === -1 ? "Upvoted!" : "Upvote removed.",
+            upvotes: request.upvotes
+        });
+    } catch (error) {
+        console.error("Error toggling upvote:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};

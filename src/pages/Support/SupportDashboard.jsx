@@ -15,6 +15,7 @@ import { Modal } from '../../components/ui/modal';
 import { useModal } from '../../hooks/useModal';
 import Label from '../../components/form/Label';
 import Input from '../../components/form/input/InputField';
+import { ChevronUpIcon } from '../../icons';
 
 const SupportDashboard = () => {
     const { user } = useAuth();
@@ -107,6 +108,27 @@ const SupportDashboard = () => {
         }
     };
 
+    const handleUpvote = async (id, e) => {
+        if (e) e.stopPropagation();
+        try {
+            const response = await axios.post(`${API}/support/${id}/upvote`, {}, { withCredentials: true });
+
+            // Update local state
+            setRequests(prev => prev.map(req =>
+                req._id === id ? { ...req, upvotes: response.data.upvotes } : req
+            ));
+
+            if (selectedRequest?._id === id) {
+                setSelectedRequest(prev => ({ ...prev, upvotes: response.data.upvotes }));
+            }
+
+            toast.success(response.data.message);
+        } catch (error) {
+            console.error("Error upvoting:", error);
+            toast.error("Failed to upvote.");
+        }
+    };
+
     const handleViewRequest = (req) => {
         setSelectedRequest(req);
         detailModal.openModal();
@@ -145,6 +167,7 @@ const SupportDashboard = () => {
                                 <TableCell isHeader className="px-5 py-3 text-left font-semibold text-gray-500 text-xs uppercase">ID</TableCell>
                                 {isDev && <TableCell isHeader className="px-5 py-3 text-left font-semibold text-gray-500 text-xs uppercase">Brand</TableCell>}
                                 <TableCell isHeader className="px-5 py-3 text-left font-semibold text-gray-500 text-xs uppercase">Request</TableCell>
+                                <TableCell isHeader className="px-5 py-3 text-left font-semibold text-gray-500 text-xs uppercase">Votes</TableCell>
                                 <TableCell isHeader className="px-5 py-3 text-left font-semibold text-gray-500 text-xs uppercase">Status</TableCell>
                                 <TableCell isHeader className="px-5 py-3 text-left font-semibold text-gray-500 text-xs uppercase">Priority</TableCell>
                                 <TableCell isHeader className="px-5 py-3 text-right font-semibold text-gray-500 text-xs uppercase">Action</TableCell>
@@ -153,7 +176,7 @@ const SupportDashboard = () => {
                         <TableBody>
                             {requests.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={isDev ? 6 : 5} className="px-5 py-10 text-center text-gray-500">
+                                    <TableCell colSpan={isDev ? 7 : 6} className="px-5 py-10 text-center text-gray-500">
                                         No requests found.
                                     </TableCell>
                                 </TableRow>
@@ -175,6 +198,18 @@ const SupportDashboard = () => {
                                             </div>
                                         </TableCell>
                                         <TableCell className="px-5 py-4">
+                                            <button
+                                                onClick={(e) => handleUpvote(req._id, e)}
+                                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all ${req.upvotes?.includes(user?.id)
+                                                    ? 'bg-brand-50 border-brand-200 text-brand-600'
+                                                    : 'bg-white border-gray-100 text-gray-500 hover:border-brand-200 hover:text-brand-600 dark:bg-gray-900 dark:border-gray-800'
+                                                    }`}
+                                            >
+                                                <ChevronUpIcon className="size-4" />
+                                                <span className="text-xs font-bold">{req.upvotes?.length || 0}</span>
+                                            </button>
+                                        </TableCell>
+                                        <TableCell className="px-5 py-4">
                                             <Badge color={getStatusColor(req.status)} className="uppercase text-[10px] font-bold">
                                                 {req.status}
                                             </Badge>
@@ -185,7 +220,10 @@ const SupportDashboard = () => {
                                             </span>
                                         </TableCell>
                                         <TableCell className="px-5 py-4 text-right">
-                                            <button className="text-brand-500 hover:text-brand-600 text-xs font-bold uppercase tracking-wider">
+                                            <button
+                                                onClick={() => handleViewRequest(req)}
+                                                className="text-brand-500 hover:text-brand-600 text-xs font-bold uppercase tracking-wider"
+                                            >
                                                 View
                                             </button>
                                         </TableCell>
@@ -213,10 +251,22 @@ const SupportDashboard = () => {
                                     </span>
                                 </div>
                                 <h3 className="text-xl font-bold text-gray-800 dark:text-white">{selectedRequest.title}</h3>
-                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                    Submitted by <span className="font-semibold text-gray-700 dark:text-gray-200">{selectedRequest.createdBy?.fullName}</span>
-                                    {isDev && selectedRequest.brand && <span className="ml-2">• Brand: <span className="font-semibold text-brand-500">{selectedRequest.brand.name}</span></span>}
-                                </p>
+                                <div className="flex items-center gap-4 mt-2">
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                                        Submitted by <span className="font-semibold text-gray-700 dark:text-gray-200">{selectedRequest.createdBy?.fullName}</span>
+                                        {isDev && selectedRequest.brand && <span className="ml-2">• Brand: <span className="font-semibold text-brand-500">{selectedRequest.brand.name}</span></span>}
+                                    </p>
+                                    <button
+                                        onClick={(e) => handleUpvote(selectedRequest._id, e)}
+                                        className={`flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold transition-all ${selectedRequest.upvotes?.includes(user?.id)
+                                            ? 'bg-brand-500 border-brand-500 text-white shadow-lg shadow-brand-500/20'
+                                            : 'bg-white border-gray-200 text-gray-500 hover:border-brand-500 hover:text-brand-500 dark:bg-gray-800 dark:border-gray-700'
+                                            }`}
+                                    >
+                                        <ChevronUpIcon className="size-3.5" />
+                                        <span>{selectedRequest.upvotes?.length || 0} Upvotes</span>
+                                    </button>
+                                </div>
                             </div>
 
                             {isDev && (
