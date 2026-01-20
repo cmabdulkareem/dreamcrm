@@ -1,0 +1,176 @@
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { toast } from 'react-hot-toast';
+import { API } from '../../config/api';
+import Button from '../../components/ui/Button';
+import { useAuth } from '../../context/AuthContext';
+import { isOwner, isManager } from '../../utils/roleHelpers';
+import Badge from '../../components/ui/Badge';
+
+const SupportDashboard = () => {
+    const { user } = useAuth();
+    const [requests, setRequests] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [replyingTo, setReplyingTo] = useState(null);
+    const [replyMessage, setReplyMessage] = useState('');
+    const [submittingReply, setSubmittingReply] = useState(false);
+
+    const fetchRequests = async () => {
+        try {
+            const response = await axios.get(`${API}/support`, { withCredentials: true });
+            setRequests(response.data);
+        } catch (error) {
+            console.error("Error fetching support requests:", error);
+            toast.error("Failed to load requests.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchRequests();
+    }, []);
+
+    const handleStatusUpdate = async (id, newStatus) => {
+        try {
+            await axios.patch(`${API}/support/${id}/status`, { status: newStatus }, { withCredentials: true });
+            toast.success(`Status updated to ${newStatus}`);
+            fetchRequests();
+        } catch (error) {
+            console.error("Error updating status:", error);
+            toast.error("Failed to update status.");
+        }
+    };
+
+    const handleReply = async (id) => {
+        if (!replyMessage.trim()) return;
+        setSubmittingReply(true);
+        try {
+            await axios.post(`${API}/support/${id}/responses`, { message: replyMessage }, { withCredentials: true });
+            toast.success("Response sent!");
+            setReplyMessage('');
+            setReplyingTo(null);
+            fetchRequests();
+        } catch (error) {
+            console.error("Error sending response:", error);
+            toast.error("Failed to send response.");
+        } finally {
+            setSubmittingReply(false);
+        }
+    };
+
+    const getStatusColor = (status) => {
+        switch (status) {
+            case 'developing': return 'blue';
+            case 'fixing': return 'orange';
+            case 'done': return 'green';
+            default: return 'gray';
+        }
+    };
+
+    if (loading) return <div className="p-6 text-center">Loading requests...</div>;
+
+    return (
+        <div className="p-6 max-w-7xl mx-auto">
+            <div className="mb-8 flex justify-between items-center">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Support & Feature Requests</h1>
+                    <p className="text-gray-500 dark:text-gray-400 mt-1">Track and manage system suggestions and issues.</p>
+                </div>
+            </div>
+
+            <div className="space-y-6">
+                {requests.length === 0 ? (
+                    <div className="text-center py-20 bg-gray-50 dark:bg-white/[0.02] rounded-2xl border border-dashed border-gray-200 dark:border-gray-800">
+                        <p className="text-gray-500">No requests found.</p>
+                    </div>
+                ) : (
+                    requests.map((req) => (
+                        <div key={req._id} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm">
+                            <div className="flex justify-between items-start mb-4">
+                                <div>
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <Badge color={getStatusColor(req.status)} className="uppercase text-[10px] font-bold">
+                                            {req.status}
+                                        </Badge>
+                                        <span className="text-xs text-gray-400 font-medium">#{req._id.slice(-6).toUpperCase()}</span>
+                                        <span className={`text-xs font-bold uppercase ${req.priority === 'critical' ? 'text-red-500' : 'text-gray-400'}`}>
+                                            [{req.priority}]
+                                        </span>
+                                    </div>
+                                    <h3 className="text-lg font-bold text-gray-800 dark:text-white">{req.title}</h3>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                        Submitted by <span className="font-semibold text-gray-700 dark:text-gray-200">{req.createdBy?.fullName || 'Unknown User'}</span>
+                                    </p>
+                                </div>
+
+                                {(isOwner(user) || isManager(user)) && (
+                                    <div className="flex gap-2">
+                                        <select
+                                            className="text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-2 py-1 outline-none focus:ring-2 focus:ring-brand-500"
+                                            value={req.status}
+                                            onChange={(e) => handleStatusUpdate(req._id, e.target.value)}
+                                        >
+                                            <option value="pending">Pending</option>
+                                            <option value="developing">Developing</option>
+                                            <option value="fixing">Fixing</option>
+                                            <option value="done">Done</option>
+                                        </select>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="bg-gray-50 dark:bg-white/[0.02] rounded-xl p-4 mb-6">
+                                <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">{req.description}</p>
+                            </div>
+
+                            {/* Responses Section */}
+                            <div className="space-y-4 border-t border-gray-50 dark:border-gray-800 pt-6">
+                                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Responses & Updates</h4>
+                                {req.responses.map((resp, idx) => (
+                                    <div key={idx} className="flex gap-3">
+                                        <div className="size-8 rounded-full bg-brand-500/10 flex items-center justify-center shrink-0">
+                                            <span className="text-xs font-bold text-brand-600 uppercase">{resp.sender?.fullName?.[0]}</span>
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="text-xs font-bold text-gray-700 dark:text-white">{resp.sender?.fullName}</span>
+                                                <span className="text-[10px] text-gray-400">{new Date(resp.createdAt).toLocaleString()}</span>
+                                            </div>
+                                            <p className="text-sm text-gray-600 dark:text-gray-400">{resp.message}</p>
+                                        </div>
+                                    </div>
+                                ))}
+
+                                {replyingTo === req._id ? (
+                                    <div className="mt-4 space-y-3">
+                                        <textarea
+                                            className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 text-sm outline-none focus:ring-2 focus:ring-brand-500"
+                                            rows={2}
+                                            placeholder="Type your response..."
+                                            value={replyMessage}
+                                            onChange={(e) => setReplyMessage(e.target.value)}
+                                        />
+                                        <div className="flex justify-end gap-2">
+                                            <Button size="sm" variant="outline" onClick={() => setReplyingTo(null)}>Cancel</Button>
+                                            <Button size="sm" variant="primary" loading={submittingReply} onClick={() => handleReply(req._id)}>Send</Button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <button
+                                        onClick={() => setReplyingTo(req._id)}
+                                        className="text-xs font-bold text-brand-500 hover:text-brand-600 transition-colors uppercase tracking-widest mt-2"
+                                    >
+                                        + Add Response
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
+        </div>
+    );
+};
+
+export default SupportDashboard;

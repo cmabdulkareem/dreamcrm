@@ -1,4 +1,8 @@
+import React, { useState } from 'react';
+import SupportModal from '../components/support/SupportModal';
+
 export default function SidebarWidget() {
+  const [isSupportOpen, setIsSupportOpen] = useState(false);
   return (
     <div
       className={`
@@ -8,15 +12,16 @@ export default function SidebarWidget() {
         Any Issues ?
       </h3>
       <p className="mb-4 text-gray-500 text-theme-sm dark:text-gray-400">
-        Contact system admin on <br/>+91 9746801032 or raise a ticket here
+        Contact system admin on <br />+91 9746801032 or request a feature here
       </p>
-      <a
-        href="tel:+919746801032"
-        rel="nofollow"
-        className="flex items-center justify-center p-3 font-medium text-white rounded-lg bg-brand-500 text-theme-sm hover:bg-brand-600"
+      <button
+        onClick={() => setIsSupportOpen(true)}
+        className="flex w-full items-center justify-center p-3 font-medium text-white rounded-lg bg-brand-500 text-theme-sm hover:bg-brand-600 transition-colors"
       >
-        Raise a Ticket
-      </a>
+        Feature Requests & Support
+      </button>
+
+      <SupportModal isOpen={isSupportOpen} onClose={() => setIsSupportOpen(false)} />
     </div>
   );
 }

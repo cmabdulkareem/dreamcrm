@@ -34,6 +34,7 @@ import backupRoutes from './routes/backupRoutes.js'
 import invoiceRoutes from "./routes/invoiceRoutes.js";
 import receiptRoutes from "./routes/receiptRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
+import supportRoutes from "./routes/supportRoutes.js";
 const app = express()
 
 // Trust proxy is required for Render/Heroku to correctly detect protocol (http vs https)
@@ -83,6 +84,7 @@ app.use('/api/backup', backupRoutes)
 app.use('/api/invoices', invoiceRoutes)
 app.use('/api/receipts', receiptRoutes)
 app.use('/api/ai', aiRoutes)
+app.use('/api/support', supportRoutes)
 
 
 
