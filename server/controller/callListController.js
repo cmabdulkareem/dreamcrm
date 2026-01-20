@@ -274,11 +274,11 @@ export const importCallLists = async (req, res) => {
         const skippedEntries = [];
 
         for (const entry of entries) {
-            const { name, phoneNumber, socialMediaId, remarks } = entry;
+            const { name, phoneNumber, socialMediaId, source, purpose, remarks } = entry;
 
-            // At least one field (excluding remarks) must be present
-            if (!name && !phoneNumber && !socialMediaId) {
-                skippedEntries.push({ entry, reason: "Missing mandatory fields (Name, Phone, or Social Media ID)" });
+            // At least one identifying or data field (excluding remarks) must be present
+            if (!name && !phoneNumber && !socialMediaId && !source && !purpose) {
+                skippedEntries.push({ entry, reason: "Missing data (Name, Phone, Social Media ID, Source, or Purpose)" });
                 continue;
             }
 
@@ -286,6 +286,8 @@ export const importCallLists = async (req, res) => {
                 name: name || '',
                 phoneNumber: phoneNumber || '',
                 socialMediaId: socialMediaId || '',
+                source: source || '',
+                purpose: purpose || '',
                 remarks: remarks || '',
                 status: entry.status || 'pending',
                 brand: brandId,

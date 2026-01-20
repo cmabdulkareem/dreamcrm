@@ -1168,10 +1168,10 @@ export default function CallList() {
                                 variant="outline"
                                 className="bg-white dark:bg-gray-900"
                                 onClick={() => {
-                                    const headers = ["Name", "Phone Number", "Social Media ID", "Remarks"];
+                                    const headers = ["Name", "Mobile Number", "Source", "Purpose", "Remarks"];
                                     const sampleData = [
-                                        ["John Doe", "9876543210", "john_insta", "Very interested"],
-                                        ["Jane Smith", "9123456789", "jane_fb", "Follow up next week"]
+                                        ["John Doe", "9876543210", "LinkedIn", "Sales", "Very interested"],
+                                        ["Jane Smith", "9123456789", "Referral", "Inquiry", "Follow up next week"]
                                     ];
                                     const csvContent = "data:text/csv;charset=utf-8," +
                                         [headers, ...sampleData].map(e => e.join(",")).join("\n");
@@ -1227,7 +1227,8 @@ export default function CallList() {
                             <div className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
                                 <p className="font-semibold text-gray-700 dark:text-gray-300 mb-1">Important Notes:</p>
                                 <ul className="list-disc list-inside space-y-1">
-                                    <li>At least one field (Name, Phone, or Social Media ID) is mandatory for each row.</li>
+                                    <li>Fields: Name, Mobile number, Source, Purpose, Remarks (Name and number are optional).</li>
+                                    <li>At least one identifying or data field (Name, Phone, Social Media ID, Source, or Purpose) must be present.</li>
                                     <li>Remarks can be left empty.</li>
                                 </ul>
                             </div>
@@ -1269,8 +1270,10 @@ export default function CallList() {
 
                                 // Map keys
                                 const nameKey = findKey(headers, ["Name", "Full Name", "Lead Name"]);
-                                const phoneKey = findKey(headers, ["Phone Number", "Phone", "Mobile", "Contact"]);
+                                const phoneKey = findKey(headers, ["Phone Number", "Phone", "Mobile Number", "Mobile", "Contact"]);
                                 const socialKey = findKey(headers, ["Social Media ID", "Social Media", "Social", "Instagram", "Facebook"]);
+                                const sourceKey = findKey(headers, ["Source", "Src"]);
+                                const purposeKey = findKey(headers, ["Purpose", "Purp"]);
                                 const remarksKey = findKey(headers, ["Remarks", "Note", "Comment"]);
 
                                 const parsedEntries = results.data.map(row => {
@@ -1278,11 +1281,13 @@ export default function CallList() {
                                         name: nameKey ? row[nameKey] : "",
                                         phoneNumber: phoneKey ? row[phoneKey] : "",
                                         socialMediaId: socialKey ? row[socialKey] : "",
+                                        source: sourceKey ? row[sourceKey] : "",
+                                        purpose: purposeKey ? row[purposeKey] : "",
                                         remarks: remarksKey ? row[remarksKey] : ""
                                     };
                                 });
 
-                                const validEntries = parsedEntries.filter(l => l.name || l.phoneNumber || l.socialMediaId);
+                                const validEntries = parsedEntries.filter(l => l.name || l.phoneNumber || l.socialMediaId || l.source || l.purpose);
 
                                 if (validEntries.length === 0) {
                                     toast.error("No valid entries found in file. Check Name, Phone, or Social Media ID columns.");
