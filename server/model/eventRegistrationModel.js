@@ -20,11 +20,13 @@ const eventRegistrationSchema = new mongoose.Schema({
   registrationData: [registrationDataSchema],
   registrantEmail: {
     type: String,
-    required: true
+    required: false,
+    default: ''
   },
   registrantName: {
     type: String,
-    required: true
+    required: false,
+    default: ''
   },
   attended: {
     type: Boolean,

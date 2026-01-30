@@ -78,8 +78,42 @@ const EventRegistration = () => {
         registrationData.push({ fieldName: key, fieldValue: formData[key] });
       });
 
-      const registrantName = formData['Full Name'] || '';
-      const registrantEmail = formData['Email'] || '';
+      // Smart field extraction for name and email
+      // Try to find name field (case-insensitive, common variations)
+      let registrantName = '';
+      const nameFieldVariations = ['full name', 'name', 'your name', 'participant name', 'attendee name'];
+      for (const variation of nameFieldVariations) {
+        const matchingKey = Object.keys(formData).find(key =>
+          key.toLowerCase() === variation.toLowerCase()
+        );
+        if (matchingKey && formData[matchingKey]) {
+          registrantName = formData[matchingKey];
+          break;
+        }
+      }
+
+      // Try to find email field (case-insensitive, check field type)
+      let registrantEmail = '';
+      const emailFieldVariations = ['email', 'e-mail', 'email address', 'your email'];
+      for (const variation of emailFieldVariations) {
+        const matchingKey = Object.keys(formData).find(key =>
+          key.toLowerCase() === variation.toLowerCase()
+        );
+        if (matchingKey && formData[matchingKey]) {
+          registrantEmail = formData[matchingKey];
+          break;
+        }
+      }
+
+      // Fallback: find first email-type field from event registration fields
+      if (!registrantEmail && event.registrationFields) {
+        const emailField = event.registrationFields.find(field =>
+          field.fieldType === 'email'
+        );
+        if (emailField && formData[emailField.fieldName]) {
+          registrantEmail = formData[emailField.fieldName];
+        }
+      }
 
       const response = await axios.post(`${API}/events/register/${link}`, {
         registrantName,
