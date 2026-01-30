@@ -7,6 +7,7 @@ import QRCode from "react-qr-code";
 import html2canvas from "html2canvas";
 import LoadingSpinner from '../components/common/LoadingSpinner';
 
+import { Helmet } from 'react-helmet-async';
 import API from "../config/api";
 
 const EventRegistration = () => {
@@ -382,6 +383,16 @@ END:VCALENDAR`;
   // --- Registration View ---
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
+      <Helmet>
+        <title>{event.eventName} - Event Registration</title>
+        <meta name="description" content={event.eventDescription || 'Register for this event'} />
+        <meta property="og:title" content={`${event.eventName} - Registration`} />
+        <meta property="og:description" content={event.eventDescription || 'Register for this event'} />
+        {event.bannerImage && <meta property="og:image" content={`${window.location.protocol}//${window.location.host}${event.bannerImage}`} />}
+        <meta property="og:url" content={window.location.href} />
+        <meta property="og:type" content="website" />
+      </Helmet>
+
       {/* Cinematic Hero Section */}
       <div className="relative w-full h-[50vh] min-h-[400px] overflow-hidden bg-gray-900">
         {event.bannerImage ? (

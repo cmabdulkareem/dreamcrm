@@ -1,0 +1,1 @@
+import{r as e}from"./index-BNEGGE57.js";const o=t=>e.createElement("svg",{width:"1em",height:"1em",viewBox:"0 0 20 20",fill:"none",xmlns:"http://www.w3.org/2000/svg",...t},e.createElement("path",{d:"M15.8333 12.7083L10.6249 7.5L5.41658 12.7083",stroke:"currentColor",strokeWidth:1.25,strokeLinecap:"round",strokeLinejoin:"round"}));export{o as S};

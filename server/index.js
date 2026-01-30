@@ -12,6 +12,7 @@ config({ quiet: true })
 
 import './config/db.js'
 import routes from './routes/userRoutes.js'
+import eventModel from './model/eventModel.js'
 import setupSocket from './realtime/socket.js'
 import customerRoutes from './routes/customerRoutes.js'
 import campaignRoutes from './routes/campaignRoute.js'
@@ -89,7 +90,7 @@ app.use('/api/support', supportRoutes)
 
 
 // Catch-all route to serve index.html for client-side routing
-app.use((req, res, next) => {
+app.get('*', async (req, res, next) => {
   // Do not hijack API routes
   if (req.path.startsWith('/api/')) {
     return next();
@@ -103,6 +104,54 @@ app.use((req, res, next) => {
   const indexPath = path.join(__dirname, '../dist/index.html');
 
   if (fs.existsSync(indexPath)) {
+    // Dynamic meta tags for event registration
+    if (req.path.startsWith('/event-registration/')) {
+      try {
+        const link = req.path.split('/').pop();
+        const event = await eventModel.findOne({ registrationLink: link, isActive: true });
+
+        if (event) {
+          let html = fs.readFileSync(indexPath, 'utf8');
+
+          const title = `${event.eventName} - Registration`;
+          const description = event.eventDescription || 'Register for this event';
+          const protocol = req.protocol === 'https' ? 'https' : 'http'; // Trust proxy is handled above
+          const fullUrl = `${protocol}://${req.get('host')}${req.originalUrl}`;
+          const imageUrl = event.bannerImage
+            ? `${protocol}://${req.get('host')}${event.bannerImage}`
+            : `${protocol}://${req.get('host')}/favicon.png`;
+
+          // Inject Meta Tags
+          const metaTags = `
+    <!-- Social Media Meta Tags -->
+    <title>${title}</title>
+    <meta name="description" content="${description}">
+    <meta property="og:title" content="${title}">
+    <meta property="og:description" content="${description}">
+    <meta property="og:image" content="${imageUrl}">
+    <meta property="og:url" content="${fullUrl}">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="${title}">
+    <meta name="twitter:description" content="${description}">
+    <meta name="twitter:image" content="${imageUrl}">
+          `;
+
+          // Replace existing title if any, or just append to head
+          if (html.includes('<title>')) {
+            html = html.replace(/<title>.*?<\/title>/, metaTags);
+          } else {
+            html = html.replace('</head>', `${metaTags}\n  </head>`);
+          }
+
+          return res.send(html);
+        }
+      } catch (error) {
+        console.error("Error in server-side meta injection:", error);
+        // Fallback to normal serving on error
+      }
+    }
+
     return res.sendFile(indexPath);
   }
 
