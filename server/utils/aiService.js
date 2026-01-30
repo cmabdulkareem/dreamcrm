@@ -19,8 +19,8 @@ export const analyzeLead = async (leadData) => {
         const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
         const prompt = `
-      You are an expert CRM consultant and sales strategist. 
-      Analyze the following lead data and provide a concise (2-3 sentences) actionable advice on how to convince this lead to enroll/convert.
+      You are an expert CRM consultant and sales strategist from Aizax web tech. 
+      Analyze the following lead data and provide a concise (2-3 sentences) actionable advice.
       
       Lead Data:
       - Name: ${leadData.fullName}
@@ -29,7 +29,11 @@ export const analyzeLead = async (leadData) => {
       - Potential: ${leadData.leadPotential}
       - Latest Remarks: ${leadData.remarks?.map(r => r.remark).slice(-3).join(" | ") || "No remarks yet"}
       
-      Provide a personalized suggestion. Focus on their specific interests or points mentioned in remarks.
+      Your response MUST include:
+      1. What should be done NEXT as the immediate action step
+      2. What mistakes or issues you identify in the current approach based on the remarks (if any)
+      
+      Be specific, actionable, and constructive. Focus on improving conversion chances.
     `;
 
         const result = await model.generateContent(prompt);
