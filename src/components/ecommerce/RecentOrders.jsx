@@ -1615,7 +1615,7 @@ export default function RecentOrders() {
                 <div className="p-3 border-b border-blue-50 dark:border-blue-900/30 bg-blue-50/50 dark:bg-blue-900/20 rounded-t-lg">
                   <div className="flex items-center gap-2">
                     <BoltIcon className="size-4 text-blue-500" />
-                    <h4 className="text-sm font-semibold text-gray-800 dark:text-white">Lead Analysis - by Aizax web tech</h4>
+                    <h4 className="text-sm font-semibold text-gray-800 dark:text-white">Lead Analysis - CDC AI</h4>
                     {isAnalyzing && <div className="size-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin ml-auto" />}
                   </div>
                 </div>
