@@ -87,46 +87,26 @@ app.use('/api/receipts', receiptRoutes)
 app.use('/api/ai', aiRoutes)
 app.use('/api/support', supportRoutes)
 
-// Specific route for event registration to inject meta tags for social media crawlers
-app.get('/event-registration/:link', async (req, res) => {
-  try {
-    const { link } = req.params;
-    const event = await Event.findOne({ registrationLink: link, isActive: true });
+// Helper to get index.html content (with caching)
+let indexHtmlCache = null;
+const getIndexHtml = (forceReload = false) => {
+  if (indexHtmlCache && !forceReload) return indexHtmlCache;
+  const distPath = path.join(__dirname, '../dist/index.html');
+  const rootPath = path.join(__dirname, '../index.html');
+  const indexPath = fs.existsSync(distPath) ? distPath : rootPath;
 
-    const indexPath = path.join(__dirname, '../dist/index.html');
-    if (!fs.existsSync(indexPath)) {
-      return res.status(404).send('Site building in progress...');
-    }
+  if (fs.existsSync(indexPath)) {
+    indexHtmlCache = fs.readFileSync(indexPath, 'utf8');
+    return indexHtmlCache;
+  }
+  return null;
+};
 
-    let html = fs.readFileSync(indexPath, 'utf8');
-
-    if (event) {
-      const title = `${event.eventName} | CDC Insights`;
-      const description = event.eventDescription || 'Register for this event';
-
-      let origin = req.protocol + '://' + req.get('host');
-      // For production, force https for social media crawlers
-      if (!origin.includes('localhost')) {
-        origin = origin.replace('http://', 'https://');
-      }
-
-      let imageUrl = `${origin}/favicon.png`;
-
-      if (event.bannerImage) {
-        imageUrl = event.bannerImage.startsWith('http')
-          ? event.bannerImage
-          : `${origin}${event.bannerImage.startsWith('/') ? '' : '/'}${event.bannerImage}`;
-      }
-
-      const url = `${origin}/event-registration/${link}`;
-
-      // Log for debugging
-      try {
-        fs.appendFileSync(path.join(__dirname, '../meta-debug.log'), `[${new Date().toISOString()}] Success: ${link} -> ${title}\n`);
-      } catch (err) { }
-
-      // Construct metadata block
-      const metadata = `
+// Helper to inject metadata into HTML
+const injectMetadata = (html, metadata) => {
+  if (!html) return null;
+  const { title, description, url, image } = metadata;
+  const tags = `
     <!-- DYNAMIC_METADATA_START -->
     <title>${title}</title>
     <meta name="title" content="${title}" />
@@ -137,45 +117,60 @@ app.get('/event-registration/:link', async (req, res) => {
     <meta property="og:url" content="${url}" />
     <meta property="og:title" content="${title}" />
     <meta property="og:description" content="${description}" />
-    <meta property="og:image" content="${imageUrl}" />
+    <meta property="og:image" content="${image}" />
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
     <meta property="twitter:url" content="${url}" />
     <meta property="twitter:title" content="${title}" />
     <meta property="twitter:description" content="${description}" />
-    <meta property="twitter:image" content="${imageUrl}" />
+    <meta property="twitter:image" content="${image}" />
     <!-- DYNAMIC_METADATA_END -->`;
 
-      // Inject into HTML robustly
-      // 1. First, try to remove my previous markers if they exist
-      html = html.replace(/<!-- METADATA_START -->[\s\S]*<!-- METADATA_END -->/, '');
-      html = html.replace(/<!-- DYNAMIC_METADATA_START -->[\s\S]*<!-- DYNAMIC_METADATA_END -->/, '');
+  // 1. Remove markers and competing tags
+  let result = html.replace(/<!-- METADATA_START -->[\s\S]*<!-- METADATA_END -->/, '');
+  result = result.replace(/<!-- DYNAMIC_METADATA_START -->[\s\S]*<!-- DYNAMIC_METADATA_END -->/, '');
+  result = result.replace(/<title>[\s\S]*?<\/title>/gi, '');
+  result = result.replace(/<meta\s+name=["']description["']\s+content=["'][\s\S]*?["']\s*\/?>/gi, '');
+  result = result.replace(/<meta\s+property=["']og:[\s\S]*?["']\s+content=["'][\s\S]*?["']\s*\/?>/gi, '');
+  result = result.replace(/<meta\s+name=["']twitter:[\s\S]*?["']\s+content=["'][\s\S]*?["']\s*\/?>/gi, '');
 
-      // 2. Remove any static title/meta tags that might compete (case-insensitive)
-      html = html.replace(/<title>[\s\S]*?<\/title>/gi, '');
-      html = html.replace(/<meta\s+name=["']description["']\s+content=["'][\s\S]*?["']\s*\/?>/gi, '');
-      html = html.replace(/<meta\s+property=["']og:[\s\S]*?["']\s+content=["'][\s\S]*?["']\s*\/?>/gi, '');
-      html = html.replace(/<meta\s+name=["']twitter:[\s\S]*?["']\s+content=["'][\s\S]*?["']\s*\/?>/gi, '');
+  // 2. Inject at head top
+  return result.replace(/<head>/i, `<head>${tags}`);
+};
 
-      // 3. Inject new metadata at the top of the <head>
-      html = html.replace(/<head>/i, `<head>${metadata}`);
-    } else {
-      try {
-        fs.appendFileSync(path.join(__dirname, '../meta-debug.log'), `[${new Date().toISOString()}] Not Found: ${link}\n`);
-      } catch (err) { }
+// Specific route for event registration to inject meta tags for social media crawlers
+app.get('/event-registration/:link', async (req, res) => {
+  try {
+    const { link } = req.params;
+    const event = await Event.findOne({ registrationLink: link, isActive: true });
+
+    const html = getIndexHtml();
+    if (!html) {
+      return res.status(404).send('Site building in progress...');
     }
 
-    res.send(html);
+    let origin = req.protocol + '://' + req.get('host');
+    if (!origin.includes('localhost')) origin = origin.replace('http://', 'https://');
+
+    const metadata = {
+      title: event ? `${event.eventName} | Dream CRM` : "Dream CRM - Streamline Your Business",
+      description: event ? (event.eventDescription || 'Register for this event') : "Manage leads, students, events, and more with our comprehensive CRM solution.",
+      url: `${origin}/event-registration/${link}`,
+      image: event && event.bannerImage
+        ? (event.bannerImage.startsWith('http') ? event.bannerImage : `${origin}${event.bannerImage.startsWith('/') ? '' : '/'}${event.bannerImage}`)
+        : `${origin}/favicon.png`
+    };
+
+    res.send(injectMetadata(html, metadata));
+
+    // Log for debugging
+    try {
+      fs.appendFileSync(path.join(__dirname, '../meta-debug.log'), `[${new Date().toISOString()}] Event: ${link} -> ${metadata.title}\n`);
+    } catch (err) { }
   } catch (error) {
     console.error('Meta injection error:', error);
-    // Fallback to sending standard file
-    const indexPath = path.join(__dirname, '../dist/index.html');
-    if (fs.existsSync(indexPath)) {
-      res.sendFile(indexPath);
-    } else {
-      res.status(500).send('Server Error');
-    }
+    res.status(500).send('Server Error');
   }
 });
 
@@ -183,28 +178,31 @@ app.get('/event-registration/:link', async (req, res) => {
 
 // Catch-all route to serve index.html for client-side routing
 app.use((req, res, next) => {
-  // Do not hijack API routes
-  if (req.path.startsWith('/api/')) {
+  // Do not hijack API routes or static files
+  if (req.path.startsWith('/api/') || req.path.startsWith('/uploads/') || req.path.includes('.')) {
     return next();
   }
 
-  // Do not hijack uploaded files
-  if (req.path.startsWith('/uploads/')) {
-    return next();
-  }
+  const html = getIndexHtml();
+  if (html) {
+    let origin = req.protocol + '://' + req.get('host');
+    if (!origin.includes('localhost')) origin = origin.replace('http://', 'https://');
 
-  const indexPath = path.join(__dirname, '../dist/index.html');
+    const metadata = {
+      title: "Dream CRM - Streamline Your Business",
+      description: "Manage leads, students, events, and more with our comprehensive CRM solution.",
+      url: `${origin}${req.originalUrl}`,
+      image: `${origin}/favicon.png`
+    };
 
-  if (fs.existsSync(indexPath)) {
-    return res.sendFile(indexPath);
+    return res.send(injectMetadata(html, metadata));
   }
 
   // Dev / fallback case
   res.status(404).json({
     message: 'Resource not found',
     env: process.env.NODE_ENV,
-    hint:
-      'If you are in development, access frontend via dev server (e.g. http://localhost:5173)'
+    hint: 'If you are in development, access frontend via dev server.'
   });
 });
 

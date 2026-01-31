@@ -667,7 +667,7 @@ const CreateEvent = () => {
                 </div>
               </div>
             </div>
-          </ComponentCard >
+          </ComponentCard>
         </div>
 
         {/* Right Side: Live Preview (Sticky) */}
