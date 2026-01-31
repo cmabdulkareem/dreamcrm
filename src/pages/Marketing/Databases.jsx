@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import Papa from 'papaparse';
 import { toast } from 'react-toastify';
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
@@ -35,6 +36,10 @@ const Databases = () => {
     const [modalMode, setModalMode] = useState('add'); // add, edit
     const [currentItem, setCurrentItem] = useState(null);
     const [formData, setFormData] = useState({});
+
+    // CSV Import State
+    const [importingStudents, setImportingStudents] = useState([]);
+    const [showImportTable, setShowImportTable] = useState(false);
 
     useEffect(() => {
         fetchData();
@@ -190,6 +195,59 @@ const Databases = () => {
         }
     };
 
+    const handleCsvImport = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: (results) => {
+                if (results.errors.length > 0) {
+                    toast.error('Error parsing CSV file');
+                    return;
+                }
+
+                const students = results.data.map((row, index) => ({
+                    sn: index + 1,
+                    name: row.name || row.Name || '',
+                    gender: row.gender || row.Gender || '',
+                    place: '',
+                    phone: '',
+                    remark: '',
+                    tempId: Math.random().toString(36).substr(2, 9)
+                })).filter(s => s.name);
+
+                if (students.length === 0) {
+                    toast.error('No valid students found in CSV. Ensure columns are named "name" and "gender".');
+                    return;
+                }
+
+                setImportingStudents(students);
+                setShowImportTable(true);
+            }
+        });
+    };
+
+    const handleInlineEdit = (id, field, value) => {
+        if (field === 'phone' && value && !/^\d*$/.test(value)) return;
+        setImportingStudents(prev => prev.map(s => s.tempId === id ? { ...s, [field]: value } : s));
+    };
+
+    const handleBulkSave = async () => {
+        try {
+            const studentsToSave = importingStudents.map(({ sn, tempId, ...rest }) => rest);
+            await axios.post(`${API}/prospect-database/classes/${selectedClass._id}/students/bulk`, { students: studentsToSave });
+            toast.success('Students imported successfully');
+            setShowImportTable(false);
+            setImportingStudents([]);
+            fetchData();
+        } catch (error) {
+            console.error('Error importing students:', error);
+            toast.error('Failed to import students');
+        }
+    };
+
     return (
         <div className="p-6">
             <PageMeta title="Prospect Databases | DreamCRM" description="Manage schools, streams, classes and students" />
@@ -217,6 +275,20 @@ const Databases = () => {
                             <ChevronLeftIcon className="mr-2 h-4 w-4" /> Back
                         </Button>
                     )}
+                    {activeLevel === 'students' && (
+                        <div className="relative">
+                            <Button variant="outline" size="sm" as="label" htmlFor="csv-upload" className="cursor-pointer">
+                                <GridIcon className="mr-2 h-4 w-4" /> Import CSV
+                            </Button>
+                            <input
+                                type="file"
+                                id="csv-upload"
+                                className="hidden"
+                                accept=".csv"
+                                onChange={handleCsvImport}
+                            />
+                        </div>
+                    )}
                     <Button size="sm" onClick={() => handleShowModal('add')}>
                         <PlusIcon className="mr-2 h-4 w-4" /> Add {getSingular(activeLevel)}
                     </Button>
@@ -227,6 +299,84 @@ const Databases = () => {
                 {loading ? (
                     <div className="flex justify-center items-center h-64">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"></div>
+                    </div>
+                ) : (showImportTable || activeLevel === 'students') ? (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+                                    <th className="px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-200">SN</th>
+                                    <th className="px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-200">Name</th>
+                                    <th className="px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-200">Gender</th>
+                                    <th className="px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-200">Place</th>
+                                    <th className="px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-200">Mobile</th>
+                                    <th className="px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-200">Remark</th>
+                                    {activeLevel === 'students' && !showImportTable && <th className="px-4 py-3 text-sm font-semibold text-gray-700 dark:text-gray-200 text-right">Actions</th>}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {(showImportTable ? importingStudents : data).map((item, idx) => (
+                                    <tr key={item._id || item.tempId} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                                        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">{item.sn || idx + 1}</td>
+                                        <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white uppercase">{item.name}</td>
+                                        <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400 uppercase">{item.gender}</td>
+                                        <td className="px-4 py-3 text-sm">
+                                            {showImportTable ? (
+                                                <input
+                                                    type="text"
+                                                    value={item.place}
+                                                    onChange={(e) => handleInlineEdit(item.tempId, 'place', e.target.value)}
+                                                    className="w-full bg-transparent border-b border-transparent focus:border-brand-500 focus:outline-none py-1 px-2"
+                                                    placeholder="Enter place..."
+                                                />
+                                            ) : (
+                                                <span className="text-gray-600 dark:text-gray-400 uppercase">{item.place || '-'}</span>
+                                            )}
+                                        </td>
+                                        <td className="px-4 py-3 text-sm">
+                                            {showImportTable ? (
+                                                <input
+                                                    type="text"
+                                                    value={item.phone}
+                                                    onChange={(e) => handleInlineEdit(item.tempId, 'phone', e.target.value)}
+                                                    className="w-full bg-transparent border-b border-transparent focus:border-brand-500 focus:outline-none py-1 px-2"
+                                                    placeholder="Enter mobile..."
+                                                />
+                                            ) : (
+                                                <span className="text-gray-600 dark:text-gray-400">{item.phone || '-'}</span>
+                                            )}
+                                        </td>
+                                        <td className="px-4 py-3 text-sm">
+                                            {showImportTable ? (
+                                                <input
+                                                    type="text"
+                                                    value={item.remark}
+                                                    onChange={(e) => handleInlineEdit(item.tempId, 'remark', e.target.value)}
+                                                    className="w-full bg-transparent border-b border-transparent focus:border-brand-500 focus:outline-none py-1 px-2"
+                                                    placeholder="Add remark..."
+                                                />
+                                            ) : (
+                                                <span className="text-gray-600 dark:text-gray-400">{item.socialMedia || '-'}</span>
+                                            )}
+                                        </td>
+                                        {activeLevel === 'students' && !showImportTable && (
+                                            <td className="px-4 py-3 text-right">
+                                                <div className="flex justify-end gap-2">
+                                                    <button onClick={() => handleShowModal('edit', item)} className="text-gray-400 hover:text-brand-500"><PencilIcon className="h-4 w-4" /></button>
+                                                    <button onClick={() => handleDelete(item._id)} className="text-gray-400 hover:text-red-500"><TrashBinIcon className="h-4 w-4" /></button>
+                                                </div>
+                                            </td>
+                                        )}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                        {showImportTable && (
+                            <div className="flex justify-end gap-3 mt-6 p-4">
+                                <Button variant="outline" onClick={() => setShowImportTable(false)}>Cancel Import</Button>
+                                <Button onClick={handleBulkSave}>Save All Students</Button>
+                            </div>
+                        )}
                     </div>
                 ) : data.length === 0 ? (
                     <div className="text-center py-12">

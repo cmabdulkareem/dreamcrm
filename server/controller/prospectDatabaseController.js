@@ -203,3 +203,25 @@ export const deleteStudent = async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 };
+
+export const bulkCreateStudents = async (req, res) => {
+    try {
+        const { classId } = req.params;
+        const { students } = req.body;
+
+        if (!Array.isArray(students)) {
+            return res.status(400).json({ success: false, message: 'Students data must be an array' });
+        }
+
+        const studentsWithMetadata = students.map(student => ({
+            ...student,
+            class: classId,
+            createdBy: req.user.id
+        }));
+
+        const result = await ProspectStudent.insertMany(studentsWithMetadata);
+        res.status(201).json({ success: true, count: result.length, students: result });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};

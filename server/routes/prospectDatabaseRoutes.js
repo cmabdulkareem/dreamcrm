@@ -17,7 +17,8 @@ import {
     deleteClass,
     getStudents,
     createStudent,
-    deleteStudent
+    deleteStudent,
+    bulkCreateStudents
 } from '../controller/prospectDatabaseController.js';
 
 const router = express.Router();
@@ -48,7 +49,7 @@ router.delete('/classes/:id', deleteClass);
 
 // Students
 router.get('/classes/:classId/students', getStudents);
-router.post('/classes/:classId/students', createStudent);
+router.post('/classes/:classId/students/bulk', bulkCreateStudents);
 router.delete('/students/:id', deleteStudent);
 
 export default router;
