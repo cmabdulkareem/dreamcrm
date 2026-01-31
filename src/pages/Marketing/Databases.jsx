@@ -5,9 +5,9 @@ import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import PageMeta from "../../components/common/PageMeta";
 import ComponentCard from "../../components/common/ComponentCard";
 import Button from "../../components/ui/button/Button";
-import Label from "../../components/ui/form/Label";
-import Input from "../../components/ui/form/input/Input";
-import Select from "../../components/ui/form/Select";
+import Label from "../../components/form/Label";
+import Input from "../../components/form/input/InputField";
+import Select from "../../components/form/Select";
 import {
     FolderIcon,
     TrashBinIcon,
@@ -105,6 +105,7 @@ const Databases = () => {
 
     const getSingular = (level) => {
         if (level === 'classes') return 'Class';
+        if (level === 'students') return 'Student';
         return level.charAt(0).toUpperCase() + level.slice(1, -1);
     };
 
@@ -353,8 +354,8 @@ const Databases = () => {
                                         <Select
                                             value={formData.gender || ''}
                                             onChange={(value) => setFormData({ ...formData, gender: value })}
+                                            placeholder="Select Gender"
                                             options={[
-                                                { label: 'Select Gender', value: '' },
                                                 { label: 'Male', value: 'Male' },
                                                 { label: 'Female', value: 'Female' },
                                                 { label: 'Other', value: 'Other' }
