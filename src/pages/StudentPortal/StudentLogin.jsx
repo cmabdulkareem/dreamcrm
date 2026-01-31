@@ -24,8 +24,9 @@ export default function StudentLogin() {
         try {
             // We can reuse the main login flow if it supports 'Student' role
             // Assuming context login handles standard auth
-            // If specific student login endpoint is needed, we'd use that
-            const res = await axios.post(`${API}/users/login`, { email, password }, {
+            setLoading(true);
+            // Use the standard signin endpoint
+            const res = await axios.post(`${API}/users/signin`, { email, password }, {
                 withCredentials: true
             });
 
