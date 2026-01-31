@@ -4,7 +4,7 @@ import { Navigate } from "react-router-dom";
 import { useContext } from "react";
 import { isManager, isAccountant } from "../utils/roleHelpers";
 
-function ProtectedRoutes({ children, requireAdmin = false, requireManager = false, requireAccountant = false }) {
+function ProtectedRoutes({ children, requireAdmin = false, requireManager = false, requireAccountant = false, redirectTo = "/signin" }) {
     const { isLoggedIn, isAdmin, loading, user } = useContext(AuthContext);
 
     if (loading) {
@@ -17,7 +17,7 @@ function ProtectedRoutes({ children, requireAdmin = false, requireManager = fals
 
     // If not logged in, redirect to signin
     if (!isLoggedIn) {
-        return <Navigate to="/signin" />;
+        return <Navigate to={redirectTo} />;
     }
 
     // If admin is required and user is not admin, redirect to signin

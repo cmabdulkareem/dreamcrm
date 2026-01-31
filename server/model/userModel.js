@@ -54,7 +54,8 @@ const userSchema = new mongoose.Schema(
           'Event Coordinator',
           'Housekeeping / Office Assistant',
           'PRO',
-          'General'
+          'General',
+          'Student'
         ]
       }],
       default: ['General']

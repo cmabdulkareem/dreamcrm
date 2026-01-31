@@ -162,10 +162,54 @@ const sendNewUserNotification = async (user, adminEmails) => {
 };
 
 /* ============================================
+   4. STUDENT CREDENTIALS EMAIL
+============================================ */
+const sendStudentCredentialsEmail = async (user, password) => {
+  try {
+    const sendSmtpEmail = new brevo.SendSmtpEmail();
+    sendSmtpEmail.sender = { email: process.env.EMAIL_FROM, name: 'DreamCRM' };
+    sendSmtpEmail.to = [{ email: user.email, name: user.fullName }];
+    sendSmtpEmail.subject = 'Your Student Portal Credentials';
+    sendSmtpEmail.htmlContent = `
+      <div style="font-family: Arial; max-width: 600px; margin: auto; background: #fff;">
+        <div style="background: #2563eb; padding: 25px; text-align: center; color: white;">
+          <h2>Student Portal Access</h2>
+        </div>
+
+        <div style="padding: 25px;">
+          <h3>Hello ${user.fullName},</h3>
+          <p>Your account for the Student Portal has been created.</p>
+          
+          <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <p style="margin: 0 0 10px 0;"><strong>Login URL:</strong> <a href="${process.env.CLIENT_URL || 'http://localhost:5173'}/student/login">Click here to login</a></p>
+            <p style="margin: 0 0 10px 0;"><strong>Email:</strong> ${user.email}</p>
+            <p style="margin: 0;"><strong>Password:</strong> <span style="font-family: monospace; font-size: 16px; background: #e5e7eb; padding: 2px 6px; border-radius: 4px;">${password}</span></p>
+          </div>
+
+          <p>Please change your password after logging in for the first time.</p>
+        </div>
+
+        <div style="background: #0f172a; padding: 15px; text-align: center; color: #aaa;">
+          This is an automated message. Do not reply.
+        </div>
+      </div>
+    `;
+
+    await apiInstance.sendTransacEmail(sendSmtpEmail);
+    console.log('✅ Student credentials email sent via Brevo');
+
+  } catch (error) {
+    console.error('Error sending student credentials email:', error.message);
+    throw error;
+  }
+};
+
+/* ============================================
    EXPORTS
 ============================================ */
 export default {
   sendWelcomeEmail,
   sendNewUserNotification,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  sendStudentCredentialsEmail
 };

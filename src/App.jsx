@@ -69,6 +69,15 @@ import BrandManagement from "./components/brandManagement/BrandManagement";
 import PublicAttendance from "./pages/PublicAttendance";
 const VerifyTicket = lazy(() => import("./pages/EventManagement/VerifyTicket"));
 
+// Student Portal Imports
+const StudentSignup = lazy(() => import("./pages/StudentPortal/StudentSignup"));
+const StudentLogin = lazy(() => import("./pages/StudentPortal/StudentLogin"));
+const StudentPortalLayout = lazy(() => import("./pages/StudentPortal/StudentPortalLayout"));
+const StudentDashboard = lazy(() => import("./pages/StudentPortal/StudentDashboard"));
+const StudentAttendance = lazy(() => import("./pages/StudentPortal/StudentAttendance"));
+const StudentProfile = lazy(() => import("./pages/StudentPortal/StudentProfile"));
+const StudentRequests = lazy(() => import("./pages/StudentPortal/StudentRequests"));
+
 
 function App() {
   const { user } = useContext(AuthContext);
@@ -171,6 +180,18 @@ function App() {
                 {/* Public Routes */}
                 <Route path="/event-registration/:link" element={<EventRegistration />} />
                 <Route path="/public/attendance/:shareToken" element={<PublicAttendance />} />
+
+                {/* Student Portal Routes */}
+                <Route path="/student/signup" element={<StudentSignup />} />
+                <Route path="/student/login" element={<StudentLogin />} />
+                <Route path="/student" element={<ProtectedRoutes redirectTo="/student/login"><StudentPortalLayout /></ProtectedRoutes>}>
+                  <Route index element={<Navigate to="dashboard" replace />} />
+                  <Route path="dashboard" element={<Suspense fallback={<LoadingSpinner />}><StudentDashboard /></Suspense>} />
+                  <Route path="attendance" element={<Suspense fallback={<LoadingSpinner />}><StudentAttendance /></Suspense>} />
+                  <Route path="attendance/:batchId" element={<Suspense fallback={<LoadingSpinner />}><StudentAttendance /></Suspense>} />
+                  <Route path="profile" element={<Suspense fallback={<LoadingSpinner />}><StudentProfile /></Suspense>} />
+                  <Route path="requests" element={<Suspense fallback={<LoadingSpinner />}><StudentRequests /></Suspense>} />
+                </Route>
               </Routes>
             </Router>
 

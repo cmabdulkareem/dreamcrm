@@ -143,7 +143,7 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
     const selectableStatuses = ["Present", "Absent", "Late", "Excused", "Week Off"];
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} className="max-w-4xl p-0 h-[90vh] sm:h-auto sm:max-h-[90vh]">
+        <Modal isOpen={isOpen} onClose={onClose} className="max-w-4xl p-0 h-[85vh] flex flex-col">
             <div className="flex flex-col h-full">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 sm:p-6 border-b border-gray-100 dark:border-gray-700 shrink-0 pr-12 sm:pr-14">
                     <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
@@ -156,17 +156,17 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar text-sm">
                     {loading ? (
                         <LoadingSpinner className="py-20" />
                     ) : (
                         <>
                             <div className="hidden md:block overflow-x-auto">
                                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                                    <thead className="bg-gray-50 dark:bg-gray-700">
+                                    <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10 shadow-sm">
                                         <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Student Name</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider bg-gray-50 dark:bg-gray-700">Student Name</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider bg-gray-50 dark:bg-gray-700">Status</th>
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
