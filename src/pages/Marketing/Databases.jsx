@@ -77,36 +77,42 @@ const Databases = () => {
         } else if (level === 'schools' && item) {
             setSelectedFolder(item);
             setActiveLevel('schools');
+            setSelectedSchool(null);
+            setSelectedStream(null);
+            setSelectedClass(null);
             setBreadcrumbs([
                 { name: 'Folders', level: 'folders' },
-                { name: item.name, level: 'schools' }
+                { name: item.name, level: 'schools', item }
             ]);
         } else if (level === 'streams' && item) {
             setSelectedSchool(item);
             setActiveLevel('streams');
+            setSelectedStream(null);
+            setSelectedClass(null);
             setBreadcrumbs([
                 { name: 'Folders', level: 'folders' },
-                { name: selectedFolder.name, level: 'schools' },
-                { name: item.name, level: 'streams' }
+                { name: selectedFolder.name, level: 'schools', item: selectedFolder },
+                { name: item.name, level: 'streams', item }
             ]);
         } else if (level === 'classes' && item) {
             setSelectedStream(item);
             setActiveLevel('classes');
+            setSelectedClass(null);
             setBreadcrumbs([
                 { name: 'Folders', level: 'folders' },
-                { name: selectedFolder.name, level: 'schools' },
-                { name: selectedSchool.name, level: 'streams' },
-                { name: item.name, level: 'classes' }
+                { name: selectedFolder.name, level: 'schools', item: selectedFolder },
+                { name: selectedSchool.name, level: 'streams', item: selectedSchool },
+                { name: item.name, level: 'classes', item }
             ]);
         } else if (level === 'students' && item) {
             setSelectedClass(item);
             setActiveLevel('students');
             setBreadcrumbs([
                 { name: 'Folders', level: 'folders' },
-                { name: selectedFolder.name, level: 'schools' },
-                { name: selectedSchool.name, level: 'streams' },
-                { name: selectedStream.name, level: 'classes' },
-                { name: item.name, level: 'students' }
+                { name: selectedFolder.name, level: 'schools', item: selectedFolder },
+                { name: selectedSchool.name, level: 'streams', item: selectedSchool },
+                { name: selectedStream.name, level: 'classes', item: selectedStream },
+                { name: item.name, level: 'students', item }
             ]);
         }
     };
@@ -196,7 +202,7 @@ const Databases = () => {
                             <React.Fragment key={idx}>
                                 <span
                                     className={`cursor-pointer hover:text-brand-500 transition-colors ${idx === breadcrumbs.length - 1 ? 'font-semibold text-brand-600' : ''}`}
-                                    onClick={() => navigateTo(bc.level)}
+                                    onClick={() => navigateTo(bc.level, bc.item)}
                                 >
                                     {bc.name}
                                 </span>
