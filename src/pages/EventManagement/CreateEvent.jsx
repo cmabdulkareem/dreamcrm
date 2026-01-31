@@ -23,7 +23,8 @@ import {
   CalendarIcon,
   FileIcon,
   CheckCircleIcon,
-  CloseIcon
+  CloseIcon,
+  ChevronDownIcon
 } from '../../icons';
 
 axios.defaults.withCredentials = true;
@@ -38,6 +39,7 @@ const CreateEvent = () => {
     eventName: '',
     eventDescription: '',
     eventDate: '',
+    eventTime: '10:00', // Default to 10 AM
     maxRegistrations: 0,
     eventPin: generatePin(), // Auto-generate PIN
     registrationFields: [
@@ -168,7 +170,7 @@ const CreateEvent = () => {
     try {
       const eventData = {
         ...formData,
-        eventDate: new Date(formData.eventDate).toISOString()
+        eventDate: new Date(`${formData.eventDate}T${formData.eventTime}:00`).toISOString()
       };
 
       const response = await axios.post(`${API}/events/create`, eventData, { withCredentials: true });
@@ -354,7 +356,9 @@ const CreateEvent = () => {
                     required
                   />
                 </div>
-                <div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex-1">
                   <DatePicker
                     id="eventDate"
                     label="Event Date *"
@@ -363,135 +367,149 @@ const CreateEvent = () => {
                     required
                   />
                 </div>
+                <div className="flex-1">
+                  <Label htmlFor="eventTime">Event Time *</Label>
+                  <Input
+                    type="time"
+                    id="eventTime"
+                    name="eventTime"
+                    value={formData.eventTime}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+          </ComponentCard>
+
+          {/* Section 2: Details & Media */}
+          <ComponentCard title="2. Description & Media" desc="Add description and banner.">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+              {/* Left side: Description & Capacity */}
+              <div className="lg:col-span-6 space-y-6">
+                <div>
+                  <Label htmlFor="eventDescription">Event Description</Label>
+                  <textarea
+                    id="eventDescription"
+                    name="eventDescription"
+                    placeholder="Tell people what this event is about..."
+                    value={formData.eventDescription}
+                    onChange={handleInputChange}
+                    rows="5"
+                    className="w-full px-4 py-3 border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-hidden focus:ring-4 focus:ring-brand-500/10 dark:bg-gray-900 dark:text-white transition-all resize-none shadow-theme-xs"
+                  ></textarea>
+                </div>
+
+
+                <div className="w-full max-w-xs">
+                  <Label htmlFor="maxRegistrations">Maximum Registrations</Label>
+                  <div className="relative">
+                    <Input
+                      type="number"
+                      id="maxRegistrations"
+                      name="maxRegistrations"
+                      value={formData.maxRegistrations}
+                      onChange={handleInputChange}
+                      min="0"
+                      className="!pr-20"
+                    />
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-medium text-gray-400 pointer-events-none uppercase tracking-wider">
+                      0 = ∞
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                {/* Left side: Description & Capacity */}
-                <div className="lg:col-span-6 space-y-6">
-                  <div>
-                    <Label htmlFor="eventDescription">Event Description</Label>
-                    <textarea
-                      id="eventDescription"
-                      name="eventDescription"
-                      placeholder="Tell people what this event is about..."
-                      value={formData.eventDescription}
-                      onChange={handleInputChange}
-                      rows="5"
-                      className="w-full px-4 py-3 border border-gray-200 dark:border-gray-800 rounded-xl focus:outline-hidden focus:ring-4 focus:ring-brand-500/10 dark:bg-gray-900 dark:text-white transition-all resize-none shadow-theme-xs"
-                    ></textarea>
-                  </div>
+              {/* Right side: Event Media (Red Area) */}
+              <div className="lg:col-span-6">
+                <Label>Event Banner</Label>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleBannerUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
 
-
-                  <div className="w-full max-w-xs">
-                    <Label htmlFor="maxRegistrations">Maximum Registrations</Label>
-                    <div className="relative">
-                      <Input
-                        type="number"
-                        id="maxRegistrations"
-                        name="maxRegistrations"
-                        value={formData.maxRegistrations}
-                        onChange={handleInputChange}
-                        min="0"
-                        className="!pr-20"
-                      />
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-medium text-gray-400 pointer-events-none uppercase tracking-wider">
-                        0 = ∞
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right side: Event Media (Red Area) */}
-                <div className="lg:col-span-6">
-                  <Label>Event Banner</Label>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleBannerUpload}
-                    accept="image/*"
-                    className="hidden"
-                  />
-
-                  {bannerPreview ? (
-                    <div className="space-y-4">
-                      {!croppedBannerUrl ? (
-                        <div className="space-y-3">
-                          <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-900 p-4 overflow-auto">
-                            <div style={{ width: 'fit-content', margin: '0 auto' }}>
-                              <ReactCrop
-                                crop={crop}
-                                onChange={(c) => setCrop(c)}
-                                onComplete={(c) => setCompletedCrop(c)}
-                                aspect={16 / 9}
-                              >
-                                <img
-                                  ref={imgRef}
-                                  src={bannerPreview}
-                                  alt="To be cropped"
-                                  onLoad={onImageLoad}
-                                  style={{
-                                    maxHeight: '500px',
-                                    width: 'auto',
-                                    display: 'block'
-                                  }}
-                                />
-                              </ReactCrop>
-                            </div>
+                {bannerPreview ? (
+                  <div className="space-y-4">
+                    {!croppedBannerUrl ? (
+                      <div className="space-y-3">
+                        <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-900 p-4 overflow-auto">
+                          <div style={{ width: 'fit-content', margin: '0 auto' }}>
+                            <ReactCrop
+                              crop={crop}
+                              onChange={(c) => setCrop(c)}
+                              onComplete={(c) => setCompletedCrop(c)}
+                              aspect={16 / 9}
+                            >
+                              <img
+                                ref={imgRef}
+                                src={bannerPreview}
+                                alt="To be cropped"
+                                onLoad={onImageLoad}
+                                style={{
+                                  maxHeight: '500px',
+                                  width: 'auto',
+                                  display: 'block'
+                                }}
+                              />
+                            </ReactCrop>
                           </div>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={removeBanner}
-                              startIcon={<TrashBinIcon className="size-3.5" />}
-                              className="flex-1 text-xs"
-                            >
-                              Discard
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={removeBanner}
+                            startIcon={<TrashBinIcon className="size-3.5" />}
+                            className="flex-1 text-xs"
+                          >
+                            Discard
+                          </Button>
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={handleCropComplete}
+                            startIcon={<CheckCircleIcon className="size-3.5" />}
+                            className="flex-1 text-xs"
+                          >
+                            Confirm
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="relative group">
+                        <div className="aspect-video w-full overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-800 relative shadow-sm">
+                          <img
+                            src={croppedBannerUrl}
+                            alt="Banner Preview"
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                            <Button variant="primary" size="sm" onClick={triggerBannerUpload} startIcon={<PencilIcon className="size-3.5" />} className="!h-8 !px-3 text-[10px]">
+                              Change
                             </Button>
-                            <Button
-                              variant="primary"
-                              size="sm"
-                              onClick={handleCropComplete}
-                              startIcon={<CheckCircleIcon className="size-3.5" />}
-                              className="flex-1 text-xs"
-                            >
-                              Confirm
+                            <Button variant="danger" size="sm" onClick={removeBanner} startIcon={<TrashBinIcon className="size-3.5" />} className="!h-8 !px-3 text-[10px]">
+                              Remove
                             </Button>
                           </div>
                         </div>
-                      ) : (
-                        <div className="relative group">
-                          <div className="aspect-video w-full overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-800 relative shadow-sm">
-                            <img
-                              src={croppedBannerUrl}
-                              alt="Banner Preview"
-                              className="w-full h-full object-cover"
-                            />
-                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                              <Button variant="primary" size="sm" onClick={triggerBannerUpload} startIcon={<PencilIcon className="size-3.5" />} className="!h-8 !px-3 text-[10px]">
-                                Change
-                              </Button>
-                              <Button variant="danger" size="sm" onClick={removeBanner} startIcon={<TrashBinIcon className="size-3.5" />} className="!h-8 !px-3 text-[10px]">
-                                Remove
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div
-                      onClick={triggerBannerUpload}
-                      className="border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl h-[200px] flex flex-col items-center justify-center bg-gray-50/50 dark:bg-white/[0.02] cursor-pointer hover:border-brand-500 hover:bg-brand-50/10 transition-all group"
-                    >
-                      <div className="size-10 rounded-full bg-white dark:bg-gray-900 shadow-theme-xs flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                        <PlusIcon className="size-5 text-brand-500" />
                       </div>
-                      <p className="text-gray-700 dark:text-white/90 font-semibold text-xs mb-1">Upload banner</p>
-                      <p className="text-[10px] text-gray-400">16:9 ratio</p>
+                    )}
+                  </div>
+                ) : (
+                  <div
+                    onClick={triggerBannerUpload}
+                    className="border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl h-[200px] flex flex-col items-center justify-center bg-gray-50/50 dark:bg-white/[0.02] cursor-pointer hover:border-brand-500 hover:bg-brand-50/10 transition-all group"
+                  >
+                    <div className="size-10 rounded-full bg-white dark:bg-gray-900 shadow-theme-xs flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                      <PlusIcon className="size-5 text-brand-500" />
                     </div>
-                  )}
-                </div>
+                    <p className="text-gray-700 dark:text-white/90 font-semibold text-xs mb-1">Upload banner</p>
+                    <p className="text-[10px] text-gray-400">16:9 ratio</p>
+                  </div>
+                )}
               </div>
             </div>
           </ComponentCard>
@@ -649,7 +667,7 @@ const CreateEvent = () => {
                 </div>
               </div>
             </div>
-          </ComponentCard>
+          </ComponentCard >
         </div>
 
         {/* Right Side: Live Preview (Sticky) */}
@@ -699,6 +717,7 @@ const CreateEvent = () => {
                     <div className="flex items-center gap-2 text-gray-500 text-xs mt-2 font-medium">
                       <CalendarIcon className="size-4 text-brand-500" />
                       {formData.eventDate ? new Date(formData.eventDate).toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' }) : "Select a date..."}
+                      {formData.eventTime && ` at ${formData.eventTime}`}
                     </div>
                   </div>
 
@@ -751,29 +770,26 @@ const CreateEvent = () => {
                 </div>
 
                 {/* Home Indicator */}
-                <div className="h-8 flex items-end justify-center pb-2 bg-white">
-                  <div className="w-32 h-1.5 bg-gray-200 rounded-full"></div>
-                </div>
               </div>
             </div>
-
-            <div className="flex gap-4 mt-8 px-1">
-              <Button
-                variant="outline"
-                className="flex-1 !rounded-[20px] !py-4 text-xs font-bold"
-                onClick={() => navigate('/events')}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                className="flex-2 !rounded-[20px] !py-4 text-xs font-bold shadow-lg shadow-brand-500/20"
-                startIcon={<CheckCircleIcon className="size-4" />}
-              >
-                Create Event
-              </Button>
-            </div>
           </div>
+        </div>
+
+        <div className="flex gap-4 mt-8 px-1">
+          <Button
+            variant="outline"
+            className="flex-1 !rounded-[20px] !py-4 text-xs font-bold"
+            onClick={() => navigate('/events')}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            className="flex-2 !rounded-[20px] !py-4 text-xs font-bold shadow-lg shadow-brand-500/20"
+            startIcon={<CheckCircleIcon className="size-4" />}
+          >
+            Create Event
+          </Button>
         </div>
       </form>
     </div>

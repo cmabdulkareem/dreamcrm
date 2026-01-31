@@ -30,6 +30,7 @@ const ManageEvents = () => {
     eventName: '',
     eventDescription: '',
     eventDate: '',
+    eventTime: '10:00',
     maxRegistrations: 0,
     eventPin: '',
     registrationFields: [
@@ -212,6 +213,7 @@ const ManageEvents = () => {
         eventName: event.eventName || '',
         eventDescription: event.eventDescription || '',
         eventDate: event.eventDate ? new Date(event.eventDate).toISOString().split('T')[0] : '',
+        eventTime: event.eventDate ? new Date(event.eventDate).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '10:00',
         maxRegistrations: event.maxRegistrations || 0,
         eventPin: event.eventPin || '',
         registrationFields: event.registrationFields || [
@@ -258,7 +260,7 @@ const ManageEvents = () => {
     try {
       const eventData = {
         ...formData,
-        eventDate: new Date(formData.eventDate).toISOString()
+        eventDate: new Date(`${formData.eventDate}T${formData.eventTime}:00`).toISOString()
       };
 
       const response = await axios.put(`${API}/events/update/${currentEventId}`, eventData, { withCredentials: true });
@@ -532,6 +534,17 @@ const ManageEvents = () => {
                     label="Event Date *"
                     value={formData.eventDate}
                     onChange={(date, dateString) => setFormData({ ...formData, eventDate: dateString })}
+                  />
+                </div>
+                <div className="w-full md:w-1/2">
+                  <Label htmlFor="eventTime">Event Time *</Label>
+                  <Input
+                    type="time"
+                    id="eventTime"
+                    name="eventTime"
+                    value={formData.eventTime}
+                    onChange={handleInputChange}
+                    required
                   />
                 </div>
               </div>
