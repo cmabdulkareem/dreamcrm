@@ -103,7 +103,13 @@ app.get('/event-registration/:link', async (req, res) => {
     if (event) {
       const title = `${event.eventName} | Dream CRM`;
       const description = event.eventDescription || 'Register for this event';
-      const origin = req.protocol + '://' + req.get('host');
+
+      let origin = req.protocol + '://' + req.get('host');
+      // For production, force https for social media crawlers
+      if (!origin.includes('localhost')) {
+        origin = origin.replace('http://', 'https://');
+      }
+
       let imageUrl = `${origin}/favicon.png`;
 
       if (event.bannerImage) {
@@ -114,9 +120,14 @@ app.get('/event-registration/:link', async (req, res) => {
 
       const url = `${origin}/event-registration/${link}`;
 
+      // Log for debugging
+      try {
+        fs.appendFileSync(path.join(__dirname, '../meta-debug.log'), `[${new Date().toISOString()}] Success: ${link} -> ${title}\n`);
+      } catch (err) { }
+
       // Construct metadata block
       const metadata = `
-    <!-- METADATA_START -->
+    <!-- DYNAMIC_METADATA_START -->
     <title>${title}</title>
     <meta name="title" content="${title}" />
     <meta name="description" content="${description}" />
@@ -134,10 +145,25 @@ app.get('/event-registration/:link', async (req, res) => {
     <meta property="twitter:title" content="${title}" />
     <meta property="twitter:description" content="${description}" />
     <meta property="twitter:image" content="${imageUrl}" />
-    <!-- METADATA_END -->`;
+    <!-- DYNAMIC_METADATA_END -->`;
 
-      // Inject into HTML
-      html = html.replace(/<!-- METADATA_START -->[\s\S]*<!-- METADATA_END -->/, metadata);
+      // Inject into HTML robustly
+      // 1. First, try to remove my previous markers if they exist
+      html = html.replace(/<!-- METADATA_START -->[\s\S]*<!-- METADATA_END -->/, '');
+      html = html.replace(/<!-- DYNAMIC_METADATA_START -->[\s\S]*<!-- DYNAMIC_METADATA_END -->/, '');
+
+      // 2. Remove any static title/meta tags that might compete (case-insensitive)
+      html = html.replace(/<title>[\s\S]*?<\/title>/gi, '');
+      html = html.replace(/<meta\s+name=["']description["']\s+content=["'][\s\S]*?["']\s*\/?>/gi, '');
+      html = html.replace(/<meta\s+property=["']og:[\s\S]*?["']\s+content=["'][\s\S]*?["']\s*\/?>/gi, '');
+      html = html.replace(/<meta\s+name=["']twitter:[\s\S]*?["']\s+content=["'][\s\S]*?["']\s*\/?>/gi, '');
+
+      // 3. Inject new metadata at the top of the <head>
+      html = html.replace(/<head>/i, `<head>${metadata}`);
+    } else {
+      try {
+        fs.appendFileSync(path.join(__dirname, '../meta-debug.log'), `[${new Date().toISOString()}] Not Found: ${link}\n`);
+      } catch (err) { }
     }
 
     res.send(html);
