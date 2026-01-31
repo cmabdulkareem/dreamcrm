@@ -14,7 +14,9 @@ import {
     getOnlineUsers,
     deleteUser,
     forgotPassword,
-    resetPassword
+    forgotPassword,
+    resetPassword,
+    changePassword
 } from '../controller/userController.js'
 import verifyToken from "../middleware/verifyToken.js";
 
@@ -24,6 +26,7 @@ router.post('/signup', signUpUser)
 router.post('/signin', signInUser)
 router.post('/forgot-password', forgotPassword)
 router.post('/reset-password', resetPassword)
+router.post('/change-password', verifyToken, changePassword) // Add change password route
 router.get('/allusers', verifyToken, getAllUsers)
 router.get('/dropdown', verifyToken, getUsersForDropdown)
 router.put('/update/:id', verifyToken, updateUser)

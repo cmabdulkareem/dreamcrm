@@ -33,6 +33,7 @@ const userSchema = new mongoose.Schema(
     consent: { type: Boolean, required: true },
     accountStatus: { type: String, enum: ["Pending", "Active", "Suspended", "Deactivated"], default: "Pending" },
     isAdmin: { type: Boolean, default: false },
+    mustChangePassword: { type: Boolean, default: false }, // Force password change flag
 
     // Role-based access control
     roles: {

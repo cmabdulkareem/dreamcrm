@@ -77,6 +77,7 @@ const StudentDashboard = lazy(() => import("./pages/StudentPortal/StudentDashboa
 const StudentAttendance = lazy(() => import("./pages/StudentPortal/StudentAttendance"));
 const StudentProfile = lazy(() => import("./pages/StudentPortal/StudentProfile"));
 const StudentRequests = lazy(() => import("./pages/StudentPortal/StudentRequests"));
+const ChangePassword = lazy(() => import("./pages/StudentPortal/ChangePassword"));
 
 
 function App() {
@@ -182,15 +183,16 @@ function App() {
                 <Route path="/public/attendance/:shareToken" element={<PublicAttendance />} />
 
                 {/* Student Portal Routes */}
-                <Route path="/student/signup" element={<StudentSignup />} />
-                <Route path="/student/login" element={<StudentLogin />} />
-                <Route path="/student" element={<ProtectedRoutes redirectTo="/student/login"><StudentPortalLayout /></ProtectedRoutes>}>
+                <Route path="/student/signup" element={<Suspense fallback={<LoadingSpinner />}><StudentSignup /></Suspense>} />
+                <Route path="/student/login" element={<Suspense fallback={<LoadingSpinner />}><StudentLogin /></Suspense>} />
+                <Route path="/student" element={<ProtectedRoutes redirectTo="/student/login"><Suspense fallback={<LoadingSpinner />}><StudentPortalLayout /></Suspense></ProtectedRoutes>}>
                   <Route index element={<Navigate to="dashboard" replace />} />
                   <Route path="dashboard" element={<Suspense fallback={<LoadingSpinner />}><StudentDashboard /></Suspense>} />
                   <Route path="attendance" element={<Suspense fallback={<LoadingSpinner />}><StudentAttendance /></Suspense>} />
                   <Route path="attendance/:batchId" element={<Suspense fallback={<LoadingSpinner />}><StudentAttendance /></Suspense>} />
                   <Route path="profile" element={<Suspense fallback={<LoadingSpinner />}><StudentProfile /></Suspense>} />
                   <Route path="requests" element={<Suspense fallback={<LoadingSpinner />}><StudentRequests /></Suspense>} />
+                  <Route path="change-password" element={<Suspense fallback={<LoadingSpinner />}><ChangePassword /></Suspense>} />
                 </Route>
               </Routes>
             </Router>

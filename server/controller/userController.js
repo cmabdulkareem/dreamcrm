@@ -35,27 +35,37 @@ export const studentSignup = async (req, res) => {
     }
 
     // 2. Check if User account already exists
-    const existingUser = await userModel.findOne({ email: lowerEmail });
-    if (existingUser) {
-      return res.status(400).json({ message: "An account already exists for this email. Please login." });
-    }
+    let user = await userModel.findOne({ email: lowerEmail });
 
-    // 3. Generate random password
-    const generatedPassword = crypto.randomBytes(4).toString('hex').toUpperCase(); // 8 characters
-
-    // Add simple complexity requirements manually to ensure it meets validator
-    // Or just generating a stronger one:
+    // Generate random password
     const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
     let password = "";
     for (let i = 0; i < 12; i++) {
       password += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    // Ensure at least one of each required type
     password += "A1a!";
-
     const hashedPassword = await hashPassword(password);
 
-    // 4. Create User
+    if (user) {
+      // If user exists, check if they are already a student
+      if (user.roles.includes("Student")) {
+        // Reset password and resend
+        user.password = hashedPassword;
+        await user.save();
+
+        // Send email
+        const emailService = await import('../utils/emailService.js');
+        await emailService.default.sendStudentCredentialsEmail(user, password);
+
+        return res.status(200).json({ message: "Credentials reset and sent to your email." });
+      } else {
+        // User exists but not a student (e.g. Staff). 
+        // For now, prevent overwriting staff accounts via this public route.
+        return res.status(400).json({ message: "An account exists but is not marked as a Student. Please contact admin." });
+      }
+    }
+
+    // 4. Create User if not exists
     const newUser = new userModel({
       fullName: studentRecord.fullName,
       email: lowerEmail,
@@ -67,7 +77,9 @@ export const studentSignup = async (req, res) => {
       designation: "Student",
       gender: studentRecord.gender || "notDisclosed",
       dob: studentRecord.dob,
-      location: studentRecord.place || "Unknown"
+      dob: studentRecord.dob,
+      location: studentRecord.place || "Unknown",
+      mustChangePassword: true // Force password change for new student accounts
     });
 
     await newUser.save();
@@ -276,6 +288,7 @@ export const signInUser = async (req, res) => {
         designation: user.designation,
         accountStatus: user.accountStatus,
         employeeCode: user.employeeCode, // Include employeeCode
+        mustChangePassword: user.mustChangePassword, // Include flag
         brands: user.brands || [] // Include brands in login response
       },
       role: user.roles
@@ -331,6 +344,42 @@ export const resetPassword = async (req, res) => {
   } catch (error) {
     console.error("Reset password error:", error);
     return res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Change Password (Logged in user)
+export const changePassword = async (req, res) => {
+  try {
+    const { newPassword } = req.body;
+    const userId = req.user.id;
+
+    if (!newPassword || newPassword.length < 8) {
+      return res.status(400).json({ message: "Password must be at least 8 characters long." });
+    }
+
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    // Validate password strength again (optional but good practice)
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_\-+=\[\]{};':"\\|,.<>/?]).{8,}/.test(newPassword)) {
+      return res.status(400).json({
+        message: "Password must be at least 8 characters long, and include uppercase, lowercase, number, and special character."
+      });
+    }
+
+    const hashedPassword = await hashPassword(newPassword);
+    user.password = hashedPassword;
+    user.mustChangePassword = false; // Turn off the flag
+
+    await user.save();
+
+    return res.status(200).json({ message: "Password updated successfully." });
+
+  } catch (error) {
+    console.error("Change password error:", error);
+    return res.status(500).json({ message: "Internal server error." });
   }
 };
 

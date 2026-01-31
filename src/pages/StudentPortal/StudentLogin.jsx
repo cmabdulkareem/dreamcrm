@@ -31,7 +31,12 @@ export default function StudentLogin() {
 
             if (res.data.user && res.data.user.roles.includes('Student')) {
                 await login(res.data.user, res.data.role, res.data.token);
-                navigate('/student/dashboard');
+
+                if (res.data.user.mustChangePassword) {
+                    navigate('/student/change-password');
+                } else {
+                    navigate('/student/dashboard');
+                }
             } else {
                 setError('Access denied. This portal is for students only.');
                 // Optionally force logout if they logged in as staff
