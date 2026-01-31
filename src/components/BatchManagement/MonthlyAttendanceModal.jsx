@@ -61,8 +61,8 @@ export default function MonthlyAttendanceModal({ isOpen, onClose, batch }) {
     // stats = { studentId: { present: count, absent: count, total: count } }
     const processAttendance = () => {
         const studentMap = {}; // studentId -> { day: status }
-        const statsMap = {}; // studentId -> { present, absent, late, excused, holiday, totalSessions }
-        const monthlySummary = { present: 0, absent: 0, late: 0, excused: 0, holiday: 0 };
+        const statsMap = {}; // studentId -> { present, absent, late, excused, holiday, weekOff, totalSessions }
+        const monthlySummary = { present: 0, absent: 0, late: 0, excused: 0, holiday: 0, weekOff: 0 };
         const dailyStats = {}; // day -> { present, absent, etc }
 
         const today = new Date();
@@ -73,7 +73,7 @@ export default function MonthlyAttendanceModal({ isOpen, onClose, batch }) {
         // Initialize maps
         students.forEach(s => {
             studentMap[s._id] = {};
-            statsMap[s._id] = { present: 0, absent: 0, late: 0, excused: 0, holiday: 0, totalSessions: 0 };
+            statsMap[s._id] = { present: 0, absent: 0, late: 0, excused: 0, holiday: 0, weekOff: 0, totalSessions: 0 };
         });
 
         const firstMarkMap = {}; // studentId -> earliest Date object
@@ -104,7 +104,7 @@ export default function MonthlyAttendanceModal({ isOpen, onClose, batch }) {
 
                 // Ensure dailyStats exists for this valid working day
                 if (!dailyStats[day]) {
-                    dailyStats[day] = { present: 0, absent: 0, late: 0, excused: 0, holiday: 0 };
+                    dailyStats[day] = { present: 0, absent: 0, late: 0, excused: 0, holiday: 0, weekOff: 0 };
                 }
 
                 students.forEach(student => {
@@ -130,50 +130,35 @@ export default function MonthlyAttendanceModal({ isOpen, onClose, batch }) {
                     let finalStatus = status;
 
                     if (status) {
-                        // If any status exists (P, A, L, E, H), it's a valid day to count (unless it's a Holiday)
-                        if (status !== 'Holiday') {
+                        // If any status exists (P, A, L, E, H, W), it's a valid day to count (unless it's a Holiday or Week Off)
+                        if (status !== 'Holiday' && status !== 'Week Off') {
                             isConsideredSession = true;
                         }
                     } else if (currentDate >= studentEffectiveStart) {
-                        // Unmarked day after joining - counts as Present (with Sunday logic)
-                        isConsideredSession = true;
-
-                        if (currentDate.getDay() === 0) { // Sunday Rule
-                            const satInMonth = day > 1;
-                            const monInMonth = day < daysInMonth;
-                            const yesterday = new Date(currentDate.getTime() - 86400000);
-                            const tomorrow = new Date(currentDate.getTime() + 86400000);
-
-                            // Bounds check
-                            const satInRange = yesterday >= studentEffectiveStart;
-                            const monInRange = tomorrow <= todayNormalized;
-
-                            const satAbsent = satInMonth && satInRange && (studentMap[student._id][day - 1] === 'Absent');
-                            const monAbsent = monInMonth && monInRange && (studentMap[student._id][day + 1] === 'Absent');
-
-                            let isSundayAbsent = false;
-                            if (satInRange && monInRange) {
-                                isSundayAbsent = satAbsent && monAbsent;
-                            } else if (satInRange) {
-                                isSundayAbsent = satAbsent;
-                            } else if (monInRange) {
-                                isSundayAbsent = monAbsent;
-                            }
-
-                            finalStatus = isSundayAbsent ? 'Absent' : 'Present';
-                            studentMap[student._id][day] = finalStatus; // Store it for UI
+                        // Unmarked day after joining
+                        if (currentDate.getDay() === 0) { // Sunday Rule: Always Week Off by default
+                            finalStatus = 'Week Off';
+                            studentMap[student._id][day] = 'Week Off';
+                            isConsideredSession = false; // By default Sunday is NOT a session
                         } else {
+                            // Weekday Unmarked: Legacy logic was Present, but maybe should be unmarked? 
+                            // Stay consistent with existing logic for weekdays.
+                            isConsideredSession = true;
                             finalStatus = 'Present';
-                            studentMap[student._id][day] = 'Present'; // Store it for UI
+                            studentMap[student._id][day] = 'Present';
                         }
                     }
 
                     if (!isConsideredSession) {
-                        // If it's a Holiday or before joining, update dailyStats/monthlySummary if it was a Holiday
-                        if (status === 'Holiday') {
+                        // If it's a Holiday, Week Off, or before joining, update dailyStats/monthlySummary
+                        if (finalStatus === 'Holiday') {
                             sStats.holiday++;
                             monthlySummary.holiday++;
                             dailyStats[day].holiday++;
+                        } else if (finalStatus === 'Week Off') {
+                            sStats.weekOff++;
+                            monthlySummary.weekOff++;
+                            dailyStats[day].weekOff++;
                         }
                         return;
                     }
@@ -221,6 +206,7 @@ export default function MonthlyAttendanceModal({ isOpen, onClose, batch }) {
             case 'Late': colorClass = "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800"; break;
             case 'Excused': colorClass = "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800"; break;
             case 'Holiday': colorClass = "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800"; break;
+            case 'Week Off': colorClass = "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800/50 dark:text-gray-400 dark:border-gray-700"; break;
             default: colorClass = "bg-gray-50 text-gray-400 border-gray-100 dark:bg-gray-800/50 dark:text-gray-600 dark:border-gray-800"; break;
         }
 
@@ -271,7 +257,8 @@ export default function MonthlyAttendanceModal({ isOpen, onClose, batch }) {
                             { l: 'A', n: 'Absent', c: 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400', count: monthlySummary.absent },
                             { l: 'L', n: 'Late', c: 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400', count: monthlySummary.late },
                             { l: 'E', n: 'Excused', c: 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400', count: monthlySummary.excused },
-                            { l: 'H', n: 'Holiday', c: 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400', count: monthlySummary.holiday }
+                            { l: 'H', n: 'Holiday', c: 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400', count: monthlySummary.holiday },
+                            { l: 'W', n: 'Week Off', c: 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800/50 dark:text-gray-400', count: monthlySummary.weekOff }
                         ].map(item => (
                             <div key={item.l} className="flex items-center gap-3">
                                 <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border shadow-sm ${item.c}`}>

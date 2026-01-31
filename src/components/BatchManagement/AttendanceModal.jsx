@@ -51,9 +51,12 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
                         records[rec.studentId] = { status: rec.status, remarks: rec.remarks };
                     });
                 } else {
-                    // Initialize default 'Present' for all students if new record
+                    // Initialize default status
+                    const isSunday = new Date(date).getDay() === 0;
+                    const defaultStatus = isSunday ? 'Week Off' : 'Present';
+
                     studentList.forEach(s => {
-                        records[s._id] = { status: 'Present', remarks: '' };
+                        records[s._id] = { status: defaultStatus, remarks: '' };
                     });
                 }
                 setAttendanceRecords(records);
@@ -61,8 +64,11 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
                 console.error("No existing attendance found or error fetching", err);
                 // Initialize default
                 const records = {};
+                const isSunday = new Date(date).getDay() === 0;
+                const defaultStatus = isSunday ? 'Week Off' : 'Present';
+
                 studentList.forEach(s => {
-                    records[s._id] = { status: 'Present', remarks: '' };
+                    records[s._id] = { status: defaultStatus, remarks: '' };
                 });
                 setAttendanceRecords(records);
             }
@@ -180,8 +186,8 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
                                                     <div className="text-xs font-normal text-gray-500 dark:text-gray-400 mt-1">{student.phoneNumber}</div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                                    <div className="flex gap-2">
-                                                        {["Present", "Absent", "Late", "Excused", "Holiday"].map(status => (
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {["Present", "Absent", "Late", "Excused", "Holiday", "Week Off"].map(status => (
                                                             <button
                                                                 key={status}
                                                                 onClick={() => handleStatusChange(student._id, status)}
@@ -192,7 +198,8 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
                                                                             status === 'Absent' ? 'bg-red-100 text-red-800 border-red-200' :
                                                                                 status === 'Late' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
                                                                                     status === 'Holiday' ? 'bg-purple-100 text-purple-800 border-purple-200' :
-                                                                                        'bg-blue-100 text-blue-800 border-blue-200')
+                                                                                        status === 'Week Off' ? 'bg-gray-100 text-gray-800 border-gray-200' :
+                                                                                            'bg-blue-100 text-blue-800 border-blue-200')
                                                                         : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600'
                                                                     }
                                                             ${!canEdit ? 'cursor-default opacity-80' : ''}
@@ -220,7 +227,8 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
                                             { l: 'A', n: 'Absent', c: 'bg-red-100 text-red-800 border-red-200' },
                                             { l: 'L', n: 'Late', c: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
                                             { l: 'E', n: 'Excused', c: 'bg-blue-100 text-blue-800 border-blue-200' },
-                                            { l: 'H', n: 'Holiday', c: 'bg-purple-100 text-purple-800 border-purple-200' }
+                                            { l: 'H', n: 'Holiday', c: 'bg-purple-100 text-purple-800 border-purple-200' },
+                                            { l: 'W', n: 'Week Off', c: 'bg-gray-100 text-gray-800 border-gray-200' }
                                         ].map(item => (
                                             <div key={item.l} className="flex items-center gap-1.5">
                                                 <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border ${item.c}`}>
@@ -242,7 +250,7 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
                                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{student.phoneNumber}</p>
                                             </div>
                                             <div className="flex flex-wrap gap-2">
-                                                {["Present", "Absent", "Late", "Excused", "Holiday"].map(status => (
+                                                {["Present", "Absent", "Late", "Excused", "Holiday", "Week Off"].map(status => (
                                                     <button
                                                         key={status}
                                                         onClick={() => handleStatusChange(student._id, status)}
@@ -253,7 +261,8 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
                                                                     status === 'Absent' ? 'bg-red-100 text-red-800 border-red-200' :
                                                                         status === 'Late' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
                                                                             status === 'Holiday' ? 'bg-purple-100 text-purple-800 border-purple-200' :
-                                                                                'bg-blue-100 text-blue-800 border-blue-200')
+                                                                                status === 'Week Off' ? 'bg-gray-100 text-gray-800 border-gray-200' :
+                                                                                    'bg-blue-100 text-blue-800 border-blue-200')
                                                                 : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600'
                                                             }
                                                     ${!canEdit ? 'cursor-default opacity-80' : ''}

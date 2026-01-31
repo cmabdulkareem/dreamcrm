@@ -26,7 +26,7 @@ const attendanceSchema = new mongoose.Schema(
                 studentName: { type: String }, // redundant but useful for display
                 status: {
                     type: String,
-                    enum: ["Present", "Absent", "Late", "Excused", "Holiday"],
+                    enum: ["Present", "Absent", "Late", "Excused", "Holiday", "Week Off"],
                     default: "Present"
                 },
                 remarks: { type: String }

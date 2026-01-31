@@ -47,7 +47,7 @@ export default function PublicAttendance() {
         const { students, attendance, batch } = data;
         const studentMap = {};
         const statsMap = {};
-        const monthlySummary = { present: 0, absent: 0, late: 0, excused: 0, holiday: 0 };
+        const monthlySummary = { present: 0, absent: 0, late: 0, excused: 0, holiday: 0, weekOff: 0 };
         const dailyStats = {};
 
         const today = new Date();
@@ -58,7 +58,7 @@ export default function PublicAttendance() {
         // Initialize maps
         students.forEach(s => {
             studentMap[s._id] = {};
-            statsMap[s._id] = { present: 0, absent: 0, late: 0, excused: 0, holiday: 0, totalSessions: 0 };
+            statsMap[s._id] = { present: 0, absent: 0, late: 0, excused: 0, holiday: 0, weekOff: 0, totalSessions: 0 };
         });
 
         const earliestMarkMap = {};
@@ -87,7 +87,7 @@ export default function PublicAttendance() {
             if (currentDate >= batchStartNormalized && currentDate <= todayNormalized) {
 
                 if (!dailyStats[day]) {
-                    dailyStats[day] = { present: 0, absent: 0, late: 0, excused: 0, holiday: 0 };
+                    dailyStats[day] = { present: 0, absent: 0, late: 0, excused: 0, holiday: 0, weekOff: 0 };
                 }
 
                 students.forEach(student => {
@@ -111,45 +111,30 @@ export default function PublicAttendance() {
                     let finalStatus = status;
 
                     if (status) {
-                        if (status !== 'Holiday') {
+                        if (status !== 'Holiday' && status !== 'Week Off') {
                             isConsideredSession = true;
                         }
                     } else if (currentDate >= studentEffectiveStart) {
-                        isConsideredSession = true;
-
-                        if (currentDate.getDay() === 0) { // Sunday Rule
-                            const satInMonth = day > 1;
-                            const monInMonth = day < daysInMonth;
-                            const yesterday = new Date(currentDate.getTime() - 86400000);
-                            const tomorrow = new Date(currentDate.getTime() + 86400000);
-                            const satInRange = yesterday >= studentEffectiveStart;
-                            const monInRange = tomorrow <= todayNormalized;
-
-                            const satAbsent = satInMonth && satInRange && (studentMap[student._id][day - 1] === 'Absent');
-                            const monAbsent = monInMonth && monInRange && (studentMap[student._id][day + 1] === 'Absent');
-
-                            let isSundayAbsent = false;
-                            if (satInRange && monInRange) {
-                                isSundayAbsent = satAbsent && monAbsent;
-                            } else if (satInRange) {
-                                isSundayAbsent = satAbsent;
-                            } else if (monInRange) {
-                                isSundayAbsent = monAbsent;
-                            }
-
-                            finalStatus = isSundayAbsent ? 'Absent' : 'Present';
-                            studentMap[student._id][day] = finalStatus;
+                        if (currentDate.getDay() === 0) { // Sunday Rule: Always Week Off by default
+                            finalStatus = 'Week Off';
+                            studentMap[student._id][day] = 'Week Off';
+                            isConsideredSession = false;
                         } else {
+                            isConsideredSession = true;
                             finalStatus = 'Present';
                             studentMap[student._id][day] = 'Present';
                         }
                     }
 
                     if (!isConsideredSession) {
-                        if (status === 'Holiday') {
+                        if (finalStatus === 'Holiday') {
                             sStats.holiday++;
                             monthlySummary.holiday++;
                             dailyStats[day].holiday++;
+                        } else if (finalStatus === 'Week Off') {
+                            sStats.weekOff++;
+                            monthlySummary.weekOff++;
+                            dailyStats[day].weekOff++;
                         }
                         return;
                     }
@@ -194,6 +179,7 @@ export default function PublicAttendance() {
             case 'Late': colorClass = "bg-yellow-100 text-yellow-800 border-yellow-200"; break;
             case 'Excused': colorClass = "bg-blue-100 text-blue-800 border-blue-200"; break;
             case 'Holiday': colorClass = "bg-purple-100 text-purple-800 border-purple-200"; break;
+            case 'Week Off': colorClass = "bg-gray-100 text-gray-800 border-gray-200"; break;
             default: colorClass = "bg-gray-50 text-gray-400"; break;
         }
         return (
@@ -259,7 +245,8 @@ export default function PublicAttendance() {
                             { l: 'A', n: 'Abs.', c: 'bg-red-100 text-red-800 border-red-200', count: monthlySummary.absent },
                             { l: 'L', n: 'Late', c: 'bg-yellow-100 text-yellow-800 border-yellow-200', count: monthlySummary.late },
                             { l: 'E', n: 'Exc.', c: 'bg-blue-100 text-blue-800 border-blue-200', count: monthlySummary.excused },
-                            { l: 'H', n: 'Hol.', c: 'bg-purple-100 text-purple-800 border-purple-200', count: monthlySummary.holiday }
+                            { l: 'H', n: 'Hol.', c: 'bg-purple-100 text-purple-800 border-purple-200', count: monthlySummary.holiday },
+                            { l: 'W', n: 'Off', c: 'bg-gray-100 text-gray-800 border-gray-200', count: monthlySummary.weekOff }
                         ].map(item => (
                             <div key={item.l} className="flex items-center gap-3">
                                 <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border ${item.c}`}>
