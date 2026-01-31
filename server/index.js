@@ -35,6 +35,7 @@ import invoiceRoutes from "./routes/invoiceRoutes.js";
 import receiptRoutes from "./routes/receiptRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
 import supportRoutes from "./routes/supportRoutes.js";
+import Event from './model/eventModel.js';
 const app = express()
 
 // Trust proxy is required for Render/Heroku to correctly detect protocol (http vs https)
@@ -85,6 +86,72 @@ app.use('/api/invoices', invoiceRoutes)
 app.use('/api/receipts', receiptRoutes)
 app.use('/api/ai', aiRoutes)
 app.use('/api/support', supportRoutes)
+
+// Specific route for event registration to inject meta tags for social media crawlers
+app.get('/event-registration/:link', async (req, res) => {
+  try {
+    const { link } = req.params;
+    const event = await Event.findOne({ registrationLink: link, isActive: true });
+
+    const indexPath = path.join(__dirname, '../dist/index.html');
+    if (!fs.existsSync(indexPath)) {
+      return res.status(404).send('Site building in progress...');
+    }
+
+    let html = fs.readFileSync(indexPath, 'utf8');
+
+    if (event) {
+      const title = `${event.eventName} | Dream CRM`;
+      const description = event.eventDescription || 'Register for this event';
+      const origin = req.protocol + '://' + req.get('host');
+      let imageUrl = `${origin}/favicon.png`;
+
+      if (event.bannerImage) {
+        imageUrl = event.bannerImage.startsWith('http')
+          ? event.bannerImage
+          : `${origin}${event.bannerImage.startsWith('/') ? '' : '/'}${event.bannerImage}`;
+      }
+
+      const url = `${origin}/event-registration/${link}`;
+
+      // Construct metadata block
+      const metadata = `
+    <!-- METADATA_START -->
+    <title>${title}</title>
+    <meta name="title" content="${title}" />
+    <meta name="description" content="${description}" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="${url}" />
+    <meta property="og:title" content="${title}" />
+    <meta property="og:description" content="${description}" />
+    <meta property="og:image" content="${imageUrl}" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="${url}" />
+    <meta property="twitter:title" content="${title}" />
+    <meta property="twitter:description" content="${description}" />
+    <meta property="twitter:image" content="${imageUrl}" />
+    <!-- METADATA_END -->`;
+
+      // Inject into HTML
+      html = html.replace(/<!-- METADATA_START -->[\s\S]*<!-- METADATA_END -->/, metadata);
+    }
+
+    res.send(html);
+  } catch (error) {
+    console.error('Meta injection error:', error);
+    // Fallback to sending standard file
+    const indexPath = path.join(__dirname, '../dist/index.html');
+    if (fs.existsSync(indexPath)) {
+      res.sendFile(indexPath);
+    } else {
+      res.status(500).send('Server Error');
+    }
+  }
+});
 
 
 
