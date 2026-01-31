@@ -8,7 +8,7 @@ const prospectStudentSchema = new mongoose.Schema({
     },
     phone: {
         type: String,
-        required: true,
+        required: false,
         trim: true
     },
     socialMedia: {

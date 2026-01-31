@@ -208,18 +208,33 @@ const Databases = () => {
                     return;
                 }
 
-                const students = results.data.map((row, index) => ({
-                    sn: index + 1,
-                    name: row.name || row.Name || '',
-                    gender: row.gender || row.Gender || '',
-                    place: '',
-                    phone: '',
-                    remark: '',
-                    tempId: Math.random().toString(36).substr(2, 9)
-                })).filter(s => s.name);
+                const students = results.data.map((row, index) => {
+                    // Try to find columns regardless of case/spaces
+                    const nameKey = Object.keys(row).find(k => k.trim().toLowerCase() === 'name');
+                    const genderKey = Object.keys(row).find(k => k.trim().toLowerCase() === 'gender');
+
+                    let gender = (row[genderKey] || '').trim();
+                    // Normalize gender to Title Case for enum validation
+                    if (gender) {
+                        gender = gender.charAt(0).toUpperCase() + gender.slice(1).toLowerCase();
+                        if (!['Male', 'Female', 'Other'].includes(gender)) gender = 'Other';
+                    } else {
+                        gender = 'Other';
+                    }
+
+                    return {
+                        sn: index + 1,
+                        name: (row[nameKey] || '').trim(),
+                        gender: gender,
+                        place: '',
+                        phone: '',
+                        remark: '',
+                        tempId: Math.random().toString(36).substr(2, 9)
+                    };
+                }).filter(s => s.name);
 
                 if (students.length === 0) {
-                    toast.error('No valid students found in CSV. Ensure columns are named "name" and "gender".');
+                    toast.error('No valid students found in CSV. Ensure columns are named "Name" and "Gender".');
                     return;
                 }
 
@@ -237,7 +252,10 @@ const Databases = () => {
 
     const handleBulkSave = async () => {
         try {
-            const studentsToSave = importingStudents.map(({ sn, tempId, ...rest }) => rest);
+            const studentsToSave = importingStudents.map(({ sn, tempId, remark, ...rest }) => ({
+                ...rest,
+                socialMedia: remark
+            }));
             await axios.post(`${API}/prospect-database/classes/${selectedClass._id}/students/bulk`, { students: studentsToSave });
             toast.success('Students imported successfully');
             setShowImportTable(false);
@@ -245,7 +263,8 @@ const Databases = () => {
             fetchData();
         } catch (error) {
             console.error('Error importing students:', error);
-            toast.error('Failed to import students');
+            const message = error.response?.data?.message || 'Failed to import students';
+            toast.error(message);
         }
     };
 
