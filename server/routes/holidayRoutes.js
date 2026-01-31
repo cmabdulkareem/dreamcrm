@@ -1,10 +1,12 @@
 import express from 'express';
 import { getHolidays, addHoliday, deleteHoliday } from '../controller/holidayController.js';
-import { protect } from '../middleware/authMiddleware.js';
+import verifyToken from '../middleware/verifyToken.js';
+import { applyBrandFilter } from '../middleware/brandMiddleware.js';
 
 const router = express.Router();
 
-router.use(protect);
+router.use(verifyToken);
+router.use(applyBrandFilter);
 
 router.get('/', getHolidays);
 router.post('/', addHoliday);

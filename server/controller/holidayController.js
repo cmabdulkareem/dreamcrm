@@ -3,9 +3,9 @@ import { isAdmin, isOwner, isManager } from '../utils/roleHelpers.js';
 
 export const getHolidays = async (req, res) => {
     try {
-        const brandId = req.headers['x-brand-id'];
+        const brandId = req.brandFilter?.brand || req.headers['x-brand-id'];
         if (!brandId) {
-            return res.status(400).json({ message: "Brand ID is required in headers." });
+            return res.status(400).json({ message: "Brand ID is required." });
         }
 
         const { month, year } = req.query;
@@ -35,11 +35,11 @@ export const getHolidays = async (req, res) => {
 export const addHoliday = async (req, res) => {
     try {
         const { date, reason } = req.body;
-        const brandId = req.headers['x-brand-id'];
+        const brandId = req.brandFilter?.brand || req.headers['x-brand-id'];
         const userId = req.user.id || req.user._id;
 
         if (!brandId) {
-            return res.status(400).json({ message: "Brand ID is required in headers." });
+            return res.status(400).json({ message: "Brand ID is required." });
         }
 
         if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
