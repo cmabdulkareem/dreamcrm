@@ -87,10 +87,10 @@ const navItems = [
   },
   { icon: <MailIcon />, name: "Email", path: "/email" },
   {
-    name: "Operations",
+    name: "Marketing",
     icon: <PageIcon />,
     subItems: [
-      { name: "Blank Page", path: "/blank", pro: false },
+      { name: "Databases", path: "/databases", pro: true },
       { name: "404 Error", path: "/error-404", pro: false },
     ],
   },
@@ -237,7 +237,7 @@ const AppSidebar = () => {
           "Dashboard",
           "Lead Management",
           // "Student Management", // Allow access to Student Management (specifically Batch Management)
-          "Operations",
+          "Marketing",
           "Marketing Materials",
           "UI Elements"
         ];
@@ -249,7 +249,7 @@ const AppSidebar = () => {
         // Restricted items for Counsellors (who are not managers)
         if (isCounsellor(user) && !isManager(user)) {
           // Counsellors need Lead Management, but not Finance or technical/admin items
-          const hiddenForCounsellor = ["Finance", "Operations", "UI Elements"];
+          const hiddenForCounsellor = ["Finance", "Marketing", "UI Elements"];
           if (hiddenForCounsellor.includes(nav.name)) return null;
         }
 
@@ -266,7 +266,7 @@ const AppSidebar = () => {
           const hiddenForAccountant = [
             "Lead Management",
             "Student Management",
-            "Operations",
+            "Marketing",
             "Marketing Materials",
             "Course Curriculum",
             "UI Elements"

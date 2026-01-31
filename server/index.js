@@ -35,6 +35,7 @@ import invoiceRoutes from "./routes/invoiceRoutes.js";
 import receiptRoutes from "./routes/receiptRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
 import supportRoutes from "./routes/supportRoutes.js";
+import prospectDatabaseRoutes from "./routes/prospectDatabaseRoutes.js";
 import Event from './model/eventModel.js';
 const app = express()
 
@@ -86,6 +87,7 @@ app.use('/api/invoices', invoiceRoutes)
 app.use('/api/receipts', receiptRoutes)
 app.use('/api/ai', aiRoutes)
 app.use('/api/support', supportRoutes)
+app.use('/api/prospect-database', prospectDatabaseRoutes)
 
 // Helper to get index.html content (with caching)
 let indexHtmlCache = null;

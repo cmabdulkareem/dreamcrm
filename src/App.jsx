@@ -31,7 +31,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard/LeadsOverview"));
 const EcommerceDashboard = lazy(() => import("./pages/Dashboard/RevenewOverview"));
 const Calendar = lazy(() => import("./pages/Calendar"));
 const EmailInbox = lazy(() => import("./pages/Email/EmailInbox"));
-const Blank = lazy(() => import("./pages/Blank"));
+const Databases = lazy(() => import("./pages/Marketing/Databases"));
 const ManageEvents = lazy(() => import("./pages/EventManagement/ManageEvents"));
 const CreateEvent = lazy(() => import("./pages/EventManagement/CreateEvent"));
 const EventRegistrations = lazy(() => import("./pages/EventManagement/EventRegistrations"));
@@ -99,7 +99,7 @@ function App() {
 
                   <Route path="/calendar" element={<Suspense fallback={<LoadingSpinner />}><Calendar /></Suspense>} />
                   <Route path="/email" element={<Suspense fallback={<LoadingSpinner />}><EmailInbox /></Suspense>} />
-                  <Route path="/blank" element={<Suspense fallback={<LoadingSpinner />}><Blank /></Suspense>} />
+                  <Route path="/databases" element={<Suspense fallback={<LoadingSpinner />}><Databases /></Suspense>} />
 
                   {/* Settings */}
                   <Route path="/settings/campaigns" element={<ProtectedRoutes requireManager={true}><CampaignSettings /></ProtectedRoutes>} />
