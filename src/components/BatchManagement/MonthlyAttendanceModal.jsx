@@ -85,63 +85,71 @@ export default function MonthlyAttendanceModal({ isOpen, onClose, batch }) {
             });
         });
 
-        const holidaySet = new Set(holidays.map(h => new Date(h.date).getDate()));
-
+        const holidaySet = new Set(holidays.map(h => new Date(h.date).getDate())); // 2. Process each day of the month
         for (let day = 1; day <= daysInMonth; day++) {
             const currentDate = new Date(selectedYear, selectedMonth - 1, day);
-            if (currentDate >= batchStartNormalized && currentDate <= todayNormalized) {
-                if (!dailyStats[day]) {
-                    dailyStats[day] = { present: 0, absent: 0, late: 0, excused: 0, holiday: 0, weekOff: 0 };
+            const isFutureDate = currentDate > todayNormalized;
+
+            // Initialize dailyStats for all days in month if not already done
+            if (!dailyStats[day]) {
+                dailyStats[day] = { present: 0, absent: 0, late: 0, excused: 0, holiday: 0, weekOff: 0 };
+            }
+
+            students.forEach(student => {
+                const studentJoinDate = new Date(student.createdAt);
+                studentJoinDate.setHours(0, 0, 0, 0);
+
+                let studentEffectiveStart = studentJoinDate;
+                if (firstMarkMap[student._id] && firstMarkMap[student._id] < studentEffectiveStart) {
+                    studentEffectiveStart = new Date(firstMarkMap[student._id]);
+                    studentEffectiveStart.setHours(0, 0, 0, 0);
+                }
+                if (studentEffectiveStart < batchStartNormalized) {
+                    studentEffectiveStart = batchStartNormalized;
                 }
 
-                students.forEach(student => {
-                    const studentJoinDate = new Date(student.createdAt);
-                    studentJoinDate.setHours(0, 0, 0, 0);
-                    let studentEffectiveStart = studentJoinDate;
-                    if (firstMarkMap[student._id] && firstMarkMap[student._id] < studentEffectiveStart) {
-                        studentEffectiveStart = new Date(firstMarkMap[student._id]);
-                        studentEffectiveStart.setHours(0, 0, 0, 0);
-                    }
-                    if (studentEffectiveStart < batchStartNormalized) {
-                        studentEffectiveStart = batchStartNormalized;
-                    }
+                const sStats = statsMap[student._id];
+                let status = studentMap[student._id][day];
+                let isConsideredSession = false;
+                let finalStatus = status;
 
-                    const sStats = statsMap[student._id];
-                    let status = studentMap[student._id][day];
-                    let isConsideredSession = false;
-                    let finalStatus = status;
-
-                    if (status) {
-                        if (status !== 'Holiday' && status !== 'Week Off') {
-                            isConsideredSession = true;
-                        }
-                    } else if (currentDate >= studentEffectiveStart) {
-                        if (holidaySet.has(day)) {
-                            finalStatus = 'Holiday';
-                            studentMap[student._id][day] = 'Holiday';
-                        } else if (currentDate.getDay() === 0) {
-                            finalStatus = 'Week Off';
-                            studentMap[student._id][day] = 'Week Off';
-                        } else {
-                            isConsideredSession = true;
-                            finalStatus = 'Present';
-                            studentMap[student._id][day] = 'Present';
-                        }
+                // Priority 1: Check existing manual status
+                if (status) {
+                    if (status !== 'Holiday' && status !== 'Week Off') {
+                        isConsideredSession = true;
                     }
-
-                    if (!isConsideredSession) {
-                        if (finalStatus === 'Holiday') {
-                            sStats.holiday++;
-                            monthlySummary.holiday++;
-                            dailyStats[day].holiday++;
-                        } else if (finalStatus === 'Week Off') {
-                            sStats.weekOff++;
-                            monthlySummary.weekOff++;
-                            dailyStats[day].weekOff++;
-                        }
-                        return;
+                }
+                // Priority 2: Check for Global Holiday or Sunday (Default WO)
+                // This applies to BOTH past/today and future dates
+                else if (currentDate >= studentEffectiveStart) {
+                    if (holidaySet.has(day)) {
+                        finalStatus = 'Holiday';
+                        studentMap[student._id][day] = 'Holiday';
+                    } else if (currentDate.getDay() === 0) {
+                        finalStatus = 'Week Off';
+                        studentMap[student._id][day] = 'Week Off';
+                    } else if (!isFutureDate) {
+                        // Past/Today unmarked weekdays count as sessions
+                        isConsideredSession = true;
+                        finalStatus = 'Present';
+                        studentMap[student._id][day] = 'Present';
                     }
+                }
 
+                // If it's a Holiday or Week Off, update stats regardless of it being future/past
+                // (Though usually we only cumulative stats for past dates, showing them on future dates is fine for visual)
+                if (finalStatus === 'Holiday') {
+                    sStats.holiday++;
+                    monthlySummary.holiday++;
+                    dailyStats[day].holiday++;
+                } else if (finalStatus === 'Week Off') {
+                    sStats.weekOff++;
+                    monthlySummary.weekOff++;
+                    dailyStats[day].weekOff++;
+                }
+
+                // Increment session and specific counters ONLY for non-future sessions
+                if (isConsideredSession && !isFutureDate) {
                     sStats.totalSessions++;
                     if (finalStatus === 'Absent') {
                         sStats.absent++;
@@ -162,8 +170,8 @@ export default function MonthlyAttendanceModal({ isOpen, onClose, batch }) {
                             dailyStats[day].excused++;
                         }
                     }
-                });
-            }
+                }
+            });
         }
         return { studentMap, statsMap, monthlySummary, dailyStats };
     };
