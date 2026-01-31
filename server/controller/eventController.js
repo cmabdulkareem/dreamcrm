@@ -253,13 +253,15 @@ export const registerForEvent = async (req, res) => {
     }
 
     // Check if user already registered
-    const existingRegistration = await eventRegistrationModel.findOne({
-      eventId: event._id,
-      registrantEmail: registrantEmail
-    });
+    if (registrantEmail) {
+      const existingRegistration = await eventRegistrationModel.findOne({
+        eventId: event._id,
+        registrantEmail: registrantEmail
+      });
 
-    if (existingRegistration) {
-      return res.status(400).json({ message: "You have already registered for this event." });
+      if (existingRegistration) {
+        return res.status(400).json({ message: "You have already registered for this event." });
+      }
     }
 
     // Validate required fields
