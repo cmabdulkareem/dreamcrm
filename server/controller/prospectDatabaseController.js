@@ -194,6 +194,16 @@ export const createStudent = async (req, res) => {
     }
 };
 
+export const updateStudent = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const student = await ProspectStudent.findByIdAndUpdate(id, req.body, { new: true });
+        res.status(200).json({ success: true, student });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 export const deleteStudent = async (req, res) => {
     try {
         const { id } = req.params;

@@ -37,9 +37,12 @@ const Databases = () => {
     const [currentItem, setCurrentItem] = useState(null);
     const [formData, setFormData] = useState({});
 
-    // CSV Import State
     const [importingStudents, setImportingStudents] = useState([]);
     const [showImportTable, setShowImportTable] = useState(false);
+
+    // Double-click edit state
+    const [editingCell, setEditingCell] = useState(null); // { id: string, field: string }
+    const [editValue, setEditValue] = useState('');
 
     useEffect(() => {
         fetchData();
@@ -268,6 +271,37 @@ const Databases = () => {
         }
     };
 
+    const handleCellEditSubmit = async (item, field) => {
+        if (!editingCell) return;
+
+        let value = editValue;
+        // Validation for phone
+        if (field === 'phone' && value && !/^\d*$/.test(value)) {
+            toast.error('Mobile number must be numeric');
+            setEditingCell(null);
+            return;
+        }
+
+        // Field mapping for socialMedia (remark)
+        const updateField = field === 'remark' ? 'socialMedia' : field;
+
+        if (item[updateField] === value) {
+            setEditingCell(null);
+            return;
+        }
+
+        try {
+            await axios.put(`${API}/prospect-database/students/${item._id}`, { [updateField]: value });
+            toast.success('Updated successfully');
+            setEditingCell(null);
+            fetchData();
+        } catch (error) {
+            console.error('Error updating student:', error);
+            toast.error('Failed to update');
+            setEditingCell(null);
+        }
+    };
+
     return (
         <div className="p-6">
             <PageMeta title="Prospect Databases | DreamCRM" description="Manage schools, streams, classes and students" />
@@ -353,7 +387,27 @@ const Databases = () => {
                                                     placeholder="Enter place..."
                                                 />
                                             ) : (
-                                                <span className="text-gray-600 dark:text-gray-400 uppercase">{item.place || '-'}</span>
+                                                editingCell?.id === item._id && editingCell?.field === 'place' ? (
+                                                    <input
+                                                        autoFocus
+                                                        type="text"
+                                                        value={editValue}
+                                                        onChange={(e) => setEditValue(e.target.value)}
+                                                        onBlur={() => handleCellEditSubmit(item, 'place')}
+                                                        onKeyDown={(e) => e.key === 'Enter' && handleCellEditSubmit(item, 'place')}
+                                                        className="w-full bg-transparent border-b border-brand-500 focus:outline-none py-1 px-2"
+                                                    />
+                                                ) : (
+                                                    <span
+                                                        onDoubleClick={() => {
+                                                            setEditingCell({ id: item._id, field: 'place' });
+                                                            setEditValue(item.place || '');
+                                                        }}
+                                                        className="text-gray-600 dark:text-gray-400 uppercase block w-full min-h-[1.5rem]"
+                                                    >
+                                                        {item.place || '-'}
+                                                    </span>
+                                                )
                                             )}
                                         </td>
                                         <td className="px-4 py-3 text-sm">
@@ -366,7 +420,27 @@ const Databases = () => {
                                                     placeholder="Enter mobile..."
                                                 />
                                             ) : (
-                                                <span className="text-gray-600 dark:text-gray-400">{item.phone || '-'}</span>
+                                                editingCell?.id === item._id && editingCell?.field === 'phone' ? (
+                                                    <input
+                                                        autoFocus
+                                                        type="text"
+                                                        value={editValue}
+                                                        onChange={(e) => setEditValue(e.target.value)}
+                                                        onBlur={() => handleCellEditSubmit(item, 'phone')}
+                                                        onKeyDown={(e) => e.key === 'Enter' && handleCellEditSubmit(item, 'phone')}
+                                                        className="w-full bg-transparent border-b border-brand-500 focus:outline-none py-1 px-2"
+                                                    />
+                                                ) : (
+                                                    <span
+                                                        onDoubleClick={() => {
+                                                            setEditingCell({ id: item._id, field: 'phone' });
+                                                            setEditValue(item.phone || '');
+                                                        }}
+                                                        className="text-gray-600 dark:text-gray-400 block w-full min-h-[1.5rem]"
+                                                    >
+                                                        {item.phone || '-'}
+                                                    </span>
+                                                )
                                             )}
                                         </td>
                                         <td className="px-4 py-3 text-sm">
@@ -379,7 +453,27 @@ const Databases = () => {
                                                     placeholder="Add remark..."
                                                 />
                                             ) : (
-                                                <span className="text-gray-600 dark:text-gray-400">{item.socialMedia || '-'}</span>
+                                                editingCell?.id === item._id && editingCell?.field === 'remark' ? (
+                                                    <input
+                                                        autoFocus
+                                                        type="text"
+                                                        value={editValue}
+                                                        onChange={(e) => setEditValue(e.target.value)}
+                                                        onBlur={() => handleCellEditSubmit(item, 'remark')}
+                                                        onKeyDown={(e) => e.key === 'Enter' && handleCellEditSubmit(item, 'remark')}
+                                                        className="w-full bg-transparent border-b border-brand-500 focus:outline-none py-1 px-2"
+                                                    />
+                                                ) : (
+                                                    <span
+                                                        onDoubleClick={() => {
+                                                            setEditingCell({ id: item._id, field: 'remark' });
+                                                            setEditValue(item.socialMedia || '');
+                                                        }}
+                                                        className="text-gray-600 dark:text-gray-400 block w-full min-h-[1.5rem]"
+                                                    >
+                                                        {item.socialMedia || '-'}
+                                                    </span>
+                                                )
                                             )}
                                         </td>
                                         {activeLevel === 'students' && !showImportTable && (

@@ -16,7 +16,7 @@ import {
     createClass,
     deleteClass,
     getStudents,
-    createStudent,
+    updateStudent,
     deleteStudent,
     bulkCreateStudents
 } from '../controller/prospectDatabaseController.js';
@@ -50,6 +50,7 @@ router.delete('/classes/:id', deleteClass);
 // Students
 router.get('/classes/:classId/students', getStudents);
 router.post('/classes/:classId/students/bulk', bulkCreateStudents);
+router.put('/students/:id', updateStudent);
 router.delete('/students/:id', deleteStudent);
 
 export default router;
