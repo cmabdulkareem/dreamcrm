@@ -133,26 +133,38 @@ const EventRegistration = () => {
     }
   };
 
-  if (loading) {
+  // Construct absolute image URL
+  const getBannerUrl = () => {
+    if (!event || !event.bannerImage) return null;
+    if (event.bannerImage.startsWith('http')) return event.bannerImage;
+
+    // Use the API base URL if available and absolute
+    if (API && API.startsWith('http')) {
+      return `${API.replace('/api', '')}${event.bannerImage.startsWith('/') ? '' : '/'}${event.bannerImage}`;
+    }
+
+    // Fallback to current origin
+    return `${window.location.origin}${event.bannerImage.startsWith('/') ? '' : '/'}${event.bannerImage}`;
+  };
+
+  if (loading || !event) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
-        <LoadingSpinner />
-      </div>
-    );
-  }
-
-  if (!event) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center p-8 bg-white rounded-2xl shadow-xl max-w-md w-full">
-          <div className="text-red-500 mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+        <PageMeta
+          title={loading ? "Loading Event..." : "Event Not Found"}
+          description="Please wait while we fetch the event details."
+        />
+        {loading ? <LoadingSpinner /> : (
+          <div className="text-center p-8 bg-white rounded-2xl shadow-xl max-w-md w-full">
+            <div className="text-red-500 mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Event Unavailable</h1>
+            <p className="text-gray-600">The event you are looking for is not found or has expired.</p>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Event Unavailable</h1>
-          <p className="text-gray-600">The event you are looking for is not found or has expired.</p>
-        </div>
+        )}
       </div>
     );
   }
@@ -386,7 +398,7 @@ END:VCALENDAR`;
       <PageMeta
         title={event.eventName}
         description={event.eventDescription || 'Register for this event'}
-        image={event.bannerImage ? `${API.replace('/api', '')}${event.bannerImage}` : null}
+        image={getBannerUrl()}
         url={window.location.href}
       />
 
