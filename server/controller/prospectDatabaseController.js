@@ -16,7 +16,7 @@ export const getSchools = async (req, res) => {
 export const createSchool = async (req, res) => {
     try {
         const { name, place } = req.body;
-        const school = await School.create({ name, place, createdBy: req.user._id });
+        const school = await School.create({ name, place, createdBy: req.user.id });
         res.status(201).json({ success: true, school });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -61,7 +61,7 @@ export const createStream = async (req, res) => {
     try {
         const { schoolId } = req.params;
         const { name } = req.body;
-        const stream = await Stream.create({ name, school: schoolId, createdBy: req.user._id });
+        const stream = await Stream.create({ name, school: schoolId, createdBy: req.user.id });
         res.status(201).json({ success: true, stream });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -94,7 +94,7 @@ export const createClass = async (req, res) => {
     try {
         const { streamId } = req.params;
         const { name } = req.body;
-        const newClass = await Class.create({ name, stream: streamId, createdBy: req.user._id });
+        const newClass = await Class.create({ name, stream: streamId, createdBy: req.user.id });
         res.status(201).json({ success: true, class: newClass });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -135,7 +135,7 @@ export const createStudent = async (req, res) => {
             contactNumber,
             gender,
             class: classId,
-            createdBy: req.user._id
+            createdBy: req.user.id
         });
         res.status(201).json({ success: true, student });
     } catch (error) {
