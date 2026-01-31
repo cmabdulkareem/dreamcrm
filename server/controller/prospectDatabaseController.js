@@ -167,7 +167,7 @@ export const deleteClass = async (req, res) => {
 export const getStudents = async (req, res) => {
     try {
         const { classId } = req.params;
-        const students = await ProspectStudent.find({ class: classId }).sort({ createdAt: -1 });
+        const students = await ProspectStudent.find({ class: classId }).sort({ gender: 1, name: 1 });
         res.status(200).json({ success: true, students });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
