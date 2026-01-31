@@ -225,6 +225,7 @@ const Databases = () => {
 
                 setImportingStudents(students);
                 setShowImportTable(true);
+                e.target.value = ''; // Reset for re-imports
             }
         });
     };
@@ -277,12 +278,15 @@ const Databases = () => {
                     )}
                     {activeLevel === 'students' && (
                         <div className="relative">
-                            <Button variant="outline" size="sm" as="label" htmlFor="csv-upload" className="cursor-pointer">
+                            <label
+                                htmlFor="student-csv-upload"
+                                className="inline-flex items-center justify-center gap-2 rounded-lg transition px-4 py-2 text-sm bg-transparent text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:ring-gray-700 dark:hover:bg-white/[0.03] dark:hover:text-gray-300 cursor-pointer"
+                            >
                                 <GridIcon className="mr-2 h-4 w-4" /> Import CSV
-                            </Button>
+                            </label>
                             <input
                                 type="file"
-                                id="csv-upload"
+                                id="student-csv-upload"
                                 className="hidden"
                                 accept=".csv"
                                 onChange={handleCsvImport}
