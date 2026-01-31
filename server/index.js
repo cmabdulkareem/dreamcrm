@@ -101,7 +101,7 @@ app.get('/event-registration/:link', async (req, res) => {
     let html = fs.readFileSync(indexPath, 'utf8');
 
     if (event) {
-      const title = `${event.eventName} | Dream CRM`;
+      const title = `${event.eventName} | CDC Insights`;
       const description = event.eventDescription || 'Register for this event';
 
       let origin = req.protocol + '://' + req.get('host');
