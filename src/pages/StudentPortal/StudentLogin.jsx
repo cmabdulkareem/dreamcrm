@@ -4,7 +4,8 @@ import axios from 'axios'; // Import axios directly for login call if not using 
 import API from '../../config/api'; // Assuming this exists
 import { useAuth } from '../../context/AuthContext';
 import Button from '../../components/ui/button/Button';
-import Input from '../../components/ui/input/Input';
+import Input from '../../components/form/input/InputField';
+import Label from '../../components/form/Label';
 import { Mail, Lock, AlertCircle } from 'lucide-react';
 
 export default function StudentLogin() {
@@ -59,25 +60,35 @@ export default function StudentLogin() {
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    <Input
-                        label="Email Address"
-                        type="email"
-                        placeholder="student@example.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        icon={Mail}
-                    />
+                    <div>
+                        <Label>Email Address</Label>
+                        <div className="relative mt-2">
+                            <Input
+                                type="email"
+                                placeholder="student@example.com"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                                className="pl-11"
+                            />
+                            <Mail className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                        </div>
+                    </div>
 
-                    <Input
-                        label="Password"
-                        type="password"
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        icon={Lock}
-                    />
+                    <div>
+                        <Label>Password</Label>
+                        <div className="relative mt-2">
+                            <Input
+                                type="password"
+                                placeholder="••••••••"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                                className="pl-11"
+                            />
+                            <Lock className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                        </div>
+                    </div>
 
                     <Button
                         type="submit"

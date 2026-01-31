@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import API from '../../config/api';
 import Button from '../../components/ui/button/Button';
-import Input from '../../components/ui/input/Input';
+import Input from '../../components/form/input/InputField';
+import Label from '../../components/form/Label';
 import { Mail, CheckCircle, AlertCircle, ArrowRight } from 'lucide-react';
 
 export default function StudentSignup() {
@@ -73,15 +74,20 @@ export default function StudentSignup() {
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    <Input
-                        label="Email Address"
-                        type="email"
-                        placeholder="student@example.com"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        icon={Mail}
-                    />
+                    <div>
+                        <Label>Email Address <span className="text-red-500">*</span></Label>
+                        <div className="relative mt-2">
+                            <Input
+                                type="email"
+                                placeholder="student@example.com"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                                className="pl-11"
+                            />
+                            <Mail className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                        </div>
+                    </div>
 
                     <Button
                         type="submit"
