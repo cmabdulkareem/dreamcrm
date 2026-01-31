@@ -20,7 +20,6 @@ import profileRoutes from './routes/profileRoute.js'
 import studentRoutes from './routes/studentRoutes.js'
 import courseRoutes from './routes/courseRoutes.js'
 import contactPointRoutes from './routes/contactPointRoute.js'
-
 import eventRoutes from './routes/eventRoutes.js'
 import leaveRoutes from './routes/leaveRoutes.js'
 import announcementRoutes from './routes/announcementRoutes.js'
@@ -39,33 +38,29 @@ import prospectDatabaseRoutes from "./routes/prospectDatabaseRoutes.js";
 import holidayRoutes from "./routes/holidayRoutes.js";
 import studentPortalRoutes from "./routes/studentPortalRoutes.js";
 import Event from './model/eventModel.js';
-const app = express()
-
-// Trust proxy is required for Render/Heroku to correctly detect protocol (http vs https)
-app.set('trust proxy', 1);
-
-// Serve static files from uploads directory
-app.use(cookieParser())
-app.use(express.json({ limit: '50mb' }))
-app.use(express.urlencoded({ limit: '50mb', extended: true }))
-
-app.use(cors(corsOptions))
-app.use(compression())
 
 import { getBaseUploadDir } from './utils/uploadHelper.js';
 
-// Serve static files from uploads directory
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const app = express()
+app.set('trust proxy', 1)
 
-app.use('/uploads', express.static(getBaseUploadDir()));
+// ================= MIDDLEWARE =================
+app.use(cookieParser())
+app.use(express.json({ limit: '50mb' }))
+app.use(express.urlencoded({ limit: '50mb', extended: true }))
+app.use(cors(corsOptions))
+app.use(compression())
 
-// Serve static files from dist directory (built React app)
-app.use(express.static(path.join(__dirname, '../dist')));
+// ================= PATH SETUP =================
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
-// Serve static files from public directory (images, favicon, etc.)
-app.use(express.static(path.join(__dirname, '../public')));
+// Static files
+app.use('/uploads', express.static(getBaseUploadDir()))
+app.use(express.static(path.join(__dirname, '../dist')))
+app.use(express.static(path.join(__dirname, '../public')))
 
+// ================= API ROUTES =================
 app.use('/api/users', routes)
 app.use('/api/customers', customerRoutes)
 app.use('/api/campaigns', campaignRoutes)
@@ -75,7 +70,6 @@ app.use('/api/students', studentRoutes)
 app.use('/api/courses', courseRoutes)
 app.use('/api/course-categories', courseCategoryRoutes)
 app.use('/api/contact-points', contactPointRoutes)
-
 app.use('/api/events', eventRoutes)
 app.use('/api/leaves', leaveRoutes)
 app.use('/api/announcements', announcementRoutes)
@@ -91,133 +85,108 @@ app.use('/api/ai', aiRoutes)
 app.use('/api/support', supportRoutes)
 app.use('/api/prospect-database', prospectDatabaseRoutes)
 app.use('/api/holidays', holidayRoutes)
-app.use('/api/student-portal', studentPortalRoutes);
+app.use('/api/student-portal', studentPortalRoutes)
 
-// Helper to get index.html content (with caching)
-let indexHtmlCache = null;
-const getIndexHtml = (forceReload = false) => {
-  if (indexHtmlCache && !forceReload) return indexHtmlCache;
-  const distPath = path.join(__dirname, '../dist/index.html');
-  const rootPath = path.join(__dirname, '../index.html');
-  const indexPath = fs.existsSync(distPath) ? distPath : rootPath;
+// ================= HELPERS =================
 
-  if (fs.existsSync(indexPath)) {
-    indexHtmlCache = fs.readFileSync(indexPath, 'utf8');
-    return indexHtmlCache;
-  }
-  return null;
-};
+// WhatsApp / Facebook crawler detection
+const isCrawler = (req) => {
+  const ua = req.headers['user-agent'] || ''
+  return /facebookexternalhit|WhatsApp|Twitterbot|LinkedInBot/i.test(ua)
+}
 
-// Helper to inject metadata into HTML
-const injectMetadata = (html, metadata) => {
-  if (!html) return null;
-  const { title, description, url, image } = metadata;
+// Always read fresh HTML (NO cache for crawlers)
+const getIndexHtml = () => {
+  const distPath = path.join(__dirname, '../dist/index.html')
+  const rootPath = path.join(__dirname, '../index.html')
+  const indexPath = fs.existsSync(distPath) ? distPath : rootPath
+  return fs.readFileSync(indexPath, 'utf8')
+}
+
+const injectMetadata = (html, meta) => {
   const tags = `
-    <!-- DYNAMIC_METADATA_START -->
-    <title>${title}</title>
-    <meta name="title" content="${title}" />
-    <meta name="description" content="${description}" />
+<title>${meta.title}</title>
+<meta name="description" content="${meta.description}" />
 
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="${url}" />
-    <meta property="og:title" content="${title}" />
-    <meta property="og:description" content="${description}" />
-    <meta property="og:image" content="${image}" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="${meta.url}" />
+<meta property="og:title" content="${meta.title}" />
+<meta property="og:description" content="${meta.description}" />
+<meta property="og:image" content="${meta.image}" />
 
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content="${url}" />
-    <meta property="twitter:title" content="${title}" />
-    <meta property="twitter:description" content="${description}" />
-    <meta property="twitter:image" content="${image}" />
-    <!-- DYNAMIC_METADATA_END -->`;
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="${meta.title}" />
+<meta name="twitter:description" content="${meta.description}" />
+<meta name="twitter:image" content="${meta.image}" />
+`
 
-  // 1. Remove markers and competing tags
-  let result = html.replace(/<!-- METADATA_START -->[\s\S]*<!-- METADATA_END -->/, '');
-  result = result.replace(/<!-- DYNAMIC_METADATA_START -->[\s\S]*<!-- DYNAMIC_METADATA_END -->/, '');
-  result = result.replace(/<title>[\s\S]*?<\/title>/gi, '');
-  result = result.replace(/<meta\s+name=["']description["']\s+content=["'][\s\S]*?["']\s*\/?>/gi, '');
-  result = result.replace(/<meta\s+property=["']og:[\s\S]*?["']\s+content=["'][\s\S]*?["']\s*\/?>/gi, '');
-  result = result.replace(/<meta\s+name=["']twitter:[\s\S]*?["']\s+content=["'][\s\S]*?["']\s*\/?>/gi, '');
+  return html
+    .replace(/<title>.*?<\/title>/gi, '')
+    .replace(/<meta name="description".*?>/gi, '')
+    .replace(/<meta property="og:.*?>/gi, '')
+    .replace(/<meta name="twitter:.*?>/gi, '')
+    .replace('</head>', `${tags}</head>`)
+}
 
-  // 2. Inject at head top
-  return result.replace(/<head>/i, `<head>${tags}`);
-};
+// ================= SHARE ROUTE (FIXED) =================
 
-// Specific route for event registration to inject meta tags for social media crawlers
 app.get('/event-registration/:link', async (req, res) => {
   try {
-    const { link } = req.params;
-    const event = await Event.findOne({ registrationLink: link, isActive: true });
+    const event = await Event.findOne({
+      registrationLink: req.params.link,
+      isActive: true
+    }).lean()
 
-    const html = getIndexHtml();
-    if (!html) {
-      return res.status(404).send('Site building in progress...');
+    let origin = req.protocol + '://' + req.get('host')
+    if (!origin.includes('localhost')) origin = origin.replace('http://', 'https://')
+
+    const metadata = {
+      title: event ? `${event.eventName} | Dream CRM` : 'Dream CRM',
+      description: event?.eventDescription || 'Register for this event',
+      url: `${origin}${req.originalUrl}`,
+      image: event?.bannerImage
+        ? (event.bannerImage.startsWith('http')
+            ? event.bannerImage
+            : `${origin}${event.bannerImage}`)
+        : `${origin}/favicon.png`
     }
 
-    let origin = req.protocol + '://' + req.get('host');
-    if (!origin.includes('localhost')) origin = origin.replace('http://', 'https://');
+    // 🔥 CRAWLER → SSR META
+    if (isCrawler(req)) {
+      const html = injectMetadata(getIndexHtml(), metadata)
+      return res
+        .status(200)
+        .set('Cache-Control', 'no-store')
+        .send(html)
+    }
 
-    const metadata = {
-      title: event ? `${event.eventName} | Dream CRM` : "Dream CRM - Streamline Your Business",
-      description: event ? (event.eventDescription || 'Register for this event') : "Manage leads, students, events, and more with our comprehensive CRM solution.",
-      url: `${origin}/event-registration/${link}`,
-      image: event && event.bannerImage
-        ? (event.bannerImage.startsWith('http') ? event.bannerImage : `${origin}${event.bannerImage.startsWith('/') ? '' : '/'}${event.bannerImage}`)
-        : `${origin}/favicon.png`
-    };
-
-    res.send(injectMetadata(html, metadata));
-
-    // Log for debugging
-    try {
-      fs.appendFileSync(path.join(__dirname, '../meta-debug.log'), `[${new Date().toISOString()}] Event: ${link} -> ${metadata.title}\n`);
-    } catch (err) { }
-  } catch (error) {
-    console.error('Meta injection error:', error);
-    res.status(500).send('Server Error');
+    // 👤 USER → SPA
+    res.sendFile(path.join(__dirname, '../dist/index.html'))
+  } catch (err) {
+    console.error('Meta error:', err)
+    res.status(500).send('Server Error')
   }
-});
+})
 
+// ================= SPA FALLBACK =================
 
-
-// Catch-all route to serve index.html for client-side routing
 app.use((req, res, next) => {
-  // Do not hijack API routes or static files
-  if (req.path.startsWith('/api/') || req.path.startsWith('/uploads/') || req.path.includes('.')) {
-    return next();
-  }
+  if (
+    req.path.startsWith('/api/') ||
+    req.path.startsWith('/uploads/') ||
+    req.path.includes('.')
+  ) return next()
 
-  const html = getIndexHtml();
-  if (html) {
-    let origin = req.protocol + '://' + req.get('host');
-    if (!origin.includes('localhost')) origin = origin.replace('http://', 'https://');
+  res.sendFile(path.join(__dirname, '../dist/index.html'))
+})
 
-    const metadata = {
-      title: "Dream CRM - Streamline Your Business",
-      description: "Manage leads, students, events, and more with our comprehensive CRM solution.",
-      url: `${origin}${req.originalUrl}`,
-      image: `${origin}/favicon.png`
-    };
-
-    return res.send(injectMetadata(html, metadata));
-  }
-
-  // Dev / fallback case
-  res.status(404).json({
-    message: 'Resource not found',
-    env: process.env.NODE_ENV,
-    hint: 'If you are in development, access frontend via dev server.'
-  });
-});
+// ================= SERVER =================
 
 const PORT = process.env.PORT || 3000
 const server = http.createServer(app)
 
-// Initialize Socket.IO
 setupSocket(server)
 
 server.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+  console.log(`Server running on port ${PORT}`)
+})
