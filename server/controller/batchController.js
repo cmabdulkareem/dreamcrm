@@ -5,6 +5,7 @@ import Attendance from '../model/attendanceModel.js';
 import Student from '../model/studentModel.js';
 import User from '../model/userModel.js';
 import courseModel from '../model/courseModel.js';
+import Holiday from '../model/holidayModel.js';
 import { isAdmin, isOwner, hasRole, isManager, isInstructor, isCounsellor } from '../utils/roleHelpers.js';
 
 import { emitNotification } from '../realtime/socket.js';
@@ -579,6 +580,13 @@ export const getPublicBatchAttendance = async (req, res) => {
 
         const attendance = await Attendance.find(query).sort({ date: sortOrder });
 
+        // Fetch holidays for the batch's brand and current month
+        const holidayQuery = { brand: batch.brand };
+        if (query.date) {
+            holidayQuery.date = query.date;
+        }
+        const holidays = await Holiday.find(holidayQuery).sort({ date: 1 });
+
         return res.status(200).json({
             batch: {
                 batchName: batch.batchName,
@@ -586,7 +594,8 @@ export const getPublicBatchAttendance = async (req, res) => {
                 instructorName: batch.instructorName
             },
             students,
-            attendance
+            attendance,
+            holidays
         });
     } catch (error) {
         console.error("Error fetching public attendance:", error);

@@ -12,12 +12,14 @@ import { AuthContext } from '../../context/AuthContext';
 import BatchAccordion from '../../components/BatchManagement/BatchAccordion';
 import CreateBatchModal from '../../components/BatchManagement/CreateBatchModal';
 import { isAdmin, isOwner, isManager } from '../../utils/roleHelpers';
+import HolidayCalendarModal from '../../components/BatchManagement/HolidayCalendarModal';
 
 export default function BatchManagement() {
     const { user } = useContext(AuthContext);
     const [batches, setBatches] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isHolidayModalOpen, setIsHolidayModalOpen] = useState(false);
     const canCreate = isAdmin(user) || isOwner(user) || isManager(user);
 
     useEffect(() => {
@@ -64,9 +66,14 @@ export default function BatchManagement() {
                     <p className="text-sm text-gray-500 dark:text-gray-400">Manage batches with improved student search and addition.</p>
                 </div>
                 {canCreate && (
-                    <Button variant="primary" onClick={() => setIsModalOpen(true)} className="w-full sm:w-auto">
-                        Create New Batch
-                    </Button>
+                    <div className="flex gap-3 w-full sm:w-auto">
+                        <Button variant="outline" onClick={() => setIsHolidayModalOpen(true)} className="flex-1 sm:flex-none">
+                            Manage Holidays
+                        </Button>
+                        <Button variant="primary" onClick={() => setIsModalOpen(true)} className="flex-1 sm:flex-none">
+                            Create New Batch
+                        </Button>
+                    </div>
                 )}
             </div>
 
@@ -104,6 +111,12 @@ export default function BatchManagement() {
                 />
             )}
 
+            {isHolidayModalOpen && (
+                <HolidayCalendarModal
+                    isOpen={isHolidayModalOpen}
+                    onClose={() => setIsHolidayModalOpen(false)}
+                />
+            )}
             <ToastContainer position="top-center" autoClose={3000} className="!z-[999999]" style={{ zIndex: 999999 }} />
         </div>
     );

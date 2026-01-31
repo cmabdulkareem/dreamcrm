@@ -30,7 +30,6 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
             fetchStudentsAndAttendance();
         }
     }, [isOpen, batch]);
-    // Need to act on date change too, but fetchStudentsAndAttendance already depends on date.
 
     const fetchStudentsAndAttendance = async () => {
         setLoading(true);
@@ -43,7 +42,7 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
             // Fetch existing attendance for the date
             try {
                 const attendanceRes = await axios.get(`${API}/batches/${batch._id}/attendance?date=${date}`, { withCredentials: true });
-                const existingRecord = attendanceRes.data.attendance[0]; // Assuming getAttendance returns array sorted by date
+                const existingRecord = attendanceRes.data.attendance[0];
 
                 const records = {};
                 if (existingRecord) {
@@ -62,7 +61,6 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
                 setAttendanceRecords(records);
             } catch (err) {
                 console.error("No existing attendance found or error fetching", err);
-                // Initialize default
                 const records = {};
                 const isSunday = new Date(date).getDay() === 0;
                 const defaultStatus = isSunday ? 'Week Off' : 'Present';
@@ -72,7 +70,6 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
                 });
                 setAttendanceRecords(records);
             }
-
         } catch (error) {
             console.error("Failed to fetch data:", error);
             toast.error("Failed to load students.");
@@ -86,7 +83,6 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
         const d = new Date(checkDate);
         const start = new Date(batch.startDate);
         const end = new Date(batch.expectedEndDate);
-        // Normalize
         d.setHours(0, 0, 0, 0);
         start.setHours(0, 0, 0, 0);
         end.setHours(0, 0, 0, 0);
@@ -144,13 +140,12 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
 
     if (!isOpen) return null;
 
-    // Helper to format date for input min/max
-    const formatDate = (d) => d ? new Date(d).toISOString().split('T')[0] : '';
+    const canSelectHoliday = isAdmin(user) || isOwner(user) || isManager(user);
+    const selectableStatuses = ["Present", "Absent", "Late", "Excused", "Week Off"].concat(canSelectHoliday ? ["Holiday"] : []);
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} className="max-w-4xl p-0 h-[90vh] sm:h-auto sm:max-h-[90vh]">
             <div className="flex flex-col h-full">
-                {/* Fixed Header */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 sm:p-6 border-b border-gray-100 dark:border-gray-700 shrink-0 pr-12 sm:pr-14">
                     <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
                         {canEdit ? "Mark Attendance" : "View Attendance"}
@@ -162,14 +157,11 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
                     </div>
                 </div>
 
-                {/* Scrollable Content */}
                 <div className="flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar">
-
                     {loading ? (
                         <LoadingSpinner className="py-20" />
                     ) : (
                         <>
-                            {/* Desktop Table View */}
                             <div className="hidden md:block overflow-x-auto">
                                 <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                                     <thead className="bg-gray-50 dark:bg-gray-700">
@@ -187,13 +179,13 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                                     <div className="flex flex-wrap gap-2">
-                                                        {["Present", "Absent", "Late", "Excused", "Holiday", "Week Off"].map(status => (
+                                                        {selectableStatuses.map(status => (
                                                             <button
                                                                 key={status}
                                                                 onClick={() => handleStatusChange(student._id, status)}
                                                                 disabled={!canEdit}
                                                                 className={`px-3 py-1 rounded-full text-xs font-medium transition-colors border 
-                                                            ${attendanceRecords[student._id]?.status === status
+                                                                ${attendanceRecords[student._id]?.status === status
                                                                         ? (status === 'Present' ? 'bg-green-100 text-green-800 border-green-200' :
                                                                             status === 'Absent' ? 'bg-red-100 text-red-800 border-red-200' :
                                                                                 status === 'Late' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
@@ -202,8 +194,8 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
                                                                                             'bg-blue-100 text-blue-800 border-blue-200')
                                                                         : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600'
                                                                     }
-                                                            ${!canEdit ? 'cursor-default opacity-80' : ''}
-                                                        `}
+                                                                ${!canEdit ? 'cursor-default opacity-80' : ''}
+                                                            `}
                                                             >
                                                                 {status}
                                                             </button>
@@ -216,9 +208,7 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
                                 </table>
                             </div>
 
-                            {/* Mobile Card View */}
                             <div className="md:hidden">
-                                {/* Legend for Mobile */}
                                 <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-100 dark:border-gray-600">
                                     <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2 italic">Attendance Legend</div>
                                     <div className="flex flex-wrap gap-x-4 gap-y-2">
@@ -250,13 +240,13 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
                                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{student.phoneNumber}</p>
                                             </div>
                                             <div className="flex flex-wrap gap-2">
-                                                {["Present", "Absent", "Late", "Excused", "Holiday", "Week Off"].map(status => (
+                                                {selectableStatuses.map(status => (
                                                     <button
                                                         key={status}
                                                         onClick={() => handleStatusChange(student._id, status)}
                                                         disabled={!canEdit}
                                                         className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold transition-colors border
-                                                    ${attendanceRecords[student._id]?.status === status
+                                                        ${attendanceRecords[student._id]?.status === status
                                                                 ? (status === 'Present' ? 'bg-green-100 text-green-800 border-green-200' :
                                                                     status === 'Absent' ? 'bg-red-100 text-red-800 border-red-200' :
                                                                         status === 'Late' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
@@ -265,8 +255,8 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
                                                                                     'bg-blue-100 text-blue-800 border-blue-200')
                                                                 : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600'
                                                             }
-                                                    ${!canEdit ? 'cursor-default opacity-80' : ''}
-                                                `}
+                                                        ${!canEdit ? 'cursor-default opacity-80' : ''}
+                                                    `}
                                                     >
                                                         {status.charAt(0)}
                                                     </button>
@@ -278,10 +268,8 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
                             </div>
                         </>
                     )}
-
                 </div>
 
-                {/* Fixed Footer */}
                 <div className="mt-auto p-4 sm:p-6 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-3 shrink-0">
                     <Button variant="outline" onClick={onClose} className="px-4 py-2">Close</Button>
                     {canEdit && (

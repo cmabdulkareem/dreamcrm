@@ -44,11 +44,14 @@ export default function PublicAttendance() {
 
     const processAttendance = () => {
         if (!data) return { studentMap: {}, statsMap: {}, monthlySummary: {}, dailyStats: {} };
-        const { students, attendance, batch } = data;
+        const { students, attendance, batch, holidays = [] } = data;
         const studentMap = {};
         const statsMap = {};
         const monthlySummary = { present: 0, absent: 0, late: 0, excused: 0, holiday: 0, weekOff: 0 };
         const dailyStats = {};
+
+        // 0. Map holidays
+        const holidaySet = new Set(holidays.map(h => new Date(h.date).getDate()));
 
         const today = new Date();
         const todayNormalized = new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -115,7 +118,11 @@ export default function PublicAttendance() {
                             isConsideredSession = true;
                         }
                     } else if (currentDate >= studentEffectiveStart) {
-                        if (currentDate.getDay() === 0) { // Sunday Rule: Always Week Off by default
+                        if (holidaySet.has(day)) {
+                            finalStatus = 'Holiday';
+                            studentMap[student._id][day] = 'Holiday';
+                            isConsideredSession = false;
+                        } else if (currentDate.getDay() === 0) { // Sunday Rule: Always Week Off by default
                             finalStatus = 'Week Off';
                             studentMap[student._id][day] = 'Week Off';
                             isConsideredSession = false;
