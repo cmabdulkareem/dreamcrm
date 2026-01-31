@@ -1,6 +1,10 @@
 import express from 'express';
 import verifyToken from '../middleware/verifyToken.js';
 import {
+    getFolders,
+    createFolder,
+    updateFolder,
+    deleteFolder,
     getSchools,
     createSchool,
     updateSchool,
@@ -19,6 +23,12 @@ import {
 const router = express.Router();
 
 router.use(verifyToken);
+
+// Folders
+router.get('/folders', getFolders);
+router.post('/folders', createFolder);
+router.put('/folders/:id', updateFolder);
+router.delete('/folders/:id', deleteFolder);
 
 // Schools
 router.get('/schools', getSchools);

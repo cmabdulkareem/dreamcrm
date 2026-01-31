@@ -20,11 +20,12 @@ import {
 import API from "../../config/api";
 
 const Databases = () => {
-    const [activeLevel, setActiveLevel] = useState('schools'); // schools, streams, classes, students
+    const [activeLevel, setActiveLevel] = useState('folders'); // folders, schools, streams, classes, students
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [breadcrumbs, setBreadcrumbs] = useState([{ name: 'Schools', level: 'schools' }]);
+    const [breadcrumbs, setBreadcrumbs] = useState([{ name: 'Folders', level: 'folders' }]);
 
+    const [selectedFolder, setSelectedFolder] = useState(null);
     const [selectedSchool, setSelectedSchool] = useState(null);
     const [selectedStream, setSelectedStream] = useState(null);
     const [selectedClass, setSelectedClass] = useState(null);
@@ -37,13 +38,15 @@ const Databases = () => {
 
     useEffect(() => {
         fetchData();
-    }, [activeLevel, selectedSchool, selectedStream, selectedClass]);
+    }, [activeLevel, selectedFolder, selectedSchool, selectedStream, selectedClass]);
 
     const fetchData = async () => {
         setLoading(true);
         try {
-            let url = `${API}/prospect-database/schools`;
-            if (activeLevel === 'streams' && selectedSchool) {
+            let url = `${API}/prospect-database/folders`;
+            if (activeLevel === 'schools' && selectedFolder) {
+                url = `${API}/prospect-database/schools?folderId=${selectedFolder._id}`;
+            } else if (activeLevel === 'streams' && selectedSchool) {
                 url = `${API}/prospect-database/schools/${selectedSchool._id}/streams`;
             } else if (activeLevel === 'classes' && selectedStream) {
                 url = `${API}/prospect-database/streams/${selectedStream._id}/classes`;
@@ -53,7 +56,7 @@ const Databases = () => {
 
             const response = await axios.get(url);
             if (response.data.success) {
-                setData(response.data.schools || response.data.streams || response.data.classes || response.data.students);
+                setData(response.data.folders || response.data.schools || response.data.streams || response.data.classes || response.data.students);
             }
         } catch (error) {
             console.error('Error fetching data:', error);
@@ -64,24 +67,34 @@ const Databases = () => {
     };
 
     const navigateTo = (level, item = null) => {
-        if (level === 'schools') {
-            setActiveLevel('schools');
+        if (level === 'folders') {
+            setActiveLevel('folders');
+            setSelectedFolder(null);
             setSelectedSchool(null);
             setSelectedStream(null);
             setSelectedClass(null);
-            setBreadcrumbs([{ name: 'Schools', level: 'schools' }]);
+            setBreadcrumbs([{ name: 'Folders', level: 'folders' }]);
+        } else if (level === 'schools' && item) {
+            setSelectedFolder(item);
+            setActiveLevel('schools');
+            setBreadcrumbs([
+                { name: 'Folders', level: 'folders' },
+                { name: item.name, level: 'schools' }
+            ]);
         } else if (level === 'streams' && item) {
             setSelectedSchool(item);
             setActiveLevel('streams');
             setBreadcrumbs([
-                { name: 'Schools', level: 'schools' },
+                { name: 'Folders', level: 'folders' },
+                { name: selectedFolder.name, level: 'schools' },
                 { name: item.name, level: 'streams' }
             ]);
         } else if (level === 'classes' && item) {
             setSelectedStream(item);
             setActiveLevel('classes');
             setBreadcrumbs([
-                { name: 'Schools', level: 'schools' },
+                { name: 'Folders', level: 'folders' },
+                { name: selectedFolder.name, level: 'schools' },
                 { name: selectedSchool.name, level: 'streams' },
                 { name: item.name, level: 'classes' }
             ]);
@@ -89,7 +102,8 @@ const Databases = () => {
             setSelectedClass(item);
             setActiveLevel('students');
             setBreadcrumbs([
-                { name: 'Schools', level: 'schools' },
+                { name: 'Folders', level: 'folders' },
+                { name: selectedFolder.name, level: 'schools' },
                 { name: selectedSchool.name, level: 'streams' },
                 { name: selectedStream.name, level: 'classes' },
                 { name: item.name, level: 'students' }
@@ -100,7 +114,8 @@ const Databases = () => {
     const handleLevelBack = () => {
         if (activeLevel === 'students') navigateTo('classes', selectedStream);
         else if (activeLevel === 'classes') navigateTo('streams', selectedSchool);
-        else if (activeLevel === 'streams') navigateTo('schools');
+        else if (activeLevel === 'streams') navigateTo('schools', selectedFolder);
+        else if (activeLevel === 'schools') navigateTo('folders');
     };
 
     const getSingular = (level) => {
@@ -123,19 +138,23 @@ const Databases = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            let url = `${API}/prospect-database/schools`;
+            let url = `${API}/prospect-database/folders`;
             let method = 'post';
 
-            if (activeLevel === 'schools') {
+            if (activeLevel === 'folders') {
+                if (modalMode === 'edit') {
+                    url += `/${currentItem._id}`;
+                    method = 'put';
+                }
+            } else if (activeLevel === 'schools') {
+                url = `${API}/prospect-database/schools`;
+                formData.folderId = selectedFolder._id;
                 if (modalMode === 'edit') {
                     url += `/${currentItem._id}`;
                     method = 'put';
                 }
             } else if (activeLevel === 'streams') {
                 url = `${API}/prospect-database/schools/${selectedSchool._id}/streams`;
-                if (modalMode === 'edit') {
-                    // Implement stream edit if needed, for now only delete/add
-                }
             } else if (activeLevel === 'classes') {
                 url = `${API}/prospect-database/streams/${selectedStream._id}/classes`;
             } else if (activeLevel === 'students') {
@@ -156,7 +175,6 @@ const Databases = () => {
         if (!window.confirm('Are you sure you want to delete this? All children will also be deleted.')) return;
         try {
             let endpoint = activeLevel;
-            if (endpoint === 'classes') endpoint = 'classes'; // already class
             await axios.delete(`${API}/prospect-database/${endpoint}/${id}`);
             toast.success('Deleted successfully');
             fetchData();
@@ -217,7 +235,8 @@ const Databases = () => {
                                 key={item._id}
                                 className="group relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-5 hover:shadow-lg hover:border-brand-500 transition-all duration-300 cursor-pointer"
                                 onClick={() => {
-                                    if (activeLevel === 'schools') navigateTo('streams', item);
+                                    if (activeLevel === 'folders') navigateTo('schools', item);
+                                    else if (activeLevel === 'schools') navigateTo('streams', item);
                                     else if (activeLevel === 'streams') navigateTo('classes', item);
                                     else if (activeLevel === 'classes') navigateTo('students', item);
                                 }}

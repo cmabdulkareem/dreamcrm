@@ -1,12 +1,58 @@
+import Folder from '../model/folderModel.js';
 import School from '../model/schoolModel.js';
 import Stream from '../model/streamModel.js';
 import Class from '../model/classModel.js';
 import ProspectStudent from '../model/prospectStudentModel.js';
 
+// --- Folder Controllers ---
+export const getFolders = async (req, res) => {
+    try {
+        const folders = await Folder.find().sort({ createdAt: -1 });
+        res.status(200).json({ success: true, folders });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+export const createFolder = async (req, res) => {
+    try {
+        const { name } = req.body;
+        const folder = await Folder.create({ name, createdBy: req.user.id });
+        res.status(201).json({ success: true, folder });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+export const updateFolder = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name } = req.body;
+        const folder = await Folder.findByIdAndUpdate(id, { name }, { new: true });
+        res.status(200).json({ success: true, folder });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+export const deleteFolder = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await Folder.findByIdAndDelete(id);
+        // Delete child schools (or decouple them)
+        await School.deleteMany({ folder: id });
+        res.status(200).json({ success: true, message: 'Folder deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 // --- School Controllers ---
 export const getSchools = async (req, res) => {
     try {
-        const schools = await School.find().sort({ createdAt: -1 });
+        const { folderId } = req.query;
+        const query = folderId ? { folder: folderId } : {};
+        const schools = await School.find(query).sort({ createdAt: -1 });
         res.status(200).json({ success: true, schools });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -15,8 +61,13 @@ export const getSchools = async (req, res) => {
 
 export const createSchool = async (req, res) => {
     try {
-        const { name, place } = req.body;
-        const school = await School.create({ name, place, createdBy: req.user.id });
+        const { name, place, folderId } = req.body;
+        const school = await School.create({
+            name,
+            place,
+            folder: folderId,
+            createdBy: req.user.id
+        });
         res.status(201).json({ success: true, school });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

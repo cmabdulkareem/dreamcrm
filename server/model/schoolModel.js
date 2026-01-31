@@ -11,6 +11,11 @@ const schoolSchema = new mongoose.Schema({
         required: true,
         trim: true
     },
+    folder: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Folder',
+        required: false // Optional for backward compatibility
+    },
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
