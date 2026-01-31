@@ -14,7 +14,6 @@ import {
     getOnlineUsers,
     deleteUser,
     forgotPassword,
-    forgotPassword,
     resetPassword,
     changePassword
 } from '../controller/userController.js'
