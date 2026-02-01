@@ -156,7 +156,7 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-4 sm:p-6 custom-scrollbar text-sm">
+                <div className="flex-1 overflow-y-auto p-4 sm:p-6 text-sm">
                     {loading ? (
                         <LoadingSpinner className="py-20" />
                     ) : (

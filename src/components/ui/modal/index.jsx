@@ -78,7 +78,7 @@ export const Modal = ({
             </svg>
           </button>
         )}
-        <div>{children}</div>
+        {children}
       </div>
     </div>
   );
