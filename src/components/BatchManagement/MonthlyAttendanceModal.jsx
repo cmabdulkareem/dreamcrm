@@ -253,7 +253,7 @@ export default function MonthlyAttendanceModal({ isOpen, onClose, batch }) {
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 border-collapse">
                         <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10 shadow-sm">
                             <tr>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider sticky left-0 bg-gray-50 dark:bg-gray-700 z-20 border-r dark:border-gray-600 min-w-[150px] sm:min-w-[200px]">Student Name</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider sticky left-0 bg-gray-50 dark:bg-gray-700 z-30 border-r dark:border-gray-600 min-w-[150px] sm:min-w-[200px]">Student Name</th>
                                 {daysArray.map(day => {
                                     const dateObj = new Date(selectedYear, selectedMonth - 1, day);
                                     const isSunday = dateObj.getDay() === 0;
@@ -264,8 +264,8 @@ export default function MonthlyAttendanceModal({ isOpen, onClose, batch }) {
                                         </th>
                                     );
                                 })}
-                                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider bg-gray-50 dark:bg-gray-700 sticky right-0 z-20 border-l dark:border-gray-600">Total</th>
-                                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider bg-gray-50 dark:bg-gray-700 sticky right-0 z-20 border-l dark:border-gray-600">%</th>
+                                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider bg-gray-50 dark:bg-gray-700 sticky right-[60px] z-30 border-l dark:border-gray-600 w-[100px]">Total</th>
+                                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider bg-gray-50 dark:bg-gray-700 sticky right-0 z-30 border-l dark:border-gray-600 w-[60px]">%</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -274,13 +274,13 @@ export default function MonthlyAttendanceModal({ isOpen, onClose, batch }) {
                                 const percentage = stats.totalSessions > 0 ? Math.round((stats.present / stats.totalSessions) * 100) : 0;
                                 return (
                                     <tr key={student._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                                        <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white sticky left-0 bg-white dark:bg-gray-800 z-10 border-r dark:border-gray-600 max-w-[150px] sm:max-w-none truncate">{student.studentName}</td>
+                                        <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white sticky left-0 bg-white dark:bg-gray-800 z-20 border-r dark:border-gray-600 max-w-[150px] sm:max-w-none truncate">{student.studentName}</td>
                                         {daysArray.map(day => {
                                             const dateObj = new Date(selectedYear, selectedMonth - 1, day);
                                             return <td key={day} className={`px-1 py-1 text-center border-l border-gray-100 dark:border-gray-700 ${dateObj.getDay() === 0 ? 'bg-red-50/50 dark:bg-red-900/5' : ''}`}>{renderStatusCell(studentMap[student._id]?.[day])}</td>;
                                         })}
-                                        <td className="px-4 py-2 text-center text-sm text-gray-900 dark:text-white sticky right-0 bg-white dark:bg-gray-800 z-10 border-l dark:border-gray-600 font-semibold"><span className="text-green-600">{stats.present}</span> / {stats.totalSessions}</td>
-                                        <td className="px-4 py-2 text-center text-sm sticky right-0 bg-white dark:bg-gray-800 z-10 border-l dark:border-gray-600 font-bold"><span className={percentage >= 75 ? 'text-green-600' : percentage >= 50 ? 'text-yellow-600' : 'text-red-600'}>{percentage}%</span></td>
+                                        <td className="px-4 py-2 text-center text-sm text-gray-900 dark:text-white sticky right-[60px] bg-white dark:bg-gray-800 z-10 border-l dark:border-gray-600 font-semibold w-[100px]"><span className="text-green-600">{stats.present}</span> / {stats.totalSessions}</td>
+                                        <td className="px-4 py-2 text-center text-sm sticky right-0 bg-white dark:bg-gray-800 z-10 border-l dark:border-gray-600 font-bold w-[60px]"><span className={percentage >= 75 ? 'text-green-600' : percentage >= 50 ? 'text-yellow-600' : 'text-red-600'}>{percentage}%</span></td>
                                     </tr>
                                 );
                             })}
