@@ -26,7 +26,7 @@ export default function StudentLogin() {
             // Assuming context login handles standard auth
             setLoading(true);
             // Use the standard signin endpoint
-            const res = await axios.post(`${API}/users/signin`, { email, password }, {
+            const res = await axios.post(`${API}/users/signin`, { email, password, portal: 'student' }, {
                 withCredentials: true
             });
 

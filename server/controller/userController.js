@@ -231,7 +231,7 @@ export const getUsersForDropdown = async (req, res) => {
 
 // Sign in user
 export const signInUser = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, portal } = req.body;
 
   try {
     const user = await userModel.findOne({ email }).populate('reportingHead', 'fullName email').populate('brands');
@@ -242,6 +242,26 @@ export const signInUser = async (req, res) => {
 
     if (user.accountStatus !== "Active") {
       return res.status(403).json({ message: "Account not approved yet" });
+    }
+
+    // Portal Access Logic
+    const isStudent = user.roles.includes('Student');
+    // Check if user has ANY other role besides Student or General
+    const hasOfficeRole = user.roles.some(role => role !== 'Student' && role !== 'General');
+
+    // 1. Student Portal Login
+    if (portal === 'student') {
+      if (!isStudent) {
+        return res.status(403).json({ message: "Access denied. Not a student account." });
+      }
+    }
+    // 2. Office/Main Portal Login (default)
+    else {
+      // If user is a student AND has no office roles AND is not admin, deny access
+      // This strictly prevents "just students" from logging into the office CRM
+      if (isStudent && !hasOfficeRole && !user.isAdmin) {
+        return res.status(403).json({ message: "Access denied. Students please use the Student Portal." });
+      }
     }
 
     // Create token with user roles and admin status

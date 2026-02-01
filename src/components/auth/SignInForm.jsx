@@ -38,7 +38,7 @@ export default function SignInForm() {
 
     try {
       setLoading(true);
-      const { data } = await axios.post(`${API}/users/signin`, { email, password }, {
+      const { data } = await axios.post(`${API}/users/signin`, { email, password, portal: 'office' }, {
         withCredentials: true,
         timeout: 10000
       });
