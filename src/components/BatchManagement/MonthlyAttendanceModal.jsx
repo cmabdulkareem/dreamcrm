@@ -57,7 +57,6 @@ export default function MonthlyAttendanceModal({ isOpen, onClose, batch }) {
     const processAttendance = () => {
         const studentMap = {};
         const statsMap = {};
-        const monthlySummary = { present: 0, absent: 0, late: 0, excused: 0, holiday: 0, weekOff: 0 };
         const dailyStats = {};
 
         const today = new Date();
@@ -85,12 +84,35 @@ export default function MonthlyAttendanceModal({ isOpen, onClose, batch }) {
             });
         });
 
-        const holidaySet = new Set(holidays.map(h => new Date(h.date).getDate())); // 2. Process each day of the month
+        // Calculate Batch-level Holidays and Week Offs separately (once per month, not per student)
+        const holidaySet = new Set(holidays.map(h => new Date(h.date).getDate()));
+
+        let batchHolidayCount = 0;
+        let batchWeekOffCount = 0;
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            const currentDate = new Date(selectedYear, selectedMonth - 1, day);
+            if (holidaySet.has(day)) {
+                batchHolidayCount++;
+            } else if (currentDate.getDay() === 0) {
+                batchWeekOffCount++;
+            }
+        }
+
+        const monthlySummary = {
+            present: 0,
+            absent: 0,
+            late: 0,
+            excused: 0,
+            holiday: batchHolidayCount,
+            weekOff: batchWeekOffCount
+        };
+
         for (let day = 1; day <= daysInMonth; day++) {
             const currentDate = new Date(selectedYear, selectedMonth - 1, day);
             const isFutureDate = currentDate > todayNormalized;
 
-            // Initialize dailyStats for all days in month if not already done
+            // Initialize dailyStats
             if (!dailyStats[day]) {
                 dailyStats[day] = { present: 0, absent: 0, late: 0, excused: 0, holiday: 0, weekOff: 0 };
             }
@@ -120,7 +142,6 @@ export default function MonthlyAttendanceModal({ isOpen, onClose, batch }) {
                     }
                 }
                 // Priority 2: Check for Global Holiday or Sunday (Default WO)
-                // This applies to BOTH past/today and future dates
                 else if (currentDate >= studentEffectiveStart) {
                     if (holidaySet.has(day)) {
                         finalStatus = 'Holiday';
@@ -129,44 +150,35 @@ export default function MonthlyAttendanceModal({ isOpen, onClose, batch }) {
                         finalStatus = 'Week Off';
                         studentMap[student._id][day] = 'Week Off';
                     } else if (!isFutureDate) {
-                        // Past/Today unmarked weekdays count as sessions
                         isConsideredSession = true;
                         finalStatus = 'Present';
                         studentMap[student._id][day] = 'Present';
                     }
                 }
 
-                // If it's a Holiday or Week Off, update stats regardless of it being future/past
-                // (Though usually we only cumulative stats for past dates, showing them on future dates is fine for visual)
+                // Increment student-specific stats
                 if (finalStatus === 'Holiday') {
                     sStats.holiday++;
-                    monthlySummary.holiday++;
                     dailyStats[day].holiday++;
                 } else if (finalStatus === 'Week Off') {
                     sStats.weekOff++;
-                    monthlySummary.weekOff++;
                     dailyStats[day].weekOff++;
                 }
 
-                // Increment session and specific counters ONLY for non-future sessions
                 if (isConsideredSession && !isFutureDate) {
                     sStats.totalSessions++;
                     if (finalStatus === 'Absent') {
                         sStats.absent++;
-                        monthlySummary.absent++;
                         dailyStats[day].absent++;
                     } else {
                         sStats.present++;
                         if (finalStatus === 'Present') {
-                            monthlySummary.present++;
                             dailyStats[day].present++;
                         } else if (finalStatus === 'Late') {
                             sStats.late++;
-                            monthlySummary.late++;
                             dailyStats[day].late++;
                         } else if (finalStatus === 'Excused') {
                             sStats.excused++;
-                            monthlySummary.excused++;
                             dailyStats[day].excused++;
                         }
                     }
@@ -221,10 +233,6 @@ export default function MonthlyAttendanceModal({ isOpen, onClose, batch }) {
                     <div className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase mb-3 tracking-widest">Monthly Status Indicators</div>
                     <div className="flex flex-wrap gap-x-8 gap-y-3">
                         {[
-                            { l: 'P', n: 'Present', c: 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400', count: monthlySummary.present },
-                            { l: 'A', n: 'Absent', c: 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400', count: monthlySummary.absent },
-                            { l: 'L', n: 'Late', c: 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400', count: monthlySummary.late },
-                            { l: 'E', n: 'Excused', c: 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400', count: monthlySummary.excused },
                             { l: 'H', n: 'Holiday', c: 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400', count: monthlySummary.holiday },
                             { l: 'W', n: 'Week Off', c: 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800/50 dark:text-gray-400', count: monthlySummary.weekOff }
                         ].map(item => (
