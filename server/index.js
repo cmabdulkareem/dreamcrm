@@ -59,60 +59,14 @@ app.use((req, res, next) => {
   next();
 });
 
-// ================= PATH SETUP =================
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-
-// Static files
-app.use('/uploads', express.static(getBaseUploadDir()))
-app.use(express.static(path.join(__dirname, '../dist')))
-app.use(express.static(path.join(__dirname, '../public')))
-
-// ================= API ROUTES =================
-app.use('/api/users', routes)
-app.use('/api/customers', customerRoutes)
-app.use('/api/campaigns', campaignRoutes)
-app.use('/api/email', emailRoutes)
-app.use('/api/profile', profileRoutes)
-app.use('/api/students', studentRoutes)
-app.use('/api/courses', courseRoutes)
-app.use('/api/course-categories', courseCategoryRoutes)
-app.use('/api/contact-points', contactPointRoutes)
-app.use('/api/events', eventRoutes)
-app.use('/api/leaves', leaveRoutes)
-app.use('/api/announcements', announcementRoutes)
-app.use('/api/brands', brandRoutes)
-app.use('/api/monthly-targets', monthlyTargetRoutes)
-app.use('/api/payments', paymentRoutes)
-app.use('/api/batches', batchRoutes)
-app.use('/api/call-lists', callListRoutes)
-app.use('/api/backup', backupRoutes)
-app.use('/api/invoices', invoiceRoutes)
-app.use('/api/receipts', receiptRoutes)
-app.use('/api/ai', aiRoutes)
-app.use('/api/support', supportRoutes)
-app.use('/api/prospect-database', prospectDatabaseRoutes)
-app.use('/api/holidays', holidayRoutes)
-app.use('/api/student-portal', studentPortalRoutes)
-
-// Debug route to verify bot detection
-app.get('/debug-bot', (req, res) => {
-  res.json({
-    bot: isCrawler(req),
-    ua: req.headers['user-agent'],
-    ip: req.ip,
-    timestamp: new Date().toISOString()
-  });
-});
-
-// ================= HELPERS =================
+// ================= HELPERS (MOVE TO TOP FOR USE IN MIDDLEWARE) =================
 
 // WhatsApp / Facebook / Other share bots detection
 const isCrawler = (req) => {
   const ua = req.headers['user-agent'] || ''
   const bots = [
     'facebookexternalhit', 'Facebot', 'facebookcatalog', 'facebookplatform',
-    'WhatsApp', 'Twitterbot', 'LinkedInBot', 'TelegramBot', 'Slackbot',
+    'WhatsApp', 'Twitterbot', 'LinkedInBot', 'TelegramBot', 'Skeletonbot', 'Slackbot',
     'discordbot', 'redditbot', 'Googlebot', 'Bingbot', 'AdsBot-Google',
     'Pinterestbot', 'Pinterest/0.1', 'SkypeShell'
   ]
@@ -173,7 +127,7 @@ const injectMetadata = (html, meta) => {
     .replace(/<head[^>]*>/i, (match) => `${match}\n${tags}`)
 }
 
-// ================= BOT / CRAWLER HANDLING (PRIORITY) =================
+// ================= BOT / CRAWLER HANDLING (GLOBAL PRIORITY) =================
 
 app.use(async (req, res, next) => {
   // 1. Skip if it's not a crawler
@@ -226,7 +180,7 @@ app.use(async (req, res, next) => {
   }
 
   // 4. Inject and send
-  console.log(`[BOT] Detected ${req.headers['user-agent']} for ${req.path}. Injected metadata:`, metadata.title)
+  console.log(`[BOT] Detected Crawler: ${req.headers['user-agent']} for ${req.path}`);
   const html = injectMetadata(getIndexHtml(), metadata)
 
   return res
@@ -235,9 +189,53 @@ app.use(async (req, res, next) => {
     .set('X-Bot-Type', 'Crawler')
     .set('X-Event-Link', registrationLink || 'none')
     .send(html)
-})
+});
 
-// Routes will be handled by catch-all or specific bot logic above
+// ================= PATH SETUP =================
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+// Static files
+app.use('/uploads', express.static(getBaseUploadDir()))
+app.use(express.static(path.join(__dirname, '../dist')))
+app.use(express.static(path.join(__dirname, '../public')))
+
+// ================= API ROUTES =================
+app.use('/api/users', routes)
+app.use('/api/customers', customerRoutes)
+app.use('/api/campaigns', campaignRoutes)
+app.use('/api/email', emailRoutes)
+app.use('/api/profile', profileRoutes)
+app.use('/api/students', studentRoutes)
+app.use('/api/courses', courseRoutes)
+app.use('/api/course-categories', courseCategoryRoutes)
+app.use('/api/contact-points', contactPointRoutes)
+app.use('/api/events', eventRoutes)
+app.use('/api/leaves', leaveRoutes)
+app.use('/api/announcements', announcementRoutes)
+app.use('/api/brands', brandRoutes)
+app.use('/api/monthly-targets', monthlyTargetRoutes)
+app.use('/api/payments', paymentRoutes)
+app.use('/api/batches', batchRoutes)
+app.use('/api/call-lists', callListRoutes)
+app.use('/api/backup', backupRoutes)
+app.use('/api/invoices', invoiceRoutes)
+app.use('/api/receipts', receiptRoutes)
+app.use('/api/ai', aiRoutes)
+app.use('/api/support', supportRoutes)
+app.use('/api/prospect-database', prospectDatabaseRoutes)
+app.use('/api/holidays', holidayRoutes)
+app.use('/api/student-portal', studentPortalRoutes)
+
+// Debug route to verify bot detection
+app.get('/api/debug-bot', (req, res) => {
+  res.json({
+    bot: isCrawler(req),
+    ua: req.headers['user-agent'],
+    ip: req.ip,
+    timestamp: new Date().toISOString()
+  });
+});
 
 // ================= SPA FALLBACK & CRAWLER SUPPORT =================
 
