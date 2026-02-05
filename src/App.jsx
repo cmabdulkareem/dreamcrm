@@ -79,6 +79,7 @@ const StudentProfile = lazy(() => import("./pages/StudentPortal/StudentProfile")
 const StudentRequests = lazy(() => import("./pages/StudentPortal/StudentRequests"));
 const ChangePassword = lazy(() => import("./pages/StudentPortal/ChangePassword"));
 
+import PageMeta from "./components/common/PageMeta";
 
 function App() {
   const { user } = useContext(AuthContext);
@@ -88,6 +89,10 @@ function App() {
 
   return (
     <>
+      <PageMeta
+        title="Streamline Your Business"
+        description="Manage leads, students, events, and more with our comprehensive CRM solution."
+      />
       <NotificationProvider>
         <CalendarProvider>
 
@@ -196,9 +201,7 @@ function App() {
                 </Route>
               </Routes>
             </Router>
-
           </DndProvider>
-
         </CalendarProvider>
       </NotificationProvider>
     </>
