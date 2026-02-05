@@ -93,8 +93,10 @@ app.use('/api/student-portal', studentPortalRoutes)
 const isCrawler = (req) => {
   const ua = req.headers['user-agent'] || ''
   const bots = [
-    'facebookexternalhit', 'Facebot', 'WhatsApp', 'Twitterbot', 'LinkedInBot',
-    'TelegramBot', 'Slackbot', 'discordbot', 'redditbot', 'Googlebot', 'Bingbot'
+    'facebookexternalhit', 'Facebot', 'facebookcatalog', 'facebookplatform',
+    'WhatsApp', 'Twitterbot', 'LinkedInBot', 'TelegramBot', 'Slackbot',
+    'discordbot', 'redditbot', 'Googlebot', 'Bingbot', 'AdsBot-Google',
+    'Pinterestbot', 'Pinterest/0.1', 'SkypeShell'
   ]
   return bots.some(bot => ua.toLowerCase().includes(bot.toLowerCase()))
 }
@@ -119,6 +121,8 @@ const injectMetadata = (html, meta) => {
   const description = esc(meta.description)
   const image = esc(meta.image)
   const url = esc(meta.url)
+  const width = meta.width || 1200
+  const height = meta.height || 630
 
   const tags = `
   <!-- INJECTED META -->
@@ -129,6 +133,9 @@ const injectMetadata = (html, meta) => {
   <meta property="og:title" content="${title}" />
   <meta property="og:description" content="${description}" />
   <meta property="og:image" content="${image}" />
+  <meta property="og:image:width" content="${width}" />
+  <meta property="og:image:height" content="${height}" />
+  <meta property="og:image:alt" content="${title}" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:url" content="${url}" />
   <meta name="twitter:title" content="${title}" />
@@ -141,10 +148,11 @@ const injectMetadata = (html, meta) => {
     .replace(/<title>[\s\S]*?<\/title>/gi, '')
     .replace(/<meta name="description"[\s\S]*?>/gi, '')
     .replace(/<meta property="og:[^>]*?>/gi, '')
-    .replace(/<meta name="og:[^>]*?>/gi, '') // Some use name instead of property
+    .replace(/<meta name="og:[^>]*?>/gi, '')
     .replace(/<meta name="twitter:[^>]*?>/gi, '')
     // Inject new tags at the top of head for maximum visibility
-    .replace('<head>', `<head>\n${tags}`)
+    // Use regex for head to handle attributes if any
+    .replace(/<head[^>]*>/i, (match) => `${match}\n${tags}`)
 }
 
 // ================= BOT / CRAWLER HANDLING (PRIORITY) =================
@@ -159,32 +167,39 @@ app.use(async (req, res, next) => {
   }
 
   let origin = req.protocol + '://' + req.get('host')
-  if (!origin.includes('localhost')) origin = origin.replace('http://', 'https://')
+  // Force HTTPS on production-like environments if not already
+  if (!origin.includes('localhost') && !origin.startsWith('https://')) {
+    origin = origin.replace('http://', 'https://')
+  }
 
   // Default metadata
   let metadata = {
     title: 'Dream CRM',
     description: 'Manage leads, students, events, and more with our comprehensive CRM solution.',
     url: `${origin}${req.originalUrl}`,
-    image: `${origin}/favicon.png`
+    image: `${origin}/icon-512.png`, // Use larger icon for social sharing
+    width: 512,
+    height: 512
   }
 
   // 3. Special handling for Event Registration
-  // Be VERY permissive with the path match
-  const pathParts = req.path.split('/').filter(Boolean)
-  const lastPart = pathParts[pathParts.length - 1]
+  // Check if current path contains exactly one 32-char hex string
+  const hexMatches = req.path.match(/[0-9a-f]{32}/i)
+  const registrationLink = hexMatches ? hexMatches[0] : null
 
-  // If the last part looks like a hex link (32 chars)
-  if (lastPart && /^[0-9a-f]{32}$/i.test(lastPart)) {
+  if (registrationLink) {
     try {
-      const event = await Event.findOne({ registrationLink: lastPart }).lean()
+      const event = await Event.findOne({ registrationLink }).lean()
       if (event) {
         metadata.title = `${event.eventName} | Dream CRM`
-        metadata.description = event.eventDescription || 'Join our event!'
+        metadata.description = (event.eventDescription || 'Join our event!').substring(0, 200)
+        metadata.width = 1280
+        metadata.height = 720
+
         if (event.bannerImage) {
           metadata.image = event.bannerImage.startsWith('http')
             ? event.bannerImage
-            : `${origin}${event.bannerImage}`
+            : `${origin}${event.bannerImage.startsWith('/') ? '' : '/'}${event.bannerImage}`
         }
       }
     } catch (err) {
