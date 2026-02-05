@@ -69,7 +69,9 @@ app.get('/api/debug-bot', (req, res) => {
   });
 });
 
-app.get('/api/ping', (req, res) => res.json({ message: 'pong', timestamp: new Date().toISOString() }));
+app.get('/api/ping', (req, res) => res.json({ message: 'pong api', timestamp: new Date().toISOString() }));
+app.get('/ping', (req, res) => res.json({ message: 'pong root', timestamp: new Date().toISOString() }));
+app.get('/api/test', (req, res) => res.send('API Test Success'));
 
 // ================= HELPERS (MOVE TO TOP FOR USE IN MIDDLEWARE) =================
 
@@ -252,6 +254,12 @@ app.use((req, res, next) => {
 
   res.sendFile(path.join(__dirname, '../dist/index.html'))
 })
+
+// 404 Logger for API (at the very bottom)
+app.use('/api/*', (req, res) => {
+  console.log(`[404] API Not Found: ${req.method} ${req.originalUrl}`);
+  res.status(404).json({ error: 'API route not found', path: req.originalUrl });
+});
 
 // ================= SERVER =================
 
