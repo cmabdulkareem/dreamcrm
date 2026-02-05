@@ -113,7 +113,7 @@ const getIndexHtml = () => {
  */
 const injectMetadata = (html, meta) => {
   // Escape potential double quotes in content
-  const esc = (str) => (str || '').replace(/"/g, '&quot;')
+  const esc = (str) => String(str || '').replace(/"/g, '&quot;')
 
   const title = esc(meta.title)
   const description = esc(meta.description)
@@ -144,44 +144,74 @@ const injectMetadata = (html, meta) => {
     .replace('</head>', `${tags}\n</head>`)
 }
 
-// ================= SHARE ROUTE (DYNAMIC) =================
+// ================= BOT / CRAWLER HANDLING (PRIORITY) =================
 
-app.get('/event-registration/:link', async (req, res, next) => {
-  try {
-    // 🔥 ALWAYS try to find event if it's a bot OR if we suspect bot
-    // (But bots are specific about URLs)
+app.use(async (req, res, next) => {
+  // 1. Skip if it's not a crawler
+  if (!isCrawler(req)) return next()
 
-    const event = await Event.findOne({
-      registrationLink: req.params.link,
-      isActive: true
-    }).lean()
-
-    let origin = req.protocol + '://' + req.get('host')
-    if (!origin.includes('localhost')) origin = origin.replace('http://', 'https://')
-
-    const metadata = {
-      title: event ? `${event.eventName} | Dream CRM` : 'Dream CRM',
-      description: event?.eventDescription || 'Register for this event',
-      url: `${origin}${req.originalUrl}`,
-      image: event?.bannerImage
-        ? (event.bannerImage.startsWith('http')
-          ? event.bannerImage
-          : `${origin}${event.bannerImage}`)
-        : `${origin}/favicon.png`
-    }
-
-    if (isCrawler(req)) {
-      const html = injectMetadata(getIndexHtml(), metadata)
-      return res.status(200).set('Cache-Control', 'no-store').send(html)
-    }
-
-    // Pass to SPA fallback for normal users
-    next()
-  } catch (err) {
-    console.error('Meta error:', err)
-    next()
+  // 2. Skip if it's a direct resource request
+  if (req.path.includes('.') || req.path.startsWith('/api/') || req.path.startsWith('/uploads/')) {
+    return next()
   }
+
+  console.log(`\n[BOT-DEBUG] ----------------------------------------`)
+  console.log(`[BOT-DEBUG] Detected crawler: ${req.headers['user-agent']}`)
+  console.log(`[BOT-DEBUG] Request Path: ${req.path}`)
+
+  let origin = req.protocol + '://' + req.get('host')
+  if (!origin.includes('localhost')) origin = origin.replace('http://', 'https://')
+  console.log(`[BOT-DEBUG] Computed Origin: ${origin}`)
+
+  // Default metadata
+  let metadata = {
+    title: 'Dream CRM',
+    description: 'Manage leads, students, events, and more with our comprehensive CRM solution.',
+    url: `${origin}${req.originalUrl}`,
+    image: `${origin}/favicon.png`
+  }
+
+  // 3. Special handling for Event Registration
+  // Match /event-registration/ or /event%20registration/
+  const eventPathMatch = req.path.match(/\/event[- %20]registration\/([^/?]+)/i)
+
+  if (eventPathMatch) {
+    const link = eventPathMatch[1]
+    console.log(`[BOT-DEBUG] Match found! Extracted link: ${link}`)
+    try {
+      // Find event (even if inactive, so we can show proper metadata if someone shares it)
+      const event = await Event.findOne({ registrationLink: link }).lean()
+      if (event) {
+        console.log(`[BOT-DEBUG] Found event in DB: ${event.eventName}`)
+        metadata.title = `${event.eventName} | Dream CRM`
+        metadata.description = event.eventDescription || 'Register for this event'
+        if (event.bannerImage) {
+          metadata.image = event.bannerImage.startsWith('http')
+            ? event.bannerImage
+            : `${origin}${event.bannerImage}`
+        }
+      } else {
+        console.log(`[BOT-DEBUG] Event NOT FOUND in DB for link: ${link}`)
+      }
+    } catch (err) {
+      console.error('[BOT-DEBUG] DB Error searching event:', err)
+    }
+  } else {
+    console.log(`[BOT-DEBUG] No event path match for: ${req.path}`)
+  }
+
+  // 4. Inject and send
+  console.log(`[BOT-DEBUG] Serving Meta: Title="${metadata.title}" Image="${metadata.image}"`)
+  const html = injectMetadata(getIndexHtml(), metadata)
+  console.log(`[BOT-DEBUG] ----------------------------------------\n`)
+
+  return res
+    .status(200)
+    .set('Cache-Control', 'no-store')
+    .send(html)
 })
+
+// Routes will be handled by catch-all or specific bot logic above
 
 // ================= SPA FALLBACK & CRAWLER SUPPORT =================
 
@@ -191,21 +221,6 @@ app.use((req, res, next) => {
     req.path.startsWith('/uploads/') ||
     req.path.includes('.')
   ) return next()
-
-  // 🔥 Even for other routes, if it's a crawler, inject default metadata
-  if (isCrawler(req)) {
-    let origin = req.protocol + '://' + req.get('host')
-    if (!origin.includes('localhost')) origin = origin.replace('http://', 'https://')
-
-    const metadata = {
-      title: 'Dream CRM',
-      description: 'Manage leads, students, events, and more with our comprehensive CRM solution.',
-      url: `${origin}${req.originalUrl}`,
-      image: `${origin}/favicon.png`
-    }
-    const html = injectMetadata(getIndexHtml(), metadata)
-    return res.status(200).set('Cache-Control', 'no-store').send(html)
-  }
 
   res.sendFile(path.join(__dirname, '../dist/index.html'))
 })
