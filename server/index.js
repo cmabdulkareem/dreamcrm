@@ -121,6 +121,7 @@ const injectMetadata = (html, meta) => {
   const url = esc(meta.url)
 
   const tags = `
+  <!-- INJECTED META -->
   <title>${title}</title>
   <meta name="description" content="${description}" />
   <meta property="og:type" content="website" />
@@ -129,19 +130,21 @@ const injectMetadata = (html, meta) => {
   <meta property="og:description" content="${description}" />
   <meta property="og:image" content="${image}" />
   <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content="${url}" />
   <meta name="twitter:title" content="${title}" />
   <meta name="twitter:description" content="${description}" />
   <meta name="twitter:image" content="${image}" />
   `
 
   return html
-    // Remove existing meta tags that we are about to inject
+    // Aggressively remove existing tags that crawlers might pick up
     .replace(/<title>[\s\S]*?<\/title>/gi, '')
     .replace(/<meta name="description"[\s\S]*?>/gi, '')
     .replace(/<meta property="og:[^>]*?>/gi, '')
+    .replace(/<meta name="og:[^>]*?>/gi, '') // Some use name instead of property
     .replace(/<meta name="twitter:[^>]*?>/gi, '')
-    // Inject new tags before </head>
-    .replace('</head>', `${tags}\n</head>`)
+    // Inject new tags at the top of head for maximum visibility
+    .replace('<head>', `<head>\n${tags}`)
 }
 
 // ================= BOT / CRAWLER HANDLING (PRIORITY) =================
@@ -155,13 +158,8 @@ app.use(async (req, res, next) => {
     return next()
   }
 
-  console.log(`\n[BOT-DEBUG] ----------------------------------------`)
-  console.log(`[BOT-DEBUG] Detected crawler: ${req.headers['user-agent']}`)
-  console.log(`[BOT-DEBUG] Request Path: ${req.path}`)
-
   let origin = req.protocol + '://' + req.get('host')
   if (!origin.includes('localhost')) origin = origin.replace('http://', 'https://')
-  console.log(`[BOT-DEBUG] Computed Origin: ${origin}`)
 
   // Default metadata
   let metadata = {
@@ -172,42 +170,36 @@ app.use(async (req, res, next) => {
   }
 
   // 3. Special handling for Event Registration
-  // Match /event-registration/ or /event%20registration/
-  const eventPathMatch = req.path.match(/\/event[- %20]registration\/([^/?]+)/i)
+  // Be VERY permissive with the path match
+  const pathParts = req.path.split('/').filter(Boolean)
+  const lastPart = pathParts[pathParts.length - 1]
 
-  if (eventPathMatch) {
-    const link = eventPathMatch[1]
-    console.log(`[BOT-DEBUG] Match found! Extracted link: ${link}`)
+  // If the last part looks like a hex link (32 chars)
+  if (lastPart && /^[0-9a-f]{32}$/i.test(lastPart)) {
     try {
-      // Find event (even if inactive, so we can show proper metadata if someone shares it)
-      const event = await Event.findOne({ registrationLink: link }).lean()
+      const event = await Event.findOne({ registrationLink: lastPart }).lean()
       if (event) {
-        console.log(`[BOT-DEBUG] Found event in DB: ${event.eventName}`)
         metadata.title = `${event.eventName} | Dream CRM`
-        metadata.description = event.eventDescription || 'Register for this event'
+        metadata.description = event.eventDescription || 'Join our event!'
         if (event.bannerImage) {
           metadata.image = event.bannerImage.startsWith('http')
             ? event.bannerImage
             : `${origin}${event.bannerImage}`
         }
-      } else {
-        console.log(`[BOT-DEBUG] Event NOT FOUND in DB for link: ${link}`)
       }
     } catch (err) {
-      console.error('[BOT-DEBUG] DB Error searching event:', err)
+      console.error('[BOT] DB Error:', err)
     }
-  } else {
-    console.log(`[BOT-DEBUG] No event path match for: ${req.path}`)
   }
 
   // 4. Inject and send
-  console.log(`[BOT-DEBUG] Serving Meta: Title="${metadata.title}" Image="${metadata.image}"`)
   const html = injectMetadata(getIndexHtml(), metadata)
-  console.log(`[BOT-DEBUG] ----------------------------------------\n`)
 
   return res
     .status(200)
     .set('Cache-Control', 'no-store')
+    .set('X-Bot-Type', 'Crawler')
+    .set('X-Event-Link', lastPart || 'none')
     .send(html)
 })
 
