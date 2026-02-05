@@ -208,13 +208,14 @@ app.use(async (req, res, next) => {
   }
 
   // 4. Inject and send
+  console.log(`[BOT] Detected ${req.headers['user-agent']} for ${req.path}. Injected metadata:`, metadata.title)
   const html = injectMetadata(getIndexHtml(), metadata)
 
   return res
     .status(200)
     .set('Cache-Control', 'no-store')
     .set('X-Bot-Type', 'Crawler')
-    .set('X-Event-Link', lastPart || 'none')
+    .set('X-Event-Link', registrationLink || 'none')
     .send(html)
 })
 
