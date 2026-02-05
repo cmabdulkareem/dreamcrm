@@ -72,6 +72,7 @@ app.get('/api/debug-bot', (req, res) => {
 app.get('/api/ping', (req, res) => res.json({ message: 'pong api', timestamp: new Date().toISOString() }));
 app.get('/ping', (req, res) => res.json({ message: 'pong root', timestamp: new Date().toISOString() }));
 app.get('/api/test', (req, res) => res.send('API Test Success'));
+app.get('/test-server', (req, res) => res.send('Server is UP'));
 
 // ================= HELPERS (MOVE TO TOP FOR USE IN MIDDLEWARE) =================
 
@@ -80,11 +81,13 @@ const isCrawler = (req) => {
   const ua = req.headers['user-agent'] || ''
   const bots = [
     'facebookexternalhit', 'Facebot', 'facebookcatalog', 'facebookplatform',
-    'WhatsApp', 'Twitterbot', 'LinkedInBot', 'TelegramBot', 'Skeletonbot', 'Slackbot',
+    'WhatsApp', 'Twitterbot', 'LinkedInBot', 'TelegramBot', 'Slackbot',
     'discordbot', 'redditbot', 'Googlebot', 'Bingbot', 'AdsBot-Google',
     'Pinterestbot', 'Pinterest/0.1', 'SkypeShell'
   ]
-  return bots.some(bot => ua.toLowerCase().includes(bot.toLowerCase()))
+  const match = bots.some(bot => ua.toLowerCase().includes(bot.toLowerCase()))
+  if (match) console.log(`[BOT-CHECK] Match found for UA: ${ua}`);
+  return match
 }
 
 // Always read fresh HTML
@@ -145,7 +148,10 @@ const injectMetadata = (html, meta) => {
 
 app.use(async (req, res, next) => {
   // 1. Skip if it's not a crawler
-  if (!isCrawler(req)) return next()
+  if (!isCrawler(req)) {
+    // console.log(`[BOT-SKIP] Not a crawler: ${req.path}`);
+    return next()
+  }
 
   // 2. Skip if it's a direct resource request
   if (req.path.includes('.') || req.path.startsWith('/api/') || req.path.startsWith('/uploads/')) {
@@ -256,7 +262,7 @@ app.use((req, res, next) => {
 })
 
 // 404 Logger for API (at the very bottom)
-app.use('/api/*', (req, res) => {
+app.use('/api', (req, res) => {
   console.log(`[404] API Not Found: ${req.method} ${req.originalUrl}`);
   res.status(404).json({ error: 'API route not found', path: req.originalUrl });
 });
