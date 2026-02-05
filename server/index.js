@@ -51,6 +51,14 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }))
 app.use(cors(corsOptions))
 app.use(compression())
 
+// Global Logger (Temporary for debugging)
+app.use((req, res, next) => {
+  if (!req.path.startsWith('/uploads/') && !req.path.includes('.')) {
+    console.log(`[REQ] ${req.method} ${req.path} | UA: ${req.headers['user-agent']}`);
+  }
+  next();
+});
+
 // ================= PATH SETUP =================
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -86,6 +94,16 @@ app.use('/api/support', supportRoutes)
 app.use('/api/prospect-database', prospectDatabaseRoutes)
 app.use('/api/holidays', holidayRoutes)
 app.use('/api/student-portal', studentPortalRoutes)
+
+// Debug route to verify bot detection
+app.get('/debug-bot', (req, res) => {
+  res.json({
+    bot: isCrawler(req),
+    ua: req.headers['user-agent'],
+    ip: req.ip,
+    timestamp: new Date().toISOString()
+  });
+});
 
 // ================= HELPERS =================
 
