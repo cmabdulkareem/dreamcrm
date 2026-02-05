@@ -41,44 +41,10 @@ import Event from './model/eventModel.js';
 
 import { getBaseUploadDir } from './utils/uploadHelper.js';
 
-const app = express()
-app.set('trust proxy', 1)
+// ================= HELPERS (AT THE VERY TOP) =================
 
-// ================= MIDDLEWARE =================
-app.use(cookieParser())
-app.use(express.json({ limit: '50mb' }))
-app.use(express.urlencoded({ limit: '50mb', extended: true }))
-app.use(cors(corsOptions))
-app.use(compression())
-
-// Global Logger (Temporary for debugging)
-app.use((req, res, next) => {
-  if (!req.path.startsWith('/uploads/') && !req.path.includes('.')) {
-    const start = Date.now();
-    res.on('finish', () => {
-      const duration = Date.now() - start;
-      console.log(`[REQ] ${req.method} ${req.path} | Status: ${res.statusCode} | Time: ${duration}ms | UA: ${req.headers['user-agent']}`);
-    });
-  }
-  next();
-});
-
-// Debug route to verify bot detection (Moved to top)
-app.get('/api/debug-bot', (req, res) => {
-  res.json({
-    bot: isCrawler(req),
-    ua: req.headers['user-agent'],
-    ip: req.ip,
-    timestamp: new Date().toISOString()
-  });
-});
-
-app.get('/api/ping', (req, res) => res.json({ message: 'pong api', timestamp: new Date().toISOString() }));
-app.get('/ping', (req, res) => res.json({ message: 'pong root', timestamp: new Date().toISOString() }));
-app.get('/api/test', (req, res) => res.send('API Test Success'));
-app.get('/test-server', (req, res) => res.send('Server is UP'));
-
-// ================= HELPERS (MOVE TO TOP FOR USE IN MIDDLEWARE) =================
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 // WhatsApp / Facebook / Other share bots detection
 const isCrawler = (req) => {
@@ -104,12 +70,9 @@ const getIndexHtml = () => {
 
 /**
  * Injects metadata into HTML. 
- * Replaces existing common tags to avoid duplicates.
  */
 const injectMetadata = (html, meta) => {
-  // Escape potential double quotes in content
   const esc = (str) => String(str || '').replace(/"/g, '&quot;')
-
   const title = esc(meta.title)
   const description = esc(meta.description)
   const image = esc(meta.image)
@@ -137,25 +100,68 @@ const injectMetadata = (html, meta) => {
   `
 
   return html
-    // Aggressively remove existing tags that crawlers might pick up
     .replace(/<title>[\s\S]*?<\/title>/gi, '')
     .replace(/<meta name="description"[\s\S]*?>/gi, '')
     .replace(/<meta property="og:[^>]*?>/gi, '')
     .replace(/<meta name="og:[^>]*?>/gi, '')
     .replace(/<meta name="twitter:[^>]*?>/gi, '')
-    // Inject new tags at the top of head for maximum visibility
-    // Use regex for head to handle attributes if any
     .replace(/<head[^>]*>/i, (match) => `${match}\n${tags}`)
 }
 
-// ================= BOT / CRAWLER HANDLING (GLOBAL PRIORITY) =================
+const app = express()
+app.set('trust proxy', 1)
+
+// ================= MIDDLEWARE =================
+app.use(cookieParser())
+app.use(express.json({ limit: '50mb' }))
+app.use(express.urlencoded({ limit: '50mb', extended: true }))
+app.use(cors(corsOptions))
+app.use(compression())
+
+// Global Logger (Temporary for debugging)
+app.use((req, res, next) => {
+  if (!req.path.startsWith('/uploads/') && !req.path.includes('.')) {
+    const start = Date.now();
+    res.on('finish', () => {
+      const duration = Date.now() - start;
+      console.log(`[REQ] ${req.method} ${req.path} | Status: ${res.statusCode} | Time: ${duration}ms | UA: ${req.headers['user-agent']}`);
+    });
+  }
+  next();
+});
+
+// ================= DIAGNOSTICS (ABSOLUTE PRIORITY) =================
+
+app.get('/api/ping', (req, res) => {
+  console.log('[DIAG] /api/ping hit');
+  res.json({ message: 'pong api', timestamp: new Date().toISOString() });
+});
+
+app.get('/ping', (req, res) => {
+  console.log('[DIAG] /ping hit');
+  res.json({ message: 'pong root', timestamp: new Date().toISOString() });
+});
+
+app.get('/test-server', (req, res) => {
+  console.log('[DIAG] /test-server hit');
+  res.send('Server is UP');
+});
+
+app.get('/api/debug-bot', (req, res) => {
+  console.log('[DIAG] /api/debug-bot hit');
+  res.json({
+    bot: isCrawler(req),
+    ua: req.headers['user-agent'],
+    ip: req.ip,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// ================= BOT / CRAWLER HANDLING =================
 
 app.use(async (req, res, next) => {
   // 1. Skip if it's not a crawler
-  if (!isCrawler(req)) {
-    // console.log(`[BOT-SKIP] Not a crawler: ${req.path}`);
-    return next()
-  }
+  if (!isCrawler(req)) return next()
 
   // 2. Skip if it's a direct resource request
   if (req.path.includes('.') || req.path.startsWith('/api/') || req.path.startsWith('/uploads/')) {
@@ -163,7 +169,6 @@ app.use(async (req, res, next) => {
   }
 
   let origin = req.protocol + '://' + req.get('host')
-  // Force HTTPS on production-like environments if not already
   if (!origin.includes('localhost') && !origin.startsWith('https://')) {
     origin = origin.replace('http://', 'https://')
   }
@@ -173,13 +178,12 @@ app.use(async (req, res, next) => {
     title: 'Dream CRM',
     description: 'Manage leads, students, events, and more with our comprehensive CRM solution.',
     url: `${origin}${req.originalUrl}`,
-    image: `${origin}/icon-512.png`, // Use larger icon for social sharing
+    image: `${origin}/icon-512.png`,
     width: 512,
     height: 512
   }
 
   // 3. Special handling for Event Registration
-  // Check if current path contains exactly one 32-char hex string
   const hexMatches = req.path.match(/[0-9a-f]{32}/i)
   const registrationLink = hexMatches ? hexMatches[0] : null
 
@@ -204,7 +208,7 @@ app.use(async (req, res, next) => {
   }
 
   // 4. Inject and send
-  console.log(`[BOT] Detected Crawler: ${req.headers['user-agent']} for ${req.path}`);
+  console.log(`[BOT] Detected Crawler for ${req.path}. Injected metadata:`, metadata.title);
   const html = injectMetadata(getIndexHtml(), metadata)
 
   return res
@@ -216,8 +220,6 @@ app.use(async (req, res, next) => {
 });
 
 // ================= PATH SETUP =================
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
 
 // Static files
 app.use('/uploads', express.static(getBaseUploadDir()))
@@ -251,25 +253,20 @@ app.use('/api/prospect-database', prospectDatabaseRoutes)
 app.use('/api/holidays', holidayRoutes)
 app.use('/api/student-portal', studentPortalRoutes)
 
-
-
-// ================= SPA FALLBACK & CRAWLER SUPPORT =================
+// ================= SPA FALLBACK & 404 =================
 
 app.use((req, res, next) => {
-  if (
-    req.path.startsWith('/api/') ||
-    req.path.startsWith('/uploads/') ||
-    req.path.includes('.')
-  ) return next()
+  if (req.path.startsWith('/api/')) {
+    console.log(`[404] API Not Found: ${req.method} ${req.originalUrl}`);
+    return res.status(404).json({ error: 'API route not found', path: req.originalUrl });
+  }
+
+  if (req.path.startsWith('/uploads/') || req.path.includes('.')) {
+    return next()
+  }
 
   res.sendFile(path.join(__dirname, '../dist/index.html'))
 })
-
-// 404 Logger for API (at the very bottom)
-app.use('/api', (req, res) => {
-  console.log(`[404] API Not Found: ${req.method} ${req.originalUrl}`);
-  res.status(404).json({ error: 'API route not found', path: req.originalUrl });
-});
 
 // ================= SERVER =================
 
