@@ -59,6 +59,18 @@ app.use((req, res, next) => {
   next();
 });
 
+// Debug route to verify bot detection (Moved to top)
+app.get('/api/debug-bot', (req, res) => {
+  res.json({
+    bot: isCrawler(req),
+    ua: req.headers['user-agent'],
+    ip: req.ip,
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/api/ping', (req, res) => res.json({ message: 'pong', timestamp: new Date().toISOString() }));
+
 // ================= HELPERS (MOVE TO TOP FOR USE IN MIDDLEWARE) =================
 
 // WhatsApp / Facebook / Other share bots detection
@@ -227,15 +239,7 @@ app.use('/api/prospect-database', prospectDatabaseRoutes)
 app.use('/api/holidays', holidayRoutes)
 app.use('/api/student-portal', studentPortalRoutes)
 
-// Debug route to verify bot detection
-app.get('/api/debug-bot', (req, res) => {
-  res.json({
-    bot: isCrawler(req),
-    ua: req.headers['user-agent'],
-    ip: req.ip,
-    timestamp: new Date().toISOString()
-  });
-});
+
 
 // ================= SPA FALLBACK & CRAWLER SUPPORT =================
 
