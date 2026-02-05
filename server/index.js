@@ -89,13 +89,17 @@ app.use('/api/student-portal', studentPortalRoutes)
 
 // ================= HELPERS =================
 
-// WhatsApp / Facebook crawler detection
+// WhatsApp / Facebook / Other share bots detection
 const isCrawler = (req) => {
   const ua = req.headers['user-agent'] || ''
-  return /facebookexternalhit|WhatsApp|Twitterbot|LinkedInBot/i.test(ua)
+  const bots = [
+    'facebookexternalhit', 'Facebot', 'WhatsApp', 'Twitterbot', 'LinkedInBot',
+    'TelegramBot', 'Slackbot', 'discordbot', 'redditbot', 'Googlebot', 'Bingbot'
+  ]
+  return bots.some(bot => ua.toLowerCase().includes(bot.toLowerCase()))
 }
 
-// Always read fresh HTML (NO cache for crawlers)
+// Always read fresh HTML
 const getIndexHtml = () => {
   const distPath = path.join(__dirname, '../dist/index.html')
   const rootPath = path.join(__dirname, '../index.html')
@@ -103,35 +107,50 @@ const getIndexHtml = () => {
   return fs.readFileSync(indexPath, 'utf8')
 }
 
+/**
+ * Injects metadata into HTML. 
+ * Replaces existing common tags to avoid duplicates.
+ */
 const injectMetadata = (html, meta) => {
+  // Escape potential double quotes in content
+  const esc = (str) => (str || '').replace(/"/g, '&quot;')
+
+  const title = esc(meta.title)
+  const description = esc(meta.description)
+  const image = esc(meta.image)
+  const url = esc(meta.url)
+
   const tags = `
-<title>${meta.title}</title>
-<meta name="description" content="${meta.description}" />
-
-<meta property="og:type" content="website" />
-<meta property="og:url" content="${meta.url}" />
-<meta property="og:title" content="${meta.title}" />
-<meta property="og:description" content="${meta.description}" />
-<meta property="og:image" content="${meta.image}" />
-
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="${meta.title}" />
-<meta name="twitter:description" content="${meta.description}" />
-<meta name="twitter:image" content="${meta.image}" />
-`
+  <title>${title}</title>
+  <meta name="description" content="${description}" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="${url}" />
+  <meta property="og:title" content="${title}" />
+  <meta property="og:description" content="${description}" />
+  <meta property="og:image" content="${image}" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="${title}" />
+  <meta name="twitter:description" content="${description}" />
+  <meta name="twitter:image" content="${image}" />
+  `
 
   return html
-    .replace(/<title>.*?<\/title>/gi, '')
-    .replace(/<meta name="description".*?>/gi, '')
-    .replace(/<meta property="og:.*?>/gi, '')
-    .replace(/<meta name="twitter:.*?>/gi, '')
-    .replace('</head>', `${tags}</head>`)
+    // Remove existing meta tags that we are about to inject
+    .replace(/<title>[\s\S]*?<\/title>/gi, '')
+    .replace(/<meta name="description"[\s\S]*?>/gi, '')
+    .replace(/<meta property="og:[^>]*?>/gi, '')
+    .replace(/<meta name="twitter:[^>]*?>/gi, '')
+    // Inject new tags before </head>
+    .replace('</head>', `${tags}\n</head>`)
 }
 
-// ================= SHARE ROUTE (FIXED) =================
+// ================= SHARE ROUTE (DYNAMIC) =================
 
-app.get('/event-registration/:link', async (req, res) => {
+app.get('/event-registration/:link', async (req, res, next) => {
   try {
+    // 🔥 ALWAYS try to find event if it's a bot OR if we suspect bot
+    // (But bots are specific about URLs)
+
     const event = await Event.findOne({
       registrationLink: req.params.link,
       isActive: true
@@ -146,29 +165,25 @@ app.get('/event-registration/:link', async (req, res) => {
       url: `${origin}${req.originalUrl}`,
       image: event?.bannerImage
         ? (event.bannerImage.startsWith('http')
-            ? event.bannerImage
-            : `${origin}${event.bannerImage}`)
+          ? event.bannerImage
+          : `${origin}${event.bannerImage}`)
         : `${origin}/favicon.png`
     }
 
-    // 🔥 CRAWLER → SSR META
     if (isCrawler(req)) {
       const html = injectMetadata(getIndexHtml(), metadata)
-      return res
-        .status(200)
-        .set('Cache-Control', 'no-store')
-        .send(html)
+      return res.status(200).set('Cache-Control', 'no-store').send(html)
     }
 
-    // 👤 USER → SPA
-    res.sendFile(path.join(__dirname, '../dist/index.html'))
+    // Pass to SPA fallback for normal users
+    next()
   } catch (err) {
     console.error('Meta error:', err)
-    res.status(500).send('Server Error')
+    next()
   }
 })
 
-// ================= SPA FALLBACK =================
+// ================= SPA FALLBACK & CRAWLER SUPPORT =================
 
 app.use((req, res, next) => {
   if (
@@ -176,6 +191,21 @@ app.use((req, res, next) => {
     req.path.startsWith('/uploads/') ||
     req.path.includes('.')
   ) return next()
+
+  // 🔥 Even for other routes, if it's a crawler, inject default metadata
+  if (isCrawler(req)) {
+    let origin = req.protocol + '://' + req.get('host')
+    if (!origin.includes('localhost')) origin = origin.replace('http://', 'https://')
+
+    const metadata = {
+      title: 'Dream CRM',
+      description: 'Manage leads, students, events, and more with our comprehensive CRM solution.',
+      url: `${origin}${req.originalUrl}`,
+      image: `${origin}/favicon.png`
+    }
+    const html = injectMetadata(getIndexHtml(), metadata)
+    return res.status(200).set('Cache-Control', 'no-store').send(html)
+  }
 
   res.sendFile(path.join(__dirname, '../dist/index.html'))
 })
