@@ -54,7 +54,11 @@ app.use(compression())
 // Global Logger (Temporary for debugging)
 app.use((req, res, next) => {
   if (!req.path.startsWith('/uploads/') && !req.path.includes('.')) {
-    console.log(`[REQ] ${req.method} ${req.path} | UA: ${req.headers['user-agent']}`);
+    const start = Date.now();
+    res.on('finish', () => {
+      const duration = Date.now() - start;
+      console.log(`[REQ] ${req.method} ${req.path} | Status: ${res.statusCode} | Time: ${duration}ms | UA: ${req.headers['user-agent']}`);
+    });
   }
   next();
 });
