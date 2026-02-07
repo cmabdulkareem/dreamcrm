@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from "uuid";
 
 // Configure multer for file uploads
 import { getUploadDir, getUploadUrl } from "../utils/uploadHelper.js";
+import { emitNotification } from '../realtime/socket.js';
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -159,6 +160,27 @@ export const createStudent = async (req, res) => {
           }
         }
       });
+    }
+
+    // Notification Logic
+    try {
+      const creatorName = req.user.fullName || "Unknown";
+      const notificationData = {
+        userName: creatorName,
+        action: 'created student',
+        entityName: newStudent.fullName,
+        module: 'Student Management',
+        actionUrl: `/student-management?studentId=${newStudent._id}`,
+        metadata: { studentId: newStudent._id },
+        timestamp: new Date().toISOString()
+      };
+
+      emitNotification({
+        brandId: brandId,
+        notification: notificationData
+      });
+    } catch (notifError) {
+      console.error('Error sending student create notification:', notifError);
     }
 
 
@@ -431,6 +453,27 @@ export const updateStudent = async (req, res) => {
     });
 
     await student.save();
+
+    // Notification Logic
+    try {
+      const updaterName = req.user.fullName || "Unknown";
+      const notificationData = {
+        userName: updaterName,
+        action: 'updated student',
+        entityName: student.fullName,
+        module: 'Student Management',
+        actionUrl: `/student-management?studentId=${student._id}`,
+        metadata: { studentId: student._id },
+        timestamp: new Date().toISOString()
+      };
+
+      emitNotification({
+        brandId: student.brand,
+        notification: notificationData
+      });
+    } catch (notifError) {
+      console.error('Error sending student update notification:', notifError);
+    }
 
     return res.status(200).json({
       message: "Student updated successfully.",

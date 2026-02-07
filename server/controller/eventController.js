@@ -9,6 +9,7 @@ import sharp from 'sharp';
 import fs from 'fs';
 import archiver from 'archiver';
 import { hasAdminOrManagerOrCounsellorAccess } from '../utils/roleHelpers.js';
+import { emitNotification } from '../realtime/socket.js';
 
 import { getUploadDir, getUploadUrl } from '../utils/uploadHelper.js';
 
@@ -126,10 +127,31 @@ export const createEvent = async (req, res) => {
 
     await newEvent.save();
 
-    return res.status(201).json({
+    res.status(201).json({
       message: "Event created successfully.",
       event: newEvent
     });
+
+    // Notification Logic
+    try {
+      const creatorName = req.user.fullName || "Unknown";
+      const notificationData = {
+        userName: creatorName,
+        action: 'created',
+        entityName: `event: ${eventName}`,
+        module: 'Event Management',
+        actionUrl: `/event-management`,
+        metadata: { eventId: newEvent._id },
+        timestamp: new Date().toISOString()
+      };
+
+      emitNotification({
+        brandId: newEvent.brand,
+        notification: notificationData
+      });
+    } catch (notifError) {
+      console.error('Error sending event notification:', notifError);
+    }
   } catch (error) {
     console.error("Create event error:", error);
     return res.status(500).json({ message: "Server error" });
@@ -288,10 +310,30 @@ export const registerForEvent = async (req, res) => {
     event.currentRegistrations += 1;
     await event.save();
 
-    return res.status(201).json({
+    res.status(201).json({
       message: "Registration successful.",
       registration: newRegistration
     });
+
+    // Notification Logic
+    try {
+      const notificationData = {
+        userName: registrantName,
+        action: 'registered for',
+        entityName: `event: ${event.eventName}`,
+        module: 'Event Management',
+        actionUrl: `/event-management`, // Or a specific registration view if exists
+        metadata: { eventId: event._id, registrationId: newRegistration._id },
+        timestamp: new Date().toISOString()
+      };
+
+      emitNotification({
+        brandId: event.brand,
+        notification: notificationData
+      });
+    } catch (notifError) {
+      console.error('Error sending event registration notification:', notifError);
+    }
   } catch (error) {
     console.error("Event registration error:", error);
     console.error("Error details:", {

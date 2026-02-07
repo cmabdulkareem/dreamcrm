@@ -1,5 +1,6 @@
 import Support from '../model/supportModel.js';
 import { isOwner, isManager, isDeveloper } from '../utils/roleHelpers.js';
+import { emitNotification } from '../realtime/socket.js';
 
 // Create a new support request
 export const createSupportRequest = async (req, res) => {
@@ -27,6 +28,27 @@ export const createSupportRequest = async (req, res) => {
             message: "Request submitted successfully.",
             support: newRequest
         });
+
+        // Notification Logic
+        try {
+            const creatorName = req.user.fullName || "Unknown";
+            const notificationData = {
+                userName: creatorName,
+                action: 'submitted a support request',
+                entityName: title,
+                module: 'Support',
+                actionUrl: `/support-dashboard?requestId=${newRequest._id}`,
+                metadata: { requestId: newRequest._id },
+                timestamp: new Date().toISOString()
+            };
+
+            emitNotification({
+                brandId: brandId,
+                notification: notificationData
+            });
+        } catch (notifError) {
+            console.error('Error sending support notification:', notifError);
+        }
     } catch (error) {
         console.error("Error creating support request:", error);
         res.status(500).json({ message: "Internal server error" });
@@ -83,6 +105,27 @@ export const updateSupportStatus = async (req, res) => {
             message: "Status updated successfully.",
             support: request
         });
+
+        // Notification Logic
+        try {
+            const updaterName = req.user.fullName || "Unknown";
+            const notificationData = {
+                userName: updaterName,
+                action: 'updated status of support request',
+                entityName: request.title,
+                module: 'Support',
+                actionUrl: `/support-dashboard?requestId=${request._id}`,
+                metadata: { requestId: request._id, status },
+                timestamp: new Date().toISOString()
+            };
+
+            emitNotification({
+                brandId: request.brand,
+                notification: notificationData
+            });
+        } catch (notifError) {
+            console.error('Error sending support status notification:', notifError);
+        }
     } catch (error) {
         console.error("Error updating support status:", error);
         res.status(500).json({ message: "Internal server error" });
@@ -112,6 +155,27 @@ export const addSupportResponse = async (req, res) => {
             message: "Response added successfully.",
             support: request
         });
+
+        // Notification Logic
+        try {
+            const updaterName = req.user.fullName || "Unknown";
+            const notificationData = {
+                userName: updaterName,
+                action: 'responded to support request',
+                entityName: request.title,
+                module: 'Support',
+                actionUrl: `/support-dashboard?requestId=${request._id}`,
+                metadata: { requestId: request._id },
+                timestamp: new Date().toISOString()
+            };
+
+            emitNotification({
+                brandId: request.brand,
+                notification: notificationData
+            });
+        } catch (notifError) {
+            console.error('Error sending support response notification:', notifError);
+        }
     } catch (error) {
         console.error("Error adding support response:", error);
         res.status(500).json({ message: "Internal server error" });

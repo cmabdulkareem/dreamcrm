@@ -108,12 +108,13 @@ export const createCustomer = async (req, res) => {
       if (newCustomer.brand) {
         const creatorName = req.user.fullName || "Unknown";
         const notificationData = {
-          type: 'lead_created',
-          title: `New Lead Created`,
-          message: `${creatorName} created a new lead: ${newCustomer.fullName}`,
+          userName: creatorName,
+          action: 'created',
+          entityName: newCustomer.fullName,
+          module: 'Lead Management',
           actionUrl: `/lead-management?leadId=${newCustomer._id}`,
           metadata: { leadId: newCustomer._id },
-          userName: creatorName
+          timestamp: new Date().toISOString()
         };
 
         emitSocketNotification({
@@ -266,12 +267,13 @@ export const updateCustomer = async (req, res) => {
       if (customer.brand) {
         const updaterName = req.user.fullName || "Unknown";
         const notificationData = {
-          type: 'lead_updated',
-          title: `Lead Updated`,
-          message: `${updaterName} updated lead: ${customer.fullName}`,
+          userName: updaterName,
+          action: 'updated',
+          entityName: customer.fullName,
+          module: 'Lead Management',
           actionUrl: `/lead-management?leadId=${customer._id}`,
           metadata: { leadId: customer._id },
-          userName: updaterName
+          timestamp: new Date().toISOString()
         };
 
         emitSocketNotification({
@@ -338,12 +340,13 @@ export const addRemark = async (req, res) => {
       if (customer.brand) {
         const updaterName = req.user.fullName || "Unknown";
         const notificationData = {
-          type: 'lead_remark',
-          title: `New Remark`,
-          message: `${updaterName} added a remark to: ${customer.fullName}`,
+          userName: updaterName,
+          action: 'added a remark to',
+          entityName: customer.fullName,
+          module: 'Lead Management',
           actionUrl: `/lead-management?leadId=${customer._id}`,
           metadata: { leadId: customer._id },
-          userName: updaterName
+          timestamp: new Date().toISOString()
         };
 
         emitSocketNotification({
@@ -473,19 +476,20 @@ export const assignLead = async (req, res) => {
     // Emit Real-time Notification
     try {
       const notificationData = {
-        type: 'lead_assigned',
-        title: `New Lead Assigned`,
-        message: `${assignerName} assigned a lead to ${assignedUser.fullName}: ${customer.fullName}`,
+        userName: assignerName,
+        action: 'assigned',
+        entityName: `lead ${customer.fullName} to ${assignedUser.fullName}`,
+        module: 'Lead Management',
         actionUrl: `/lead-management?leadId=${customer._id}`,
         metadata: { leadId: customer._id },
-        userName: assignerName // Sender name
+        timestamp: new Date().toISOString()
       };
 
       // Broadcast to Brand (everyone sees who got assigned what)
       if (customer.brand) {
         emitSocketNotification({
           brandId: customer.brand,
-          recipients: [assignedTo], // Also explicitly notify assignee (though they are in brand) - socket.js handles broadcasting logic effectively
+          recipients: [assignedTo], // Also explicitly notify assignee
           notification: notificationData
         });
       } else {

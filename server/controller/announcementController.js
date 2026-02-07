@@ -1,5 +1,6 @@
 import Announcement from '../model/announcementModel.js';
 import User from '../model/userModel.js';
+import { emitNotification } from '../realtime/socket.js';
 
 // Create a new announcement
 export const createAnnouncement = async (req, res) => {
@@ -47,6 +48,26 @@ export const createAnnouncement = async (req, res) => {
       message: 'Announcement created successfully',
       announcement: savedAnnouncement
     });
+
+    // Notification Logic
+    try {
+      const creatorName = req.user.fullName || "Unknown";
+      const notificationData = {
+        userName: creatorName,
+        action: 'created',
+        entityName: `announcement: ${title}`,
+        module: 'Announcements',
+        actionUrl: '/announcements',
+        metadata: { announcementId: savedAnnouncement._id },
+        timestamp: new Date().toISOString()
+      };
+
+      emitNotification({
+        notification: notificationData
+      });
+    } catch (notifError) {
+      console.error('Error sending announcement notification:', notifError);
+    }
   } catch (error) {
     console.error('Error creating announcement:', error);
     res.status(500).json({ message: 'Internal server error' });
@@ -114,6 +135,26 @@ export const approveAnnouncement = async (req, res) => {
       message: 'Announcement approved successfully',
       announcement
     });
+
+    // Notification Logic
+    try {
+      const updaterName = req.user.fullName || "Unknown";
+      const notificationData = {
+        userName: updaterName,
+        action: 'approved',
+        entityName: `announcement: ${announcement.title}`,
+        module: 'Announcements',
+        actionUrl: '/announcements',
+        metadata: { announcementId: announcement._id },
+        timestamp: new Date().toISOString()
+      };
+
+      emitNotification({
+        notification: notificationData
+      });
+    } catch (notifError) {
+      console.error('Error sending announcement approval notification:', notifError);
+    }
   } catch (error) {
     console.error('Error approving announcement:', error);
     res.status(500).json({ message: 'Internal server error' });

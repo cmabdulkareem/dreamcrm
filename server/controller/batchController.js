@@ -101,22 +101,31 @@ export const createBatch = async (req, res) => {
 
         // Notification Logic
         try {
-            // Find instructor to notify
-            const instructor = await User.findOne({ fullName: instructorName });
-
+            const creatorName = req.user.fullName || "Unknown";
             const notificationData = {
-                type: 'batch_assigned',
-                title: 'New Batch Assigned',
-                message: `You have been assigned to new batch: ${batchName}`,
+                userName: creatorName,
+                action: 'created',
+                entityName: `batch ${batchName}`,
+                module: 'Batch Management',
                 actionUrl: '/batch-management',
-                metadata: { batchId: newBatch._id }
+                metadata: { batchId: newBatch._id },
+                timestamp: new Date().toISOString()
             };
 
+            // Notify brand managers and owner
             emitNotification({
-                recipients: instructor ? [instructor._id] : [],
-                brandId: brandId, // Notify brand managers
+                brandId: brandId,
                 notification: notificationData
             });
+
+            // Also notify instructor if they are a different user
+            const instructorUser = await User.findOne({ fullName: instructorName });
+            if (instructorUser && instructorUser._id.toString() !== req.user.id.toString()) {
+                emitNotification({
+                    recipients: [instructorUser._id],
+                    notification: notificationData
+                });
+            }
         } catch (notifError) {
             console.error('Error sending notification:', notifError);
         }
@@ -152,19 +161,18 @@ export const updateBatch = async (req, res) => {
 
         // Notification Logic
         try {
-            // Find instructor to notify
-            const instructor = await User.findOne({ fullName: updatedBatch.instructorName });
-
+            const updaterName = req.user.fullName || "Unknown";
             const notificationData = {
-                type: 'batch_updated',
-                title: 'Batch Updated',
-                message: `Batch ${updatedBatch.batchName} has been updated.`,
+                userName: updaterName,
+                action: 'updated',
+                entityName: `batch ${updatedBatch.batchName}`,
+                module: 'Batch Management',
                 actionUrl: '/batch-management',
-                metadata: { batchId: updatedBatch._id }
+                metadata: { batchId: updatedBatch._id },
+                timestamp: new Date().toISOString()
             };
 
             emitNotification({
-                recipients: instructor ? [instructor._id] : [],
                 brandId: updatedBatch.brand,
                 notification: notificationData
             });
@@ -324,6 +332,27 @@ export const addStudentToBatch = async (req, res) => {
         // Populate the student details before returning
         await newStudent.populate('studentId', 'studentId fullName phone1 dob phone2');
 
+        // Notification logic
+        try {
+            const updaterName = req.user.fullName || "Unknown";
+            const notificationData = {
+                userName: updaterName,
+                action: 'added student to',
+                entityName: `batch ${batch.batchName}`,
+                module: 'Batch Management',
+                actionUrl: `/batch-management?batchId=${batch._id}`,
+                metadata: { batchId: batch._id, studentId: newStudent._id },
+                timestamp: new Date().toISOString()
+            };
+
+            emitNotification({
+                brandId: batch.brand,
+                notification: notificationData
+            });
+        } catch (notifError) {
+            console.error('Error sending notification:', notifError);
+        }
+
         return res.status(201).json({ message: "Student added to batch successfully.", student: newStudent });
     } catch (error) {
         console.error("Error adding student to batch:", error);
@@ -467,6 +496,27 @@ export const markAttendance = async (req, res) => {
             },
             { new: true, upsert: true }
         );
+
+        // Notification logic
+        try {
+            const updaterName = req.user.fullName || "Unknown";
+            const notificationData = {
+                userName: updaterName,
+                action: 'marked attendance for',
+                entityName: `batch ${batch.batchName}`,
+                module: 'Batch Management',
+                actionUrl: `/batch-management?batchId=${batch._id}`,
+                metadata: { batchId: batch._id, date: attendanceDate },
+                timestamp: new Date().toISOString()
+            };
+
+            emitNotification({
+                brandId: batch.brand,
+                notification: notificationData
+            });
+        } catch (notifError) {
+            console.error('Error sending notification:', notifError);
+        }
 
         return res.status(200).json({ message: "Attendance marked successfully.", attendance });
     } catch (error) {
