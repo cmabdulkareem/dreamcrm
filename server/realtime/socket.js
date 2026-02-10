@@ -2,7 +2,7 @@ import { Server } from 'socket.io'
 
 // Map userId -> Set of socketIds
 const userIdToSocketIds = new Map()
-let ioInstance = null
+export let ioInstance = null
 
 // Helper to normalize IDs (handle objects, strings, ObjectIds)
 const normalizeId = (id) => {
@@ -50,8 +50,8 @@ export default function setupSocket(server) {
 
 				// Join Admin room (Owners/Admins see everything)
 				const isPowerUser = isAdmin === true ||
-					(Array.isArray(roles) && (roles.includes('Owner') || roles.includes('Admin'))) ||
-					roles === 'Owner' || roles === 'Admin';
+					(Array.isArray(roles) && (roles.includes('Owner') || roles.includes('Admin') || roles.includes('Brand Manager'))) ||
+					roles === 'Owner' || roles === 'Admin' || roles === 'Brand Manager';
 
 				if (isPowerUser) {
 					console.log(`[Socket] User ${uid} identified as Power User. Joining room:admin`);

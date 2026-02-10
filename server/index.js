@@ -101,7 +101,7 @@ app.use('/api/holidays', holidayRoutes)
 app.use('/api/student-portal', studentPortalRoutes)
 
 // TEMPORARY: Debug endpoint to test notifications
-app.get('/api/test-notification', (req, res) => {
+app.get('/api/test-notification', async (req, res) => {
   const brandId = req.headers['x-brand-id'] || req.query.brandId;
   const notification = {
     userName: "System Debugger",
@@ -111,8 +111,19 @@ app.get('/api/test-notification', (req, res) => {
     actionUrl: "/dashboard",
     timestamp: new Date().toISOString()
   };
-  emitNotification({ brandId, notification });
-  res.json({ message: "Test notification emitted", brandId, notification });
+  if (brandId) {
+    emitNotification({ brandId, notification });
+    res.json({ message: "Test notification emitted to brand", brandId, notification });
+  } else {
+    // Broadcast to everyone for testing purposes if no brand specified
+    const { ioInstance } = await import('./realtime/socket.js');
+    if (ioInstance) {
+      ioInstance.emit('notification', notification);
+      res.json({ message: "Test notification broadcasted to ALL users", notification });
+    } else {
+      res.status(500).json({ message: "Socket instance not available" });
+    }
+  }
 });
 
 // ================= SPA FALLBACK =================
