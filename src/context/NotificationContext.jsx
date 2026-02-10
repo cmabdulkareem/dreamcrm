@@ -85,6 +85,7 @@ export const NotificationProvider = ({ children }) => {
     });
 
     newSocket.on('notification', (data) => {
+      console.log('📬 Real-time notification received:', data);
       addNotification(data);
     });
 
@@ -97,6 +98,18 @@ export const NotificationProvider = ({ children }) => {
     // Only re-run if user object changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
+
+  // Handle dynamic brand joining
+  const { selectedBrand } = useAuth();
+  useEffect(() => {
+    if (socket && selectedBrand) {
+      const brandId = selectedBrand._id || selectedBrand.id;
+      if (brandId) {
+        console.log('Joining brand room dynamically:', brandId);
+        socket.emit('join:brand', brandId);
+      }
+    }
+  }, [socket, selectedBrand]);
 
 
   const addNotification = (notification) => {

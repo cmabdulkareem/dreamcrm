@@ -49,8 +49,12 @@ export default function setupSocket(server) {
 				socket.join(`user:${currentUserId}`)
 
 				// Join Admin room (Owners/Admins see everything)
-				if (isAdmin === true || roles?.includes('Owner') || roles?.includes('Admin')) {
-					console.log(`[Socket] User ${uid} joined room:admin`);
+				const isPowerUser = isAdmin === true ||
+					(Array.isArray(roles) && (roles.includes('Owner') || roles.includes('Admin'))) ||
+					roles === 'Owner' || roles === 'Admin';
+
+				if (isPowerUser) {
+					console.log(`[Socket] User ${uid} identified as Power User. Joining room:admin`);
 					socket.join('room:admin')
 				}
 
@@ -59,11 +63,20 @@ export default function setupSocket(server) {
 					assignedBrands.forEach(brand => {
 						const bId = normalizeId(brand);
 						if (bId) {
-							console.log(`[Socket] User ${uid} joined brand:${bId}`);
+							console.log(`[Socket] User ${uid} joining brand room: brand:${bId}`);
 							socket.join(`brand:${bId}`)
 						}
 					})
 				}
+
+				// Add a join:brand listener for dynamic brand switching
+				socket.on('join:brand', (brandId) => {
+					const bId = normalizeId(brandId);
+					if (bId) {
+						console.log(`[Socket] User ${uid} dynamic join brand:${bId}`);
+						socket.join(`brand:${bId}`);
+					}
+				});
 
 				socket.emit('registered', { ok: true })
 			} catch (e) {
@@ -105,14 +118,15 @@ export function emitNotification({ recipients, brandId, notification }) {
 		})
 	}
 
-	// 2. Notify Admins/Owners (Global) - room:admin recipients get every notification
+	// 2. Notify Admins/Owners (Global)
+	console.log(`[Socket] Emitting global notification to room:admin`);
 	ioInstance.to('room:admin').emit('notification', notification)
 
 	// 3. Notify Brand Managers (Scoped)
 	if (brandId) {
 		const bId = normalizeId(brandId);
 		if (bId) {
-			console.log(`[Socket] Emitting notification to brand:${bId}`);
+			console.log(`[Socket] Scoped emission to brand:${bId}`);
 			ioInstance.to(`brand:${bId}`).emit('notification', notification)
 		}
 	}
