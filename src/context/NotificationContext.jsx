@@ -49,9 +49,10 @@ export const NotificationProvider = ({ children }) => {
   // Socket Connection
   useEffect(() => {
     if (!user) {
-      console.log('NotificationProvider: No user found, skipping socket connection');
+      console.log('NotificationProvider: No user found yet. Waiting for auth...');
       return;
     }
+    console.log('NotificationProvider: User detected:', user._id || user.id);
 
     // API is like "http://localhost:3000/api", we need "http://localhost:3000"
     const socketUrl = API.replace('/api', '');
@@ -92,9 +93,9 @@ export const NotificationProvider = ({ children }) => {
       newSocket.disconnect();
       setSocket(null);
     };
-    // Only re-run if user ID changes to hold connection stable
+    // Only re-run if user object changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?._id]);
+  }, [user]);
 
 
   const addNotification = (notification) => {
