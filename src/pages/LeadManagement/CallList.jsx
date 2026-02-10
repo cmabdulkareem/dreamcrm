@@ -79,34 +79,43 @@ export default function CallList() {
     const [statusFilter, setStatusFilter] = useState('');
 
     // Derived stats for summary with grouping
-    const { summaryData, completionRate } = useMemo(() => {
-        // Define simplified categories
+    const {
+        totalCalled,
+        pendingCount,
+        breakdown,
+        completionRate
+    } = useMemo(() => {
+        // Define simplified categories for breakdown
         const groupedStats = {
-            'pending': { count: 0, color: '#A3A3A3', label: 'Pending' },
-            'interested': { count: 0, color: '#22C55E', label: 'Interested' }, // Green
-            'not-interested': { count: 0, color: '#EF4444', label: 'Not Interested' }, // Red
-            'failed': { count: 0, color: '#F97316', label: 'Unreachable / Failed' }, // Orange
-            'converted': { count: 0, color: '#0EA5E9', label: 'Converted to Lead' } // Blue
+            'interested': { count: 0, color: '#22C55E', label: 'Interested' },
+            'not-interested': { count: 0, color: '#EF4444', label: 'Not Interested' },
+            'failed': { count: 0, color: '#F97316', label: 'Unreachable / Failed' },
+            'converted': { count: 0, color: '#0EA5E9', label: 'Converted to Lead' }
         };
 
-        // Mapping from detailed status to simplified category
         const statusMapping = {
-            'pending': 'pending',
+            // Interested
             'interested-wants-details': 'interested',
             'very-interested': 'interested',
             'callback-requested': 'interested',
+
+            // Not Interested
             'neutral': 'not-interested',
             'not-interested': 'not-interested',
+
+            // Failed
             'no-answer': 'failed',
             'busy': 'failed',
             'switched-off': 'failed',
             'invalid-number': 'failed',
             'call-dropped': 'failed',
+
+            // Converted
             'copied-to-lead': 'converted'
         };
 
         let total = 0;
-        let pendingCount = 0;
+        let pCount = 0;
 
         // stats is an array of { _id: 'status-string', count: number }
         stats.forEach(stat => {
@@ -115,26 +124,23 @@ export default function CallList() {
             total += count;
 
             if (rawStatus === 'pending') {
-                pendingCount = count;
-            }
-
-            const groupKey = statusMapping[rawStatus];
-            if (groupKey && groupedStats[groupKey]) {
-                groupedStats[groupKey].count += count;
+                pCount = count;
             } else {
-                // Fallback for unknown statuses, map to pending or keep separate?
-                // For safety, let's just add to pending if unknown, or ignore.
-                // Current logic: map to pending if undefined
-                groupedStats['pending'].count += count;
+                // If not pending, it's "Called"
+                const groupKey = statusMapping[rawStatus];
+                if (groupKey && groupedStats[groupKey]) {
+                    groupedStats[groupKey].count += count;
+                }
             }
         });
 
-        // Calculate rate based on total vs pending
-        // If we want completion rate to be (Total - Pending) / Total
-        const rate = total > 0 ? Math.round(((total - pendingCount) / total) * 100) : 0;
+        const totalCalledCount = total - pCount;
+        const rate = total > 0 ? Math.round((totalCalledCount / total) * 100) : 0;
 
         return {
-            summaryData: Object.values(groupedStats),
+            totalCalled: totalCalledCount,
+            pendingCount: pCount,
+            breakdown: Object.values(groupedStats),
             completionRate: rate
         };
     }, [stats]);
@@ -567,22 +573,49 @@ export default function CallList() {
                         </div>
                     </div>
 
-                    {/* Integrated Efficiency Stats - Premium Style */}
-                    <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-3 pt-3">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
-                            <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
-                            Efficiency:
-                        </span>
-                        {summaryData.map((stat, idx) => (
-                            <div key={idx} className="flex items-center gap-1.5 group transition-all">
-                                <span
-                                    className="size-1.5 rounded-full shadow-sm group-hover:scale-125 transition-transform"
-                                    style={{ backgroundColor: stat.color || '#A3A3A3' }}
-                                />
-                                <span className="text-[11px] font-medium text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-200 transition-colors uppercase tracking-tight">{stat.label}:</span>
-                                <span className="text-xs font-bold text-gray-800 dark:text-white">{stat.count}</span>
-                            </div>
-                        ))}
+                    {/* Integrated Efficiency Stats - Custom Grouped Layout */}
+                    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-3 pt-3 text-xs">
+                        {/* Called Group */}
+                        <div className="flex items-center gap-2">
+                            <span className="font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wide">
+                                Called:
+                            </span>
+                            <span className="font-bold text-brand-600 dark:text-brand-400 text-sm">
+                                {totalCalled}
+                            </span>
+                        </div>
+
+                        {/* Breakdown inside brackets */}
+                        <div className="flex items-center gap-3 px-3 py-1.5 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-800">
+                            <span className="text-gray-400 font-light text-lg">(</span>
+
+                            {breakdown.map((stat, idx) => (
+                                <div key={idx} className="flex items-center gap-1.5">
+                                    <span
+                                        className="size-1.5 rounded-full"
+                                        style={{ backgroundColor: stat.color }}
+                                    />
+                                    <span className="font-medium text-gray-500 dark:text-gray-400">
+                                        {stat.label}:
+                                    </span>
+                                    <span className="font-bold text-gray-700 dark:text-gray-200">
+                                        {stat.count}
+                                    </span>
+                                </div>
+                            ))}
+
+                            <span className="text-gray-400 font-light text-lg">)</span>
+                        </div>
+
+                        {/* Pending Group */}
+                        <div className="flex items-center gap-2">
+                            <span className="font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wide">
+                                Pending:
+                            </span>
+                            <span className="font-bold text-gray-500 dark:text-gray-400 text-sm">
+                                {pendingCount}
+                            </span>
+                        </div>
                     </div>
                 </div>
 
