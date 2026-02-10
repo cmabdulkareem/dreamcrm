@@ -15,7 +15,8 @@ import {
     deleteUser,
     forgotPassword,
     resetPassword,
-    changePassword
+    changePassword,
+    getUserUsageStats
 } from '../controller/userController.js'
 import verifyToken from "../middleware/verifyToken.js";
 
@@ -33,6 +34,7 @@ router.patch('/assign-roles/:id', verifyToken, assignRoles)
 router.delete('/delete/:id', verifyToken, deleteUser) // Add delete user route
 router.get('/auth', verifyToken, authCheck)
 router.get('/logout', verifyToken, logoutUser)
+router.get('/usage-stats', verifyToken, getUserUsageStats)
 
 
 // Online status routes

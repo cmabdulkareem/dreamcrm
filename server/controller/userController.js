@@ -240,6 +240,10 @@ export const signInUser = async (req, res) => {
     const isPasswordValid = await comparePassword(password, user.password);
     if (!isPasswordValid) return res.status(401).json({ message: "Invalid password" });
 
+    // Update last login
+    user.lastLogin = new Date();
+    await user.save();
+
     if (user.accountStatus !== "Active") {
       return res.status(403).json({ message: "Account not approved yet" });
     }
@@ -1115,5 +1119,35 @@ export const forgotPassword = async (req, res) => {
   } catch (error) {
     console.error("Forgot password error:", error);
     return res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Get user usage statistics (Owner/Manager only)
+export const getUserUsageStats = async (req, res) => {
+  try {
+    if (!isOwner(req.user) && !isManager(req.user)) {
+      return res.status(403).json({ message: "Access denied. Owner or Manager privileges required." });
+    }
+
+    // Fetch all users except students
+    const users = await userModel.find({ roles: { $ne: 'Student' } })
+      .select('fullName email avatar roles lastLogin accountStatus')
+      .sort({ lastLogin: -1 });
+
+    const formattedUsers = users.map(user => ({
+      id: user._id,
+      fullName: user.fullName,
+      email: user.email,
+      avatar: user.avatar ? `${getBaseUrl(req)}${user.avatar}` : null,
+      roles: user.roles,
+      lastLogin: user.lastLogin,
+      accountStatus: user.accountStatus,
+      daysInactive: user.lastLogin ? Math.floor((new Date() - new Date(user.lastLogin)) / (1000 * 60 * 60 * 24)) : null
+    }));
+
+    return res.status(200).json({ users: formattedUsers });
+  } catch (error) {
+    console.error("Error fetching usage stats:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
 };

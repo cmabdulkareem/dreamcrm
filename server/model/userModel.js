@@ -83,7 +83,8 @@ const userSchema = new mongoose.Schema(
 
     // Password reset fields
     resetPasswordToken: { type: String },
-    resetPasswordExpires: { type: Date }
+    resetPasswordExpires: { type: Date },
+    lastLogin: { type: Date, default: null }
   },
   {
     timestamps: true, // enable both createdAt and updatedAt

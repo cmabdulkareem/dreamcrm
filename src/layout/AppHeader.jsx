@@ -8,7 +8,8 @@ import UserDropdown from "../components/header/UserDropdown";
 import AnimatedAnnouncement from "../components/header/AnimatedAnnouncement";
 import { ThemeToggleButton } from "../components/common/ThemeToggleButton";
 import { AuthContext } from "../context/AuthContext";
-import { isAdmin } from "../utils/roleHelpers";
+import { isAdmin, isOwner, isManager } from "../utils/roleHelpers";
+import { TimeIcon } from "../icons";
 
 const AppHeader = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
@@ -410,8 +411,16 @@ const AppHeader = () => {
 
 
 
-              {/* <!-- Dark Mode Toggler --> */}
-              <ThemeToggleButton />
+              {/* <!-- User Usage Analysis (Timeline) --> */}
+              {(isOwner(currentUser) || isManager(currentUser)) && (
+                <Link
+                  to="/user-usage-analysis"
+                  className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors border border-transparent lg:border-gray-200 dark:lg:border-gray-800"
+                  title="User Usage Analysis"
+                >
+                  <TimeIcon className="w-5 h-5" />
+                </Link>
+              )}
 
               {/* <!-- User Area --> */}
               <UserDropdown />
