@@ -33,7 +33,6 @@ export default function setupSocket(server) {
 					return;
 				}
 				const uid = normalizeId(userId);
-				console.log(`[Socket] Registering user ${uid} (${fullName}) | Roles: ${JSON.stringify(roles)}`);
 				const isFirstConnection = !userIdToSocketIds.has(uid)
 				currentUserId = uid
 
@@ -54,7 +53,6 @@ export default function setupSocket(server) {
 					roles === 'Owner' || roles === 'Admin' || roles === 'Brand Manager';
 
 				if (isPowerUser) {
-					console.log(`[Socket] User ${uid} identified as Power User. Joining room:admin`);
 					socket.join('room:admin')
 				}
 
@@ -63,7 +61,6 @@ export default function setupSocket(server) {
 					assignedBrands.forEach(brand => {
 						const bId = normalizeId(brand);
 						if (bId) {
-							console.log(`[Socket] User ${uid} joining brand room: brand:${bId}`);
 							socket.join(`brand:${bId}`)
 						}
 					})
@@ -73,7 +70,6 @@ export default function setupSocket(server) {
 				socket.on('join:brand', (brandId) => {
 					const bId = normalizeId(brandId);
 					if (bId) {
-						console.log(`[Socket] User ${uid} dynamic join brand:${bId}`);
 						socket.join(`brand:${bId}`);
 					}
 				});
@@ -92,7 +88,6 @@ export default function setupSocket(server) {
 				if (set.size === 0) {
 					userIdToSocketIds.delete(currentUserId)
 					ioInstance.emit('user:offline', { userId: currentUserId })
-					console.log(`[Socket] User ${currentUserId} is now offline`);
 				}
 			}
 		})
@@ -119,14 +114,12 @@ export function emitNotification({ recipients, brandId, notification }) {
 	}
 
 	// 2. Notify Admins/Owners (Global)
-	console.log(`[Socket] Emitting global notification to room:admin`);
 	ioInstance.to('room:admin').emit('notification', notification)
 
 	// 3. Notify Brand Managers (Scoped)
 	if (brandId) {
 		const bId = normalizeId(brandId);
 		if (bId) {
-			console.log(`[Socket] Scoped emission to brand:${bId}`);
 			ioInstance.to(`brand:${bId}`).emit('notification', notification)
 		}
 	}

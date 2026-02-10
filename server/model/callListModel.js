@@ -35,10 +35,16 @@ const callListSchema = new mongoose.Schema({
         type: String,
         enum: [
             'pending',
+            'interested',
+            'not-interested',
+            'failed',
+            'converted',
+            // Keep old statuses temporarily for migration safety if needed, 
+            // but strictly we should migrate them all. 
+            // Adding them here prevents validation errors before migration.
             'interested-wants-details',
             'very-interested',
             'neutral',
-            'not-interested',
             'callback-requested',
             'copied-to-lead',
             'no-answer',

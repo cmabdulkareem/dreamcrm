@@ -49,14 +49,11 @@ export const NotificationProvider = ({ children }) => {
   // Socket Connection
   useEffect(() => {
     if (!user) {
-      console.log('NotificationProvider: No user found yet. Waiting for auth...');
       return;
     }
-    console.log('NotificationProvider: User detected:', user._id || user.id);
 
     // API is like "http://localhost:3000/api", we need "http://localhost:3000"
     const socketUrl = API.replace('/api', '');
-    console.log('Attempting socket connection to:', socketUrl || 'current host');
 
     const newSocket = io(socketUrl, {
       path: '/api/socket.io',
@@ -65,7 +62,6 @@ export const NotificationProvider = ({ children }) => {
     });
 
     newSocket.on('connect', () => {
-      console.log('✅ Socket connected successfully:', newSocket.id);
       // Register user with roles and brands
       // Safe check for user.brands
       const assignedBrands = Array.isArray(user.brands) ? user.brands : [];
@@ -77,7 +73,6 @@ export const NotificationProvider = ({ children }) => {
         roles: user.roles,
         assignedBrands: assignedBrands
       });
-      console.log('Sent register event for user:', user._id || user.id);
     });
 
     newSocket.on('connect_error', (err) => {
@@ -85,7 +80,6 @@ export const NotificationProvider = ({ children }) => {
     });
 
     newSocket.on('notification', (data) => {
-      console.log('📬 Real-time notification received:', data);
       addNotification(data);
     });
 
@@ -105,7 +99,6 @@ export const NotificationProvider = ({ children }) => {
     if (socket && selectedBrand) {
       const brandId = selectedBrand._id || selectedBrand.id;
       if (brandId) {
-        console.log('Joining brand room dynamically:', brandId);
         socket.emit('join:brand', brandId);
       }
     }

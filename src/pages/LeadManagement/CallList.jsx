@@ -78,36 +78,65 @@ export default function CallList() {
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
 
-    // Derived stats for summary
+    // Derived stats for summary with grouping
     const { summaryData, completionRate } = useMemo(() => {
-        const result = {};
-        // Initialize all defined statuses with 0
-        callListStatusOptions.forEach(opt => {
-            result[opt.value.toLowerCase()] = { count: 0, color: opt.color, label: opt.label };
-        });
+        // Define simplified categories
+        const groupedStats = {
+            'pending': { count: 0, color: '#A3A3A3', label: 'Pending' },
+            'interested': { count: 0, color: '#22C55E', label: 'Interested' }, // Green
+            'not-interested': { count: 0, color: '#EF4444', label: 'Not Interested' }, // Red
+            'failed': { count: 0, color: '#F97316', label: 'Unreachable / Failed' }, // Orange
+            'converted': { count: 0, color: '#0EA5E9', label: 'Converted to Lead' } // Blue
+        };
+
+        // Mapping from detailed status to simplified category
+        const statusMapping = {
+            'pending': 'pending',
+            'interested-wants-details': 'interested',
+            'very-interested': 'interested',
+            'callback-requested': 'interested',
+            'neutral': 'not-interested',
+            'not-interested': 'not-interested',
+            'no-answer': 'failed',
+            'busy': 'failed',
+            'switched-off': 'failed',
+            'invalid-number': 'failed',
+            'call-dropped': 'failed',
+            'copied-to-lead': 'converted'
+        };
 
         let total = 0;
-        let pending = 0;
+        let pendingCount = 0;
 
-        // Add counts from backend
+        // stats is an array of { _id: 'status-string', count: number }
         stats.forEach(stat => {
-            const statusKey = (stat._id || 'pending').toLowerCase();
-            total += stat.count;
-            if (statusKey === 'pending') pending = stat.count;
+            const rawStatus = (stat._id || 'pending').toLowerCase();
+            const count = stat.count;
+            total += count;
 
-            if (result[statusKey]) {
-                result[statusKey].count = stat.count;
+            if (rawStatus === 'pending') {
+                pendingCount = count;
+            }
+
+            const groupKey = statusMapping[rawStatus];
+            if (groupKey && groupedStats[groupKey]) {
+                groupedStats[groupKey].count += count;
             } else {
-                result[statusKey] = {
-                    count: stat.count,
-                    color: '#A3A3A3',
-                    label: stat._id || 'Pending'
-                };
+                // Fallback for unknown statuses, map to pending or keep separate?
+                // For safety, let's just add to pending if unknown, or ignore.
+                // Current logic: map to pending if undefined
+                groupedStats['pending'].count += count;
             }
         });
 
-        const rate = total > 0 ? Math.round(((total - pending) / total) * 100) : 0;
-        return { summaryData: Object.values(result), completionRate: rate };
+        // Calculate rate based on total vs pending
+        // If we want completion rate to be (Total - Pending) / Total
+        const rate = total > 0 ? Math.round(((total - pendingCount) / total) * 100) : 0;
+
+        return {
+            summaryData: Object.values(groupedStats),
+            completionRate: rate
+        };
     }, [stats]);
 
     useEffect(() => {
