@@ -4,8 +4,6 @@ import { Server } from 'socket.io'
 const userIdToSocketIds = new Map()
 let ioInstance = null
 
-
-
 export default function setupSocket(server) {
 	const io = new Server(server, {
 		cors: {
@@ -22,7 +20,12 @@ export default function setupSocket(server) {
 		// Client should emit 'register' right after connect
 		socket.on('register', ({ userId, fullName, isAdmin, roles, assignedBrands }) => {
 			try {
+				if (!userId) {
+					console.warn('Socket registration attempt without userId');
+					return;
+				}
 				const uid = String(userId)
+				console.log(`Registering user ${uid} (${fullName})`);
 				const isFirstConnection = !userIdToSocketIds.has(uid)
 				currentUserId = uid
 
@@ -70,8 +73,6 @@ export default function setupSocket(server) {
 				}
 			}
 		})
-
-
 	})
 
 	return io

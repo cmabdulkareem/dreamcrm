@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { io } from 'socket.io-client';
 import axios from 'axios';
 import API from '../config/api';
 import ComponentCard from '../components/common/ComponentCard';
 import PageBreadCrumb from '../components/common/PageBreadCrumb';
 import PageMeta from '../components/common/PageMeta';
 import { UserCircleIcon } from '../icons';
+import { useNotifications } from '../context/NotificationContext';
 
 const UserUsageAnalysis = () => {
     const [users, setUsers] = useState([]);
@@ -22,27 +22,35 @@ const UserUsageAnalysis = () => {
         }
     };
 
+    const { socket } = useNotifications();
+
     useEffect(() => {
         fetchStats();
+    }, []);
 
-        // Socket setup for real-time presence
-        const socketUrl = API.replace('/api', '');
-        const socket = io(socketUrl, { withCredentials: true });
+    useEffect(() => {
+        if (!socket) return;
 
-        socket.on('user:online', (data) => {
+        const handleOnline = (data) => {
             setUsers(prev => prev.map(u =>
                 String(u.id) === String(data.userId) ? { ...u, isOnline: true } : u
             ));
-        });
+        };
 
-        socket.on('user:offline', (data) => {
+        const handleOffline = (data) => {
             setUsers(prev => prev.map(u =>
                 String(u.id) === String(data.userId) ? { ...u, isOnline: false } : u
             ));
-        });
+        };
 
-        return () => socket.disconnect();
-    }, []);
+        socket.on('user:online', handleOnline);
+        socket.on('user:offline', handleOffline);
+
+        return () => {
+            socket.off('user:online', handleOnline);
+            socket.off('user:offline', handleOffline);
+        };
+    }, [socket]);
 
     const formatLastLogin = (date) => {
         if (!date) return "Never logged in";
