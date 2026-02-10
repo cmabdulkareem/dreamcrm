@@ -71,5 +71,15 @@ const callListSchema = new mongoose.Schema({
 callListSchema.index({ brand: 1, createdAt: -1 });
 callListSchema.index({ brand: 1, assignedTo: 1, createdAt: -1 });
 
+// Unique index for phoneNumber scoped by brand
+// Use partialFilterExpression to allow multiple empty phone numbers
+callListSchema.index(
+    { brand: 1, phoneNumber: 1 },
+    {
+        unique: true,
+        partialFilterExpression: { phoneNumber: { $ne: "" } }
+    }
+);
+
 const CallList = mongoose.model('CallList', callListSchema);
 export default CallList;

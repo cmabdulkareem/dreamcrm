@@ -157,6 +157,13 @@ export const createCallList = async (req, res) => {
             return res.status(400).json({ message: "At least one field (Name, Phone, or Social Media ID) must be provided." });
         }
 
+        if (phoneNumber) {
+            const existingEntry = await CallList.findOne({ phoneNumber, brand: brandId });
+            if (existingEntry) {
+                return res.status(400).json({ message: `A call list entry with phone number ${phoneNumber} already exists.` });
+            }
+        }
+
         const newCallList = new CallList({
             name: name || '',
             phoneNumber: phoneNumber || '',
@@ -199,6 +206,25 @@ export const updateCallList = async (req, res) => {
             return res.status(400).json({ message: "At least one field (Name, Phone, or Social Media ID) must be provided." });
         }
 
+        const query = { _id: id, ...req.brandFilter };
+        const existingCallList = await CallList.findOne(query);
+
+        if (!existingCallList) {
+            return res.status(404).json({ message: "Call list entry not found." });
+        }
+
+        // Check if phone number is being changed to an existing one
+        if (phoneNumber && phoneNumber !== existingCallList.phoneNumber) {
+            const duplicateEntry = await CallList.findOne({
+                phoneNumber,
+                brand: existingCallList.brand,
+                _id: { $ne: id }
+            });
+            if (duplicateEntry) {
+                return res.status(400).json({ message: `A call list entry with phone number ${phoneNumber} already exists.` });
+            }
+        }
+
         const updateData = {
             name: name || '',
             phoneNumber: phoneNumber || '',
@@ -209,7 +235,6 @@ export const updateCallList = async (req, res) => {
             assignedTo: assignedTo || null
         };
 
-        const query = { _id: id, ...req.brandFilter };
         const updatedCallList = await CallList.findOneAndUpdate(
             query,
             updateData,
@@ -272,6 +297,11 @@ export const importCallLists = async (req, res) => {
 
         const validEntries = [];
         const skippedEntries = [];
+        const seenPhoneNumbers = new Set();
+
+        // Get existing phone numbers for this brand to check against
+        const existingEntries = await CallList.find({ brand: brandId, phoneNumber: { $ne: "" } }).select('phoneNumber');
+        const existingPhoneNumbers = new Set(existingEntries.map(e => e.phoneNumber));
 
         for (const entry of entries) {
             const { name, phoneNumber, socialMediaId, source, purpose, remarks } = entry;
@@ -280,6 +310,22 @@ export const importCallLists = async (req, res) => {
             if (!name && !phoneNumber && !socialMediaId && !source && !purpose) {
                 skippedEntries.push({ entry, reason: "Missing data (Name, Phone, Social Media ID, Source, or Purpose)" });
                 continue;
+            }
+
+            // Check for duplicates in the import file itself
+            if (phoneNumber && seenPhoneNumbers.has(phoneNumber)) {
+                skippedEntries.push({ entry, reason: `Duplicate phone number within import: ${phoneNumber}` });
+                continue;
+            }
+
+            // Check for duplicates in the database
+            if (phoneNumber && existingPhoneNumbers.has(phoneNumber)) {
+                skippedEntries.push({ entry, reason: `Phone number already exists: ${phoneNumber}` });
+                continue;
+            }
+
+            if (phoneNumber) {
+                seenPhoneNumbers.add(phoneNumber);
             }
 
             validEntries.push({
@@ -297,7 +343,7 @@ export const importCallLists = async (req, res) => {
 
         if (validEntries.length === 0) {
             return res.status(400).json({
-                message: "No valid entries found to import.",
+                message: "No valid or new entries found to import.",
                 skippedCount: skippedEntries.length,
                 skippedEntries
             });

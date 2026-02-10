@@ -8,8 +8,10 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const BACKUP_DIR = path.join(__dirname, '../backups');
-const UPLOADS_DIR = path.join(__dirname, '../uploads');
+import { getBaseUploadDir } from '../utils/uploadHelper.js';
+
+const UPLOADS_DIR = getBaseUploadDir();
+const BACKUP_DIR = path.join(UPLOADS_DIR, 'backups');
 
 // Ensure backup directory exists
 if (!fs.existsSync(BACKUP_DIR)) {
@@ -57,7 +59,10 @@ export const createBackup = async (req, res) => {
 
         // 2. Add Uploads to zip
         if (fs.existsSync(UPLOADS_DIR)) {
-            archive.directory(UPLOADS_DIR, 'uploads');
+            archive.glob('**/*', {
+                cwd: UPLOADS_DIR,
+                ignore: ['backups/**', 'backups']
+            }, { prefix: 'uploads' });
         }
 
         await archive.finalize();
