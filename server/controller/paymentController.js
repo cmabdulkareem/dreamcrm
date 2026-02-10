@@ -6,6 +6,7 @@ import Brand from '../model/brandModel.js';
 import ReceiptVoucher from '../model/receiptModel.js';
 import { getFinancialYearRange } from '../utils/dateUtils.js';
 import { logActivity } from "../utils/activityLogger.js";
+import { emitNotification } from '../realtime/socket.js';
 
 // Create new payment
 export const createPayment = async (req, res) => {
@@ -77,6 +78,30 @@ export const createPayment = async (req, res) => {
             entityId: newPayment._id,
             description: `Recorded payment of ₹${amount} for ${studentId ? 'student' : 'lead'}`
         });
+
+        // Notification Logic
+        try {
+            const collectorName = req.user.fullName || "Unknown";
+            const entity = studentId ? await Student.findById(studentId) : await Customer.findById(leadId);
+            const entityName = entity ? entity.fullName : (studentId ? "Student" : "Lead");
+
+            const notificationData = {
+                userName: collectorName,
+                action: 'collected payment of',
+                entityName: `₹${amount} from ${entityName}`,
+                module: 'Finance',
+                actionUrl: `/finance`,
+                metadata: { paymentId: newPayment._id },
+                timestamp: new Date().toISOString()
+            };
+
+            emitNotification({
+                brandId: targetBrandId,
+                notification: notificationData
+            });
+        } catch (notifError) {
+            console.error('Error sending payment notification:', notifError);
+        }
 
         return res.status(201).json({
             message: "Payment recorded successfully.",

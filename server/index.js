@@ -100,6 +100,22 @@ app.use('/api/prospect-database', prospectDatabaseRoutes)
 app.use('/api/holidays', holidayRoutes)
 app.use('/api/student-portal', studentPortalRoutes)
 
+// TEMPORARY: Debug endpoint to test notifications
+import { emitNotification } from './realtime/socket.js';
+app.get('/api/test-notification', (req, res) => {
+  const brandId = req.headers['x-brand-id'] || req.query.brandId;
+  const notification = {
+    userName: "System Debugger",
+    action: "sent a",
+    entityName: "Test Notification",
+    module: "Debug System",
+    actionUrl: "/dashboard",
+    timestamp: new Date().toISOString()
+  };
+  emitNotification({ brandId, notification });
+  res.json({ message: "Test notification emitted", brandId, notification });
+});
+
 // ================= SPA FALLBACK =================
 
 app.use((req, res, next) => {

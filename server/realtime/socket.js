@@ -1,8 +1,9 @@
-import { Server } from 'socket.io'
-
-// Map userId -> Set of socketIds
-const userIdToSocketIds = new Map()
-let ioInstance = null
+// Helper to normalize IDs (handle objects, strings, ObjectIds)
+const normalizeId = (id) => {
+	if (!id) return null;
+	if (typeof id === 'object' && id._id) return String(id._id);
+	return String(id);
+};
 
 export default function setupSocket(server) {
 	const io = new Server(server, {
@@ -25,8 +26,8 @@ export default function setupSocket(server) {
 					console.warn('Socket registration attempt without userId');
 					return;
 				}
-				const uid = String(userId)
-				console.log(`Registering user ${uid} (${fullName})`);
+				const uid = normalizeId(userId);
+				console.log(`[Socket] Registering user ${uid} (${fullName}) | Roles: ${JSON.stringify(roles)}`);
 				const isFirstConnection = !userIdToSocketIds.has(uid)
 				currentUserId = uid
 
@@ -41,22 +42,23 @@ export default function setupSocket(server) {
 				// Join a personal room per user
 				socket.join(`user:${currentUserId}`)
 
-				// Join Admin room
-				if (isAdmin || roles?.includes('Owner') || roles?.includes('Admin')) {
+				// Join Admin room (Owners/Admins see everything)
+				if (isAdmin === true || roles?.includes('Owner') || roles?.includes('Admin')) {
+					console.log(`[Socket] User ${uid} joined room:admin`);
 					socket.join('room:admin')
 				}
 
-				// Join Brand rooms (for Managers/Admins)
+				// Join Brand rooms
 				if (assignedBrands && Array.isArray(assignedBrands)) {
 					assignedBrands.forEach(brand => {
-						const brandId = typeof brand === 'object' ? brand._id : brand
-						if (brandId) {
-							socket.join(`brand:${String(brandId)}`)
+						const bId = normalizeId(brand);
+						if (bId) {
+							console.log(`[Socket] User ${uid} joined brand:${bId}`);
+							socket.join(`brand:${bId}`)
 						}
 					})
 				}
 
-				// Optionally acknowledge
 				socket.emit('registered', { ok: true })
 			} catch (e) {
 				console.error('Error registering socket:', e)
@@ -71,6 +73,7 @@ export default function setupSocket(server) {
 				if (set.size === 0) {
 					userIdToSocketIds.delete(currentUserId)
 					ioInstance.emit('user:offline', { userId: currentUserId })
+					console.log(`[Socket] User ${currentUserId} is now offline`);
 				}
 			}
 		})
@@ -81,21 +84,31 @@ export default function setupSocket(server) {
 
 // Export function to emit generic notifications
 export function emitNotification({ recipients, brandId, notification }) {
-	if (!ioInstance) return
+	if (!ioInstance) {
+		console.warn('[Socket] emitNotification called before ioInstance initialized');
+		return;
+	}
 
-	// 1. Notify specific users (e.g. Faculties)
-	if (recipients && recipients.length > 0) {
+	// 1. Notify specific users (e.g. Assignees)
+	if (recipients && Array.isArray(recipients)) {
 		recipients.forEach(userId => {
-			ioInstance.to(`user:${String(userId)}`).emit('notification', notification)
+			const uid = normalizeId(userId);
+			if (uid) {
+				ioInstance.to(`user:${uid}`).emit('notification', notification)
+			}
 		})
 	}
 
-	// 2. Notify Admins (Global)
+	// 2. Notify Admins/Owners (Global) - room:admin recipients get every notification
 	ioInstance.to('room:admin').emit('notification', notification)
 
 	// 3. Notify Brand Managers (Scoped)
 	if (brandId) {
-		ioInstance.to(`brand:${String(brandId)}`).emit('notification', notification)
+		const bId = normalizeId(brandId);
+		if (bId) {
+			console.log(`[Socket] Emitting notification to brand:${bId}`);
+			ioInstance.to(`brand:${bId}`).emit('notification', notification)
+		}
 	}
 }
 

@@ -1,5 +1,6 @@
 import leaveModel from '../model/leaveModel.js';
 import { hasAdminOrManagerOrCounsellorAccess } from '../utils/roleHelpers.js';
+import { emitNotification } from '../realtime/socket.js';
 
 // Generate unique ticket number
 const generateTicketNumber = async () => {
@@ -134,6 +135,29 @@ export const createLeave = async (req, res) => {
 
     await newLeave.save();
 
+    // Notification Logic
+    try {
+      const creatorName = req.user.fullName || employeeName || "Unknown";
+      const targetBrandId = req.headers['x-brand-id'] || req.body.brandId || null;
+
+      const notificationData = {
+        userName: creatorName,
+        action: 'submitted a leave request',
+        entityName: `Ticket: ${newLeave.ticketNumber}`,
+        module: 'Leave Management',
+        actionUrl: `/leave-management`,
+        metadata: { leaveId: newLeave._id },
+        timestamp: new Date().toISOString()
+      };
+
+      emitNotification({
+        brandId: targetBrandId,
+        notification: notificationData
+      });
+    } catch (notifError) {
+      console.error('Error sending leave creation notification:', notifError);
+    }
+
     return res.status(201).json({
       message: "Leave request submitted successfully.",
       ticketNumber: newLeave.ticketNumber,
@@ -235,6 +259,35 @@ export const updateLeaveStatus = async (req, res) => {
     leave.status = status;
     leave.actionBy = req.user._id; // Track who performed the action
     await leave.save();
+
+    // Notification Logic
+    try {
+      const updaterName = req.user.fullName || "Unknown";
+      const notificationData = {
+        userName: updaterName,
+        action: `${status} leave request`,
+        entityName: `Ticket: ${leave.ticketNumber}`,
+        module: 'Leave Management',
+        actionUrl: `/leave-management`,
+        metadata: { leaveId: leave._id, status },
+        timestamp: new Date().toISOString()
+      };
+
+      emitNotification({
+        brandId: leave.brand,
+        notification: notificationData
+      });
+
+      // Also notify the specific user who applied for leave
+      if (leave.userId) {
+        emitNotification({
+          recipients: [leave.userId],
+          notification: notificationData
+        });
+      }
+    } catch (notifError) {
+      console.error('Error sending leave status notification:', notifError);
+    }
 
     return res.status(200).json({
       message: `Leave ${status} successfully.`,

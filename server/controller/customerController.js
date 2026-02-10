@@ -422,6 +422,28 @@ export const deleteCustomer = async (req, res) => {
       return res.status(404).json({ message: "Customer not found." });
     }
 
+    // Notification Logic (Optional: Owner-only action, but good for logs/audits)
+    try {
+      const notificationData = {
+        userName: req.user.fullName || "Owner",
+        action: 'permanently deleted',
+        entityName: `lead: ${customer.fullName}`,
+        module: 'Lead Management',
+        actionUrl: '/lead-management',
+        metadata: { leadId: id },
+        timestamp: new Date().toISOString()
+      };
+
+      if (customer.brand) {
+        emitSocketNotification({
+          brandId: customer.brand,
+          notification: notificationData
+        });
+      }
+    } catch (notifError) {
+      console.error('Error sending delete lead notification:', notifError);
+    }
+
     return res.status(200).json({ message: "Customer deleted successfully." });
   } catch (error) {
     console.error("Delete customer error:", error);
@@ -817,6 +839,28 @@ export const importLeads = async (req, res) => {
           error: err.message
         });
       }
+    }
+
+    // Notification Logic
+    try {
+      if (successCount > 0) {
+        const notificationData = {
+          userName: req.user.fullName || "Unknown",
+          action: 'imported',
+          entityName: `${successCount} leads via CSV`,
+          module: 'Lead Management',
+          actionUrl: '/lead-management',
+          metadata: { count: successCount },
+          timestamp: new Date().toISOString()
+        };
+
+        emitSocketNotification({
+          brandId: brandId,
+          notification: notificationData
+        });
+      }
+    } catch (notifError) {
+      console.error('Error sending import notification:', notifError);
     }
 
     return res.status(200).json({

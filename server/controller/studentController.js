@@ -553,6 +553,28 @@ export const deleteStudent = async (req, res) => {
       return res.status(404).json({ message: "Student not found." });
     }
 
+    // Notification Logic
+    try {
+      const notificationData = {
+        userName: req.user.fullName || "Admin",
+        action: 'deleted student record',
+        entityName: student.fullName,
+        module: 'Student Management',
+        actionUrl: '/student-management',
+        metadata: { studentId: id },
+        timestamp: new Date().toISOString()
+      };
+
+      if (student.brand) {
+        emitNotification({
+          brandId: student.brand,
+          notification: notificationData
+        });
+      }
+    } catch (notifError) {
+      console.error('Error sending student delete notification:', notifError);
+    }
+
     return res.status(200).json({ message: "Student deleted successfully." });
   } catch (error) {
     console.error("Delete student error:", error);
