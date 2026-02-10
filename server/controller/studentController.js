@@ -10,6 +10,7 @@ import { v4 as uuidv4 } from "uuid";
 // Configure multer for file uploads
 import { getUploadDir, getUploadUrl } from "../utils/uploadHelper.js";
 import { emitNotification } from '../realtime/socket.js';
+import { logActivity } from "../utils/activityLogger.js";
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -183,6 +184,11 @@ export const createStudent = async (req, res) => {
       console.error('Error sending student create notification:', notifError);
     }
 
+    // Log activity
+    await logActivity(req.user.id, 'CREATE', 'Students', {
+      entityId: newStudent._id,
+      description: `Created student: ${newStudent.fullName}`
+    });
 
     return res.status(201).json({
       message: "Student created successfully.",
@@ -474,6 +480,12 @@ export const updateStudent = async (req, res) => {
     } catch (notifError) {
       console.error('Error sending student update notification:', notifError);
     }
+
+    // Log activity
+    await logActivity(req.user.id, 'UPDATE', 'Students', {
+      entityId: student._id,
+      description: `Updated student: ${student.fullName}`
+    });
 
     return res.status(200).json({
       message: "Student updated successfully.",

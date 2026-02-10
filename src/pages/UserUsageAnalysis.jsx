@@ -36,12 +36,28 @@ const UserUsageAnalysis = () => {
         });
     };
 
-    const getStatusColor = (days) => {
-        if (days === null) return "text-gray-400";
-        if (days === 0) return "text-green-500";
-        if (days < 3) return "text-blue-500";
-        if (days < 7) return "text-yellow-500";
+    const getStatusBadge = (status) => {
+        switch (status) {
+            case 'Active': return "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400";
+            case 'Inactive': return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400";
+            case 'Dormant': return "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400";
+            default: return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400";
+        }
+    };
+
+    const getScoreColor = (score) => {
+        if (score >= 70) return "text-green-500";
+        if (score >= 40) return "text-blue-500";
+        if (score >= 15) return "text-yellow-500";
         return "text-red-500";
+    };
+
+    const getRiskBadge = (risk) => {
+        switch (risk) {
+            case 'High': return "bg-red-100 text-red-700 ring-1 ring-red-400/30";
+            case 'Medium': return "bg-orange-100 text-orange-700 ring-1 ring-orange-400/30";
+            default: return "bg-gray-100 text-gray-700 ring-1 ring-gray-400/30";
+        }
     };
 
     return (
@@ -61,50 +77,97 @@ const UserUsageAnalysis = () => {
                 ) : (
                     users.map((user) => (
                         <ComponentCard key={user.id}>
-                            <div className="flex flex-col items-center p-2">
-                                <div className="relative mb-4">
-                                    {user.avatar ? (
-                                        <img
-                                            src={user.avatar}
-                                            alt={user.fullName}
-                                            className="w-20 h-20 rounded-full object-cover border-2 border-gray-100 dark:border-gray-800"
-                                        />
-                                    ) : (
-                                        <div className="w-20 h-20 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400">
-                                            <UserCircleIcon className="w-12 h-12" />
-                                        </div>
-                                    )}
-                                    <div className={`absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-white dark:border-gray-900 ${user.accountStatus === 'Active' ? 'bg-green-500' : 'bg-red-500'}`} />
+                            <div className="flex flex-col p-1">
+                                {/* Header Area */}
+                                <div className="flex items-start justify-between mb-4">
+                                    <div className="relative">
+                                        {user.avatar ? (
+                                            <img
+                                                src={user.avatar}
+                                                alt={user.fullName}
+                                                className="w-16 h-16 rounded-2xl object-cover border-2 border-gray-100 dark:border-gray-800"
+                                            />
+                                        ) : (
+                                            <div className="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400">
+                                                <UserCircleIcon className="w-10 h-10" />
+                                            </div>
+                                        )}
+                                        <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white dark:border-gray-900 ${user.accountStatus === 'Active' ? 'bg-green-500' : 'bg-red-500'}`} />
+                                    </div>
+
+                                    <div className="flex flex-col items-end">
+                                        <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${getStatusBadge(user.usageStatus)}`}>
+                                            {user.usageStatus}
+                                        </span>
+                                        {user.churnRisk !== 'Low' && (
+                                            <span className={`mt-2 px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${getRiskBadge(user.churnRisk)}`}>
+                                                Risk: {user.churnRisk}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
 
-                                <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 text-center mb-1">
-                                    {user.fullName}
-                                </h3>
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 truncate w-full text-center">
-                                    {user.email}
-                                </p>
+                                {/* User Info */}
+                                <div className="mb-4">
+                                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100 leading-tight">
+                                        {user.fullName}
+                                    </h3>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                        {user.email}
+                                    </p>
+                                </div>
 
-                                <div className="flex flex-wrap justify-center gap-1 mb-4">
+                                {/* Roles */}
+                                <div className="flex flex-wrap gap-1 mb-4">
                                     {user.roles.map((role) => (
-                                        <span key={role} className="px-2 py-0.5 text-[10px] font-medium bg-brand-50 text-brand-600 dark:bg-brand-900/20 dark:text-brand-400 rounded-full">
+                                        <span key={role} className="px-2 py-0.5 text-[9px] font-semibold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 rounded-md">
                                             {role}
                                         </span>
                                     ))}
                                 </div>
 
-                                <div className="w-full pt-4 border-t border-gray-100 dark:border-gray-800 space-y-2">
-                                    <div className="flex items-center justify-between text-xs">
+                                {/* Metrics Dashboard */}
+                                <div className="grid grid-cols-2 gap-3 mb-4 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-2xl">
+                                    <div className="text-center">
+                                        <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-1 uppercase font-bold tracking-tighter">Engagement</p>
+                                        <p className={`text-xl font-black ${getScoreColor(user.engagementScore)}`}>
+                                            {user.engagementScore}<span className="text-[10px]">%</span>
+                                        </p>
+                                    </div>
+                                    <div className="text-center border-l border-gray-200 dark:border-gray-800">
+                                        <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-1 uppercase font-bold tracking-tighter">30d Actions</p>
+                                        <p className="text-xl font-black text-gray-800 dark:text-gray-100">
+                                            {user.totalActions30d}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Footer Details */}
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between text-[11px]">
                                         <span className="text-gray-500 dark:text-gray-400">Last Login:</span>
-                                        <span className="font-medium text-gray-700 dark:text-gray-300">
-                                            {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
+                                        <span className="font-semibold text-gray-700 dark:text-gray-300">
+                                            {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString('en-GB') : 'Never'}
                                         </span>
                                     </div>
-                                    <div className="flex items-center justify-between text-xs">
-                                        <span className="text-gray-500 dark:text-gray-400">Activity:</span>
-                                        <span className={`font-bold ${getStatusColor(user.daysInactive)}`}>
-                                            {user.daysInactive === null ? "Inactive" : user.daysInactive === 0 ? "Online Today" : `${user.daysInactive} days missed`}
+                                    <div className="flex items-center justify-between text-[11px]">
+                                        <span className="text-gray-500 dark:text-gray-400">Last Action:</span>
+                                        <span className="font-semibold text-gray-700 dark:text-gray-300">
+                                            {user.daysSinceLastActivity === null ? "No activity" : user.daysSinceLastActivity === 0 ? "Today" : `${user.daysSinceLastActivity}d ago`}
                                         </span>
                                     </div>
+                                    {user.modulesUsed && user.modulesUsed.length > 0 && (
+                                        <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
+                                            <p className="text-[9px] text-gray-400 uppercase font-bold mb-1">Module Adoption</p>
+                                            <div className="flex gap-2 text-gray-600 dark:text-gray-400">
+                                                {user.modulesUsed.map(mod => (
+                                                    <span key={mod} title={mod} className="text-[10px] px-1.5 py-0.5 bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 rounded">
+                                                        {mod.charAt(0)}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </ComponentCard>

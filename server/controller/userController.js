@@ -1,6 +1,7 @@
 import userModel from "../model/userModel.js";
 import brandModel from "../model/brandModel.js"; // Ensure Brand model is registered
 import mongoose from "mongoose";
+import ActivityLog from "../model/activityLogModel.js";
 
 // Helper to get base URL with correct protocol (checking for proxy)
 const getBaseUrl = (req) => {
@@ -1134,15 +1135,77 @@ export const getUserUsageStats = async (req, res) => {
       .select('fullName email avatar roles lastLogin accountStatus')
       .sort({ lastLogin: -1 });
 
-    const formattedUsers = users.map(user => ({
-      id: user._id,
-      fullName: user.fullName,
-      email: user.email,
-      avatar: user.avatar ? `${getBaseUrl(req)}${user.avatar}` : null,
-      roles: user.roles,
-      lastLogin: user.lastLogin,
-      accountStatus: user.accountStatus,
-      daysInactive: user.lastLogin ? Math.floor((new Date() - new Date(user.lastLogin)) / (1000 * 60 * 60 * 24)) : null
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+    const sevenDaysAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
+
+    const formattedUsers = await Promise.all(users.map(async (user) => {
+      // Fetch activity counts
+      const totalActions30d = await ActivityLog.countDocuments({
+        userId: user._id,
+        createdAt: { $gte: thirtyDaysAgo }
+      });
+
+      const totalActions7d = await ActivityLog.countDocuments({
+        userId: user._id,
+        createdAt: { $gte: sevenDaysAgo }
+      });
+
+      // Fetch last meaningful activity
+      const lastActivity = await ActivityLog.findOne({
+        userId: user._id,
+        action: { $ne: 'LOGIN' }
+      }).sort({ createdAt: -1 });
+
+      // Calculate Adoption (different modules used in 30 days)
+      const modulesUsed = await ActivityLog.distinct('module', {
+        userId: user._id,
+        createdAt: { $gte: thirtyDaysAgo }
+      });
+
+      // Calculate Metrics
+      const daysSinceLastActivity = lastActivity
+        ? Math.floor((now - new Date(lastActivity.createdAt)) / (1000 * 60 * 60 * 24))
+        : null;
+
+      const daysInactive = user.lastLogin
+        ? Math.floor((now - new Date(user.lastLogin)) / (1000 * 60 * 60 * 24))
+        : null;
+
+      // Engagement Score (0-100)
+      // Logic: frequency (7d vs 30d) + variety of modules
+      const frequencyScore = Math.min((totalActions7d * 5) + (totalActions30d * 1), 60);
+      const varietyScore = Math.min(modulesUsed.length * 10, 40);
+      const engagementScore = frequencyScore + varietyScore;
+
+      // Usage Status
+      let usageStatus = 'Active';
+      if (!lastActivity || daysSinceLastActivity > 14) usageStatus = 'Dormant';
+      else if (daysSinceLastActivity > 7) usageStatus = 'Inactive';
+
+      // Churn Risk
+      let churnRisk = 'Low';
+      const actionsPrevPeriod = totalActions30d - totalActions7d;
+      // If activity in last 7 days is significantly lower than average of previous 23 days
+      if (totalActions30d > 5 && totalActions7d < (actionsPrevPeriod / 3)) churnRisk = 'High';
+      else if (totalActions30d > 5 && totalActions7d < (actionsPrevPeriod / 2)) churnRisk = 'Medium';
+
+      return {
+        id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        avatar: user.avatar ? `${getBaseUrl(req)}${user.avatar}` : null,
+        roles: user.roles,
+        lastLogin: user.lastLogin,
+        accountStatus: user.accountStatus,
+        daysInactive,
+        daysSinceLastActivity,
+        engagementScore,
+        usageStatus,
+        churnRisk,
+        totalActions30d,
+        modulesUsed
+      };
     }));
 
     return res.status(200).json({ users: formattedUsers });

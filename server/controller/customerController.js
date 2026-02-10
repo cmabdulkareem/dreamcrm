@@ -3,6 +3,7 @@ import userModel from "../model/userModel.js";
 import { emitNotification as emitSocketNotification } from '../realtime/socket.js';
 import { isAdmin, isCounsellor } from "../utils/roleHelpers.js";
 import { isManager } from "../middleware/roleMiddleware.js";
+import { logActivity } from "../utils/activityLogger.js";
 
 // Create new customer/lead
 export const createCustomer = async (req, res) => {
@@ -96,6 +97,12 @@ export const createCustomer = async (req, res) => {
     });
 
     await newCustomer.save();
+
+    // Log activity
+    await logActivity(req.user.id, 'CREATE', 'Leads', {
+      entityId: newCustomer._id,
+      description: `Created lead: ${newCustomer.fullName}`
+    });
 
 
     // Fetch the updated customer with populated user details
@@ -285,6 +292,12 @@ export const updateCustomer = async (req, res) => {
       console.error('Error sending update notification:', notifError);
     }
 
+    // Log activity
+    await logActivity(req.user.id, 'UPDATE', 'Leads', {
+      entityId: customer._id,
+      description: `Updated lead: ${customer.fullName}`
+    });
+
     return res.status(200).json({
       message: "Customer updated successfully.",
       customer: updatedCustomer
@@ -357,6 +370,12 @@ export const addRemark = async (req, res) => {
     } catch (notifError) {
       console.error('Error sending remark notification:', notifError);
     }
+
+    // Log activity
+    await logActivity(req.user.id, 'REMARK', 'Leads', {
+      entityId: customer._id,
+      description: `Added remark to lead: ${customer.fullName}`
+    });
 
     return res.status(200).json({
       message: "Remark added successfully.",

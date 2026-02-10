@@ -5,6 +5,7 @@ import Customer from '../model/customerModel.js';
 import Brand from '../model/brandModel.js';
 import ReceiptVoucher from '../model/receiptModel.js';
 import { getFinancialYearRange } from '../utils/dateUtils.js';
+import { logActivity } from "../utils/activityLogger.js";
 
 // Create new payment
 export const createPayment = async (req, res) => {
@@ -71,9 +72,11 @@ export const createPayment = async (req, res) => {
 
         await newPayment.save();
 
-        // Optional: Update Student's total paid amount if linked to a student
-        // This keeps Student model vaguely in sync if needed, but Payment model is source of truth for dashboard.
-        // For now, we just save the payment record.
+        // Log activity
+        await logActivity(req.user.id, 'CREATE', 'Finance', {
+            entityId: newPayment._id,
+            description: `Recorded payment of ₹${amount} for ${studentId ? 'student' : 'lead'}`
+        });
 
         return res.status(201).json({
             message: "Payment recorded successfully.",
