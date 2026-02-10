@@ -1,3 +1,9 @@
+import { Server } from 'socket.io'
+
+// Map userId -> Set of socketIds
+const userIdToSocketIds = new Map()
+let ioInstance = null
+
 // Helper to normalize IDs (handle objects, strings, ObjectIds)
 const normalizeId = (id) => {
 	if (!id) return null;
