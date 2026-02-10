@@ -12,7 +12,7 @@ config({ quiet: true })
 
 import './config/db.js'
 import routes from './routes/userRoutes.js'
-import setupSocket from './realtime/socket.js'
+import setupSocket, { emitNotification } from './realtime/socket.js'
 import customerRoutes from './routes/customerRoutes.js'
 import campaignRoutes from './routes/campaignRoute.js'
 import emailRoutes from './routes/emailRoute.js'
@@ -101,7 +101,6 @@ app.use('/api/holidays', holidayRoutes)
 app.use('/api/student-portal', studentPortalRoutes)
 
 // TEMPORARY: Debug endpoint to test notifications
-import { emitNotification } from './realtime/socket.js';
 app.get('/api/test-notification', (req, res) => {
   const brandId = req.headers['x-brand-id'] || req.query.brandId;
   const notification = {
