@@ -6,8 +6,9 @@ let ioInstance = null
 
 export default function setupSocket(server) {
 	const io = new Server(server, {
+		path: '/api/socket.io',
 		cors: {
-			origin: true, // reflect request origin
+			origin: ["https://dreamcrms.vercel.app", "https://dreamcrm.onrender.com", "https://crm.cdcinternational.in", "http://localhost:5173", "http://localhost:5174"],
 			credentials: true
 		}
 	})

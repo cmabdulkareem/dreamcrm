@@ -59,8 +59,9 @@ export const NotificationProvider = ({ children }) => {
     console.log('Attempting socket connection to:', socketUrl || 'current host');
 
     const newSocket = io(socketUrl, {
+      path: '/api/socket.io',
       withCredentials: true,
-      transports: ['polling', 'websocket'], // Force polling first to see if it even tries
+      transports: ['polling', 'websocket']
     });
 
     newSocket.on('connect', () => {
