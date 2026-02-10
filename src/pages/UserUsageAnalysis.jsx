@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { io } from 'socket.io-client';
 import axios from 'axios';
 import API from '../config/api';
 import ComponentCard from '../components/common/ComponentCard';
@@ -23,6 +24,24 @@ const UserUsageAnalysis = () => {
 
     useEffect(() => {
         fetchStats();
+
+        // Socket setup for real-time presence
+        const socketUrl = API.replace('/api', '');
+        const socket = io(socketUrl, { withCredentials: true });
+
+        socket.on('user:online', (data) => {
+            setUsers(prev => prev.map(u =>
+                String(u.id) === String(data.userId) ? { ...u, isOnline: true } : u
+            ));
+        });
+
+        socket.on('user:offline', (data) => {
+            setUsers(prev => prev.map(u =>
+                String(u.id) === String(data.userId) ? { ...u, isOnline: false } : u
+            ));
+        });
+
+        return () => socket.disconnect();
     }, []);
 
     const formatLastLogin = (date) => {
@@ -92,13 +111,19 @@ const UserUsageAnalysis = () => {
                                                 <UserCircleIcon className="w-10 h-10" />
                                             </div>
                                         )}
-                                        <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white dark:border-gray-900 ${user.accountStatus === 'Active' ? 'bg-green-500' : 'bg-red-500'}`} />
+                                        <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white dark:border-gray-900 ${user.isOnline ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-gray-300'}`} />
                                     </div>
 
                                     <div className="flex flex-col items-end">
                                         <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${getStatusBadge(user.usageStatus)}`}>
                                             {user.usageStatus}
                                         </span>
+                                        {user.isOnline && (
+                                            <span className="mt-1 flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-50 text-[9px] font-bold text-green-600 animate-pulse border border-green-200 uppercase">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                                                Live Now
+                                            </span>
+                                        )}
                                         {user.churnRisk !== 'Low' && (
                                             <span className={`mt-2 px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${getRiskBadge(user.churnRisk)}`}>
                                                 Risk: {user.churnRisk}

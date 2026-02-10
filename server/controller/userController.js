@@ -1139,7 +1139,13 @@ export const getUserUsageStats = async (req, res) => {
     const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
     const sevenDaysAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
 
+    const { getOnlineUsers } = await import('../realtime/socket.js');
+    const onlineUserIds = getOnlineUsers();
+
     const formattedUsers = await Promise.all(users.map(async (user) => {
+      const userId = user._id;
+      const isOnline = onlineUserIds.includes(String(userId));
+
       // Fetch activity counts
       const totalActions30d = await ActivityLog.countDocuments({
         userId: user._id,
@@ -1180,8 +1186,13 @@ export const getUserUsageStats = async (req, res) => {
 
       // Usage Status
       let usageStatus = 'Active';
-      if (!lastActivity || daysSinceLastActivity > 14) usageStatus = 'Dormant';
-      else if (daysSinceLastActivity > 7) usageStatus = 'Inactive';
+      const effectiveDaysSinceAction = Math.min(
+        daysSinceLastActivity !== null ? daysSinceLastActivity : 999,
+        daysInactive !== null ? daysInactive : 999
+      );
+
+      if (effectiveDaysSinceAction > 14) usageStatus = 'Dormant';
+      else if (effectiveDaysSinceAction > 7) usageStatus = 'Inactive';
 
       // Churn Risk
       let churnRisk = 'Low';
@@ -1203,7 +1214,9 @@ export const getUserUsageStats = async (req, res) => {
         engagementScore,
         usageStatus,
         churnRisk,
+        isOnline,
         totalActions30d,
+        totalActions7d,
         modulesUsed
       };
     }));

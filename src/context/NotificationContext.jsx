@@ -166,6 +166,7 @@ export const NotificationProvider = ({ children }) => {
         getTimeAgo,
         isNotificationEnabled,
         areToastsEnabled,
+        socket,
       }}
     >
       {children}

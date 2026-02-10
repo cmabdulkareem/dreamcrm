@@ -4,6 +4,8 @@ import { Server } from 'socket.io'
 const userIdToSocketIds = new Map()
 let ioInstance = null
 
+
+
 export default function setupSocket(server) {
 	const io = new Server(server, {
 		cors: {
@@ -20,10 +22,17 @@ export default function setupSocket(server) {
 		// Client should emit 'register' right after connect
 		socket.on('register', ({ userId, fullName, isAdmin, roles, assignedBrands }) => {
 			try {
-				currentUserId = String(userId)
-				const set = userIdToSocketIds.get(currentUserId) || new Set()
+				const uid = String(userId)
+				const isFirstConnection = !userIdToSocketIds.has(uid)
+				currentUserId = uid
+
+				const set = userIdToSocketIds.get(uid) || new Set()
 				set.add(socket.id)
-				userIdToSocketIds.set(currentUserId, set)
+				userIdToSocketIds.set(uid, set)
+
+				if (isFirstConnection) {
+					io.emit('user:online', { userId: uid, fullName })
+				}
 
 				// Join a personal room per user
 				socket.join(`user:${currentUserId}`)
@@ -57,6 +66,7 @@ export default function setupSocket(server) {
 				set.delete(socket.id)
 				if (set.size === 0) {
 					userIdToSocketIds.delete(currentUserId)
+					ioInstance.emit('user:offline', { userId: currentUserId })
 				}
 			}
 		})
@@ -87,4 +97,6 @@ export function emitNotification({ recipients, brandId, notification }) {
 	}
 }
 
-
+export function getOnlineUsers() {
+	return Array.from(userIdToSocketIds.keys());
+}
