@@ -48,16 +48,22 @@ export const NotificationProvider = ({ children }) => {
 
   // Socket Connection
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      console.log('NotificationProvider: No user found, skipping socket connection');
+      return;
+    }
 
     // API is like "http://localhost:3000/api", we need "http://localhost:3000"
     const socketUrl = API.replace('/api', '');
+    console.log('Attempting socket connection to:', socketUrl || 'current host');
+
     const newSocket = io(socketUrl, {
       withCredentials: true,
+      transports: ['polling', 'websocket'], // Force polling first to see if it even tries
     });
 
     newSocket.on('connect', () => {
-      console.log('Socket connected:', newSocket.id);
+      console.log('✅ Socket connected successfully:', newSocket.id);
       // Register user with roles and brands
       // Safe check for user.brands
       const assignedBrands = Array.isArray(user.brands) ? user.brands : [];
@@ -69,6 +75,11 @@ export const NotificationProvider = ({ children }) => {
         roles: user.roles,
         assignedBrands: assignedBrands
       });
+      console.log('Sent register event for user:', user._id || user.id);
+    });
+
+    newSocket.on('connect_error', (err) => {
+      console.error('❌ Socket connection error:', err.message);
     });
 
     newSocket.on('notification', (data) => {
