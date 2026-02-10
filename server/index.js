@@ -56,6 +56,14 @@ app.use(compression())
 // ================= PATH SETUP =================
 
 // Static files
+app.get('/uploads/backups/:filename', (req, res) => {
+  const filePath = path.join(getBaseUploadDir(), 'backups', req.params.filename);
+  if (fs.existsSync(filePath)) {
+    return res.download(filePath);
+  }
+  res.status(404).send('Backup file not found');
+});
+
 app.use('/uploads/backups', express.static(path.join(getBaseUploadDir(), 'backups'), {
   setHeaders: (res) => {
     res.set('Content-Disposition', 'attachment');
