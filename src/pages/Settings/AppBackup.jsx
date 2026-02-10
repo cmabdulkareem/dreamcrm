@@ -49,11 +49,13 @@ const AppBackup = () => {
     };
 
     const handleDownload = (filename) => {
-        window.open(`${API}/backup/download/${filename}`, '_blank');
+        const baseUrl = API.replace(/\/api$/, '');
+        window.open(`${baseUrl}/uploads/backups/${filename}`, '_blank');
     };
 
     const handleCopyLink = (filename) => {
-        const url = `${API}/backup/download/${filename}`;
+        const baseUrl = API.replace(/\/api$/, '');
+        const url = `${baseUrl}/uploads/backups/${filename}`;
         navigator.clipboard.writeText(url).then(() => {
             toast.success('Download link copied to clipboard');
         }).catch(() => {
