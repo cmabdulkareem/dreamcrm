@@ -16,6 +16,7 @@ const BACKUP_DIR = path.join(UPLOADS_DIR, 'backups');
 // Ensure backup directory exists
 if (!fs.existsSync(BACKUP_DIR)) {
     fs.mkdirSync(BACKUP_DIR, { recursive: true });
+    try { fs.chmodSync(BACKUP_DIR, '755'); } catch (e) { }
 }
 
 export const createBackup = async (req, res) => {
@@ -30,6 +31,7 @@ export const createBackup = async (req, res) => {
         });
 
         output.on('close', () => {
+            try { fs.chmodSync(backupPath, '644'); } catch (e) { }
             res.status(200).json({
                 message: 'Backup created successfully',
                 filename: backupName,
@@ -109,6 +111,7 @@ export const downloadBackup = async (req, res) => {
         const filePath = path.join(BACKUP_DIR, filename);
 
         if (!fs.existsSync(filePath)) {
+            console.error(`Backup download failed: File not found at ${filePath}`);
             return res.status(404).json({ message: 'Backup file not found' });
         }
 
