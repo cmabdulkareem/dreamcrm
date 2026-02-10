@@ -56,6 +56,11 @@ app.use(compression())
 // ================= PATH SETUP =================
 
 // Static files
+app.use('/uploads/backups', express.static(path.join(getBaseUploadDir(), 'backups'), {
+  setHeaders: (res) => {
+    res.set('Content-Disposition', 'attachment');
+  }
+}))
 app.use('/uploads', express.static(getBaseUploadDir()))
 app.use(express.static(path.join(__dirname, '../dist')))
 app.use(express.static(path.join(__dirname, '../public')))
@@ -90,8 +95,11 @@ app.use('/api/student-portal', studentPortalRoutes)
 // ================= SPA FALLBACK =================
 
 app.use((req, res, next) => {
-  if (req.path.startsWith('/api/') || req.path.startsWith('/uploads/') || req.path.includes('.')) {
-    return next()
+  const isApiOrUpload = req.url.startsWith('/api/') || req.url.startsWith('/uploads/');
+  const hasExtension = req.url.split('?')[0].includes('.');
+
+  if (isApiOrUpload || hasExtension) {
+    return next();
   }
   res.sendFile(path.join(__dirname, '../dist/index.html'))
 })
