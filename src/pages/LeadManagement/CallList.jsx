@@ -587,7 +587,6 @@ export default function CallList() {
 
                         {/* Breakdown inside brackets */}
                         <div className="flex items-center gap-3 px-3 py-1.5 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-800">
-                            <span className="text-gray-400 font-light text-lg">(</span>
 
                             {breakdown.map((stat, idx) => (
                                 <div key={idx} className="flex items-center gap-1.5">
@@ -604,7 +603,6 @@ export default function CallList() {
                                 </div>
                             ))}
 
-                            <span className="text-gray-400 font-light text-lg">)</span>
                         </div>
 
                         {/* Pending Group */}
