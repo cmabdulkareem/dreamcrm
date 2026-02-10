@@ -126,12 +126,6 @@ const UserUsageAnalysis = () => {
                                         <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${getStatusBadge(user.usageStatus)}`}>
                                             {user.usageStatus}
                                         </span>
-                                        {user.isOnline && (
-                                            <span className="mt-1 flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-green-50 text-[9px] font-bold text-green-600 animate-pulse border border-green-200 uppercase">
-                                                <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                                                Live Now
-                                            </span>
-                                        )}
                                         {user.churnRisk !== 'Low' && (
                                             <span className={`mt-2 px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${getRiskBadge(user.churnRisk)}`}>
                                                 Risk: {user.churnRisk}
