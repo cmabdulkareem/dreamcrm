@@ -1130,8 +1130,11 @@ export const getUserUsageStats = async (req, res) => {
       return res.status(403).json({ message: "Access denied. Owner or Manager privileges required." });
     }
 
-    // Fetch all users except students
-    const users = await userModel.find({ roles: { $ne: 'Student' } })
+    // Fetch all users except students and inactive accounts
+    const users = await userModel.find({
+      roles: { $ne: 'Student' },
+      accountStatus: 'Active'
+    })
       .select('fullName email avatar roles lastLogin accountStatus')
       .sort({ lastLogin: -1 });
 
