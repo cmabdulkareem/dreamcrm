@@ -174,7 +174,7 @@ const UserUsageAnalysis = () => {
                                     <div className="flex items-center justify-between text-[11px]">
                                         <span className="text-gray-500 dark:text-gray-400">Last Login:</span>
                                         <span className="font-semibold text-gray-700 dark:text-gray-300">
-                                            {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString('en-GB') : 'Never'}
+                                            {formatLastLogin(user.lastLogin)}
                                         </span>
                                     </div>
                                     <div className="flex items-center justify-between text-[11px]">
