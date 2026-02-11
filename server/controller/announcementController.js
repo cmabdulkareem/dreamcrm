@@ -54,8 +54,9 @@ export const createAnnouncement = async (req, res) => {
       const creatorName = req.user.fullName || "Unknown";
       const notificationData = {
         userName: creatorName,
-        action: 'created',
-        entityName: `announcement: ${title}`,
+        avatar: req.user.avatar,
+        action: 'posted announcement',
+        entityName: title,
         module: 'Announcements',
         actionUrl: '/announcements',
         metadata: { announcementId: savedAnnouncement._id },

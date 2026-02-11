@@ -168,7 +168,8 @@ export const createStudent = async (req, res) => {
       const creatorName = req.user.fullName || "Unknown";
       const notificationData = {
         userName: creatorName,
-        action: 'created student',
+        avatar: req.user.avatar,
+        action: 'created new student',
         entityName: newStudent.fullName,
         module: 'Student Management',
         actionUrl: `/student-management?studentId=${newStudent._id}`,

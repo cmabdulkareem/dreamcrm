@@ -1150,29 +1150,57 @@ export const getUserUsageStats = async (req, res) => {
       const isOnline = onlineUserIds.includes(String(userId));
 
       // Fetch activity counts
-      const totalActions30d = await ActivityLog.countDocuments({
+      // --- Enhanced Engagement Calculation ---
+
+      // 1. Fetch detailed activity logs for analysis
+      const activityLogs30d = await ActivityLog.find({
         userId: user._id,
         createdAt: { $gte: thirtyDaysAgo }
+      }).select('action createdAt module');
+
+      const totalActions30d = activityLogs30d.length;
+
+      const activityLogs7d = activityLogs30d.filter(log => new Date(log.createdAt) >= sevenDaysAgo);
+      const totalActions7d = activityLogs7d.length;
+
+      // 2. Weighted Activity Score (50%)
+      // Weights: CREATE=3, UPDATE=2, DELETE=3, Others=1
+      let weightedSum = 0;
+      activityLogs30d.forEach(log => {
+        const action = log.action ? log.action.toUpperCase() : 'UNKNOWN';
+        if (action === 'CREATE' || action === 'DELETE') weightedSum += 3;
+        else if (action === 'UPDATE' || action === 'REMARK') weightedSum += 2;
+        else weightedSum += 1;
       });
 
-      const totalActions7d = await ActivityLog.countDocuments({
-        userId: user._id,
-        createdAt: { $gte: sevenDaysAgo }
-      });
+      // Target: 100 weighted points = 50 score
+      const weightedActivityScore = Math.min((weightedSum / 100) * 50, 50);
 
-      // Fetch last meaningful activity
-      const lastActivity = await ActivityLog.findOne({
-        userId: user._id,
-        action: { $ne: 'LOGIN' }
-      }).sort({ createdAt: -1 });
+      // 3. Consistency Score (30%)
+      // Distinct days active in last 30 days
+      const distinctDays = new Set(activityLogs30d.map(log => new Date(log.createdAt).toDateString())).size;
+      // Target: 15 days (every other day) = 30 score
+      const consistencyScore = Math.min((distinctDays / 15) * 30, 30);
 
-      // Calculate Adoption (different modules used in 30 days)
-      const modulesUsed = await ActivityLog.distinct('module', {
-        userId: user._id,
-        createdAt: { $gte: thirtyDaysAgo }
-      });
+      // 4. Module Diversity Score (20%)
+      // Unique modules used
+      const distinctModules = new Set(activityLogs30d.map(log => log.module)).size;
+      // Target: 5 modules = 20 score
+      const diversityScore = Math.min((distinctModules / 5) * 20, 20);
 
-      // Calculate Metrics
+      const engagementScore = Math.round(weightedActivityScore + consistencyScore + diversityScore);
+      const modulesUsed = Array.from(new Set(activityLogs30d.map(log => log.module)));
+
+      // --- End Enhanced Engagement Calculation ---
+
+      // Calculate Metrics (Restored)
+      // Fetch last meaningful activity for daysSinceLastActivity
+      const lastActivity = activityLogs30d.find(log => log.action !== 'LOGIN');
+      // Note: accuracy might be limited to 30d window if we only fetch 30d logs, 
+      // but for "Active" status checking 30d is sufficient. 
+      // For absolute correctness finding simpler way:
+
+      const now = new Date();
       const daysSinceLastActivity = lastActivity
         ? Math.floor((now - new Date(lastActivity.createdAt)) / (1000 * 60 * 60 * 24))
         : null;
@@ -1180,12 +1208,6 @@ export const getUserUsageStats = async (req, res) => {
       const daysInactive = user.lastLogin
         ? Math.floor((now - new Date(user.lastLogin)) / (1000 * 60 * 60 * 24))
         : null;
-
-      // Engagement Score (0-100)
-      // Logic: frequency (7d vs 30d) + variety of modules
-      const frequencyScore = Math.min((totalActions7d * 5) + (totalActions30d * 1), 60);
-      const varietyScore = Math.min(modulesUsed.length * 10, 40);
-      const engagementScore = frequencyScore + varietyScore;
 
       // Usage Status
       let usageStatus = 'Active';
