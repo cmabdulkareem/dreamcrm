@@ -1224,6 +1224,38 @@ export const getUserUsageStats = async (req, res) => {
       };
     }));
 
+    // Sort formattedUsers
+    // Priority 1: Logged in strictly within last 24 hours (Freshness)
+    // Priority 2: Engagement Score (Desc)
+    // Priority 3: Total Actions 30d (Desc)
+    // Priority 4: Last Login (Desc)
+    formattedUsers.sort((a, b) => {
+      const now = new Date();
+      const aLogin = a.lastLogin ? new Date(a.lastLogin).getTime() : 0;
+      const bLogin = b.lastLogin ? new Date(b.lastLogin).getTime() : 0;
+
+      const oneDayMs = 24 * 60 * 60 * 1000;
+      const aIsRecent = (now.getTime() - aLogin) < oneDayMs;
+      const bIsRecent = (now.getTime() - bLogin) < oneDayMs;
+
+      // 1. Freshness (Last 24h)
+      if (aIsRecent && !bIsRecent) return -1;
+      if (!aIsRecent && bIsRecent) return 1;
+
+      // 2. Engagement Score
+      if (b.engagementScore !== a.engagementScore) {
+        return b.engagementScore - a.engagementScore;
+      }
+
+      // 3. Actions
+      if (b.totalActions30d !== a.totalActions30d) {
+        return b.totalActions30d - a.totalActions30d;
+      }
+
+      // 4. Fallback to specific recency
+      return bLogin - aLogin;
+    });
+
     return res.status(200).json({ users: formattedUsers });
   } catch (error) {
     console.error("Error fetching usage stats:", error);
