@@ -14,13 +14,14 @@ export const fetchCustomers = async (setData, setLoading) => {
       { withCredentials: true }
     );
 
+    const customers = response.data.customers || [];
     if (typeof setData === 'function') {
-      setData(response.data.customers);
+      setData(customers);
     }
     if (typeof setLoading === 'function') {
       setLoading(false);
     }
-    return response.data.customers;
+    return customers;
   } catch (error) {
     console.error("Error fetching customers:", error);
     if (typeof setLoading === 'function') {
