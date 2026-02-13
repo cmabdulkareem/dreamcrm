@@ -102,16 +102,8 @@ function App() {
               <Routes>
                 {/* Authenticated Routes */}
                 <Route element={<ProtectedRoutes><AppLayout /></ProtectedRoutes>}>
-                  <Route index element={
-                    isFaculty ? <Navigate to="/calendar" replace /> :
-                      isAC ? <Navigate to="/batch-management" replace /> :
-                        <Suspense fallback={<LoadingSpinner />}><Dashboard /></Suspense>
-                  } />
-                  <Route path="/dashboard" element={
-                    isFaculty ? <Navigate to="/calendar" replace /> :
-                      isAC ? <Navigate to="/batch-management" replace /> :
-                        <Suspense fallback={<LoadingSpinner />}><Dashboard /></Suspense>
-                  } />
+                  <Route index element={<Suspense fallback={<LoadingSpinner />}><Dashboard /></Suspense>} />
+                  <Route path="/dashboard" element={<Suspense fallback={<LoadingSpinner />}><Dashboard /></Suspense>} />
 
                   <Route path="/calendar" element={<Suspense fallback={<LoadingSpinner />}><Calendar /></Suspense>} />
                   <Route path="/email" element={<Suspense fallback={<LoadingSpinner />}><EmailInbox /></Suspense>} />
@@ -145,8 +137,8 @@ function App() {
                     <Route path="requests" element={<ProtectedRoutes><LeaveManagement /></ProtectedRoutes>} />
                   </Route>
                   {/* Forms */}
-                  <Route path="/new-lead" element={<ProtectedRoutes>{isAC ? <Navigate to="/batch-management" replace /> : <NewLead />}</ProtectedRoutes>} />
-                  <Route path="/lead-management" element={<ProtectedRoutes>{isAC ? <Navigate to="/batch-management" replace /> : <ManageLeads />}</ProtectedRoutes>} />
+                  <Route path="/new-lead" element={<ProtectedRoutes><NewLead /></ProtectedRoutes>} />
+                  <Route path="/lead-management" element={<ProtectedRoutes><ManageLeads /></ProtectedRoutes>} />
                   <Route path="/lead-management/call-list" element={<ProtectedRoutes><Suspense fallback={<LoadingSpinner />}><CallList /></Suspense></ProtectedRoutes>} />
                   <Route path="/reports" element={<ProtectedRoutes><Suspense fallback={<LoadingSpinner />}><Reports /></Suspense></ProtectedRoutes>} />
                   <Route path="/lead-blank" element={<ProtectedRoutes><LeadBlank /></ProtectedRoutes>} />

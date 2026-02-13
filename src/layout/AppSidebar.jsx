@@ -235,7 +235,7 @@ const AppSidebar = () => {
         // Restricted items for Instructor
         const restrictedItemsForFaculty = [
           "Dashboard",
-          "Lead Management",
+          // "Lead Management",
           // "Student Management", // Allow access to Student Management (specifically Batch Management)
           "Marketing",
           "Marketing Materials",
@@ -264,7 +264,7 @@ const AppSidebar = () => {
         if (isAccountant(user) && !isManager(user)) {
           // Accountants need Finance, but not Lead/Student management (unless for payments, which are in Finance)
           const hiddenForAccountant = [
-            "Lead Management",
+            // "Lead Management",
             "Student Management",
             "Marketing",
             "Marketing Materials",
@@ -388,7 +388,7 @@ const AppSidebar = () => {
 
                     // RESTRICTION: Academic Coordinator only sees Batch Management, Edit Profile, Cold Call list and personal Leave Management
                     if (hasRole(user, "Academic Coordinator")) {
-                      const allowedSubItemsAC = ["Batch Management", "Edit Profile", "Apply Leave", "My Leaves", "Cold Call list", "Birthday Calendar"];
+                      const allowedSubItemsAC = ["Batch Management", "Edit Profile", "Apply Leave", "My Leaves", "Cold Call list", "Birthday Calendar", "New Lead", "Manage Leads"];
                       if (!allowedSubItemsAC.includes(subItem.name)) {
                         return null;
                       }
