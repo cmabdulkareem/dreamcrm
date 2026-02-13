@@ -31,9 +31,6 @@ export const createCustomer = async (req, res) => {
     } = req.body;
     const { hasRole } = await import("../utils/roleHelpers.js");
 
-    if (hasRole(req.user, "Academic Coordinator")) {
-      return res.status(403).json({ message: "Access denied. Academic Coordinators cannot create leads." });
-    }
 
     // Validation
     if (!fullName || !phone1) {
@@ -150,11 +147,7 @@ export const getAllCustomers = async (req, res) => {
     const hasAdminAccess = isAdmin(req.user);
     const hasManagerAccess = isManager(req.user);
 
-    // Start with brand filter if present
     const { hasRole } = await import("../utils/roleHelpers.js");
-    if (hasRole(req.user, "Academic Coordinator")) {
-      return res.status(403).json({ message: "Access denied. Academic Coordinators cannot access leads." });
-    }
 
     let query = { ...req.brandFilter };
 

@@ -52,7 +52,7 @@ import { saveLeadChanges, deleteLead, setLeadReminder, markRemarkAsRead } from "
 
 
 // Import role helper function
-import { isAdmin, isOwner, isManager } from "../../utils/roleHelpers";
+import { isAdmin, isOwner, isManager, isCounsellor as isCounsellorHelper } from "../../utils/roleHelpers";
 import LoadingSpinner from "../common/LoadingSpinner";
 
 // Helper function to determine row background color based on due date
@@ -262,10 +262,10 @@ export default function RecentOrders() {
 
   // Permission flags
   const hasManagerRole = isManager(user);
-  const isCounsellor = user?.roles?.includes('Counsellor') || false;
+  const isCounsellor = isCounsellorHelper(user);
   const canDeleteLeads = isAdmin(user) || isManager(user);
-  const isRegularUser = !isAdmin(user) && !hasManagerRole;
-  const canAssignLeads = isAdmin(user) || isManager(user);
+  const isRegularUser = !isAdmin(user) && !hasManagerRole && !isCounsellor;
+  const canAssignLeads = isAdmin(user) || isManager(user) || isCounsellor;
 
   // Fetch customers from database
   useEffect(() => {

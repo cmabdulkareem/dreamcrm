@@ -92,7 +92,7 @@ export function isCounsellor(user) {
 
   const userRoles = user.roles || [];
   const rolesArray = Array.isArray(userRoles) ? userRoles : (typeof userRoles === 'string' ? [userRoles] : []);
-  return rolesArray.includes('Counsellor') || rolesArray.includes('Counselor') || rolesArray.includes('Academic Counsellor');
+  return rolesArray.includes('Counsellor') || rolesArray.includes('Counselor') || rolesArray.includes('Academic Counsellor') || rolesArray.includes('Academic Coordinator');
 }
 
 /**
