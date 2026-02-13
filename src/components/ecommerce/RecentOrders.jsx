@@ -262,10 +262,10 @@ export default function RecentOrders() {
 
   // Permission flags
   const hasManagerRole = isManager(user);
-  const isCounsellor = isCounsellorHelper(user);
+  const isCounsellor = user?.roles?.includes('Counsellor') || false;
   const canDeleteLeads = isAdmin(user) || isManager(user);
-  const isRegularUser = !isAdmin(user) && !hasManagerRole && !isCounsellor;
-  const canAssignLeads = isAdmin(user) || isManager(user) || isCounsellor;
+  const isRegularUser = !isAdmin(user) && !hasManagerRole;
+  const canAssignLeads = isAdmin(user) || isManager(user);
 
   // Fetch customers from database
   useEffect(() => {
@@ -995,19 +995,36 @@ export default function RecentOrders() {
     }
   };
 
-  // Handle lead assignment
+  // Handle lead assignment or remark
   const handleAssignLead = async () => {
-    if (!assignToUser) {
-      toast.error("Please select a user to assign the lead to");
+    if (!assignToUser && !assignmentRemark.trim()) {
+      toast.error("Please select a user to assign or add a remark");
       return;
     }
 
+    setIsSubmitting(true);
     try {
-      const response = await axios.put(
-        `${API}/customers/assign/${selectedRow._id}`,
-        { assignedTo: assignToUser, assignmentRemark },
-        { withCredentials: true }
-      );
+      let response;
+      if (assignToUser) {
+        // Path A: Assignment (with optional remark)
+        response = await axios.put(
+          `${API}/customers/assign/${selectedRow._id}`,
+          { assignedTo: assignToUser, assignmentRemark },
+          { withCredentials: true }
+        );
+      } else {
+        // Path B: Remark Only
+        response = await axios.post(
+          `${API}/customers/remark/${selectedRow._id}`,
+          {
+            remark: assignmentRemark,
+            leadStatus: selectedRow.leadStatus || 'new',
+            handledBy: user?.fullName || "System",
+            nextFollowUpDate: selectedRow.followUpDate
+          },
+          { withCredentials: true }
+        );
+      }
 
       if (response.data.customer) {
         // Update the data in the table
@@ -1017,24 +1034,26 @@ export default function RecentOrders() {
           )
         );
 
-        toast.success("Lead assigned successfully!");
+        toast.success(assignToUser ? "Lead assigned successfully!" : "Remark added successfully!");
         closeAssignModal();
 
         // Add notification
         if (typeof addNotification === 'function') {
           addNotification({
-            type: 'lead_assigned',
+            type: assignToUser ? 'lead_assigned' : 'lead_remark',
             userName: user?.fullName || 'Someone',
             avatar: user?.avatar || null,
-            action: 'assigned lead',
+            action: assignToUser ? 'assigned lead' : 'added a remark to',
             entityName: selectedRow.fullName,
             module: 'Lead Management',
           });
         }
       }
     } catch (error) {
-      console.error("Error assigning lead:", error);
-      toast.error(error.response?.data?.message || "Failed to assign lead");
+      console.error("Error updating lead:", error);
+      toast.error(error.response?.data?.message || (assignToUser ? "Failed to assign lead" : "Failed to add remark"));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -2290,8 +2309,8 @@ export default function RecentOrders() {
                 <Button variant="outline" onClick={closeAssignModal}>
                   Cancel
                 </Button>
-                <Button onClick={handleAssignLead}>
-                  Assign Lead
+                <Button loading={isSubmitting} onClick={handleAssignLead}>
+                  {!assignToUser && assignmentRemark.trim() ? "Add Remark" : (assignToUser && assignmentRemark.trim() ? "Assign & Add Remark" : "Assign Lead")}
                 </Button>
               </div>
             </div>
