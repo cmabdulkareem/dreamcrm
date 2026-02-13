@@ -11,7 +11,7 @@ import { createPortal } from "react-dom";
 import axios from "axios";
 import Papa from "papaparse";
 import Button from "../../components/ui/button/Button";
-import { DownloadIcon, PencilIcon, CloseIcon, BoltIcon, ChevronDownIcon, ChevronUpIcon, FileIcon, UserIcon } from "../../icons";
+import { DownloadIcon, PencilIcon, CloseIcon, BoltIcon, ChevronDownIcon, ChevronUpIcon, FileIcon } from "../../icons";
 import ComponentCard from "../common/ComponentCard.jsx";
 import Input from "../form/input/InputField";
 import PhoneInput from "../form/group-input/PhoneInput.jsx";
@@ -532,7 +532,7 @@ export default function RecentOrders() {
   };
 
   // Then your filteredData definition
-  const filteredData = (Array.isArray(data) ? data : [])
+  const filteredData = data
     .filter((item) => {
       // --- Search match ---
       const matchesSearch =
@@ -1206,7 +1206,7 @@ export default function RecentOrders() {
             <Table>
               <TableHeader className="border-gray-100 dark:border-gray-800 border-y">
                 <TableRow>
-                  <TableCell isHeader className="py-2.5 pl-8 font-semibold text-gray-500 text-start text-[11px] uppercase tracking-wider dark:text-gray-400">
+                  <TableCell isHeader className="py-3 pl-8 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
                     <div className="flex items-center gap-3">
                       <input
                         type="checkbox"
@@ -1214,15 +1214,16 @@ export default function RecentOrders() {
                         onChange={handleSelectAll}
                         className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
                       />
-                      <div className="size-5 invisible shrink-0" />
+                      <div className="size-6 invisible shrink-0" />
                     </div>
                   </TableCell>
-                  <TableCell isHeader className="py-2.5 font-semibold text-gray-500 text-start text-[11px] uppercase tracking-wider dark:text-gray-400">Lead Details</TableCell>
-                  <TableCell isHeader className="py-2.5 font-semibold text-gray-500 text-start text-[11px] uppercase tracking-wider dark:text-gray-400">Added Date</TableCell>
-                  <TableCell isHeader className="py-2.5 font-semibold text-gray-500 text-start text-[11px] uppercase tracking-wider dark:text-gray-400">Source / Campaign</TableCell>
-                  <TableCell isHeader className="py-2.5 font-semibold text-gray-500 text-start text-[11px] uppercase tracking-wider dark:text-gray-400">Status & Intent</TableCell>
-                  <TableCell isHeader className="py-2.5 font-semibold text-gray-500 text-start text-[11px] uppercase tracking-wider dark:text-gray-400">Follow-up & Assignment</TableCell>
-                  <TableCell isHeader className="py-2.5 font-semibold text-gray-500 text-end pr-8 text-[11px] uppercase tracking-wider dark:text-gray-400">Actions</TableCell>
+                  <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Name</TableCell>
+                  <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Date Added</TableCell>
+                  <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Contact Point</TableCell>
+                  <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Campaign</TableCell>
+                  <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Status & Remark</TableCell>
+                  <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Next Follow-up</TableCell>
+                  <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Actions</TableCell>
                 </TableRow>
               </TableHeader>
 
@@ -1241,10 +1242,10 @@ export default function RecentOrders() {
                     const styles = getLeadPotentialStyles(row.leadPotential);
 
                     return (
-                      <TableRow key={row._id} className="group overflow-hidden transition-colors even:bg-gray-50/30 even:dark:bg-white/[0.01] hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
-                        <TableCell className="py-2.5 pl-8 relative">
+                      <TableRow key={row._id} className="group overflow-hidden transition-colors even:bg-gray-50/40 even:dark:bg-white/[0.01] hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
+                        <TableCell className="py-4 pl-8 relative">
                           {/* Vertical Status Strip */}
-                          <div className={`absolute left-0 top-0 bottom-0 w-[4px] ${styles.bar}`} />
+                          <div className={`absolute left-0 top-0 bottom-0 w-[6px] ${styles.bar}`} />
                           <div className="flex items-center gap-3">
                             <input
                               type="checkbox"
@@ -1253,68 +1254,74 @@ export default function RecentOrders() {
                               className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
                             />
                             {hasUnread ? (
-                              <div className="size-5 shrink-0 rounded-full bg-red-600 flex items-center justify-center shadow-sm" title="New Remark">
-                                <BoltIcon className="size-3 text-white" />
+                              <div className="size-5 shrink-0 rounded-full bg-red-600 flex items-center justify-center shadow-md" title="New Remark">
+                                <BoltIcon className="size-3.5 text-white" />
                               </div>
                             ) : (
-                              <div className="size-5 invisible shrink-0" />
+                              <div className="size-6 invisible shrink-0" />
                             )}
                           </div>
                         </TableCell>
 
-                        <TableCell className="py-2.5">
+                        <TableCell className="py-4">
                           <div
-                            className="flex flex-col min-w-0"
+                            className="flex flex-col min-w-0 cursor-help"
                             onMouseEnter={(e) => handleAnalysisEnter(e, row)}
                             onMouseLeave={handleAnalysisLeave}
                           >
-                            <p className="font-bold text-gray-900 text-[14px] dark:text-white/95 truncate">{row.fullName}</p>
-                            <a href={`tel:${row.phone1}`} className="text-brand-600 hover:text-brand-700 hover:underline text-[11px] font-medium mt-0.5">
+                            <p className="font-semibold text-gray-800 text-theme-sm dark:text-white/90 truncate group-hover/name:text-brand-500 transition-colors">{row.fullName}</p>
+                            <p className="text-gray-400 text-xs truncate max-w-[180px]">
+                              {row.coursePreference?.join(", ") || "N/A"}
+                            </p>
+                            <a href={`tel:${row.phone1}`} className="text-brand-500 hover:underline text-[12px] font-medium mt-0.5">
                               {row.phone1}
                             </a>
-                            <p className="text-gray-400 text-[10px] truncate max-w-[180px] mt-0.5 mt-1">
-                              {row.coursePreference?.join(", ") || "No preference"}
+                          </div>
+                        </TableCell>
+                        <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
+                          <div className="flex flex-col gap-0.5">
+                            <p>{formatDate(row.createdAt)}</p>
+                            <p className="text-gray-400 text-xs truncate max-w-[180px]">
+                              By:&nbsp;{row.createdBy?.fullName || row.handledBy || "N/A"}
                             </p>
                           </div>
                         </TableCell>
-                        <TableCell className="py-2.5">
-                          <div className="flex flex-col text-xs">
-                            <p className="text-gray-700 dark:text-gray-300 font-medium">{formatDate(row.createdAt)}</p>
-                            <p className="text-gray-400 text-[10px] mt-0.5">
-                              By:&nbsp;<span className="text-gray-500">{row.createdBy?.fullName || row.handledBy || "System"}</span>
-                            </p>
+                        <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
+                          <div className="flex flex-col gap-0.5">
+                            <p>{row.contactPoint || "N/A"}</p>
+                            {(row.contactPoint?.toLowerCase() === "other" ||
+                              row.contactPoint?.toLowerCase() === "reference" ||
+                              row.contactPoint?.toLowerCase() === "referance") && row.otherContactPoint && (
+                                <p className="text-gray-400 text-xs truncate max-w-[150px]">
+                                  {row.otherContactPoint}
+                                </p>
+                              )}
                           </div>
                         </TableCell>
-                        <TableCell className="py-2.5">
-                          <div className="flex flex-col text-[11px]">
-                            <p className="text-gray-600 dark:text-gray-400 font-medium">{row.contactPoint || "N/A"}</p>
-                            <p className="text-gray-400 text-[10px] mt-0.5 truncate max-w-[150px]">
-                              {row.campaign || "No campaign"}
-                            </p>
-                          </div>
-                        </TableCell>
-                        <TableCell className="py-2.5">
-                          <div className="flex flex-col gap-1">
-                            <Badge
-                              size="sm"
-                              className="w-fit px-2 py-0.5 text-[10px] font-bold"
-                              color={getLeadStatusColor(row.leadStatus)}
-                            >
-                              {getLeadStatusLabel(row.leadStatus)}
-                            </Badge>
+                        <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{row.campaign || "N/A"}</TableCell>
+                        <TableCell className="py-3">
+                          <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center gap-2">
+                              <Badge
+                                size="sm"
+                                color={getLeadStatusColor(row.leadStatus)}
+                              >
+                                {getLeadStatusLabel(row.leadStatus)}
+                              </Badge>
+                            </div>
 
                             <div
-                              className="relative cursor-help"
+                              className="relative group/remark"
                               data-row-id={row._id}
                               onMouseEnter={(e) => handleTooltipEnter(e, row)}
                               onMouseLeave={handleTooltipLeave}
                             >
-                              <p className="text-[11px] text-gray-500 dark:text-gray-400 max-w-[180px] truncate leading-tight">
-                                {latestRemark || "No remarks"}
+                              <p className="text-xs text-gray-600 dark:text-gray-400 max-w-[180px] truncate cursor-help leading-relaxed">
+                                {latestRemark || "No remarks yet"}
                               </p>
                               {row.assignmentRemark && (
-                                <p className="text-[9px] text-orange-600 dark:text-orange-400 mt-0.5 font-medium italic">
-                                  Sug: {row.assignmentRemark}
+                                <p className="text-[10px] text-red-500 dark:text-red-400 mt-0.5 truncate animate-pulse duration-100">
+                                  Suggestion: {row.assignmentRemark}
                                 </p>
                               )}
                             </div>
@@ -1322,56 +1329,38 @@ export default function RecentOrders() {
                           </div>
                         </TableCell>
 
-                        <TableCell className="py-2.5">
+                        <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                           <div className="flex flex-col gap-1 items-start">
                             <Badge
                               size="sm"
-                              className="px-2 py-0.5 text-[10px]"
                               color={getDueDateBadgeColor(row.followUpDate)}
                             >
                               {getDueDateBadgeText(row.followUpDate)}
                             </Badge>
                             {row.assignedTo && (
-                              <p className="text-gray-400 text-[10px] mt-0.5">
-                                To:&nbsp;<span className="text-gray-500">{row.assignedTo.fullName}</span>
+                              <p className="text-gray-400 text-xs truncate max-w-[180px]">
+                                Assigned To:&nbsp;{row.assignedTo.fullName}
                               </p>
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="py-2.5 pr-8">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button
-                              onClick={() => handleEdit(row)}
-                              className="flex items-center justify-center h-8 px-3 rounded-lg bg-brand-500 text-white hover:bg-brand-600 transition-colors shadow-sm text-[11px] font-bold"
-                              title="Edit Lead"
-                            >
-                              <PencilIcon className="size-3.5 mr-1.5" /> Edit
-                            </button>
-                            {canAssignLeads && (
-                              <button
-                                onClick={() => openAssignModal(row)}
-                                className="flex items-center justify-center size-8 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:hover:bg-blue-500/20 transition-colors"
-                                title="Assign Lead"
-                              >
-                                <UserIcon className="size-4" />
-                              </button>
-                            )}
-                            <button
-                              onClick={() => handleAlarm(row)}
-                              className="flex items-center justify-center size-8 rounded-lg bg-yellow-50 text-yellow-600 hover:bg-yellow-100 dark:bg-yellow-500/10 dark:text-yellow-400 dark:hover:bg-yellow-500/20 transition-colors"
-                              title="Set Alarm"
-                            >
-                              <BoltIcon className="size-4" />
-                            </button>
+                        <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
+                          <div className="flex items-center">
+                            <Button size="sm" variant="outline" className="mr-2" endIcon={<PencilIcon className="size-5" />} onClick={() => handleEdit(row)} />
                             {isOwner(user) && (
-                              <button
-                                onClick={() => handleDelete(row)}
-                                className="flex items-center justify-center size-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 transition-colors"
-                                title="Delete Lead"
-                              >
-                                <CloseIcon className="size-4" />
-                              </button>
+                              <Button size="sm" variant="outline" className="text-red-500 mr-2" endIcon={<CloseIcon className="size-5" />} onClick={() => handleDelete(row)} />
                             )}
+                            {canAssignLeads && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-blue-500 mr-2"
+                                onClick={() => openAssignModal(row)}
+                              >
+                                Assign
+                              </Button>
+                            )}
+                            <Button size="sm" variant="outline" className="text-yellow-500" title="Follow-up Alarm" endIcon={<BoltIcon className="size-5" />} onClick={() => handleAlarm(row)} />
                           </div>
                         </TableCell>
                       </TableRow>
@@ -1395,11 +1384,11 @@ export default function RecentOrders() {
                 const hasUnread = hasUnreadRemarks(row.remarks);
 
                 return (
-                  <div key={row._id} className="relative overflow-hidden bg-white dark:bg-white/[0.03] border border-gray-100 dark:border-gray-800 rounded-xl p-3 shadow-sm">
+                  <div key={row._id} className="relative overflow-hidden bg-white dark:bg-white/[0.03] border border-gray-100 dark:border-gray-800 rounded-xl p-4 shadow-sm">
                     {/* Vertical Status Strip */}
                     <div className={`absolute left-0 top-0 bottom-0 w-[4px] ${styles.bar}`} />
 
-                    <div className="flex justify-between items-start mb-2">
+                    <div className="flex justify-between items-start mb-3">
                       <div className="flex items-center gap-3">
                         <input
                           type="checkbox"
@@ -1412,97 +1401,82 @@ export default function RecentOrders() {
                           onMouseEnter={(e) => handleAnalysisEnter(e, row)}
                           onMouseLeave={handleAnalysisLeave}
                         >
-                          <h4 className="font-bold text-gray-900 dark:text-white/95 text-[14px]">{row.fullName}</h4>
-                          <a href={`tel:${row.phone1}`} className="text-brand-600 text-[11px] font-medium hover:underline">
+                          <h4 className="font-semibold text-gray-800 dark:text-white/90">{row.fullName}</h4>
+                          <a href={`tel:${row.phone1}`} className="text-brand-500 text-sm font-medium hover:underline">
                             {row.phone1}
                           </a>
                         </div>
                       </div>
-                      <div className="flex flex-col items-end gap-1.5">
-                        <Badge size="sm" className="px-2 py-0.5 text-[9px] font-bold" color={getLeadStatusColor(row.leadStatus)}>
+                      <div className="flex flex-col items-end gap-2">
+                        <Badge size="sm" color={getLeadStatusColor(row.leadStatus)}>
                           {getLeadStatusLabel(row.leadStatus)}
                         </Badge>
                         {hasUnread && (
-                          <div className="size-4 rounded-full bg-red-600 flex items-center justify-center shadow-sm">
-                            <BoltIcon className="size-2.5 text-white" />
+                          <div className="size-5 rounded-full bg-red-600 flex items-center justify-center shadow-sm">
+                            <BoltIcon className="size-3 text-white" />
                           </div>
                         )}
                       </div>
                     </div>
 
-                    <div className="space-y-1.5 mb-3 px-1">
-                      <div className="flex justify-between text-[11px]">
-                        <span className="text-gray-400">Course:</span>
-                        <span className="text-gray-600 dark:text-gray-300 text-right max-w-[150px] truncate">
-                          {row.coursePreference?.join(", ") || "No preference"}
+                    <div className="space-y-2 mb-4">
+                      <div className="flex justify-between text-xs">
+                        <span className="text-gray-500 dark:text-gray-400">Course Preference:</span>
+                        <span className="text-gray-700 dark:text-gray-200 text-right max-w-[150px] truncate">
+                          {row.coursePreference?.join(", ") || "N/A"}
                         </span>
                       </div>
-                      <div className="flex justify-between text-[11px]">
-                        <span className="text-gray-400">Added:</span>
-                        <span className="text-gray-600 dark:text-gray-300">
-                          {formatDate(row.createdAt)} <span className="text-gray-400 text-[10px]">by {row.createdBy?.fullName || row.handledBy || "System"}</span>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-gray-500 dark:text-gray-400">Added:</span>
+                        <span className="text-gray-700 dark:text-gray-200">
+                          {formatDate(row.createdAt)} by {row.createdBy?.fullName || row.handledBy || "N/A"}
                         </span>
                       </div>
-                      <div className="flex justify-between text-[11px] items-center">
-                        <span className="text-gray-400">Follow-up:</span>
-                        <Badge size="sm" className="px-1.5 py-0 text-[9px]" color={getDueDateBadgeColor(row.followUpDate)}>
+                      <div className="flex justify-between text-xs">
+                        <span className="text-gray-500 dark:text-gray-400">Next Follow-up:</span>
+                        <Badge size="sm" color={getDueDateBadgeColor(row.followUpDate)}>
                           {getDueDateBadgeText(row.followUpDate)}
                         </Badge>
                       </div>
                       {row.assignedTo && (
-                        <div className="flex justify-between text-[11px]">
-                          <span className="text-gray-400">Assigned To:</span>
-                          <span className="text-gray-600 dark:text-gray-300 font-medium">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-gray-500 dark:text-gray-400">Assigned To:</span>
+                          <span className="text-gray-700 dark:text-gray-200 font-medium">
                             {row.assignedTo.fullName}
                           </span>
                         </div>
                       )}
                     </div>
 
-                    <div className="bg-gray-50 dark:bg-gray-800/40 rounded-lg p-2 mb-3">
-                      <p className="text-[10px] font-semibold text-gray-400 mb-0.5">LATEST REMARK</p>
-                      <p className="text-[11px] text-gray-600 dark:text-gray-400 line-clamp-2 italic leading-snug">
-                        {latestRemark || "No remarks"}
+                    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 mb-4">
+                      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Latest Remark:</p>
+                      <p className="text-xs text-gray-700 dark:text-gray-300 line-clamp-2">
+                        {latestRemark || "No remarks yet"}
                       </p>
                       {row.assignmentRemark && (
-                        <p className="text-[9px] text-orange-600 dark:text-orange-400 mt-1 font-medium italic">
-                          Sug: {row.assignmentRemark}
+                        <p className="text-[10px] text-red-500 dark:text-red-400 mt-2 font-medium">
+                          Suggestion: {row.assignmentRemark}
                         </p>
                       )}
                     </div>
 
-                    <div className="flex items-center justify-end gap-1.5 pt-2.5 border-t border-gray-100 dark:border-gray-800/50">
-                      <button
-                        onClick={() => handleAlarm(row)}
-                        className="flex items-center justify-center size-8 rounded-lg bg-yellow-50 text-yellow-600 dark:bg-yellow-500/10 dark:text-yellow-400"
-                        title="Alarm"
-                      >
-                        <BoltIcon className="size-4" />
-                      </button>
+                    <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100 dark:border-gray-800">
+                      <Button size="sm" variant="outline" className="p-2" onClick={() => handleAlarm(row)}>
+                        <BoltIcon className="size-5 text-yellow-500" />
+                      </Button>
                       {canAssignLeads && (
-                        <button
-                          onClick={() => openAssignModal(row)}
-                          className="flex items-center justify-center size-8 rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400"
-                          title="Assign"
-                        >
-                          <UserIcon className="size-4" />
-                        </button>
+                        <Button size="sm" variant="outline" className="text-blue-500 px-3" onClick={() => openAssignModal(row)}>
+                          Assign
+                        </Button>
                       )}
                       {isOwner(user) && (
-                        <button
-                          onClick={() => handleDelete(row)}
-                          className="flex items-center justify-center size-8 rounded-lg bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400"
-                          title="Delete"
-                        >
-                          <CloseIcon className="size-4" />
-                        </button>
+                        <Button size="sm" variant="outline" className="p-2 text-red-500" onClick={() => handleDelete(row)}>
+                          <CloseIcon className="size-5" />
+                        </Button>
                       )}
-                      <button
-                        onClick={() => handleEdit(row)}
-                        className="flex items-center justify-center px-3 h-8 rounded-lg bg-brand-500 text-white text-[11px] font-bold shadow-sm hover:bg-brand-600 transition-colors"
-                      >
-                        <PencilIcon className="size-3.5 mr-1" /> Edit
-                      </button>
+                      <Button size="sm" variant="primary" className="px-3" onClick={() => handleEdit(row)}>
+                        <PencilIcon className="size-4 mr-2" /> Edit
+                      </Button>
                     </div>
                   </div>
                 );
