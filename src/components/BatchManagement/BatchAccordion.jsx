@@ -94,7 +94,7 @@ export default function BatchAccordion({ batch, onUpdate, onDelete }) {
                             e.stopPropagation();
                             setIsAttendanceModalOpen(true);
                         }}
-                        className="px-3 py-1 text-xs font-medium bg-indigo-50 text-indigo-600 rounded-full hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400 dark:hover:bg-indigo-900/50 transition-colors"
+                        className="px-3 py-1 text-xs font-medium bg-brand-50 text-brand-600 rounded-full hover:bg-brand-100 dark:bg-brand-900/30 dark:text-brand-400 dark:hover:bg-brand-900/50 transition-colors"
                     >
                         {canMarkAttendance ? "Mark Attendance" : "View Attendance"}
                     </button>
@@ -129,7 +129,7 @@ export default function BatchAccordion({ batch, onUpdate, onDelete }) {
                         <>
                             <button
                                 onClick={handleEdit}
-                                className="p-2 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400"
+                                className="p-2 text-gray-400 hover:text-brand-600 dark:hover:text-brand-400"
                                 title="Edit Batch"
                             >
                                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
