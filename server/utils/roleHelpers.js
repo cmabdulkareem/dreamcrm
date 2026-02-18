@@ -86,7 +86,7 @@ export function hasAnyRole(user, roles) {
 }
 
 /**
- * Check if user has manager privileges (Owner, Admin, Brand Manager, Manager)
+ * Check if user has manager privileges (Owner, Admin, Brand Manager, Manager, Academic Coordinator)
  */
 export function isManager(user) {
   if (!user) return false;
@@ -96,6 +96,15 @@ export function isManager(user) {
   const userRoles = Array.isArray(user.roles) ? user.roles : (typeof user.roles === 'string' ? [user.roles] : []);
 
   return userRoles.includes('Brand Manager') || userRoles.includes('Owner') || userRoles.includes('Manager') || userRoles.includes('Academic Coordinator');
+}
+
+/**
+ * Check if user has academic coordinator privileges
+ */
+export function isAcademicCoordinator(user) {
+  if (!user) return false;
+  const userRoles = Array.isArray(user.roles) ? user.roles : (typeof user.roles === 'string' ? [user.roles] : []);
+  return userRoles.includes('Academic Coordinator');
 }
 
 /**

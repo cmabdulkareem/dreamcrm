@@ -4,7 +4,7 @@ import Button from "../ui/button/Button";
 import axios from 'axios';
 import API from '../../config/api';
 import { toast } from 'react-toastify';
-import { hasRole, isAdmin, isOwner, isManager } from '../../utils/roleHelpers';
+import { hasRole, isAdmin, isOwner, isManager, isAcademicCoordinator } from '../../utils/roleHelpers';
 import { useAuth } from '../../context/AuthContext';
 import LoadingSpinner from '../common/LoadingSpinner';
 
@@ -19,9 +19,10 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
 
     // Permissions
     const isInstructor = (user && batch && user.fullName === batch.instructorName) || hasRole(user, 'Instructor');
-    // Strict restriction: no one can change date. Attendance is always for TODAY.
-    const canChangeDate = false;
-    const canEdit = (isAdmin(user) || isOwner(user) || isManager(user) || isInstructor) && !hasRole(user, 'Academic Coordinator');
+    // Owners and Managers can change the date for past attendance
+    const canChangeDate = (isAdmin(user) || isOwner(user) || isManager(user)) && !isAcademicCoordinator(user);
+    // Instructors, Owners, Managers can edit. Academic Coordinators can only VIEW.
+    const canEdit = (isAdmin(user) || isOwner(user) || isManager(user) || isInstructor) && !isAcademicCoordinator(user);
 
     useEffect(() => {
         if (isOpen && batch) {
@@ -41,6 +42,11 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
 
             // Fetch existing attendance for the date
             try {
+                // Also fetch holidays to check if current date is a holiday
+                const holidaysRes = await axios.get(`${API}/holidays`, { withCredentials: true });
+                const holidays = holidaysRes.data.holidays || [];
+                const isHoliday = holidays.some(h => new Date(h.date).toLocaleDateString('en-CA') === date);
+
                 const attendanceRes = await axios.get(`${API}/batches/${batch._id}/attendance?date=${date}`, { withCredentials: true });
                 const existingRecord = attendanceRes.data.attendance[0];
 
@@ -52,7 +58,7 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
                 } else {
                     // Initialize default status
                     const isSunday = new Date(date).getDay() === 0;
-                    const defaultStatus = isSunday ? 'Week Off' : 'Present';
+                    const defaultStatus = isHoliday ? 'Holiday' : (isSunday ? 'Week Off' : 'Present');
 
                     studentList.forEach(s => {
                         records[s._id] = { status: defaultStatus, remarks: '' };
@@ -61,9 +67,14 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
                 setAttendanceRecords(records);
             } catch (err) {
                 console.error("No existing attendance found or error fetching", err);
+                // Fallback for default initialization if attendance fetch fails
+                const holidaysRes = await axios.get(`${API}/holidays`, { withCredentials: true }).catch(() => ({ data: { holidays: [] } }));
+                const holidays = holidaysRes.data.holidays || [];
+                const isHoliday = holidays.some(h => new Date(h.date).toLocaleDateString('en-CA') === date);
+
                 const records = {};
                 const isSunday = new Date(date).getDay() === 0;
-                const defaultStatus = isSunday ? 'Week Off' : 'Present';
+                const defaultStatus = isHoliday ? 'Holiday' : (isSunday ? 'Week Off' : 'Present');
 
                 studentList.forEach(s => {
                     records[s._id] = { status: defaultStatus, remarks: '' };
@@ -146,12 +157,25 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
         <Modal isOpen={isOpen} onClose={onClose} className="max-w-4xl p-0 h-[85vh] flex flex-col">
             <div className="flex flex-col h-full">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 sm:p-6 border-b border-gray-100 dark:border-gray-700 shrink-0 pr-12 sm:pr-14">
-                    <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
-                        {canEdit ? "Mark Attendance" : "View Attendance"}
-                    </h3>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-col gap-1">
+                        <h3 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
+                            {canEdit ? "Mark Attendance" : "View Attendance"}
+                        </h3>
+                        <p className="text-xs text-gray-500">
+                            {canChangeDate ? "Owner/Manager Access: Custom date allowed" : "Fixed Date Mode"}
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        {canChangeDate && (
+                            <input
+                                type="date"
+                                value={date}
+                                onChange={(e) => setDate(e.target.value)}
+                                className="text-xs sm:text-sm p-1 border rounded bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+                            />
+                        )}
                         <span className="text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-400">
-                            {batch?.batchName} | {new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            {batch?.batchName} {!canChangeDate && `| ${new Date(date).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}`}
                         </span>
                     </div>
                 </div>
@@ -190,7 +214,8 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
                                                                                 status === 'Late' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
                                                                                     status === 'Holiday' ? 'bg-purple-100 text-purple-800 border-purple-200' :
                                                                                         status === 'Week Off' ? 'bg-gray-100 text-gray-800 border-gray-200' :
-                                                                                            'bg-blue-100 text-blue-800 border-blue-200')
+                                                                                            status === 'Excused' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                                                                                                'bg-blue-100 text-blue-800 border-blue-200')
                                                                         : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600'
                                                                     }
                                                                 ${!canEdit ? 'cursor-default opacity-80' : ''}

@@ -7,7 +7,7 @@ import AttendanceModal from './AttendanceModal';
 import MonthlyAttendanceModal from './MonthlyAttendanceModal';
 import CreateBatchModal from './CreateBatchModal';
 import { useAuth } from '../../context/AuthContext';
-import { hasRole, isAdmin, isOwner, isManager } from '../../utils/roleHelpers.js';
+import { hasRole, isAdmin, isOwner, isManager, isAcademicCoordinator } from '../../utils/roleHelpers.js';
 import { GroupIcon } from '../../icons';
 
 export default function BatchAccordion({ batch, onUpdate, onDelete }) {
@@ -19,8 +19,8 @@ export default function BatchAccordion({ batch, onUpdate, onDelete }) {
 
     // Permission check for button text
     const isInstructor = (user && batch && user.fullName === batch.instructorName) || hasRole(user, 'Instructor');
-    const canMarkAttendance = isAdmin(user) || isOwner(user) || isManager(user) || isInstructor;
-    const canEdit = isAdmin(user) || isOwner(user) || isManager(user);
+    const canMarkAttendance = (isAdmin(user) || isOwner(user) || isManager(user) || isInstructor) && !isAcademicCoordinator(user);
+    const canEdit = isAdmin(user) || isOwner(user) || isManager(user) || isAcademicCoordinator(user);
 
     const handleToggle = () => setIsExpanded(!isExpanded);
 

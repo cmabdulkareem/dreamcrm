@@ -6,7 +6,7 @@ import Student from '../model/studentModel.js';
 import User from '../model/userModel.js';
 import courseModel from '../model/courseModel.js';
 import Holiday from '../model/holidayModel.js';
-import { isAdmin, isOwner, hasRole, isManager, isInstructor, isCounsellor } from '../utils/roleHelpers.js';
+import { isAdmin, isOwner, hasRole, isManager, isInstructor, isCounsellor, isAcademicCoordinator } from '../utils/roleHelpers.js';
 
 import { emitNotification } from '../realtime/socket.js';
 
@@ -148,8 +148,8 @@ export const updateBatch = async (req, res) => {
             return res.status(404).json({ message: "Batch not found." });
         }
 
-        // Authorization check
-        if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
+        // Authorization check - Allow Admin, Owner, Manager, and Academic Coordinator
+        if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user) && !isAcademicCoordinator(req.user)) {
             const userId = (req.user.id || req.user._id).toString();
             const isAssignedInstructor = batch.instructor && batch.instructor.toString() === userId;
             if (!isAssignedInstructor) {
@@ -197,8 +197,8 @@ export const deleteBatch = async (req, res) => {
             return res.status(404).json({ message: "Batch not found." });
         }
 
-        // Authorization check
-        if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
+        // Authorization check - Allow Admin, Owner, Manager, and Academic Coordinator
+        if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user) && !isAcademicCoordinator(req.user)) {
             const userId = (req.user.id || req.user._id).toString();
             const isAssignedInstructor = batch.instructor && batch.instructor.toString() === userId;
             if (!isAssignedInstructor) {
@@ -244,8 +244,8 @@ export const getBatchStudents = async (req, res) => {
             return res.status(404).json({ message: "Batch not found." });
         }
 
-        // Authorization check
-        if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user) && !isCounsellor(req.user)) {
+        // Authorization check - Allow Admin, Owner, Manager, Counsellor, and Academic Coordinator
+        if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user) && !isCounsellor(req.user) && !isAcademicCoordinator(req.user)) {
             const userId = (req.user.id || req.user._id).toString();
             const isAssignedInstructor = batch.instructor && batch.instructor.toString() === userId;
             if (!isAssignedInstructor) {
@@ -297,8 +297,8 @@ export const addStudentToBatch = async (req, res) => {
             return res.status(404).json({ message: "Batch not found." });
         }
 
-        // Authorization check
-        if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
+        // Authorization check - Allow Admin, Owner, Manager, and Academic Coordinator
+        if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user) && !isAcademicCoordinator(req.user)) {
             const userId = (req.user.id || req.user._id).toString();
             const isAssignedInstructor = batch.instructor && batch.instructor.toString() === userId;
             if (!isAssignedInstructor) {
@@ -376,8 +376,8 @@ export const updateBatchStudent = async (req, res) => {
             return res.status(404).json({ message: "Batch not found." });
         }
 
-        // Authorization check
-        if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
+        // Authorization check - Allow Admin, Owner, Manager, and Academic Coordinator
+        if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user) && !isAcademicCoordinator(req.user)) {
             const userId = (req.user.id || req.user._id).toString();
             const isAssignedInstructor = batch.instructor && batch.instructor.toString() === userId;
             if (!isAssignedInstructor) {
@@ -409,8 +409,8 @@ export const removeStudentFromBatch = async (req, res) => {
             return res.status(404).json({ message: "Batch not found." });
         }
 
-        // Authorization check
-        if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
+        // Authorization check - Allow Admin, Owner, Manager, and Academic Coordinator
+        if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user) && !isAcademicCoordinator(req.user)) {
             const userId = (req.user.id || req.user._id).toString();
             const isAssignedInstructor = batch.instructor && batch.instructor.toString() === userId;
             if (!isAssignedInstructor) {
@@ -477,12 +477,38 @@ export const markAttendance = async (req, res) => {
         }
 
         // Permission check
+        if (isAcademicCoordinator(req.user)) {
+            return res.status(403).json({ message: "Academic coordinators are not authorized to mark attendance." });
+        }
+
         if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
             // For faculty/instructors
             const userId = (req.user.id || req.user._id).toString();
             const isAssignedInstructor = batch.instructor && batch.instructor.toString() === userId;
             if (!isAssignedInstructor) {
                 return res.status(403).json({ message: "Not authorized to mark attendance for this batch." });
+            }
+
+            // Instructors CANNOT mark attendance for past/future dates. Always TODAY.
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            if (attendanceDate.getTime() !== today.getTime()) {
+                return res.status(403).json({ message: "Only Owners and Managers can mark attendance for past or future dates." });
+            }
+        }
+
+        // Holiday/Sunday Check
+        const isSunday = attendanceDate.getDay() === 0;
+        const holiday = await Holiday.findOne({ brand: batch.brand, date: attendanceDate });
+
+        if (isSunday || holiday) {
+            // If it's a holiday or sunday, only allow "Holiday" or "Week Off" status unless Owner/Manager
+            if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
+                const requiredStatus = isSunday ? "Week Off" : "Holiday";
+                const invalidRecord = records.find(r => r.status !== requiredStatus);
+                if (invalidRecord) {
+                    return res.status(400).json({ message: `Cannot mark attendance as 'Present' on a ${requiredStatus}.` });
+                }
             }
         }
 

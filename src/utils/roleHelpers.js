@@ -7,7 +7,7 @@
 const ADMIN_ROLES = ['Owner'];
 
 // Managerial roles (can manage teams and resources)
-const MANAGER_ROLES = ['Owner', 'Brand Manager', 'Manager'];
+const MANAGER_ROLES = ['Owner', 'Brand Manager', 'Manager', 'Academic Coordinator'];
 
 // Finance roles
 const ACCOUNTANT_ROLES = ['Owner', 'Accounts Executive', 'Brand Manager'];
@@ -71,6 +71,16 @@ export function isManager(user) {
   const userRoles = user.roles || [];
   const rolesArray = Array.isArray(userRoles) ? userRoles : (typeof userRoles === 'string' ? [userRoles] : []);
   return rolesArray.some(role => MANAGER_ROLES.includes(role));
+}
+
+/**
+ * Check if user has academic coordinator privileges
+ */
+export function isAcademicCoordinator(user) {
+  if (!user) return false;
+  const userRoles = user.roles || [];
+  const rolesArray = Array.isArray(userRoles) ? userRoles : (typeof userRoles === 'string' ? [userRoles] : []);
+  return rolesArray.includes('Academic Coordinator');
 }
 
 /**
