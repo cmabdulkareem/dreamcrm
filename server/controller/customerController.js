@@ -4,6 +4,9 @@ import { isAdmin, isManager, isCounsellor } from "../utils/roleHelpers.js";
 import { emitNotification as emitSocketNotification } from "../realtime/socket.js";
 import { logActivity } from "../utils/activityLogger.js";
 
+// Helper to normalize phone
+const normalizePhone = (phone) => String(phone).replace(/\D/g, '').slice(-10);
+
 // Check if a lead with the same phone number exists within the brand
 export const checkPhoneUniqueness = async (req, res) => {
   try {
@@ -18,10 +21,15 @@ export const checkPhoneUniqueness = async (req, res) => {
       return res.status(400).json({ message: "Brand context is missing." });
     }
 
-    // Prepare query
+    const normalized = normalizePhone(phone);
+    if (!normalized || normalized.length < 10) {
+      return res.status(200).json({ exists: false });
+    }
+
+    // Prepare query: search for the last 10 digits at the end of phone1
     const query = {
       brand: brandId,
-      phone1: phone
+      phone1: { $regex: new RegExp(`${normalized}$`) }
     };
 
     // Exclude current lead if editing
@@ -81,10 +89,16 @@ export const createCustomer = async (req, res) => {
 
     // Check for duplicate phone number within the brand
     const brandId = req.brandFilter?.brand || req.headers['x-brand-id'] || null;
-    if (brandId) {
-      const existingLead = await customerModel.findOne({ brand: brandId, phone1 });
-      if (existingLead) {
-        return res.status(400).json({ message: "Lead exists with this number" });
+    if (brandId && phone1) {
+      const normalized = normalizePhone(phone1);
+      if (normalized && normalized.length >= 10) {
+        const existingLead = await customerModel.findOne({
+          brand: brandId,
+          phone1: { $regex: new RegExp(`${normalized}$`) }
+        });
+        if (existingLead) {
+          return res.status(400).json({ message: "Lead exists with this number" });
+        }
       }
     }
 
@@ -287,13 +301,16 @@ export const updateCustomer = async (req, res) => {
     if (updateData.phone1 && updateData.phone1 !== customer.phone1) {
       const brandId = customer.brand || req.brandFilter?.brand || req.headers['x-brand-id'];
       if (brandId) {
-        const existingLead = await customerModel.findOne({
-          brand: brandId,
-          phone1: updateData.phone1,
-          _id: { $ne: id }
-        });
-        if (existingLead) {
-          return res.status(400).json({ message: "Lead exists with this number" });
+        const normalized = normalizePhone(updateData.phone1);
+        if (normalized && normalized.length >= 10) {
+          const existingLead = await customerModel.findOne({
+            brand: brandId,
+            phone1: { $regex: new RegExp(`${normalized}$`) },
+            _id: { $ne: id }
+          });
+          if (existingLead) {
+            return res.status(400).json({ message: "Lead exists with this number" });
+          }
         }
       }
     }
