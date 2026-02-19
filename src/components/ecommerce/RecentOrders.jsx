@@ -585,24 +585,45 @@ export default function RecentOrders() {
         const followUpDateVal = item.followUpDate ? new Date(item.followUpDate) : null;
         if (followUpDateVal) followUpDateVal.setHours(0, 0, 0, 0);
 
+        // Determine relevant conversion date for converted leads
+        let convertedAtDate = item.convertedAt ? new Date(item.convertedAt) : null;
+        if (!convertedAtDate && item.leadStatus === 'converted' && item.remarks) {
+          // Fallback to remarks search for legacy data
+          const conversionRemark = item.remarks.find(r =>
+            r.leadStatus === 'converted' || r.remark?.includes("Admission taken")
+          );
+          if (conversionRemark && conversionRemark.updatedOn) {
+            convertedAtDate = new Date(conversionRemark.updatedOn);
+          }
+        }
+        if (convertedAtDate) convertedAtDate.setHours(0, 0, 0, 0);
+
         if (dateRange.length === 2) {
           const startDate = new Date(dateRange[0]);
           const endDate = new Date(dateRange[1]);
           startDate.setHours(0, 0, 0, 0);
           endDate.setHours(0, 0, 0, 0);
 
-          const createdInRange = createdAtDate >= startDate && createdAtDate <= endDate;
-          const followUpInRange = followUpDateVal && followUpDateVal >= startDate && followUpDateVal <= endDate;
-
-          matchesDateRange = createdInRange || followUpInRange;
+          if (item.leadStatus === 'converted') {
+            // STRICT RULE: Converted leads ONLY show in their conversion month
+            matchesDateRange = convertedAtDate && convertedAtDate >= startDate && convertedAtDate <= endDate;
+          } else {
+            // Active leads show in creation OR follow-up month
+            const createdInRange = createdAtDate >= startDate && createdAtDate <= endDate;
+            const followUpInRange = followUpDateVal && followUpDateVal >= startDate && followUpDateVal <= endDate;
+            matchesDateRange = createdInRange || followUpInRange;
+          }
         } else if (dateRange.length === 1) {
           const filterDate = new Date(dateRange[0]);
           filterDate.setHours(0, 0, 0, 0);
 
-          const createdMatches = createdAtDate.getTime() === filterDate.getTime();
-          const followUpMatches = followUpDateVal && followUpDateVal.getTime() === filterDate.getTime();
-
-          matchesDateRange = createdMatches || followUpMatches;
+          if (item.leadStatus === 'converted') {
+            matchesDateRange = convertedAtDate && convertedAtDate.getTime() === filterDate.getTime();
+          } else {
+            const createdMatches = createdAtDate.getTime() === filterDate.getTime();
+            const followUpMatches = followUpDateVal && followUpDateVal.getTime() === filterDate.getTime();
+            matchesDateRange = createdMatches || followUpMatches;
+          }
         }
       }
 

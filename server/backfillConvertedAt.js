@@ -1,40 +1,46 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import customerModel from './model/customerModel.js';
-
 dotenv.config();
 
 const backfill = async () => {
     try {
-        await mongoose.connect(process.env.MONGO_URI);
+        const uri = process.env.MONGODB_URI;
+        await mongoose.connect(uri);
         console.log('Connected to MongoDB');
 
-        const convertedLeads = await customerModel.find({
-            leadStatus: 'converted',
-            convertedAt: { $exists: false }
-        });
+        const db = mongoose.connection.db;
+        const customers = db.collection('customers');
 
-        console.log(`Found ${convertedLeads.length} converted leads to backfill`);
+        const allConverted = await customers.find({ leadStatus: 'converted' }).toArray();
+        console.log(`Found ${allConverted.length} converted leads in database`);
 
-        for (const lead of convertedLeads) {
-            // Find the conversion remark
-            const conversionRemark = lead.remarks.find(r =>
-                r.leadStatus === 'converted' || r.remark?.includes('Admission taken')
-            );
-
-            if (conversionRemark) {
-                lead.convertedAt = conversionRemark.updatedOn;
-                await lead.save();
-                console.log(`Backfilled convertedAt for lead: ${lead.fullName} (${lead.convertedAt})`);
-            } else {
-                // Fallback to createdAt if no remark found
-                lead.convertedAt = lead.createdAt;
-                await lead.save();
-                console.log(`Fallback backfill (createdAt) for lead: ${lead.fullName}`);
+        let updatedCount = 0;
+        for (const lead of allConverted) {
+            if (lead.convertedAt) {
+                console.log(`Skipping ${lead.fullName} (already has convertedAt)`);
+                continue;
             }
+
+            let convertedAt = null;
+            if (lead.remarks && lead.remarks.length > 0) {
+                const conversionRemark = lead.remarks.find(r =>
+                    r.leadStatus === 'converted' || r.remark?.includes('Admission taken')
+                );
+                if (conversionRemark && conversionRemark.updatedOn) {
+                    convertedAt = conversionRemark.updatedOn;
+                }
+            }
+
+            if (!convertedAt) {
+                convertedAt = lead.createdAt;
+            }
+
+            await customers.updateOne({ _id: lead._id }, { $set: { convertedAt: convertedAt } });
+            console.log(`Updated ${lead.fullName} with convertedAt: ${convertedAt}`);
+            updatedCount++;
         }
 
-        console.log('Backfill complete');
+        console.log(`Backfill complete. Updated ${updatedCount} leads.`);
         process.exit(0);
     } catch (error) {
         console.error('Backfill failed:', error);

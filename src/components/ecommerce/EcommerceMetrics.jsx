@@ -100,8 +100,20 @@ export default function EcommerceMetrics() {
 
       // Current month conversions (leads that attained 'converted' status this month)
       const currentMonthConversionsByStatus = customers.filter(c => {
-        if (c.leadStatus !== 'converted' || !c.convertedAt) return false;
-        const convertedDate = new Date(c.convertedAt);
+        if (c.leadStatus !== 'converted') return false;
+
+        // Get conversion date (prioritize convertedAt, fallback to remarks)
+        let convertedDate = c.convertedAt ? new Date(c.convertedAt) : null;
+        if (!convertedDate && c.remarks) {
+          const conversionRemark = c.remarks.find(r =>
+            r.leadStatus === 'converted' || r.remark?.includes("Admission taken")
+          );
+          if (conversionRemark && conversionRemark.updatedOn) {
+            convertedDate = new Date(conversionRemark.updatedOn);
+          }
+        }
+
+        if (!convertedDate) return false;
         return convertedDate.getMonth() === currentMonth &&
           convertedDate.getFullYear() === currentYear;
       }).length;

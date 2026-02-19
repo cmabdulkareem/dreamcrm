@@ -1,13 +1,29 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import customerModel from './model/customerModel.js';
+
 dotenv.config();
-await mongoose.connect(process.env.MONGO_URI || process.env.MONGODB_URI);
-const user = await mongoose.model('User', new mongoose.Schema({}, { strict: false })).findOne({ email: 'athirarajeevan938@gmail.com' });
-console.log('UNAME:[' + user.fullName + ']');
-const batches = await mongoose.model('Batch', new mongoose.Schema({}, { strict: false })).find({});
-batches.forEach(b => {
-    if (b.instructorName && b.instructorName.includes('Athira')) {
-        console.log('BNAME:[' + b.batchName + '] BINAME:[' + b.instructorName + '] BIID:[' + b.instructor + ']');
+
+const diag = async () => {
+    try {
+        await mongoose.connect(process.env.MONGODB_URI);
+        console.log('Connected to MongoDB');
+
+        const total = await customerModel.countDocuments();
+        console.log('Total leads in DB:', total);
+
+        const someLeads = await customerModel.find().limit(5);
+        console.log('Sample leads:');
+        someLeads.forEach(l => console.log(`- ${l.fullName} (Status: ${l.leadStatus})`));
+
+        const dhanyaFullMatch = await customerModel.findOne({ fullName: "dhanya kishor" });
+        console.log('Dhanya exact match:', dhanyaFullMatch ? 'Found' : 'Not Found');
+
+        process.exit(0);
+    } catch (error) {
+        console.error('Diag failed:', error);
+        process.exit(1);
     }
-});
-process.exit(0);
+};
+
+diag();

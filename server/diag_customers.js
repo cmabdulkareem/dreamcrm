@@ -1,32 +1,32 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import customerModel from './model/customerModel.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+dotenv.config();
 
-dotenv.config({ path: path.join(__dirname, '../.env') });
-
-const CustomerSchema = new mongoose.Schema({
-    fullName: String,
-    leadStatus: String,
-    isAdmissionTaken: Boolean,
-    brand: mongoose.Schema.Types.ObjectId
-});
-
-const Customer = mongoose.model('Customer', CustomerSchema);
-
-async function run() {
+const diag = async () => {
     try {
-        await mongoose.connect(process.env.MONGO_URI);
-        const customers = await Customer.find({ fullName: /fat/i });
-        console.log('FOUND_CUSTOMERS:');
-        console.log(JSON.stringify(customers, null, 2));
-        await mongoose.disconnect();
-    } catch (err) {
-        console.error(err);
-    }
-}
+        await mongoose.connect(process.env.MONGODB_URI);
+        console.log('Connected to MongoDB');
 
-run();
+        const lead = await customerModel.findOne({
+            fullName: { $regex: /dhanya/i }
+        });
+
+        if (lead) {
+            console.log('Found lead:', lead.fullName);
+            console.log('Status:', lead.leadStatus);
+            console.log('ConvertedAt:', lead.convertedAt);
+            console.log('Remarks:', JSON.stringify(lead.remarks, null, 2));
+        } else {
+            console.log('Lead not found');
+        }
+
+        process.exit(0);
+    } catch (error) {
+        console.error('Diag failed:', error);
+        process.exit(1);
+    }
+};
+
+diag();

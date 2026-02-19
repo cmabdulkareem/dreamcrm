@@ -158,37 +158,56 @@ export default function Reports() {
         });
     }, [leads, leadDateRange, leadStatusFilter, leadPotentialFilter, campaignFilter]);
 
-    // Filter call lists
-    const filteredCallLists = useMemo(() => {
-        return callLists.filter(call => {
-            // Date range filter
-            if (callDateRange && callDateRange.length === 2) {
-                const createdAt = new Date(call.createdAt);
-                const [start, end] = callDateRange;
-                if (createdAt < start || createdAt > end) return false;
-            }
-
-            // Status filter
-            if (callStatusFilter && call.status !== callStatusFilter) return false;
-
-            // Assigned user filter
-            if (assignedUserFilter) {
-                const assignedId = call.assignedTo?._id || call.assignedTo;
-                if (assignedId !== assignedUserFilter) return false;
-            }
-
-            return true;
-        });
-    }, [callLists, callDateRange, callStatusFilter, assignedUserFilter]);
-
-    // Lead statistics
+    // Lead statistics - STRICTLY separated by Creation Month vs Conversion Month
     const leadStats = useMemo(() => {
-        const total = filteredLeads.length;
-        const converted = filteredLeads.filter(l => l.leadStatus === "converted").length;
-        const conversionRate = total > 0 ? ((converted / total) * 100).toFixed(2) : 0;
+        if (!leadDateRange || leadDateRange.length !== 2) {
+            const total = leads.length;
+            const converted = leads.filter(l => l.leadStatus === "converted").length;
+            const conversionRate = total > 0 ? ((converted / total) * 100).toFixed(2) : 0;
+            return { total, converted, conversionRate };
+        }
 
-        return { total, converted, conversionRate };
-    }, [filteredLeads]);
+        const [start, end] = leadDateRange;
+
+        // Total Leads = Leads CREATED in this period
+        const totalCreatedInPeriod = leads.filter(lead => {
+            const createdAt = new Date(lead.createdAt);
+            return createdAt >= start && createdAt <= end;
+        }).length;
+
+        // Converted Count = Leads CONVERTED in this period (regardless of when created)
+        const totalConvertedInPeriod = leads.filter(lead => {
+            if (lead.leadStatus !== "converted") return false;
+
+            let convertedAt = lead.convertedAt ? new Date(lead.convertedAt) : null;
+            if (!convertedAt && lead.remarks) {
+                const conversionRemark = lead.remarks.find(r =>
+                    r.leadStatus === 'converted' || r.remark?.includes("Admission taken")
+                );
+                if (conversionRemark && conversionRemark.updatedOn) {
+                    convertedAt = new Date(conversionRemark.updatedOn);
+                }
+            }
+
+            if (convertedAt) {
+                return convertedAt >= start && convertedAt <= end;
+            }
+
+            // Final fallback for very old data
+            const createdAt = new Date(lead.createdAt);
+            return createdAt >= start && createdAt <= end;
+        }).length;
+
+        const conversionRate = totalCreatedInPeriod > 0
+            ? ((totalConvertedInPeriod / totalCreatedInPeriod) * 100).toFixed(2)
+            : 0;
+
+        return {
+            total: totalCreatedInPeriod,
+            converted: totalConvertedInPeriod,
+            conversionRate
+        };
+    }, [leads, leadDateRange]);
 
     // Call list statistics
     const callStats = useMemo(() => {
