@@ -1394,10 +1394,12 @@ export default function RecentOrders() {
                               const { icon: Icon, label, color } = getContactPointIcon(row.contactPoint);
                               return (
                                 <div className="flex items-center gap-2 group/cp" title={label}>
-                                  <div className={`p-1.5 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 transition-transform group-hover/cp:scale-110`}>
+                                  <div className={`p-1.5 rounded-lg bg-gray-50/50 dark:bg-gray-800/50 border border-gray-100/50 dark:border-gray-700/50 transition-all duration-300 group-hover/cp:bg-gray-100 dark:group-hover/cp:bg-gray-700 group-hover/cp:scale-110 shadow-sm shrink-0`}>
                                     <Icon className={`size-4 ${color}`} />
                                   </div>
-                                  <span className="hidden lg:inline text-[11px] font-medium text-gray-400 group-hover/cp:text-gray-600 dark:group-hover/cp:text-gray-300 transition-colors uppercase tracking-wider">{label}</span>
+                                  <span className="hidden group-hover/cp:inline-block text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap transition-all duration-300">
+                                    {label}
+                                  </span>
                                 </div>
                               );
                             })()}
