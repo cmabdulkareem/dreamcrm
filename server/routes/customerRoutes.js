@@ -13,7 +13,8 @@ import {
   getBrandConversionMetrics,
   getAllCustomersUnfiltered,
   getLeaderboard,
-  importLeads
+  importLeads,
+  checkPhoneUniqueness
 } from '../controller/customerController.js';
 import verifyToken from "../middleware/verifyToken.js";
 import { applyBrandFilter } from "../middleware/brandMiddleware.js";
@@ -24,6 +25,7 @@ const router = express.Router();
 router.use(verifyToken);
 router.use(applyBrandFilter);
 
+router.get('/check-phone', checkPhoneUniqueness);
 router.post('/create', createCustomer);
 router.get('/all', verifyToken, getAllCustomers);
 router.get('/all-unfiltered', verifyToken, getAllCustomersUnfiltered);

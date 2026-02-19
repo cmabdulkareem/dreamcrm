@@ -1,4 +1,0 @@
-USER: name=[Athira] id=[695a70a8dad1d333ab392416] roles=[["Instructor"]]
-USER_NAME_HEX: 417468697261
-BATCH: name=[Design Fundamentals Dec 2026] instructorName=[Athira] instructorId=[undefined] brand=[69526676858f1c12c20f67f2]
-BATCH_INSTR_HEX: 417468697261

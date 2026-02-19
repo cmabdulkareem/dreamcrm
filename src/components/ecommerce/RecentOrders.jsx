@@ -251,6 +251,9 @@ export default function RecentOrders() {
   const [selectedValues, setSelectedValues] = useState([]);
   const [leadStatus, setLeadStatus] = useState("");
   const [leadPotential, setLeadPotential] = useState(""); // Added lead potential state
+  const [phoneExists, setPhoneExists] = useState(false);
+  const [checkingPhone, setCheckingPhone] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
 
   // Campaign modal states
   const [newCampaignName, setNewCampaignName] = useState("");
@@ -529,6 +532,61 @@ export default function RecentOrders() {
     const value = e.target.value;
     setEmail(value);
     validateEmail(value);
+  };
+
+  const checkPhoneExistence = async (phone) => {
+    if (!phone || phone.length < 10) {
+      setPhoneExists(false);
+      return;
+    }
+
+    setCheckingPhone(true);
+    try {
+      const excludeId = selectedRow?._id;
+      const url = `${API}/customers/check-phone?phone=${phone}${excludeId ? `&excludeId=${excludeId}` : ''}`;
+
+      const response = await axios.get(url, { withCredentials: true });
+
+      if (response.data.exists) {
+        setPhoneExists(true);
+        setValidationErrors(prev => ({
+          ...prev,
+          phone1: `Lead exists with this number (${response.data.leadName})`
+        }));
+      } else {
+        setPhoneExists(false);
+        setValidationErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors.phone1;
+          return newErrors;
+        });
+      }
+    } catch (error) {
+      console.error("Error checking phone existence:", error);
+    } finally {
+      setCheckingPhone(false);
+    }
+  };
+
+  // Debounced phone check
+  useEffect(() => {
+    if (!isEditOpen) {
+      setPhoneExists(false);
+      setValidationErrors({});
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      if (phone1) {
+        checkPhoneExistence(phone1);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [phone1, isEditOpen]);
+
+  const handlePhone1Change = (value) => {
+    setPhone1(value);
   };
 
   // Then your filteredData definition
@@ -1730,9 +1788,12 @@ export default function RecentOrders() {
                       countries={countries}
                       placeholder="+91 98765 43210"
                       value={phone1}
-                      onChange={setPhone1}
+                      onChange={handlePhone1Change}
+                      error={!!validationErrors.phone1 || phoneExists}
+                      hint={validationErrors.phone1}
                       disabled={!isAdmin(user) && !isManager(user)}
                     />
+                    {checkingPhone && <p className="text-xs text-gray-400 mt-1">Checking uniqueness...</p>}
 
                   </div>
                   <div className="w-full md:w-1/4">
@@ -1918,6 +1979,7 @@ export default function RecentOrders() {
                     variant="primary"
                     onClick={saveChanges}
                     loading={isSubmitting}
+                    disabled={phoneExists}
                   >
                     Update
                   </Button>

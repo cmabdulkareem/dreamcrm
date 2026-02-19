@@ -63,6 +63,8 @@ export default function CallList() {
     const [bulkAssignedTo, setBulkAssignedTo] = useState('');
     const [bulkSource, setBulkSource] = useState('');
     const [bulkPurpose, setBulkPurpose] = useState('');
+    const [skippedEntries, setSkippedEntries] = useState([]);
+    const [importSummary, setImportSummary] = useState(null);
 
     // Pagination & Filtering states
     const [page, setPage] = useState(1);
@@ -231,6 +233,8 @@ export default function CallList() {
         setPurpose('');
         setAssignedTo('');
         setSelectedEntry(null);
+        setSkippedEntries([]);
+        setImportSummary(null);
     };
 
     const handleAdd = async () => {
@@ -1216,84 +1220,161 @@ export default function CallList() {
                 </div>
 
                 <div className="p-6">
-                    <div className="space-y-6">
-                        {/* Step 1: Download Template */}
-                        <div className="bg-brand-50/50 dark:bg-brand-500/5 p-4 rounded-xl border border-brand-100 dark:border-brand-500/20 flex items-center justify-between">
-                            <div>
-                                <h4 className="text-sm font-semibold text-brand-700 dark:text-brand-400">Step 1: Get the template</h4>
-                                <p className="text-xs text-brand-600/80 dark:text-brand-400/60 mt-0.5">Use our CSV template to ensure correct data formatting.</p>
-                            </div>
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                className="bg-white dark:bg-gray-900"
-                                onClick={() => {
-                                    const headers = ["Name", "Mobile Number", "Source", "Purpose", "Remarks"];
-                                    const sampleData = [
-                                        ["John Doe", "9876543210", "LinkedIn", "Sales", "Very interested"],
-                                        ["Jane Smith", "9123456789", "Referral", "Inquiry", "Follow up next week"]
-                                    ];
-                                    const csvContent = "data:text/csv;charset=utf-8," +
-                                        [headers, ...sampleData].map(e => e.join(",")).join("\n");
-                                    const encodedUri = encodeURI(csvContent);
-                                    const link = document.createElement("a");
-                                    link.setAttribute("href", encodedUri);
-                                    link.setAttribute("download", "call_list_template.csv");
-                                    document.body.appendChild(link);
-                                    link.click();
-                                    document.body.removeChild(link);
-                                }}
-                            >
-                                Download Sample
-                            </Button>
-                        </div>
-
-                        {/* Step 2: Upload File */}
-                        <div className="space-y-3">
-                            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Step 2: Upload your file</h4>
-                            <div
-                                className="border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl p-10 flex flex-col items-center justify-center text-center hover:border-brand-300 dark:hover:border-brand-800 transition-colors cursor-pointer group"
-                                onClick={() => document.getElementById('csv-upload-calllist').click()}
-                            >
-                                <div className="size-12 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center mb-4 group-hover:bg-brand-50 dark:group-hover:bg-brand-500/10 transition-colors">
-                                    <DownloadIcon className="size-6 text-gray-400 group-hover:text-brand-500 rotate-180" />
+                    {importSummary ? (
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-white/[0.02] rounded-xl border border-gray-100 dark:border-gray-800">
+                                <div className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    Import Summary
                                 </div>
-                                <p className="text-sm font-medium text-gray-800 dark:text-white/90">Click to upload or drag and drop</p>
-                                <p className="text-xs text-gray-400 mt-1">Only CSV files are supported</p>
-                                <input
-                                    type="file"
-                                    id="csv-upload-calllist"
-                                    className="hidden"
-                                    accept=".csv"
-                                    onChange={(e) => {
-                                        const file = e.target.files[0];
-                                        if (file) {
-                                            if (file.type !== "text/csv" && !file.name.endsWith('.csv')) {
-                                                toast.error("Please upload a valid CSV file");
-                                                return;
-                                            }
-                                            toast.info(`Selected ${file.name}`);
-                                        }
-                                    }}
-                                />
+                                <div className="flex gap-4">
+                                    <div className="text-center">
+                                        <div className="text-lg font-bold text-green-500">{importSummary.importedCount || 0}</div>
+                                        <div className="text-[10px] text-gray-400 uppercase font-bold">Imported</div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="text-lg font-bold text-orange-500">{importSummary.skippedCount || 0}</div>
+                                        <div className="text-[10px] text-gray-400 uppercase font-bold">Skipped</div>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
 
-                        {/* Note Section */}
-                        <div className="flex gap-3 p-4 bg-gray-50 dark:bg-white/[0.02] rounded-xl border border-gray-100 dark:border-gray-800">
-                            <div className="size-5 rounded-full bg-blue-500 flex items-center justify-center shrink-0 mt-0.5">
-                                <span className="text-[10px] text-white font-bold">i</span>
-                            </div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-                                <p className="font-semibold text-gray-700 dark:text-gray-300 mb-1">Important Notes:</p>
-                                <ul className="list-disc list-inside space-y-1">
-                                    <li>Fields: Name, Mobile number, Source, Purpose, Remarks (Name and number are optional).</li>
-                                    <li>At least one identifying or data field (Name, Phone, Social Media ID, Source, or Purpose) must be present.</li>
-                                    <li>Remarks can be left empty.</li>
-                                </ul>
+                            {skippedEntries.length > 0 && (
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Skipped Entries Reasons:</h4>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="h-7 text-[10px]"
+                                            onClick={() => {
+                                                const headers = ["Name", "Phone Number", "Reason"];
+                                                const csvContent = "data:text/csv;charset=utf-8," +
+                                                    [headers, ...skippedEntries.map(s => [
+                                                        s.entry?.name || "",
+                                                        s.entry?.phoneNumber || "",
+                                                        s.reason || "Unknown"
+                                                    ])].map(e => e.join(",")).join("\n");
+                                                const encodedUri = encodeURI(csvContent);
+                                                const link = document.createElement("a");
+                                                link.setAttribute("href", encodedUri);
+                                                link.setAttribute("download", "skipped_entries_report.csv");
+                                                document.body.appendChild(link);
+                                                link.click();
+                                                document.body.removeChild(link);
+                                            }}
+                                        >
+                                            Download Skip Report
+                                        </Button>
+                                    </div>
+                                    <div className="max-h-[300px] overflow-y-auto border border-gray-100 dark:border-gray-800 rounded-xl divide-y divide-gray-100 dark:divide-gray-800">
+                                        {skippedEntries.map((s, idx) => (
+                                            <div key={idx} className="p-3 text-xs">
+                                                <div className="flex justify-between items-start gap-2">
+                                                    <div>
+                                                        <div className="font-bold text-gray-700 dark:text-gray-200">
+                                                            {s.entry?.name || "Unnamed"} {s.entry?.phoneNumber ? `(${s.entry.phoneNumber})` : ""}
+                                                        </div>
+                                                        <div className="text-gray-500 dark:text-gray-400 mt-0.5">
+                                                            {s.reason}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="flex justify-end pt-2">
+                                <Button variant="primary" onClick={() => {
+                                    closeImportModal();
+                                    setImportSummary(null);
+                                    setSkippedEntries([]);
+                                }}>
+                                    Close
+                                </Button>
                             </div>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="space-y-6">
+                            {/* Step 1: Download Template */}
+                            <div className="bg-brand-50/50 dark:bg-brand-500/5 p-4 rounded-xl border border-brand-100 dark:border-brand-500/20 flex items-center justify-between">
+                                <div>
+                                    <h4 className="text-sm font-semibold text-brand-700 dark:text-brand-400">Step 1: Get the template</h4>
+                                    <p className="text-xs text-brand-600/80 dark:text-brand-400/60 mt-0.5">Use our CSV template to ensure correct data formatting.</p>
+                                </div>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="bg-white dark:bg-gray-900"
+                                    onClick={() => {
+                                        const headers = ["Name", "Mobile Number", "Source", "Purpose", "Remarks"];
+                                        const sampleData = [
+                                            ["John Doe", "9876543210", "LinkedIn", "Sales", "Very interested"],
+                                            ["Jane Smith", "9123456789", "Referral", "Inquiry", "Follow up next week"]
+                                        ];
+                                        const csvContent = "data:text/csv;charset=utf-8," +
+                                            [headers, ...sampleData].map(e => e.join(",")).join("\n");
+                                        const encodedUri = encodeURI(csvContent);
+                                        const link = document.createElement("a");
+                                        link.setAttribute("href", encodedUri);
+                                        link.setAttribute("download", "call_list_template.csv");
+                                        document.body.appendChild(link);
+                                        link.click();
+                                        document.body.removeChild(link);
+                                    }}
+                                >
+                                    Download Sample
+                                </Button>
+                            </div>
+
+                            {/* Step 2: Upload File */}
+                            <div className="space-y-3">
+                                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Step 2: Upload your file</h4>
+                                <div
+                                    className="border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl p-10 flex flex-col items-center justify-center text-center hover:border-brand-300 dark:hover:border-brand-800 transition-colors cursor-pointer group"
+                                    onClick={() => document.getElementById('csv-upload-calllist').click()}
+                                >
+                                    <div className="size-12 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center mb-4 group-hover:bg-brand-50 dark:group-hover:bg-brand-500/10 transition-colors">
+                                        <DownloadIcon className="size-6 text-gray-400 group-hover:text-brand-500 rotate-180" />
+                                    </div>
+                                    <p className="text-sm font-medium text-gray-800 dark:text-white/90">Click to upload or drag and drop</p>
+                                    <p className="text-xs text-gray-400 mt-1">Only CSV files are supported</p>
+                                    <input
+                                        type="file"
+                                        id="csv-upload-calllist"
+                                        className="hidden"
+                                        accept=".csv"
+                                        onChange={(e) => {
+                                            const file = e.target.files[0];
+                                            if (file) {
+                                                if (file.type !== "text/csv" && !file.name.endsWith('.csv')) {
+                                                    toast.error("Please upload a valid CSV file");
+                                                    return;
+                                                }
+                                                toast.info(`Selected ${file.name}`);
+                                            }
+                                        }}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Note Section */}
+                            <div className="flex gap-3 p-4 bg-gray-50 dark:bg-white/[0.02] rounded-xl border border-gray-100 dark:border-gray-800">
+                                <div className="size-5 rounded-full bg-blue-500 flex items-center justify-center shrink-0 mt-0.5">
+                                    <span className="text-[10px] text-white font-bold">i</span>
+                                </div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                                    <p className="font-semibold text-gray-700 dark:text-gray-300 mb-1">Important Notes:</p>
+                                    <ul className="list-disc list-inside space-y-1">
+                                        <li>Fields: Name, Mobile number, Source, Purpose, Remarks (Name and number are optional).</li>
+                                        <li>At least one identifying or data field (Name, Phone, Social Media ID, Source, or Purpose) must be present.</li>
+                                        <li>Remarks can be left empty.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <div className="px-6 py-4 bg-gray-50 dark:bg-white/[0.02] border-t border-gray-100 dark:border-gray-800 flex items-center justify-end gap-3">
@@ -1363,11 +1444,28 @@ export default function CallList() {
                                     );
 
                                     toast.success(response.data.message || "Import successful!");
+                                    setImportSummary({
+                                        importedCount: response.data.importedCount,
+                                        skippedCount: response.data.skippedCount
+                                    });
+                                    setSkippedEntries(response.data.skippedEntries || []);
                                     fetchCallLists(); // Refresh table
-                                    closeImportModal();
+                                    // Don't close modal immediately if there are skipped entries
+                                    if (!response.data.skippedEntries || response.data.skippedEntries.length === 0) {
+                                        closeImportModal();
+                                    }
                                 } catch (error) {
                                     console.error("Import failed:", error);
-                                    toast.error(error.response?.data?.message || "Import failed. Please try again.");
+                                    if (error.response?.data?.skippedEntries) {
+                                        setImportSummary({
+                                            importedCount: 0,
+                                            skippedCount: error.response.data.skippedCount
+                                        });
+                                        setSkippedEntries(error.response.data.skippedEntries);
+                                        toast.warning("Some entries were skipped.");
+                                    } else {
+                                        toast.error(error.response?.data?.message || "Import failed. Please try again.");
+                                    }
                                 } finally {
                                     setIsSubmitting(false);
                                 }

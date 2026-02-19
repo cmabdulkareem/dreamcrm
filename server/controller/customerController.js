@@ -1,9 +1,47 @@
-import customerModel from "../model/customerModel.js";
-import userModel from "../model/userModel.js";
-import { emitNotification as emitSocketNotification } from '../realtime/socket.js';
-import { isAdmin, isCounsellor } from "../utils/roleHelpers.js";
-import { isManager } from "../middleware/roleMiddleware.js";
 import { logActivity } from "../utils/activityLogger.js";
+
+// Check if a lead with the same phone number exists within the brand
+export const checkPhoneUniqueness = async (req, res) => {
+  try {
+    const { phone, excludeId } = req.query;
+    const brandId = req.brandFilter?.brand || req.headers['x-brand-id'];
+
+    if (!phone) {
+      return res.status(400).json({ message: "Phone number is required." });
+    }
+
+    if (!brandId) {
+      return res.status(400).json({ message: "Brand context is missing." });
+    }
+
+    // Prepare query
+    const query = {
+      brand: brandId,
+      phone1: phone
+    };
+
+    // Exclude current lead if editing
+    if (excludeId) {
+      query._id = { $ne: excludeId };
+    }
+
+    const existingLead = await customerModel.findOne(query);
+
+    if (existingLead) {
+      return res.status(200).json({
+        exists: true,
+        message: "Lead exists with this number",
+        leadName: existingLead.fullName
+      });
+    }
+
+    return res.status(200).json({ exists: false });
+  } catch (error) {
+    console.error("Check phone uniqueness error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
 
 // Create new customer/lead
 export const createCustomer = async (req, res) => {
@@ -35,6 +73,15 @@ export const createCustomer = async (req, res) => {
     // Validation
     if (!fullName || !phone1) {
       return res.status(400).json({ message: "Full name and phone are required." });
+    }
+
+    // Check for duplicate phone number within the brand
+    const brandId = req.brandFilter?.brand || req.headers['x-brand-id'] || null;
+    if (brandId) {
+      const existingLead = await customerModel.findOne({ brand: brandId, phone1 });
+      if (existingLead) {
+        return res.status(400).json({ message: "Lead exists with this number" });
+      }
     }
 
     // Sanitize Gender
@@ -231,6 +278,22 @@ export const updateCustomer = async (req, res) => {
     if (!customer) {
       return res.status(404).json({ message: "Customer not found." });
     }
+
+    // Check for duplicate phone number if phone1 is being updated
+    if (updateData.phone1 && updateData.phone1 !== customer.phone1) {
+      const brandId = customer.brand || req.brandFilter?.brand || req.headers['x-brand-id'];
+      if (brandId) {
+        const existingLead = await customerModel.findOne({
+          brand: brandId,
+          phone1: updateData.phone1,
+          _id: { $ne: id }
+        });
+        if (existingLead) {
+          return res.status(400).json({ message: "Lead exists with this number" });
+        }
+      }
+    }
+
 
     // Update fields
     Object.keys(updateData).forEach(key => {

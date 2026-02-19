@@ -61,6 +61,8 @@ export default function FormElements() {
   const [followUpDate, setFollowUpDate] = useState("");
   const [leadPotential, setLeadPotential] = useState(""); // Added state for lead potential
   const [error, setError] = useState(false);
+  const [phoneExists, setPhoneExists] = useState(false);
+  const [checkingPhone, setCheckingPhone] = useState(false);
   const [campaignOptions, setCampaignOptions] = useState([]);
   const [contactPointOptions, setContactPointOptions] = useState([]);
   const [courseOptions, setCourseOptions] = useState([]); // Dynamic course options
@@ -202,6 +204,55 @@ export default function FormElements() {
     validateEmail(value);
   };
 
+  const checkPhoneExistence = async (phone) => {
+    if (!phone || phone.length < 10) {
+      setPhoneExists(false);
+      return;
+    }
+
+    setCheckingPhone(true);
+    try {
+      const response = await axios.get(
+        `${API}/customers/check-phone?phone=${phone}`,
+        { withCredentials: true }
+      );
+      if (response.data.exists) {
+        setPhoneExists(true);
+        setValidationErrors(prev => ({
+          ...prev,
+          phone1: `Lead exists with this number (${response.data.leadName})`
+        }));
+      } else {
+        setPhoneExists(false);
+        setValidationErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors.phone1;
+          return newErrors;
+        });
+      }
+    } catch (error) {
+      console.error("Error checking phone existence:", error);
+    } finally {
+      setCheckingPhone(false);
+    }
+  };
+
+  // Debounced phone check
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (phone1) {
+        checkPhoneExistence(phone1);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [phone1]);
+
+  const handlePhone1Change = (value) => {
+    setPhone1(value);
+    // Uniqueness check is handled by useEffect with debounce
+  };
+
   const handleCampaignChange = (value) => {
     if (value === "__add_new__") {
       openCampaignModal();
@@ -309,6 +360,8 @@ export default function FormElements() {
 
     if (!phone1.trim()) {
       errors.phone1 = "Phone is required";
+    } else if (phoneExists) {
+      errors.phone1 = "Lead exists with this number";
     }
 
     if (!place) {
@@ -544,10 +597,11 @@ export default function FormElements() {
                       countries={countries}
                       placeholder="+91 98765 43210"
                       value={phone1}
-                      onChange={setPhone1}
-                      error={!!validationErrors.phone1}
+                      onChange={handlePhone1Change}
+                      error={!!validationErrors.phone1 || phoneExists}
                       hint={validationErrors.phone1}
                     />
+                    {checkingPhone && <p className="text-xs text-gray-400 mt-1">Checking uniqueness...</p>}
                   </div>
                   <div className="w-full md:w-1/2">
                     <Label>Phone (optional)</Label>
@@ -743,7 +797,8 @@ export default function FormElements() {
         {/* Buttons */}
         <div className="flex gap-4 justify-end mt-6">
           <Button type="button" onClick={handleClear} variant="outline" disabled={saving}>Clear</Button>
-          <Button variant="primary" type="submit" disabled={saving} id="new-lead-submit-btn">
+          <Button variant="primary" type="submit" disabled={saving || phoneExists} id="new-lead-submit-btn">
+
             {saving ? (
               <span className="flex items-center gap-2">
                 <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
