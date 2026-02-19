@@ -1322,7 +1322,7 @@ export default function RecentOrders() {
                   <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Name</TableCell>
                   <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Date Added</TableCell>
                   <TableCell isHeader className="py-3 font-medium text-gray-500 text-center text-theme-xs dark:text-gray-400">Contact Point</TableCell>
-                  <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Campaign</TableCell>
+                  <TableCell isHeader className="py-3 font-medium text-gray-500 text-center text-theme-xs dark:text-gray-400">Campaign</TableCell>
                   <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Status & Remark</TableCell>
                   <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Next Follow-up</TableCell>
                   <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Actions</TableCell>
@@ -1407,7 +1407,7 @@ export default function RecentOrders() {
                           </div>
                         </TableCell>
 
-                        <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{row.campaign || "N/A"}</TableCell>
+                        <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400 text-center">{row.campaign || "N/A"}</TableCell>
                         <TableCell className="py-3">
                           <div className="flex flex-col gap-1.5">
                             <div className="flex items-center gap-2">
