@@ -121,6 +121,9 @@ const customerSchema = new mongoose.Schema({
   isAdmissionTaken: {
     type: Boolean,
     default: false
+  },
+  convertedAt: {
+    type: Date
   }
 }, {
   timestamps: true

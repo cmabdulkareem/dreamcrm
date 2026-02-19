@@ -249,6 +249,13 @@ export const updateCustomer = async (req, res) => {
     // Clear followUpDate if leadStatus is set to converted
     if (updateData.leadStatus === 'converted') {
       customer.followUpDate = null;
+      // Set conversion date if not already set or if explicitly changing to converted
+      if (customer.leadStatus !== 'converted') {
+        customer.convertedAt = new Date();
+      }
+    } else if (updateData.leadStatus && updateData.leadStatus !== 'converted') {
+      // Clear conversion date if status is changed back from converted
+      customer.convertedAt = undefined;
     }
 
     await customer.save();
@@ -322,6 +329,11 @@ export const addRemark = async (req, res) => {
 
     // Update customer's main leadStatus field if provided
     if (leadStatus) {
+      if (leadStatus === 'converted' && customer.leadStatus !== 'converted') {
+        customer.convertedAt = new Date();
+      } else if (leadStatus !== 'converted') {
+        customer.convertedAt = undefined;
+      }
       customer.leadStatus = leadStatus;
       // Clear followUpDate if status is converted
       if (leadStatus === 'converted') {
@@ -689,20 +701,29 @@ export const getLeaderboard = async (req, res) => {
         }
       }
 
-      // Check if lead was converted this month (by checking remarks and isAdmissionTaken)
-      if (lead.isAdmissionTaken && lead.remarks && lead.remarks.length > 0) {
-        // Find the remark where it was converted or admission was taken this month
-        const conversionRemark = lead.remarks.find(remark => {
-          // Look for 'converted' status OR specific admission remarks if we add them
-          if ((remark.leadStatus === 'converted' || remark.remark?.includes("Admission taken")) && remark.updatedOn) {
-            const updatedDate = new Date(remark.updatedOn);
-            return updatedDate.getMonth() === currentMonth &&
-              updatedDate.getFullYear() === currentYear;
-          }
-          return false;
-        });
+      // Check if lead was converted this month (prioritize convertedAt field)
+      if (lead.leadStatus === 'converted') {
+        let isConvertedThisMonth = false;
 
-        if (conversionRemark) {
+        if (lead.convertedAt) {
+          const convDate = new Date(lead.convertedAt);
+          if (convDate.getMonth() === currentMonth && convDate.getFullYear() === currentYear) {
+            isConvertedThisMonth = true;
+          }
+        } else if (lead.isAdmissionTaken && lead.remarks && lead.remarks.length > 0) {
+          // Fallback to remarks for legacy data
+          const conversionRemark = lead.remarks.find(remark => {
+            if ((remark.leadStatus === 'converted' || remark.remark?.includes("Admission taken")) && remark.updatedOn) {
+              const updatedDate = new Date(remark.updatedOn);
+              return updatedDate.getMonth() === currentMonth &&
+                updatedDate.getFullYear() === currentYear;
+            }
+            return false;
+          });
+          if (conversionRemark) isConvertedThisMonth = true;
+        }
+
+        if (isConvertedThisMonth) {
           userStats[userId].conversions++;
         }
       }

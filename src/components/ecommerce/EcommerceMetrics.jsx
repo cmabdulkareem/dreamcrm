@@ -73,10 +73,16 @@ export default function EcommerceMetrics() {
       const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
 
       // Filter customers (Leads) by Financial Year
-      const fyCustomers = customers.filter(c => new Date(c.createdAt) >= fyStartDate);
+      // Include if created in FY OR if converted in FY
+      const fyCustomers = customers.filter(c => {
+        const createdDate = new Date(c.createdAt);
+        const convertedDate = c.convertedAt ? new Date(c.convertedAt) : null;
+        return createdDate >= fyStartDate || (convertedDate && convertedDate >= fyStartDate);
+      });
 
-      // Total Leads (Financial Year) - Strictly Lead Count
-      const totalLeads = fyCustomers.length;
+      // Total Leads (Financial Year) - Strictly Lead Count (Created in FY)
+      // User said: "Total leads means within the financial year"
+      const totalLeads = customers.filter(c => new Date(c.createdAt) >= fyStartDate).length;
 
       // Current month leads
       const currentMonthLeads = customers.filter(c => {
@@ -90,6 +96,14 @@ export default function EcommerceMetrics() {
         const createdDate = new Date(c.createdAt);
         return createdDate.getMonth() === lastMonth &&
           createdDate.getFullYear() === lastMonthYear;
+      }).length;
+
+      // Current month conversions (leads that attained 'converted' status this month)
+      const currentMonthConversionsByStatus = customers.filter(c => {
+        if (c.leadStatus !== 'converted' || !c.convertedAt) return false;
+        const convertedDate = new Date(c.convertedAt);
+        return convertedDate.getMonth() === currentMonth &&
+          convertedDate.getFullYear() === currentYear;
       }).length;
 
       // Calculation helper to avoid NaN and handle zeros correctly
@@ -183,7 +197,7 @@ export default function EcommerceMetrics() {
         currentMonthCollection: currentMonthCollection || 0,
         lastMonthCollection: lastMonthCollection || 0,
         collectionGrowth: parseFloat(collectionGrowth.toFixed(1)),
-        currentMonthConvertedLeads,
+        currentMonthConvertedLeads: currentMonthConversionsByStatus,
       });
       setLoading(false);
     } catch (error) {

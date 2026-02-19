@@ -115,12 +115,38 @@ export default function Reports() {
             // Date range filter
             if (leadDateRange && leadDateRange.length === 2) {
                 const createdAt = new Date(lead.createdAt);
+                const convertedAt = lead.convertedAt ? new Date(lead.convertedAt) : null;
                 const [start, end] = leadDateRange;
-                if (createdAt < start || createdAt > end) return false;
+
+                // Include if created in range OR if converted in range
+                const isCreatedInRange = createdAt >= start && createdAt <= end;
+                const isConvertedInRange = convertedAt && convertedAt >= start && convertedAt <= end;
+
+                if (!isCreatedInRange && !isConvertedInRange) return false;
             }
 
             // Status filter
-            if (leadStatusFilter && lead.leadStatus !== leadStatusFilter) return false;
+            if (leadStatusFilter) {
+                if (lead.leadStatus !== leadStatusFilter) return false;
+
+                // SPECIAL LOGIC: If filtering for 'converted' status, and we have a date range,
+                // we should ONLY show leads that were CONVERTED in that range.
+                if (leadStatusFilter === "converted" && leadDateRange && leadDateRange.length === 2) {
+                    if (!lead.convertedAt) {
+                        // For legacy data, we might need to filter by some other means, but for now we trust convertedAt
+                        // If convertedAt is missing, it might have been converted before the new logic.
+                        // We'll fallback to checking if createdAt is in range as a loose match, 
+                        // but ideally we want converted leads strictly in THEIR conversion month.
+                        const [start, end] = leadDateRange;
+                        const createdAt = new Date(lead.createdAt);
+                        if (createdAt < start || createdAt > end) return false;
+                    } else {
+                        const convertedAt = new Date(lead.convertedAt);
+                        const [start, end] = leadDateRange;
+                        if (convertedAt < start || convertedAt > end) return false;
+                    }
+                }
+            }
 
             // Potential filter
             if (leadPotentialFilter && lead.leadPotential !== leadPotentialFilter) return false;
