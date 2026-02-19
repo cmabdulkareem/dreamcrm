@@ -45,7 +45,8 @@ import {
 } from "../../data/DataSets.jsx";
 
 // Import our new modules
-import { formatDate, getLeadStatusLabel, getLeadStatusColor, getLatestRemark, hasUnreadRemarks } from "../leadManagement/leadHelpers";
+import { formatDate, getLeadStatusLabel, getLeadStatusColor, getLatestRemark, hasUnreadRemarks, getContactPointIcon } from "../leadManagement/leadHelpers";
+
 import { downloadLeadsAsPDF } from "../leadManagement/leadPdfExport";
 import { fetchCustomers, fetchCampaigns, createNewCampaign, prepareLeadForEdit } from "../leadManagement/leadDataManagement";
 import { saveLeadChanges, deleteLead, setLeadReminder, markRemarkAsRead } from "../leadManagement/leadUpdateService";
@@ -1187,12 +1188,15 @@ export default function RecentOrders() {
                 {Object.keys(contactPointStats).length > 0 && (
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800/60">
                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">This Month:</span>
-                    {Object.entries(contactPointStats).map(([contactPoint, count]) => (
-                      <div key={contactPoint} className="flex items-center gap-1.5">
-                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{contactPoint}:</span>
-                        <span className="text-xs font-semibold text-brand-600 dark:text-brand-400">{count}</span>
-                      </div>
-                    ))}
+                    {Object.entries(contactPointStats).map(([contactPoint, count]) => {
+                      const { icon: Icon, color } = getContactPointIcon(contactPoint);
+                      return (
+                        <div key={contactPoint} className="flex items-center gap-1.5" title={contactPoint}>
+                          <Icon className={`size-3.5 ${color}`} />
+                          <span className="text-xs font-semibold text-brand-600 dark:text-brand-400">{count}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -1386,16 +1390,27 @@ export default function RecentOrders() {
                         </TableCell>
                         <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                           <div className="flex flex-col gap-0.5">
-                            <p>{row.contactPoint || "N/A"}</p>
+                            {(() => {
+                              const { icon: Icon, label, color } = getContactPointIcon(row.contactPoint);
+                              return (
+                                <div className="flex items-center gap-2 group/cp" title={label}>
+                                  <div className={`p-1.5 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 transition-transform group-hover/cp:scale-110`}>
+                                    <Icon className={`size-4 ${color}`} />
+                                  </div>
+                                  <span className="hidden lg:inline text-[11px] font-medium text-gray-400 group-hover/cp:text-gray-600 dark:group-hover/cp:text-gray-300 transition-colors uppercase tracking-wider">{label}</span>
+                                </div>
+                              );
+                            })()}
                             {(row.contactPoint?.toLowerCase() === "other" ||
                               row.contactPoint?.toLowerCase() === "reference" ||
                               row.contactPoint?.toLowerCase() === "referance") && row.otherContactPoint && (
-                                <p className="text-gray-400 text-xs truncate max-w-[150px]">
+                                <p className="text-gray-400 text-[10px] truncate max-w-[120px] ml-1 mt-0.5 italic">
                                   {row.otherContactPoint}
                                 </p>
                               )}
                           </div>
                         </TableCell>
+
                         <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">{row.campaign || "N/A"}</TableCell>
                         <TableCell className="py-3">
                           <div className="flex flex-col gap-1.5">
@@ -1877,7 +1892,15 @@ export default function RecentOrders() {
                     />
                   </div>
                   <div className="w-full md:w-1/4">
-                    <Label>Contact Point</Label>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <Label className="mb-0">Contact Point</Label>
+                      {contactPoint && (
+                        (() => {
+                          const { icon: Icon, color } = getContactPointIcon(contactPoint);
+                          return <Icon className={`size-4 ${color}`} />;
+                        })()
+                      )}
+                    </div>
                     <Select
                       options={isManager(user) ? contactPointOptions : contactPointOptions.filter(cp => cp.value !== "__add_new__")}
                       value={contactPoint}

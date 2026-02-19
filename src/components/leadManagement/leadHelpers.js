@@ -1,4 +1,23 @@
 import { leadStatusOptions } from "../../data/DataSets.jsx";
+import {
+  MapPin,
+  PhoneCall,
+  PhoneIncoming,
+  MessageCircleMore,
+  Instagram,
+  Facebook,
+  Users,
+  Mail,
+  Globe,
+  Search,
+  GraduationCap,
+  Activity,
+  HelpCircle,
+  Linkedin,
+  Youtube,
+  Twitter
+} from "lucide-react";
+
 
 // Format date for display
 export const formatDate = (dateString) => {
@@ -65,4 +84,57 @@ export const canViewLead = (lead, user) => {
   if (assignedId && assignedId === userId) return true;
 
   return false;
+};
+
+// Map contact point to icon and label
+export const getContactPointIcon = (contactPoint) => {
+  const cp = (contactPoint || "").toLowerCase().trim();
+
+  if (cp.includes("walk in") || cp.includes("walk-in") || cp === "walkin") {
+    return { icon: MapPin, label: "Walk-In", color: "text-blue-500" };
+  }
+  if (cp.includes("cold call")) {
+    return { icon: PhoneCall, label: "Cold Call", color: "text-orange-500" };
+  }
+  if (cp.includes("incoming") || cp.includes("tele call") || cp.includes("tele-call") || cp === "telecall") {
+    return { icon: PhoneIncoming, label: "Incoming Call", color: "text-green-500" };
+  }
+  if (cp.includes("whatsapp")) {
+    return { icon: MessageCircleMore, label: "WhatsApp", color: "text-emerald-500" };
+  }
+  if (cp.includes("instagram")) {
+    return { icon: Instagram, label: "Instagram", color: "text-pink-500" };
+  }
+  if (cp.includes("facebook") || cp === "fb") {
+    return { icon: Facebook, label: "Facebook", color: "text-blue-600" };
+  }
+  if (cp.includes("refer") || cp.includes("referral")) {
+    return { icon: Users, label: "Reference", color: "text-purple-500" };
+  }
+  if (cp.includes("email") || cp === "mail") {
+    return { icon: Mail, label: "Email", color: "text-red-500" };
+  }
+  if (cp.includes("website") || cp === "web") {
+    return { icon: Globe, label: "Website", color: "text-indigo-500" };
+  }
+  if (cp.includes("google") || cp.includes("search")) {
+    return { icon: Search, label: "Google / Search", color: "text-blue-400" };
+  }
+  if (cp.includes("alumni")) {
+    return { icon: GraduationCap, label: "Alumni", color: "text-amber-600" };
+  }
+  if (cp.includes("activit")) {
+    return { icon: Activity, label: "Activities", color: "text-rose-500" };
+  }
+  if (cp.includes("linkedin")) {
+    return { icon: Linkedin, label: "LinkedIn", color: "text-blue-700" };
+  }
+  if (cp.includes("youtube")) {
+    return { icon: Youtube, label: "YouTube", color: "text-red-600" };
+  }
+  if (cp.includes("twitter")) {
+    return { icon: Twitter, label: "Twitter", color: "text-sky-400" };
+  }
+
+  return { icon: HelpCircle, label: contactPoint || "Other", color: "text-gray-400" };
 };
