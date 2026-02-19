@@ -1389,24 +1389,21 @@ export default function RecentOrders() {
                           </div>
                         </TableCell>
                         <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400 text-center">
-                          <div className="flex flex-col items-center justify-center gap-1">
+                          <div className="flex flex-col items-center justify-center">
                             {(() => {
                               const { icon: Icon, label, color } = getContactPointIcon(row.contactPoint, row.otherContactPoint);
+                              const details = (row.contactPoint?.toLowerCase() === "other" ||
+                                row.contactPoint?.toLowerCase() === "reference" ||
+                                row.contactPoint?.toLowerCase() === "referance") && row.otherContactPoint
+                                ? `: ${row.otherContactPoint}` : "";
                               return (
-                                <div className="group relative" title={label}>
+                                <div className="group relative" title={`${label}${details}`}>
                                   <div className="p-1.5 rounded-lg bg-gray-50/50 dark:bg-gray-800/50 border border-gray-100/50 dark:border-gray-700/50 transition-all duration-300 group-hover:bg-gray-100 dark:group-hover:bg-gray-700 group-hover:scale-110 shadow-sm inline-flex items-center justify-center">
                                     <Icon className={`size-4 ${color}`} />
                                   </div>
                                 </div>
                               );
                             })()}
-                            {(row.contactPoint?.toLowerCase() === "other" ||
-                              row.contactPoint?.toLowerCase() === "reference" ||
-                              row.contactPoint?.toLowerCase() === "referance") && row.otherContactPoint && (
-                                <p className="text-gray-400 text-[9px] truncate max-w-[120px] italic opacity-60 hover:opacity-100 transition-opacity">
-                                  {row.otherContactPoint}
-                                </p>
-                              )}
                           </div>
                         </TableCell>
 
