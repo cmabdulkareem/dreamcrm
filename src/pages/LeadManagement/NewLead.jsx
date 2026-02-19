@@ -222,6 +222,7 @@ export default function FormElements() {
           ...prev,
           phone1: `Lead exists with this number (${response.data.leadName})`
         }));
+        toast.warning(`A lead with this number already exists: ${response.data.leadName}`);
       } else {
         setPhoneExists(false);
         setValidationErrors(prev => {
