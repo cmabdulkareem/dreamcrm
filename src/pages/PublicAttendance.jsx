@@ -47,11 +47,7 @@ export default function PublicAttendance() {
         const { students, attendance, batch, holidays = [] } = data;
         const studentMap = {};
         const statsMap = {};
-        const monthlySummary = { present: 0, absent: 0, late: 0, excused: 0, holiday: 0, weekOff: 0 };
         const dailyStats = {};
-
-        // 0. Map holidays
-        const holidaySet = new Set(holidays.map(h => new Date(h.date).getDate()));
 
         const today = new Date();
         const todayNormalized = new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -81,6 +77,30 @@ export default function PublicAttendance() {
                 }
             });
         });
+
+        // Calculate Batch-level Holidays and Week Offs separately (once per month, not per student)
+        const holidaySet = new Set(holidays.map(h => new Date(h.date).getDate()));
+
+        let batchHolidayCount = 0;
+        let batchWeekOffCount = 0;
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            const currentDate = new Date(selectedYear, selectedMonth - 1, day);
+            if (holidaySet.has(day)) {
+                batchHolidayCount++;
+            } else if (currentDate.getDay() === 0) {
+                batchWeekOffCount++;
+            }
+        }
+
+        const monthlySummary = {
+            present: 0,
+            absent: 0,
+            late: 0,
+            excused: 0,
+            holiday: batchHolidayCount,
+            weekOff: batchWeekOffCount
+        };
 
         // 2. Process each day of the month
         for (let day = 1; day <= daysInMonth; day++) {
@@ -134,11 +154,9 @@ export default function PublicAttendance() {
                 // Update holiday/weekoff counters for visual summary
                 if (finalStatus === 'Holiday') {
                     sStats.holiday++;
-                    monthlySummary.holiday++;
                     dailyStats[day].holiday++;
                 } else if (finalStatus === 'Week Off') {
                     sStats.weekOff++;
-                    monthlySummary.weekOff++;
                     dailyStats[day].weekOff++;
                 }
 
@@ -147,20 +165,16 @@ export default function PublicAttendance() {
                     sStats.totalSessions++;
                     if (finalStatus === 'Absent') {
                         sStats.absent++;
-                        monthlySummary.absent++;
                         dailyStats[day].absent++;
                     } else {
                         sStats.present++;
                         if (finalStatus === 'Present') {
-                            monthlySummary.present++;
                             dailyStats[day].present++;
                         } else if (finalStatus === 'Late') {
                             sStats.late++;
-                            monthlySummary.late++;
                             dailyStats[day].late++;
                         } else if (finalStatus === 'Excused') {
                             sStats.excused++;
-                            monthlySummary.excused++;
                             dailyStats[day].excused++;
                         }
                     }
@@ -245,12 +259,8 @@ export default function PublicAttendance() {
                 <div className="mb-6 p-4 bg-white rounded-2xl border shadow-sm overflow-x-auto no-scrollbar">
                     <div className="flex gap-4 sm:gap-8 min-w-max pb-1">
                         {[
-                            { l: 'P', n: 'Pres.', c: 'bg-green-100 text-green-800 border-green-200', count: monthlySummary.present },
-                            { l: 'A', n: 'Abs.', c: 'bg-red-100 text-red-800 border-red-200', count: monthlySummary.absent },
-                            { l: 'L', n: 'Late', c: 'bg-yellow-100 text-yellow-800 border-yellow-200', count: monthlySummary.late },
-                            { l: 'E', n: 'Exc.', c: 'bg-blue-100 text-blue-800 border-blue-200', count: monthlySummary.excused },
-                            { l: 'H', n: 'Hol.', c: 'bg-purple-100 text-purple-800 border-purple-200', count: monthlySummary.holiday },
-                            { l: 'W', n: 'Off', c: 'bg-gray-100 text-gray-800 border-gray-200', count: monthlySummary.weekOff }
+                            { l: 'H', n: 'Holiday', c: 'bg-purple-100 text-purple-800 border-purple-200', count: monthlySummary.holiday },
+                            { l: 'W', n: 'Week Off', c: 'bg-gray-100 text-gray-800 border-gray-200', count: monthlySummary.weekOff }
                         ].map(item => (
                             <div key={item.l} className="flex items-center gap-3">
                                 <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border ${item.c}`}>
