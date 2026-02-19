@@ -1189,9 +1189,9 @@ export default function RecentOrders() {
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800/60">
                     <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">This Month:</span>
                     {Object.entries(contactPointStats).map(([contactPoint, count]) => {
-                      const { icon: Icon, color } = getContactPointIcon(contactPoint);
+                      const { icon: Icon, label, color } = getContactPointIcon(contactPoint);
                       return (
-                        <div key={contactPoint} className="flex items-center gap-1.5" title={contactPoint}>
+                        <div key={contactPoint} className="flex items-center gap-1.5" title={label}>
                           <Icon className={`size-3.5 ${color}`} />
                           <span className="text-xs font-semibold text-brand-600 dark:text-brand-400">{count}</span>
                         </div>
@@ -1510,7 +1510,21 @@ export default function RecentOrders() {
                           onMouseEnter={(e) => handleAnalysisEnter(e, row)}
                           onMouseLeave={handleAnalysisLeave}
                         >
-                          <h4 className="font-semibold text-gray-800 dark:text-white/90">{row.fullName}</h4>
+                          <div className="flex items-baseline gap-2">
+                            <h4 className="font-semibold text-gray-800 dark:text-white/90">{row.fullName}</h4>
+                            {(() => {
+                              const { icon: Icon, label, color } = getContactPointIcon(row.contactPoint, row.otherContactPoint);
+                              const details = (row.contactPoint?.toLowerCase() === "other" ||
+                                row.contactPoint?.toLowerCase() === "reference" ||
+                                row.contactPoint?.toLowerCase() === "referance") && row.otherContactPoint
+                                ? `: ${row.otherContactPoint}` : "";
+                              return (
+                                <div title={`${label}${details}`}>
+                                  <Icon className={`size-3.5 ${color} opacity-80`} />
+                                </div>
+                              );
+                            })()}
+                          </div>
                           <a href={`tel:${row.phone1}`} className="text-brand-500 text-sm font-medium hover:underline">
                             {row.phone1}
                           </a>
