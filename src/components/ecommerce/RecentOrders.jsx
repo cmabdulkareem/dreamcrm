@@ -1321,7 +1321,7 @@ export default function RecentOrders() {
                   </TableCell>
                   <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Name</TableCell>
                   <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Date Added</TableCell>
-                  <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Contact Point</TableCell>
+                  <TableCell isHeader className="py-3 font-medium text-gray-500 text-center text-theme-xs dark:text-gray-400">Contact Point</TableCell>
                   <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Campaign</TableCell>
                   <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Status & Remark</TableCell>
                   <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Next Follow-up</TableCell>
@@ -1388,19 +1388,14 @@ export default function RecentOrders() {
                             </p>
                           </div>
                         </TableCell>
-                        <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
-                          <div className="flex flex-col gap-0.5">
+                        <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400 text-center">
+                          <div className="flex flex-col items-center justify-center gap-1">
                             {(() => {
                               const { icon: Icon, label, color } = getContactPointIcon(row.contactPoint, row.otherContactPoint);
                               return (
-                                <div className="flex items-center group relative cursor-default" title={label}>
-                                  <div className="p-1.5 rounded-lg bg-gray-50/50 dark:bg-gray-800/50 border border-gray-100/50 dark:border-gray-700/50 transition-all duration-300 group-hover:bg-gray-100 dark:group-hover:bg-gray-700 group-hover:scale-110 shadow-sm shrink-0">
+                                <div className="group relative" title={label}>
+                                  <div className="p-1.5 rounded-lg bg-gray-50/50 dark:bg-gray-800/50 border border-gray-100/50 dark:border-gray-700/50 transition-all duration-300 group-hover:bg-gray-100 dark:group-hover:bg-gray-700 group-hover:scale-110 shadow-sm inline-flex items-center justify-center">
                                     <Icon className={`size-4 ${color}`} />
-                                  </div>
-                                  <div className="overflow-hidden max-w-0 group-hover:max-w-[200px] opacity-0 group-hover:opacity-100 transition-all duration-500 ease-in-out whitespace-nowrap">
-                                    <span className="ml-2 text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                      {label}
-                                    </span>
                                   </div>
                                 </div>
                               );
@@ -1408,7 +1403,7 @@ export default function RecentOrders() {
                             {(row.contactPoint?.toLowerCase() === "other" ||
                               row.contactPoint?.toLowerCase() === "reference" ||
                               row.contactPoint?.toLowerCase() === "referance") && row.otherContactPoint && (
-                                <p className="text-gray-400 text-[9px] truncate max-w-[120px] ml-1 mt-0.5 italic opacity-60 group-hover:opacity-100 transition-opacity">
+                                <p className="text-gray-400 text-[9px] truncate max-w-[120px] italic opacity-60 hover:opacity-100 transition-opacity">
                                   {row.otherContactPoint}
                                 </p>
                               )}
