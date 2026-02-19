@@ -1,3 +1,7 @@
+import customerModel from "../model/customerModel.js";
+import userModel from "../model/userModel.js";
+import { isAdmin, isManager, isCounsellor } from "../utils/roleHelpers.js";
+import { emitNotification as emitSocketNotification } from "../realtime/socket.js";
 import { logActivity } from "../utils/activityLogger.js";
 
 // Check if a lead with the same phone number exists within the brand
