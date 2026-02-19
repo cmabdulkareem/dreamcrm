@@ -1391,22 +1391,24 @@ export default function RecentOrders() {
                         <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                           <div className="flex flex-col gap-0.5">
                             {(() => {
-                              const { icon: Icon, label, color } = getContactPointIcon(row.contactPoint);
+                              const { icon: Icon, label, color } = getContactPointIcon(row.contactPoint, row.otherContactPoint);
                               return (
-                                <div className="flex items-center gap-2 group/cp" title={label}>
-                                  <div className={`p-1.5 rounded-lg bg-gray-50/50 dark:bg-gray-800/50 border border-gray-100/50 dark:border-gray-700/50 transition-all duration-300 group-hover/cp:bg-gray-100 dark:group-hover/cp:bg-gray-700 group-hover/cp:scale-110 shadow-sm shrink-0`}>
+                                <div className="flex items-center group relative cursor-default" title={label}>
+                                  <div className="p-1.5 rounded-lg bg-gray-50/50 dark:bg-gray-800/50 border border-gray-100/50 dark:border-gray-700/50 transition-all duration-300 group-hover:bg-gray-100 dark:group-hover:bg-gray-700 group-hover:scale-110 shadow-sm shrink-0">
                                     <Icon className={`size-4 ${color}`} />
                                   </div>
-                                  <span className="hidden group-hover/cp:inline-block text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap transition-all duration-300">
-                                    {label}
-                                  </span>
+                                  <div className="overflow-hidden max-w-0 group-hover:max-w-[200px] opacity-0 group-hover:opacity-100 transition-all duration-500 ease-in-out whitespace-nowrap">
+                                    <span className="ml-2 text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                      {label}
+                                    </span>
+                                  </div>
                                 </div>
                               );
                             })()}
                             {(row.contactPoint?.toLowerCase() === "other" ||
                               row.contactPoint?.toLowerCase() === "reference" ||
                               row.contactPoint?.toLowerCase() === "referance") && row.otherContactPoint && (
-                                <p className="text-gray-400 text-[10px] truncate max-w-[120px] ml-1 mt-0.5 italic">
+                                <p className="text-gray-400 text-[9px] truncate max-w-[120px] ml-1 mt-0.5 italic opacity-60 group-hover:opacity-100 transition-opacity">
                                   {row.otherContactPoint}
                                 </p>
                               )}

@@ -87,84 +87,63 @@ export const canViewLead = (lead, user) => {
 };
 
 // Map contact point to icon and label
-export const getContactPointIcon = (contactPoint) => {
-  const cp = (contactPoint || "").toLowerCase().trim();
+export const getContactPointIcon = (contactPoint, otherContactPoint = "") => {
+  const primary = (contactPoint || "").toLowerCase().trim();
+  const secondary = (otherContactPoint || "").toLowerCase().trim();
 
-  // Walk-In
-  if (cp.includes("walk in") || cp.includes("walk-in") || cp === "walkin") {
+  // Normalize string for searching: remove hyphens, spaces, underscores
+  const normalize = (str) => str.replace(/[-_\s]/g, "").trim();
+  const cp = normalize(`${primary}${secondary}`);
+
+  if (cp.includes("walkin")) {
     return { icon: MapPin, label: "Walk-In", color: "text-blue-500" };
   }
-
-  // Cold Calls
-  if (cp.includes("cold call")) {
+  if (cp.includes("coldcall")) {
     return { icon: PhoneCall, label: "Cold Call", color: "text-orange-500" };
   }
-
-  // Incoming / Tele Call
-  if (cp.includes("incoming") || cp.includes("tele call") || cp.includes("tele-call") || cp === "telecall" || cp.includes("phone")) {
+  if (cp.includes("incoming") || cp.includes("telecall") || cp.includes("phone")) {
     return { icon: PhoneIncoming, label: "Call", color: "text-green-500" };
   }
-
-  // WhatsApp
-  if (cp.includes("whatsapp") || cp.includes("wa.me")) {
+  if (cp.includes("whatsapp")) {
     return { icon: MessageCircleMore, label: "WhatsApp", color: "text-emerald-500" };
   }
-
-  // Instagram
   if (cp.includes("instagram") || cp === "ig") {
     return { icon: Instagram, label: "Instagram", color: "text-pink-500" };
   }
-
-  // Facebook
   if (cp.includes("facebook") || cp === "fb") {
     return { icon: Facebook, label: "Facebook", color: "text-blue-600" };
   }
-
-  // Reference
-  if (cp.includes("refer") || cp.includes("referral")) {
+  if (cp.includes("refer")) {
     return { icon: Users, label: "Reference", color: "text-purple-500" };
   }
-
-  // Email
   if (cp.includes("email") || cp === "mail") {
     return { icon: Mail, label: "Email", color: "text-red-500" };
   }
-
-  // Website
   if (cp.includes("website") || cp.includes("web") || cp.includes("online")) {
     return { icon: Globe, label: "Website", color: "text-indigo-500" };
   }
-
-  // Google / Search
   if (cp.includes("google") || cp.includes("search") || cp.includes("seo")) {
     return { icon: Search, label: "Google / Search", color: "text-blue-400" };
   }
-
-  // Alumni
   if (cp.includes("alumni")) {
     return { icon: GraduationCap, label: "Alumni", color: "text-amber-600" };
   }
-
-  // Activities
   if (cp.includes("activit")) {
     return { icon: Activity, label: "Activities", color: "text-rose-500" };
   }
-
-  // LinkedIn
   if (cp.includes("linkedin")) {
     return { icon: Linkedin, label: "LinkedIn", color: "text-blue-700" };
   }
-
-  // YouTube
   if (cp.includes("youtube") || cp === "yt") {
     return { icon: Youtube, label: "YouTube", color: "text-red-600" };
   }
-
-  // Twitter
   if (cp.includes("twitter") || cp === "x") {
     return { icon: Twitter, label: "Twitter", color: "text-sky-400" };
   }
 
-  return { icon: HelpCircle, label: contactPoint || "Other", color: "text-gray-400" };
-};
+  // Fallback to title-cased content
+  const rawLabel = primary === "other" && secondary ? otherContactPoint : (contactPoint || "Other");
+  const fallbackLabel = rawLabel.split(/[-_\s]/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
 
+  return { icon: HelpCircle, label: fallbackLabel, color: "text-gray-400" };
+};
