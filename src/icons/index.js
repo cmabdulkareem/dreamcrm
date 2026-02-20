@@ -46,6 +46,7 @@ import { ReactComponent as ChatIcon } from "./chat.svg?react";
 import { ReactComponent as CalendarIcon } from "./calendar.svg?react";
 import { ReactComponent as PaperAirplaneIcon } from "./paper-airplane.svg?react";
 import { ReactComponent as RupeeIcon } from "./rupee.svg?react";
+import { ReactComponent as VerticalDotsIcon } from "./moredot.svg?react";
 
 
 export {
@@ -97,4 +98,5 @@ export {
   ChevronUpIcon,
   PaperAirplaneIcon,
   RupeeIcon,
+  VerticalDotsIcon,
 };

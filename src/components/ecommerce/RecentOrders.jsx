@@ -11,7 +11,9 @@ import { createPortal } from "react-dom";
 import axios from "axios";
 import Papa from "papaparse";
 import Button from "../../components/ui/button/Button";
-import { DownloadIcon, PencilIcon, CloseIcon, BoltIcon, ChevronDownIcon, ChevronUpIcon, FileIcon } from "../../icons";
+import { DownloadIcon, PencilIcon, CloseIcon, BoltIcon, ChevronDownIcon, ChevronUpIcon, FileIcon, VerticalDotsIcon } from "../../icons";
+import { Dropdown } from "../ui/dropdown/Dropdown";
+import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import ComponentCard from "../common/ComponentCard.jsx";
 import Input from "../form/input/InputField";
 import PhoneInput from "../form/group-input/PhoneInput.jsx";
@@ -1032,6 +1034,11 @@ export default function RecentOrders() {
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [assignToUser, setAssignToUser] = useState("");
   const [assignmentRemark, setAssignmentRemark] = useState("");
+  const [openDropdownId, setOpenDropdownId] = useState(null);
+
+  const toggleDropdown = (id) => {
+    setOpenDropdownId(prev => (prev === id ? null : id));
+  };
   // const [availableUsers, setAvailableUsers] = useState([]); // Removed duplicate state
 
   // Open assignment modal
@@ -1456,20 +1463,56 @@ export default function RecentOrders() {
                         <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                           <div className="flex items-center">
                             <Button size="sm" variant="outline" className="mr-2" endIcon={<PencilIcon className="size-5" />} onClick={() => handleEdit(row)} />
-                            {isOwner(user) && (
-                              <Button size="sm" variant="outline" className="text-red-500 mr-2" endIcon={<CloseIcon className="size-5" />} onClick={() => handleDelete(row)} />
-                            )}
-                            {canAssignLeads && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-blue-500 mr-2"
-                                onClick={() => openAssignModal(row)}
+
+                            {/* Dropdown for other actions */}
+                            <div className="relative">
+                              <button
+                                onClick={() => toggleDropdown(row._id)}
+                                className="dropdown-toggle size-9 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-700 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-400 dark:hover:bg-white/[0.05]"
                               >
-                                Assign
-                              </Button>
-                            )}
-                            <Button size="sm" variant="outline" className="text-yellow-500" title="Follow-up Alarm" endIcon={<BoltIcon className="size-5" />} onClick={() => handleAlarm(row)} />
+                                <VerticalDotsIcon className="size-5" />
+                              </button>
+
+                              <Dropdown
+                                isOpen={openDropdownId === row._id}
+                                onClose={() => setOpenDropdownId(null)}
+                                className="w-40"
+                              >
+                                {canAssignLeads && (
+                                  <DropdownItem
+                                    onClick={() => {
+                                      setOpenDropdownId(null);
+                                      openAssignModal(row);
+                                    }}
+                                    className="flex items-center gap-2 text-blue-500"
+                                  >
+                                    Assign
+                                  </DropdownItem>
+                                )}
+                                <DropdownItem
+                                  onClick={() => {
+                                    setOpenDropdownId(null);
+                                    handleAlarm(row);
+                                  }}
+                                  className="flex items-center gap-2 text-yellow-500"
+                                >
+                                  <BoltIcon className="size-4" />
+                                  Follow-up
+                                </DropdownItem>
+                                {isOwner(user) && (
+                                  <DropdownItem
+                                    onClick={() => {
+                                      setOpenDropdownId(null);
+                                      handleDelete(row);
+                                    }}
+                                    className="flex items-center gap-2 text-red-500"
+                                  >
+                                    <CloseIcon className="size-4" />
+                                    Delete
+                                  </DropdownItem>
+                                )}
+                              </Dropdown>
+                            </div>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -1584,22 +1627,58 @@ export default function RecentOrders() {
                     </div>
 
                     <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100 dark:border-gray-800">
-                      <Button size="sm" variant="outline" className="p-2" onClick={() => handleAlarm(row)}>
-                        <BoltIcon className="size-5 text-yellow-500" />
+                      <Button size="sm" variant="primary" className="px-3 mr-auto" onClick={() => handleEdit(row)}>
+                        Edit
                       </Button>
-                      {canAssignLeads && (
-                        <Button size="sm" variant="outline" className="text-blue-500 px-3" onClick={() => openAssignModal(row)}>
-                          Assign
-                        </Button>
-                      )}
-                      {isOwner(user) && (
-                        <Button size="sm" variant="outline" className="p-2 text-red-500" onClick={() => handleDelete(row)}>
-                          <CloseIcon className="size-5" />
-                        </Button>
-                      )}
-                      <Button size="sm" variant="primary" className="px-3" onClick={() => handleEdit(row)}>
-                        <PencilIcon className="size-4 mr-2" /> Edit
-                      </Button>
+
+                      <div className="relative">
+                        <button
+                          onClick={() => toggleDropdown(row._id + "_mobile")}
+                          className="dropdown-toggle size-9 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-700 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-400 dark:hover:bg-white/[0.05]"
+                        >
+                          <VerticalDotsIcon className="size-5" />
+                        </button>
+
+                        <Dropdown
+                          isOpen={openDropdownId === row._id + "_mobile"}
+                          onClose={() => setOpenDropdownId(null)}
+                          className="w-40 bottom-full mb-2"
+                        >
+                          {canAssignLeads && (
+                            <DropdownItem
+                              onClick={() => {
+                                setOpenDropdownId(null);
+                                openAssignModal(row);
+                              }}
+                              className="flex items-center gap-2 text-blue-500"
+                            >
+                              Assign
+                            </DropdownItem>
+                          )}
+                          <DropdownItem
+                            onClick={() => {
+                              setOpenDropdownId(null);
+                              handleAlarm(row);
+                            }}
+                            className="flex items-center gap-2 text-yellow-500"
+                          >
+                            <BoltIcon className="size-4" />
+                            Follow-up
+                          </DropdownItem>
+                          {isOwner(user) && (
+                            <DropdownItem
+                              onClick={() => {
+                                setOpenDropdownId(null);
+                                handleDelete(row);
+                              }}
+                              className="flex items-center gap-2 text-red-500"
+                            >
+                              <CloseIcon className="size-4" />
+                              Delete
+                            </DropdownItem>
+                          )}
+                        </Dropdown>
+                      </div>
                     </div>
                   </div>
                 );
