@@ -21,7 +21,8 @@ import {
   MailIcon,
   CalendarIcon,
   PlusIcon,
-  TicketIcon
+  TicketIcon,
+  GroupIcon
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import SidebarWidget from "./SidebarWidget";
