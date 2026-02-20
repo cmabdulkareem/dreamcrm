@@ -158,6 +158,26 @@ export default function Reports() {
         });
     }, [leads, leadDateRange, leadStatusFilter, leadPotentialFilter, campaignFilter]);
 
+    // Filter call lists
+    const filteredCallLists = useMemo(() => {
+        return callLists.filter(call => {
+            // Date range filter
+            if (callDateRange && callDateRange.length === 2) {
+                const createdAt = new Date(call.createdAt);
+                const [start, end] = callDateRange;
+                if (createdAt < start || createdAt > end) return false;
+            }
+
+            // Status filter
+            if (callStatusFilter && call.status !== callStatusFilter) return false;
+
+            // Assigned user filter
+            if (assignedUserFilter && call.assignedTo?._id !== assignedUserFilter) return false;
+
+            return true;
+        });
+    }, [callLists, callDateRange, callStatusFilter, assignedUserFilter]);
+
     // Lead statistics - STRICTLY separated by Creation Month vs Conversion Month
     const leadStats = useMemo(() => {
         if (!leadDateRange || leadDateRange.length !== 2) {
