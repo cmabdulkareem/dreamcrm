@@ -1,13 +1,11 @@
-import { useState, useEffect, useContext, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
-import { AuthContext } from "../../context/AuthContext";
 import PageMeta from "../../components/common/PageMeta";
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ComponentCard from "../../components/common/ComponentCard";
 import Button from "../../components/ui/button/Button";
 import Label from "../../components/form/Label";
-import Input from "../../components/form/input/InputField";
 import RangeDatePicker from "../../components/form/RangeDatePicker";
 import Select from "../../components/form/Select";
 import { Table, TableBody, TableCell, TableHeader, TableRow } from "../../components/ui/table";
@@ -24,7 +22,6 @@ import { formatDate } from "../../components/leadManagement/leadHelpers";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 
 export default function Reports() {
-    const { user } = useContext(AuthContext);
     const [activeTab, setActiveTab] = useState("leads");
     const [showFilters, setShowFilters] = useState(true);
 
@@ -87,7 +84,7 @@ export default function Reports() {
         setLeadsLoading(true);
         try {
             const response = await axios.get(`${API}/customers/all`, { withCredentials: true });
-            setLeads(response.data.customers);
+            setLeads(response.data.customers || []);
         } catch (error) {
             console.error("Error fetching leads:", error);
             toast.error("Failed to fetch leads");
@@ -100,7 +97,7 @@ export default function Reports() {
         setCallsLoading(true);
         try {
             const response = await axios.get(`${API}/call-lists`, { withCredentials: true });
-            setCallLists(response.data.callLists);
+            setCallLists(response.data.callLists || []);
         } catch (error) {
             console.error("Error fetching call lists:", error);
             toast.error("Failed to fetch call lists");
@@ -109,136 +106,119 @@ export default function Reports() {
         }
     };
 
-    // Filter leads
-    const filteredLeads = useMemo(() => {
+    // Helper: normalize end of date range to end of day so the last day is inclusive
+    const normalizeDateRange = (range) => {
+        if (!range || range.length !== 2) return null;
+        const [s, e] = range;
+        const start = new Date(s);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(e);
+        end.setHours(23, 59, 59, 999);
+        return [start, end];
+    };
+
+    // 1. Base Filtered Leads (Date + Potential + Campaign - Ignore Status for Stats)
+    const baseFilteredLeads = useMemo(() => {
+        const range = normalizeDateRange(leadDateRange);
         return leads.filter(lead => {
-            // Date range filter
-            if (leadDateRange && leadDateRange.length === 2) {
+            if (range) {
+                const [start, end] = range;
                 const createdAt = new Date(lead.createdAt);
                 const convertedAt = lead.convertedAt ? new Date(lead.convertedAt) : null;
-                const [start, end] = leadDateRange;
-
-                // Include if created in range OR if converted in range
                 const isCreatedInRange = createdAt >= start && createdAt <= end;
                 const isConvertedInRange = convertedAt && convertedAt >= start && convertedAt <= end;
-
                 if (!isCreatedInRange && !isConvertedInRange) return false;
             }
+            if (leadPotentialFilter && lead.leadPotential !== leadPotentialFilter) return false;
+            if (campaignFilter && lead.campaign !== campaignFilter) return false;
+            return true;
+        });
+    }, [leads, leadDateRange, leadPotentialFilter, campaignFilter]);
 
-            // Status filter
+    // 2. Final Filtered Leads for Table (Apply Status Filter)
+    const filteredLeads = useMemo(() => {
+        const range = normalizeDateRange(leadDateRange);
+        return baseFilteredLeads.filter(lead => {
             if (leadStatusFilter) {
                 if (lead.leadStatus !== leadStatusFilter) return false;
-
-                // SPECIAL LOGIC: If filtering for 'converted' status, and we have a date range,
-                // we should ONLY show leads that were CONVERTED in that range.
-                if (leadStatusFilter === "converted" && leadDateRange && leadDateRange.length === 2) {
-                    if (!lead.convertedAt) {
-                        // For legacy data, we might need to filter by some other means, but for now we trust convertedAt
-                        // If convertedAt is missing, it might have been converted before the new logic.
-                        // We'll fallback to checking if createdAt is in range as a loose match, 
-                        // but ideally we want converted leads strictly in THEIR conversion month.
-                        const [start, end] = leadDateRange;
+                if (leadStatusFilter === "converted" && range) {
+                    const [start, end] = range;
+                    let convertedAt = lead.convertedAt ? new Date(lead.convertedAt) : null;
+                    if (!convertedAt && lead.remarks) {
+                        const conversionRemark = lead.remarks.find(r => r.leadStatus === 'converted' || r.remark?.includes("Admission taken"));
+                        if (conversionRemark && conversionRemark.updatedOn) convertedAt = new Date(conversionRemark.updatedOn);
+                    }
+                    if (!convertedAt) {
                         const createdAt = new Date(lead.createdAt);
                         if (createdAt < start || createdAt > end) return false;
-                    } else {
-                        const convertedAt = new Date(lead.convertedAt);
-                        const [start, end] = leadDateRange;
-                        if (convertedAt < start || convertedAt > end) return false;
-                    }
+                    } else if (convertedAt < start || convertedAt > end) return false;
                 }
             }
-
-            // Potential filter
-            if (leadPotentialFilter && lead.leadPotential !== leadPotentialFilter) return false;
-
-            // Campaign filter
-            if (campaignFilter && lead.campaign !== campaignFilter) return false;
-
             return true;
         });
-    }, [leads, leadDateRange, leadStatusFilter, leadPotentialFilter, campaignFilter]);
+    }, [baseFilteredLeads, leadStatusFilter, leadDateRange]);
 
-    // Filter call lists
-    const filteredCallLists = useMemo(() => {
+    // 1. Base Filtered Call Lists (Date + User - Ignore Status for Stats)
+    const baseFilteredCallLists = useMemo(() => {
+        const range = normalizeDateRange(callDateRange);
         return callLists.filter(call => {
-            // Date range filter
-            if (callDateRange && callDateRange.length === 2) {
+            if (range) {
+                const [start, end] = range;
                 const createdAt = new Date(call.createdAt);
-                const [start, end] = callDateRange;
                 if (createdAt < start || createdAt > end) return false;
             }
-
-            // Status filter
-            if (callStatusFilter && call.status !== callStatusFilter) return false;
-
-            // Assigned user filter
             if (assignedUserFilter && call.assignedTo?._id !== assignedUserFilter) return false;
-
             return true;
         });
-    }, [callLists, callDateRange, callStatusFilter, assignedUserFilter]);
+    }, [callLists, callDateRange, assignedUserFilter]);
 
-    // Lead statistics - STRICTLY separated by Creation Month vs Conversion Month
+    // 2. Final Filtered Call Lists for Table (Apply Status Filter)
+    const filteredCallLists = useMemo(() => {
+        return baseFilteredCallLists.filter(call => {
+            if (callStatusFilter && call.status !== callStatusFilter) return false;
+            return true;
+        });
+    }, [baseFilteredCallLists, callStatusFilter]);
+
+    // Lead statistics - STRICTLY filtered by the selected criteria (except status)
     const leadStats = useMemo(() => {
-        if (!leadDateRange || leadDateRange.length !== 2) {
-            const total = leads.length;
-            const converted = leads.filter(l => l.leadStatus === "converted").length;
-            const conversionRate = total > 0 ? ((converted / total) * 100).toFixed(2) : 0;
-            return { total, converted, conversionRate };
-        }
+        const range = normalizeDateRange(leadDateRange);
+        const [start, end] = range || [null, null];
 
-        const [start, end] = leadDateRange;
-
-        // Total Leads = Leads CREATED in this period
-        const totalCreatedInPeriod = leads.filter(lead => {
+        const totalCreated = baseFilteredLeads.filter(lead => {
+            if (!start) return true;
             const createdAt = new Date(lead.createdAt);
             return createdAt >= start && createdAt <= end;
         }).length;
 
-        // Converted Count = Leads CONVERTED in this period (regardless of when created)
-        const totalConvertedInPeriod = leads.filter(lead => {
+        const totalConverted = baseFilteredLeads.filter(lead => {
             if (lead.leadStatus !== "converted") return false;
-
+            if (!start) return true;
             let convertedAt = lead.convertedAt ? new Date(lead.convertedAt) : null;
             if (!convertedAt && lead.remarks) {
-                const conversionRemark = lead.remarks.find(r =>
-                    r.leadStatus === 'converted' || r.remark?.includes("Admission taken")
-                );
-                if (conversionRemark && conversionRemark.updatedOn) {
-                    convertedAt = new Date(conversionRemark.updatedOn);
-                }
+                const conversionRemark = lead.remarks.find(r => r.leadStatus === 'converted' || r.remark?.includes("Admission taken"));
+                if (conversionRemark && conversionRemark.updatedOn) convertedAt = new Date(conversionRemark.updatedOn);
             }
-
-            if (convertedAt) {
-                return convertedAt >= start && convertedAt <= end;
+            if (!convertedAt) {
+                const createdAt = new Date(lead.createdAt);
+                return createdAt >= start && createdAt <= end;
             }
-
-            // Final fallback for very old data
-            const createdAt = new Date(lead.createdAt);
-            return createdAt >= start && createdAt <= end;
+            return convertedAt >= start && convertedAt <= end;
         }).length;
 
-        const conversionRate = totalCreatedInPeriod > 0
-            ? ((totalConvertedInPeriod / totalCreatedInPeriod) * 100).toFixed(2)
-            : 0;
+        const conversionRate = totalCreated > 0 ? ((totalConverted / totalCreated) * 100).toFixed(2) : 0;
+        return { total: totalCreated, converted: totalConverted, conversionRate };
+    }, [baseFilteredLeads, leadDateRange]);
 
-        return {
-            total: totalCreatedInPeriod,
-            converted: totalConvertedInPeriod,
-            conversionRate
-        };
-    }, [leads, leadDateRange]);
-
-    // Call list statistics
+    // Call list statistics - Based on date/user filtered pool (ignores status filter)
     const callStats = useMemo(() => {
-        const total = filteredCallLists.length;
-        const completed = filteredCallLists.filter(c =>
+        const total = baseFilteredCallLists.length;
+        const completed = baseFilteredCallLists.filter(c =>
             c.status && !["pending", "no-answer", "busy", "switched-off"].includes(c.status)
         ).length;
         const completionRate = total > 0 ? ((completed / total) * 100).toFixed(2) : 0;
-
         return { total, completed, completionRate };
-    }, [filteredCallLists]);
+    }, [baseFilteredCallLists]);
 
     // Export to CSV
     const exportToCSV = () => {
@@ -251,11 +231,13 @@ export default function Reports() {
                 "Email": lead.email || "N/A",
                 "Phone": lead.phone1,
                 "Lead Status": lead.leadStatus,
-                "Lead Potential": lead.leadPotential,
+                "Lead Potential": lead.leadPotential || "N/A",
                 "Campaign": lead.campaign || "N/A",
                 "Contact Point": lead.contactPoint || "N/A",
+                "Assigned To": lead.assignedTo?.fullName || "N/A",
                 "Created Date": formatDate(lead.createdAt),
-                "Follow-up Date": lead.followUpDate ? formatDate(lead.followUpDate) : "N/A"
+                "Follow-up Date": lead.followUpDate ? formatDate(lead.followUpDate) : "N/A",
+                "Converted Date": lead.convertedAt ? formatDate(lead.convertedAt) : "N/A"
             }));
         } else {
             csvData = data.map(call => ({
