@@ -1130,11 +1130,26 @@ export const getUserUsageStats = async (req, res) => {
       return res.status(403).json({ message: "Access denied. Owner or Manager privileges required." });
     }
 
-    // Fetch all users except students and inactive accounts
-    const users = await userModel.find({
+    // Build query
+    const query = {
       roles: { $ne: 'Student' },
       accountStatus: 'Active'
-    })
+    };
+
+    // Filter by brand if not admin/owner
+    if (!isAdmin(req.user)) {
+      // Get the requester's brands from the database since token might not have it
+      const requester = await userModel.findById(req.user.id).select('brands');
+      if (requester && requester.brands && requester.brands.length > 0) {
+        query.brands = { $in: requester.brands };
+      } else {
+        // If they have no brands associated, they shouldn't see anyone (except maybe themselves, but usually brand managers have brands)
+        // For safety, if they aren't admin and have no brands, return empty or limit to themselves
+        query._id = req.user.id;
+      }
+    }
+
+    const users = await userModel.find(query)
       .select('fullName email avatar roles lastLogin accountStatus')
       .sort({ lastLogin: -1 });
 
