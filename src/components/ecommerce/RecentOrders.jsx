@@ -1448,7 +1448,7 @@ export default function RecentOrders() {
                             </Badge>
                             {row.assignedTo && (
                               <p className="text-gray-400 text-xs truncate max-w-[180px]">
-                                Assigned To:&nbsp;{row.assignedTo.fullName}
+                                {row.assignedTo.fullName}
                               </p>
                             )}
                           </div>
