@@ -2,7 +2,7 @@ import { AuthContext } from "../context/AuthContext";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import { Navigate } from "react-router-dom";
 import { useContext } from "react";
-import { hasAnyRole } from "../utils/roleHelpers";
+import { hasAnyRole, isManager, isAccountant } from "../utils/roleHelpers";
 
 function ProtectedRoutes({ children, requireAdmin = false, requireManager = false, requireAccountant = false, allowedRoles = [], redirectTo = "/signin" }) {
     const { isLoggedIn, isAdmin, loading, user } = useContext(AuthContext);
