@@ -37,8 +37,9 @@ const Databases = lazy(() => import("./pages/Marketing/Databases"));
 const HRDashboard = lazy(() => import("./pages/HR/HRDashboard"));
 const EmployeeList = lazy(() => import("./pages/HR/EmployeeList"));
 const EmployeeForm = lazy(() => import("./pages/HR/EmployeeForm"));
-const JobPostings = lazy(() => import("./pages/HR/Recruitment/JobPostings"));
-const CandidateList = lazy(() => import("./pages/HR/Recruitment/CandidateList"));
+const JobPostings = lazy(() => import('./pages/HR/Recruitment/JobPostings'));
+const JobForm = lazy(() => import('./pages/HR/Recruitment/JobForm'));
+const CandidateList = lazy(() => import('./pages/HR/Recruitment/CandidateList'));
 const InterviewSchedule = lazy(() => import("./pages/HR/Recruitment/InterviewSchedule"));
 const ManageEvents = lazy(() => import("./pages/EventManagement/ManageEvents"));
 const CreateEvent = lazy(() => import("./pages/EventManagement/CreateEvent"));
@@ -177,7 +178,8 @@ function App() {
                     <Route path="employees" element={<ProtectedRoutes allowedRoles={[...HR_ROLES, ...MANAGER_ROLES]}><Suspense fallback={<LoadingSpinner />}><EmployeeList /></Suspense></ProtectedRoutes>} />
                     <Route path="employees/new" element={<ProtectedRoutes allowedRoles={[...HR_ROLES, ...MANAGER_ROLES]}><Suspense fallback={<LoadingSpinner />}><EmployeeForm /></Suspense></ProtectedRoutes>} />
                     <Route path="recruitment/jobs" element={<ProtectedRoutes allowedRoles={[...HR_ROLES, ...MANAGER_ROLES]}><Suspense fallback={<LoadingSpinner />}><JobPostings /></Suspense></ProtectedRoutes>} />
-                    <Route path="recruitment/jobs/new" element={<ProtectedRoutes allowedRoles={[...HR_ROLES, ...MANAGER_ROLES]}><Suspense fallback={<LoadingSpinner />}><JobPostings /></Suspense></ProtectedRoutes>} />
+                    <Route path="recruitment/jobs/new" element={<ProtectedRoutes allowedRoles={[...HR_ROLES, ...MANAGER_ROLES]}><Suspense fallback={<LoadingSpinner />}><JobForm /></Suspense></ProtectedRoutes>} />
+                    <Route path="recruitment/jobs/:id/edit" element={<ProtectedRoutes allowedRoles={[...HR_ROLES, ...MANAGER_ROLES]}><Suspense fallback={<LoadingSpinner />}><JobForm /></Suspense></ProtectedRoutes>} />
                     <Route path="recruitment/candidates" element={<ProtectedRoutes allowedRoles={[...HR_ROLES, ...MANAGER_ROLES]}><Suspense fallback={<LoadingSpinner />}><CandidateList /></Suspense></ProtectedRoutes>} />
                     <Route path="recruitment/interviews" element={<ProtectedRoutes allowedRoles={[...HR_ROLES, ...MANAGER_ROLES]}><Suspense fallback={<LoadingSpinner />}><InterviewSchedule /></Suspense></ProtectedRoutes>} />
                     <Route path="payroll" element={<ProtectedRoutes allowedRoles={[...HR_ROLES, ...MANAGER_ROLES]}><div className="p-6">Payroll Module Coming Soon</div></ProtectedRoutes>} />

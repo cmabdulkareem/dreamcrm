@@ -1,15 +1,29 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import PageMeta from '../../../components/common/PageMeta';
 import PageBreadCrumb from '../../../components/common/PageBreadCrumb';
 import ComponentCard from '../../../components/common/ComponentCard';
 import { CalendarIcon, UserCircleIcon } from '../../../icons';
+import { hrService } from '../../../services/hrService';
 
 const InterviewSchedule = () => {
-    const interviews = [
-        { id: 1, date: '2023-11-15', time: '10:00 AM', candidate: 'Alice Smith', job: 'Senior React Developer', interviewer: 'Sarah Wilson', status: 'Scheduled' },
-        { id: 2, date: '2023-11-15', time: '02:00 PM', candidate: 'Charlie Brown', job: 'UX Designer', interviewer: 'Mike Johnson', status: 'Scheduled' },
-        { id: 3, date: '2023-11-16', time: '11:00 AM', candidate: 'Frank White', job: 'Senior React Developer', interviewer: 'Sarah Wilson', status: 'Pending' },
-    ];
+    const [interviews, setInterviews] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchInterviews = async () => {
+            try {
+                setLoading(true);
+                const data = await hrService.getInterviews();
+                setInterviews(data);
+            } catch (error) {
+                console.error('Error fetching interviews:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchInterviews();
+    }, []);
 
     return (
         <>

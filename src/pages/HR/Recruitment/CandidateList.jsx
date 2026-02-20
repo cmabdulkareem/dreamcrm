@@ -1,23 +1,35 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import PageMeta from '../../../components/common/PageMeta';
 import PageBreadCrumb from '../../../components/common/PageBreadCrumb';
 import ComponentCard from '../../../components/common/ComponentCard';
+import { hrService } from '../../../services/hrService';
 
 const CandidateList = () => {
-    const stages = [
-        { name: 'Applied', color: 'bg-blue-100 text-blue-800' },
-        { name: 'Screening', color: 'bg-yellow-100 text-yellow-800' },
-        { name: 'Interview', color: 'bg-purple-100 text-purple-800' },
-        { name: 'Offer', color: 'bg-green-100 text-green-800' },
-        { name: 'Rejected', color: 'bg-red-100 text-red-800' },
-    ];
+    const [candidates, setCandidates] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const candidates = [
-        { id: 1, name: 'Alice Smith', job: 'Senior React Developer', stage: 'Interview', date: '2023-11-10' },
-        { id: 2, name: 'Bob Jones', job: 'Marketing Specialist', stage: 'Applied', date: '2023-11-12' },
-        { id: 3, name: 'Charlie Brown', job: 'UX Designer', stage: 'Screening', date: '2023-11-11' },
-        { id: 4, name: 'David Lee', job: 'Senior React Developer', stage: 'Offer', date: '2023-11-05' },
-        { id: 5, name: 'Eva Green', job: 'Marketing Specialist', stage: 'Rejected', date: '2023-11-01' },
+    useEffect(() => {
+        const fetchCandidates = async () => {
+            try {
+                setLoading(true);
+                const data = await hrService.getCandidates();
+                setCandidates(data);
+            } catch (error) {
+                console.error('Error fetching candidates:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchCandidates();
+    }, []);
+
+    const stages = [
+        { name: 'Applied', color: 'text-gray-600' },
+        { name: 'Screening', color: 'text-yellow-600' },
+        { name: 'Interview', color: 'text-purple-600' },
+        { name: 'Offer', color: 'text-blue-600' },
+        { name: 'Rejected', color: 'text-red-600' },
     ];
 
     return (

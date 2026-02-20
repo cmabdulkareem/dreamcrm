@@ -1,24 +1,45 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import PageMeta from '../../components/common/PageMeta';
 import PageBreadCrumb from '../../components/common/PageBreadCrumb';
 import ComponentCard from '../../components/common/ComponentCard';
 import { UserCircleIcon, CalendarIcon, ListIcon, PlusIcon } from '../../icons';
 import { Link } from 'react-router-dom';
+import { hrService } from '../../services/hrService';
 
 const HRDashboard = () => {
-    // Placeholder data - replace with API calls later
-    const stats = [
-        { title: 'Total Employees', value: '124', icon: <UserCircleIcon className="w-6 h-6 text-brand-500" />, change: '+4 this month' },
-        { title: 'On Leave Today', value: '8', icon: <CalendarIcon className="w-6 h-6 text-yellow-500" />, change: '2 pending approval' },
-        { title: 'Open Positions', value: '5', icon: <ListIcon className="w-6 h-6 text-green-500" />, change: '12 new applications' },
-        { title: 'Interviews Today', value: '3', icon: <UserCircleIcon className="w-6 h-6 text-purple-500" />, change: 'Next at 2:00 PM' },
-    ];
+    const [stats, setStats] = useState([
+        { title: 'Total Employees', value: '...', icon: <UserCircleIcon className="w-6 h-6 text-brand-500" />, change: 'Loading...' },
+        { title: 'On Leave Today', value: '...', icon: <CalendarIcon className="w-6 h-6 text-yellow-500" />, change: 'Loading...' },
+        { title: 'Open Positions', value: '...', icon: <ListIcon className="w-6 h-6 text-green-500" />, change: 'Loading...' },
+        { title: 'Interviews Today', value: '...', icon: <UserCircleIcon className="w-6 h-6 text-purple-500" />, change: 'Loading...' },
+    ]);
+    const [recentActivity, setRecentActivity] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const recentActivity = [
-        { id: 1, user: 'Sarah Wilson', action: 'Applied for leave', time: '2 hours ago', type: 'leave' },
-        { id: 2, user: 'John Doe', action: 'Completed onboarding', time: '4 hours ago', type: 'onboarding' },
-        { id: 3, user: 'Recruitment Team', action: 'Posted new job: Senior React Dev', time: '1 day ago', type: 'job' },
-    ];
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            try {
+                const [statsData, activityData] = await Promise.all([
+                    hrService.getStats(),
+                    hrService.getRecentActivity()
+                ]);
+
+                setStats([
+                    { title: 'Total Employees', value: statsData.totalEmployees, icon: <UserCircleIcon className="w-6 h-6 text-brand-500" />, change: 'Active' },
+                    { title: 'On Leave Today', value: statsData.onLeaveToday, icon: <CalendarIcon className="w-6 h-6 text-yellow-500" />, change: 'Pending Approval' },
+                    { title: 'Open Positions', value: statsData.openPositions, icon: <ListIcon className="w-6 h-6 text-green-500" />, change: 'Active Jobs' },
+                    { title: 'Interviews Today', value: statsData.interviewsToday, icon: <UserCircleIcon className="w-6 h-6 text-purple-500" />, change: 'Scheduled' },
+                ]);
+                setRecentActivity(activityData);
+            } catch (error) {
+                console.error('Error fetching dashboard data:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchDashboardData();
+    }, []);
 
     return (
         <>
@@ -51,8 +72,8 @@ const HRDashboard = () => {
                             {recentActivity.map((activity) => (
                                 <div key={activity.id} className="flex items-start gap-4 p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded-lg transition-colors">
                                     <div className={`w-2 h-2 mt-2 rounded-full ${activity.type === 'leave' ? 'bg-yellow-500' :
-                                            activity.type === 'onboarding' ? 'bg-green-500' :
-                                                'bg-brand-500'
+                                        activity.type === 'onboarding' ? 'bg-green-500' :
+                                            'bg-brand-500'
                                         }`} />
                                     <div className="flex-1">
                                         <p className="text-sm font-medium text-gray-800 dark:text-white">{activity.user}</p>
