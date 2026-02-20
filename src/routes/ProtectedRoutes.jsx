@@ -2,9 +2,9 @@ import { AuthContext } from "../context/AuthContext";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import { Navigate } from "react-router-dom";
 import { useContext } from "react";
-import { isManager, isAccountant } from "../utils/roleHelpers";
+import { hasAnyRole } from "../utils/roleHelpers";
 
-function ProtectedRoutes({ children, requireAdmin = false, requireManager = false, requireAccountant = false, redirectTo = "/signin" }) {
+function ProtectedRoutes({ children, requireAdmin = false, requireManager = false, requireAccountant = false, allowedRoles = [], redirectTo = "/signin" }) {
     const { isLoggedIn, isAdmin, loading, user } = useContext(AuthContext);
 
     if (loading) {
@@ -18,6 +18,13 @@ function ProtectedRoutes({ children, requireAdmin = false, requireManager = fals
     // If not logged in, redirect to signin
     if (!isLoggedIn) {
         return <Navigate to={redirectTo} />;
+    }
+
+    // Check allowedRoles if provided
+    if (allowedRoles.length > 0) {
+        if (!hasAnyRole(user, allowedRoles)) {
+            return <Navigate to={redirectTo} />;
+        }
     }
 
     // If admin is required and user is not admin, redirect to signin

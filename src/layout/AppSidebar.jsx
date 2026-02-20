@@ -20,11 +20,12 @@ import {
   ShootingStarIcon,
   MailIcon,
   CalendarIcon,
-  GroupIcon
+  PlusIcon,
+  TicketIcon
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import SidebarWidget from "./SidebarWidget";
-import { isManager, hasRole, isAccountant, isCounsellor, isAdmin, isDeveloper, isOwner } from "../utils/roleHelpers";
+import { isManager, hasRole, isAccountant, isCounsellor, isAdmin, isDeveloper, isOwner, isHR } from "../utils/roleHelpers";
 
 
 const navItems = [
@@ -53,6 +54,24 @@ const navItems = [
       { name: "Birthday Calendar", path: "/student-birthdays", pro: false },
 
     ],
+  },
+  {
+    name: "Human Resources",
+    icon: <UserCircleIcon />,
+    subItems: [
+      { name: "Dashboard", path: "/hr", pro: false },
+      { name: "Employees", path: "/hr/employees", pro: false },
+      // Recruitment Sub-section (flattened for now or handling nested? Sidebar supports 1 level deep usually. Let's flatten "Recruitment" into direct subitems or a separate top level? 
+      // User asked for "HR Portal" menu. Let's keep it under HR if possible.
+      // The sidebar component supports 1 level of subItems based on code reading.
+      // So we will add them as Flat Booking style: "Recruitment: Jobs", etc. or just "Jobs", "Candidates".
+      // Let's try to group them logically or just list them.
+      { name: "Job Postings", path: "/hr/recruitment/jobs", pro: false },
+      { name: "Candidates", path: "/hr/recruitment/candidates", pro: false },
+      { name: "Interviews", path: "/hr/recruitment/interviews", pro: false },
+      { name: "Leave Requests", path: "/leave-management/requests", pro: false },
+      { name: "Payroll", path: "/hr/payroll", pro: false },
+    ]
   },
   {
     name: "Finance",

@@ -6,8 +6,11 @@
 // Administrative roles (full system access)
 const ADMIN_ROLES = ['Owner'];
 
+// HR Roles
+const HR_ROLES = ['Owner', 'HR', 'HR Manager'];
+
 // Managerial roles (can manage teams and resources)
-const MANAGER_ROLES = ['Owner', 'Brand Manager', 'Manager', 'Academic Coordinator'];
+const MANAGER_ROLES = ['Owner', 'Brand Manager', 'Manager', 'Academic Coordinator', 'HR Manager', 'HR'];
 
 // Finance roles
 const ACCOUNTANT_ROLES = ['Owner', 'Accounts Executive', 'Brand Manager'];
@@ -134,4 +137,17 @@ export function isAccountant(user) {
  */
 export function isDeveloper(user) {
   return user?.email === 'cmabdulkareem@gmail.com';
+}
+
+/**
+ * Check if user has HR privileges
+ */
+export function isHR(user) {
+  if (!user) return false;
+
+  if (isAdmin(user)) return true;
+
+  const userRoles = user.roles || [];
+  const rolesArray = Array.isArray(userRoles) ? userRoles : (typeof userRoles === 'string' ? [userRoles] : []);
+  return rolesArray.some(role => HR_ROLES.includes(role));
 }

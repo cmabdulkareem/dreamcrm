@@ -32,6 +32,14 @@ const EcommerceDashboard = lazy(() => import("./pages/Dashboard/RevenewOverview"
 const Calendar = lazy(() => import("./pages/Calendar"));
 const EmailInbox = lazy(() => import("./pages/Email/EmailInbox"));
 const Databases = lazy(() => import("./pages/Marketing/Databases"));
+
+// HR Module
+const HRDashboard = lazy(() => import("./pages/HR/HRDashboard"));
+const EmployeeList = lazy(() => import("./pages/HR/EmployeeList"));
+const EmployeeForm = lazy(() => import("./pages/HR/EmployeeForm"));
+const JobPostings = lazy(() => import("./pages/HR/Recruitment/JobPostings"));
+const CandidateList = lazy(() => import("./pages/HR/Recruitment/CandidateList"));
+const InterviewSchedule = lazy(() => import("./pages/HR/Recruitment/InterviewSchedule"));
 const ManageEvents = lazy(() => import("./pages/EventManagement/ManageEvents"));
 const CreateEvent = lazy(() => import("./pages/EventManagement/CreateEvent"));
 const EventRegistrations = lazy(() => import("./pages/EventManagement/EventRegistrations"));
@@ -162,6 +170,18 @@ function App() {
                   <Route path="/course-curriculum" element={<ProtectedRoutes><Images /></ProtectedRoutes>} />
                   <Route path="/support-dashboard" element={<ProtectedRoutes><Suspense fallback={<LoadingSpinner />}><SupportDashboard /></Suspense></ProtectedRoutes>} />
                   <Route path="/user-usage-analysis" element={<ProtectedRoutes requireManager={true}><Suspense fallback={<LoadingSpinner />}><UserUsageAnalysis /></Suspense></ProtectedRoutes>} />
+
+                  {/* HR Module Routes */}
+                  <Route path="/hr">
+                    <Route index element={<ProtectedRoutes allowedRoles={['Owner', 'HR', 'HR Manager', 'Manager']}><Suspense fallback={<LoadingSpinner />}><HRDashboard /></Suspense></ProtectedRoutes>} />
+                    <Route path="employees" element={<ProtectedRoutes allowedRoles={['Owner', 'HR', 'HR Manager', 'Manager']}><Suspense fallback={<LoadingSpinner />}><EmployeeList /></Suspense></ProtectedRoutes>} />
+                    <Route path="employees/new" element={<ProtectedRoutes allowedRoles={['Owner', 'HR', 'HR Manager', 'Manager']}><Suspense fallback={<LoadingSpinner />}><EmployeeForm /></Suspense></ProtectedRoutes>} />
+                    <Route path="recruitment/jobs" element={<ProtectedRoutes allowedRoles={['Owner', 'HR', 'HR Manager', 'Manager']}><Suspense fallback={<LoadingSpinner />}><JobPostings /></Suspense></ProtectedRoutes>} />
+                    <Route path="recruitment/jobs/new" element={<ProtectedRoutes allowedRoles={['Owner', 'HR', 'HR Manager', 'Manager']}><Suspense fallback={<LoadingSpinner />}><JobPostings /></Suspense></ProtectedRoutes>} />
+                    <Route path="recruitment/candidates" element={<ProtectedRoutes allowedRoles={['Owner', 'HR', 'HR Manager', 'Manager']}><Suspense fallback={<LoadingSpinner />}><CandidateList /></Suspense></ProtectedRoutes>} />
+                    <Route path="recruitment/interviews" element={<ProtectedRoutes allowedRoles={['Owner', 'HR', 'HR Manager', 'Manager']}><Suspense fallback={<LoadingSpinner />}><InterviewSchedule /></Suspense></ProtectedRoutes>} />
+                    <Route path="payroll" element={<ProtectedRoutes allowedRoles={['Owner', 'HR', 'HR Manager', 'Manager']}><div className="p-6">Payroll Module Coming Soon</div></ProtectedRoutes>} />
+                  </Route>
                 </Route>
 
                 {/* Auth Layout */}
