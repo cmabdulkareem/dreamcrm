@@ -4,16 +4,16 @@
  */
 
 // Administrative roles (full system access)
-const ADMIN_ROLES = ['Owner'];
+export const ADMIN_ROLES = ['Owner'];
 
 // HR Roles
-const HR_ROLES = ['Owner', 'HR', 'HR Manager'];
+export const HR_ROLES = ['Owner', 'HR', 'HR Manager'];
 
 // Managerial roles (can manage teams and resources)
-const MANAGER_ROLES = ['Owner', 'Brand Manager', 'Manager', 'Academic Coordinator', 'HR Manager', 'HR'];
+export const MANAGER_ROLES = ['Owner', 'Brand Manager', 'Manager', 'Academic Coordinator', 'HR Manager', 'HR'];
 
 // Finance roles
-const ACCOUNTANT_ROLES = ['Owner', 'Accounts Executive', 'Brand Manager'];
+export const ACCOUNTANT_ROLES = ['Owner', 'Accounts Executive', 'Brand Manager'];
 
 /**
  * Check if user has a specific role

@@ -2,7 +2,7 @@ import { lazy, Suspense, useContext } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoutes from "./routes/ProtectedRoutes";
 import { AuthContext } from "./context/AuthContext";
-import { hasRole, isManager, isOwner, isCounsellor as checkIsCounsellor } from "./utils/roleHelpers";
+import { hasRole, isManager, isOwner, isCounsellor as checkIsCounsellor, HR_ROLES, MANAGER_ROLES } from "./utils/roleHelpers";
 import { NotificationProvider } from "./context/NotificationContext";
 
 import { CalendarProvider } from "./context/calendarContext";
@@ -173,14 +173,14 @@ function App() {
 
                   {/* HR Module Routes */}
                   <Route path="/hr">
-                    <Route index element={<ProtectedRoutes allowedRoles={['Owner', 'HR', 'HR Manager', 'Manager']}><Suspense fallback={<LoadingSpinner />}><HRDashboard /></Suspense></ProtectedRoutes>} />
-                    <Route path="employees" element={<ProtectedRoutes allowedRoles={['Owner', 'HR', 'HR Manager', 'Manager']}><Suspense fallback={<LoadingSpinner />}><EmployeeList /></Suspense></ProtectedRoutes>} />
-                    <Route path="employees/new" element={<ProtectedRoutes allowedRoles={['Owner', 'HR', 'HR Manager', 'Manager']}><Suspense fallback={<LoadingSpinner />}><EmployeeForm /></Suspense></ProtectedRoutes>} />
-                    <Route path="recruitment/jobs" element={<ProtectedRoutes allowedRoles={['Owner', 'HR', 'HR Manager', 'Manager']}><Suspense fallback={<LoadingSpinner />}><JobPostings /></Suspense></ProtectedRoutes>} />
-                    <Route path="recruitment/jobs/new" element={<ProtectedRoutes allowedRoles={['Owner', 'HR', 'HR Manager', 'Manager']}><Suspense fallback={<LoadingSpinner />}><JobPostings /></Suspense></ProtectedRoutes>} />
-                    <Route path="recruitment/candidates" element={<ProtectedRoutes allowedRoles={['Owner', 'HR', 'HR Manager', 'Manager']}><Suspense fallback={<LoadingSpinner />}><CandidateList /></Suspense></ProtectedRoutes>} />
-                    <Route path="recruitment/interviews" element={<ProtectedRoutes allowedRoles={['Owner', 'HR', 'HR Manager', 'Manager']}><Suspense fallback={<LoadingSpinner />}><InterviewSchedule /></Suspense></ProtectedRoutes>} />
-                    <Route path="payroll" element={<ProtectedRoutes allowedRoles={['Owner', 'HR', 'HR Manager', 'Manager']}><div className="p-6">Payroll Module Coming Soon</div></ProtectedRoutes>} />
+                    <Route index element={<ProtectedRoutes allowedRoles={[...HR_ROLES, ...MANAGER_ROLES]}><Suspense fallback={<LoadingSpinner />}><HRDashboard /></Suspense></ProtectedRoutes>} />
+                    <Route path="employees" element={<ProtectedRoutes allowedRoles={[...HR_ROLES, ...MANAGER_ROLES]}><Suspense fallback={<LoadingSpinner />}><EmployeeList /></Suspense></ProtectedRoutes>} />
+                    <Route path="employees/new" element={<ProtectedRoutes allowedRoles={[...HR_ROLES, ...MANAGER_ROLES]}><Suspense fallback={<LoadingSpinner />}><EmployeeForm /></Suspense></ProtectedRoutes>} />
+                    <Route path="recruitment/jobs" element={<ProtectedRoutes allowedRoles={[...HR_ROLES, ...MANAGER_ROLES]}><Suspense fallback={<LoadingSpinner />}><JobPostings /></Suspense></ProtectedRoutes>} />
+                    <Route path="recruitment/jobs/new" element={<ProtectedRoutes allowedRoles={[...HR_ROLES, ...MANAGER_ROLES]}><Suspense fallback={<LoadingSpinner />}><JobPostings /></Suspense></ProtectedRoutes>} />
+                    <Route path="recruitment/candidates" element={<ProtectedRoutes allowedRoles={[...HR_ROLES, ...MANAGER_ROLES]}><Suspense fallback={<LoadingSpinner />}><CandidateList /></Suspense></ProtectedRoutes>} />
+                    <Route path="recruitment/interviews" element={<ProtectedRoutes allowedRoles={[...HR_ROLES, ...MANAGER_ROLES]}><Suspense fallback={<LoadingSpinner />}><InterviewSchedule /></Suspense></ProtectedRoutes>} />
+                    <Route path="payroll" element={<ProtectedRoutes allowedRoles={[...HR_ROLES, ...MANAGER_ROLES]}><div className="p-6">Payroll Module Coming Soon</div></ProtectedRoutes>} />
                   </Route>
                 </Route>
 
