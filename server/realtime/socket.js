@@ -48,11 +48,12 @@ export default function setupSocket(server) {
 				socket.join(`user:${currentUserId}`)
 
 				// Join Admin room (Owners/Admins see everything)
-				const isPowerUser = isAdmin === true ||
-					(Array.isArray(roles) && (roles.includes('Owner') || roles.includes('Admin') || roles.includes('Brand Manager'))) ||
-					roles === 'Owner' || roles === 'Admin' || roles === 'Brand Manager';
+				// Exclude Brand Manager from global room so they only see their brand's notifications
+				const isGlobalAdmin = isAdmin === true ||
+					(Array.isArray(roles) && (roles.includes('Owner') || roles.includes('Admin'))) ||
+					roles === 'Owner' || roles === 'Admin';
 
-				if (isPowerUser) {
+				if (isGlobalAdmin) {
 					socket.join('room:admin')
 				}
 
