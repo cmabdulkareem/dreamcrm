@@ -71,8 +71,7 @@ function AuthProvider({ children }) {
           rolesArray.includes('Owner');
         setIsAdmin(isAdminUser);
 
-        // Auto-select brand for single-brand users if none selected
-        if (!selectedBrand && user && Array.isArray(user.brands) && user.brands.length === 1) {
+        if (!selectedBrand && user && Array.isArray(user.brands) && user.brands.length > 0) {
           const firstBrand = user.brands[0];
           // Use selectBrand to ensure indices/themes/reload are handled
           selectBrand(firstBrand);
@@ -126,8 +125,8 @@ function AuthProvider({ children }) {
       rolesArray.includes('Academic Coordinator');
     setIsAdmin(isAdminUser);
 
-    // Auto-select brand for users with only one brand if none selected
-    if (!selectedBrand && userData && Array.isArray(userData.brands) && userData.brands.length === 1) {
+    // Auto-select brand if none selected and user has access to at least one
+    if (!selectedBrand && userData && Array.isArray(userData.brands) && userData.brands.length > 0) {
       const firstBrand = userData.brands[0];
       // We must ensure the token is saved BEFORE selectBrand reloads the page
       selectBrand(firstBrand);

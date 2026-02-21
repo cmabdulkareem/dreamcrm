@@ -235,16 +235,10 @@ export const prepareLeadForEdit = (row, setters) => {
     }
   }
   if (typeof setOtherEducation === 'function') {
-    if (row.education === "Other") {
-      setOtherEducation(row.otherEducation || "");
-    } else {
-      const matchedEdu = enquirerEducation.find(opt => opt.value === row.education);
-      if (!matchedEdu && row.education) {
-        setOtherEducation(row.education);
-      } else {
-        setOtherEducation("");
-      }
-    }
+    const matchedEdu = enquirerEducation.find(opt => opt.value === row.education);
+    const isOther = !matchedEdu && row.education;
+    // Prioritize stored otherEducation, fallback to custom education value if it was used instead
+    setOtherEducation(row.otherEducation || (isOther ? row.education || "" : ""));
   }
   if (typeof setContactPoint === 'function') {
     // Use dynamic contact points if available, otherwise fall back to static
