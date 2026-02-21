@@ -32,7 +32,7 @@ export default function LeadOverview() {
       );
 
       // Get latest 5 leads sorted by creation date
-      const latestLeads = response.data.customers
+      const latestLeads = (response.data.customers || [])
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
         .slice(0, 5);
 

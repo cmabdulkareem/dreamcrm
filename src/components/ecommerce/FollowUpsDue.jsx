@@ -28,7 +28,7 @@ export default function FollowUpsDue() {
         { withCredentials: true }
       );
 
-      const customers = response.data.customers;
+      const customers = response.data.customers || [];
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 

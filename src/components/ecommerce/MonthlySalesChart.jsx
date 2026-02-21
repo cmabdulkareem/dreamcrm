@@ -26,7 +26,7 @@ export default function MonthlySalesChart() {
 
       const { revenueGraph } = response.data;
 
-      setRevenueData(revenueGraph);
+      setRevenueData(revenueGraph || {});
       setLoading(false);
     } catch (error) {
       console.error("Error fetching revenue data:", error);

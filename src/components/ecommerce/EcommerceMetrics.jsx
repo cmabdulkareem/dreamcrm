@@ -56,7 +56,7 @@ export default function EcommerceMetrics() {
         axios.get(`${API}/payments/stats/monthly-revenue`, { withCredentials: true })
       ]);
 
-      const customers = customersResponse.data.customers;
+      const customers = customersResponse.data.customers || [];
       const students = studentsResponse.data.students || [];
       const now = new Date();
       const currentMonth = now.getMonth();
@@ -236,8 +236,8 @@ export default function EcommerceMetrics() {
 
       setMetrics(prevMetrics => ({
         ...prevMetrics,
-        brandConvertedLeads: convertedLeads,
-        brandConversionRate: parseFloat(conversionRate.toFixed(2))
+        brandConvertedLeads: convertedLeads || 0,
+        brandConversionRate: parseFloat((conversionRate || 0).toFixed(2))
       }));
     } catch (error) {
       console.error("Error fetching brand conversion metrics:", error);

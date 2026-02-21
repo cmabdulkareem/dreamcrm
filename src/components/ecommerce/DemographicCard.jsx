@@ -24,7 +24,7 @@ export default function DemographicCard() {
         { withCredentials: true }
       );
 
-      const customers = response.data.customers;
+      const customers = response.data.customers || [];
 
       // Filter for current year
       const currentYear = new Date().getFullYear();

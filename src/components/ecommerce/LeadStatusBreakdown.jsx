@@ -24,7 +24,7 @@ export default function LeadStatusBreakdown() {
         axios.get(`${API}/students/all`, { withCredentials: true })
       ]);
 
-      const customers = customersRes.data.customers;
+      const customers = customersRes.data.customers || [];
       const students = studentsRes.data.students || [];
 
       // Status mapping with colors

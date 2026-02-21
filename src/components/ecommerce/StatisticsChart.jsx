@@ -23,7 +23,7 @@ export default function StatisticsChart() {
         { withCredentials: true }
       );
 
-      const customers = response.data.customers;
+      const customers = response.data.customers || [];
       const processedData = processDataByPeriod(customers, period);
       setChartData(processedData);
       setLoading(false);

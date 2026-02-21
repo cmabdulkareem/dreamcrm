@@ -194,6 +194,7 @@ export default function MonthlyTarget() {
   }
 
   const formatCurrency = (amount) => {
+    if (amount === undefined || amount === null || isNaN(amount)) return '₹0';
     if (amount >= 10000000) {
       return `₹${(amount / 10000000).toFixed(2)}Cr`;
     } else if (amount >= 100000) {
