@@ -214,9 +214,10 @@ export const getAllCustomers = async (req, res) => {
     const hasManagerAccess = isManager(req.user, brandId);
     const hasCounsellorAccess = isCounsellor(req.user, brandId);
 
-    console.log(`[DEBUG] getAllCustomers: user=${req.user.email}, brandId=${brandId}, isAdmin=${hasAdminAccess}, isManager=${hasManagerAccess}`);
+    console.log(`[DEBUG] getAllCustomers: user=${req.user.email}, headerBrandId=${brandId}, hasAdminAccess=${hasAdminAccess}, hasManagerAccess=${hasManagerAccess}`);
 
     let query = { ...req.brandFilter };
+    console.log(`[DEBUG] getAllCustomers: Base query from brandFilter:`, JSON.stringify(query));
 
     // If user is not admin, manager, or counsellor for this brand, only show leads assigned to them
     if (!hasAdminAccess && !hasManagerAccess && !hasCounsellorAccess) {

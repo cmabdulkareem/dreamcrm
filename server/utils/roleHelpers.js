@@ -18,10 +18,15 @@ export function hasAdminOrManagerOrCounsellorAccess(user, brandId = null) {
   const BRAND_ADMIN_ROLES = ['Owner', 'Brand Manager', 'Manager', 'Counsellor', 'Counselor'];
 
   // Check brand-specific roles
-  if (brandId && user.brands) {
-    const brandAssoc = user.brands.find(b => (b.brand?._id || b.brand || b).toString() === brandId);
-    if (brandAssoc && brandAssoc.roles) {
-      if (BRAND_ADMIN_ROLES.some(role => brandAssoc.roles.includes(role))) return true;
+  if (user.brands) {
+    if (brandId) {
+      const brandAssoc = user.brands.find(b => (b.brand?._id || b.brand || b).toString() === brandId);
+      if (brandAssoc && brandAssoc.roles) {
+        if (BRAND_ADMIN_ROLES.some(role => brandAssoc.roles.includes(role))) return true;
+      }
+    } else {
+      // If no brandId, check if user has ANY of these roles in ANY brand
+      return user.brands.some(b => b.roles && BRAND_ADMIN_ROLES.some(role => b.roles.includes(role)));
     }
   }
 
@@ -60,10 +65,15 @@ export function hasRole(user, role, brandId = null) {
   }
 
   // Check brand-specific roles
-  if (brandId && user.brands) {
-    const brandAssoc = user.brands.find(b => (b.brand?._id || b.brand || b).toString() === brandId);
-    if (brandAssoc && brandAssoc.roles) {
-      return brandAssoc.roles.includes(role);
+  if (user.brands) {
+    if (brandId) {
+      const brandAssoc = user.brands.find(b => (b.brand?._id || b.brand || b).toString() === brandId);
+      if (brandAssoc && brandAssoc.roles) {
+        return brandAssoc.roles.includes(role);
+      }
+    } else {
+      // If no brandId, check if user has this role in ANY brand
+      return user.brands.some(b => b.roles && b.roles.includes(role));
     }
   }
 

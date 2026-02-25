@@ -32,12 +32,6 @@ const MANAGER_ROLES = ['Owner', 'Brand Manager', 'Academic Coordinator'];
 // Roles that should be treated as admin for backward compatibility
 const ADMIN_EQUIVALENT_ROLES = ['Owner'];
 
-/**
- * Check if user has a specific role
- * @param {Object} user - The user object
- * @param {String} role - The role to check for
- * @param {String} brandId - Optional brand ID to check brand-specific roles
- */
 export function hasRole(user, role, brandId = null) {
   if (!user) return false;
 
@@ -46,15 +40,22 @@ export function hasRole(user, role, brandId = null) {
     return true;
   }
 
-  // Check brand-specific roles if brandId is provided
-  if (brandId && user.brands) {
-    const brandAssociation = user.brands.find(b => {
-      const bId = b.brand?._id || b.brand || b;
-      return bId.toString() === brandId;
-    });
+  // Check brand-specific roles
+  if (user.brands) {
+    if (brandId) {
+      // Check specific brand
+      const brandAssociation = user.brands.find(b => {
+        const bId = b.brand?._id || b.brand || b;
+        return bId.toString() === brandId;
+      });
 
-    if (brandAssociation && brandAssociation.roles) {
-      return brandAssociation.roles.includes(role);
+      if (brandAssociation && brandAssociation.roles) {
+        return brandAssociation.roles.includes(role);
+      }
+    } else {
+      // If no specific brandId, return true if user has this role in ANY brand
+      // This is used for the "All Brands" combined view
+      return user.brands.some(b => b.roles && b.roles.includes(role));
     }
   }
 

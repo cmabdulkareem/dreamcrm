@@ -1,5 +1,6 @@
 import Brand from "../model/brandModel.js";
 import User from "../model/userModel.js";
+import mongoose from "mongoose";
 
 /**
  * Middleware to check if user has access to a specific brand
@@ -70,7 +71,7 @@ export async function applyBrandFilter(req, res, next) {
 
     const { 'x-brand-id': headerBrandId } = req.headers;
 
-    const user = await User.findById(req.user.id).populate('brands');
+    const user = await User.findById(req.user.id);
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -104,6 +105,7 @@ export async function applyBrandFilter(req, res, next) {
 
     // Default behavior if NO brand is selected (All Brands view)
     if (isAdmin) {
+      console.log(`[DEBUG] applyBrandFilter: User is Global Admin, no filter`);
       req.brandFilter = {}; // No filter for owners/admins seeing "All Brands"
       req.user = user;
       return next();
@@ -112,9 +114,23 @@ export async function applyBrandFilter(req, res, next) {
     // For regular users, filter by their assigned brands
     // If they select "All Brands", they should only see data for brands they are assigned to
     if (user.brands && user.brands.length > 0) {
-      const brandIds = user.brands.map(b => (b.brand?._id || b.brand || b).toString());
-      req.brandFilter = { brand: { $in: brandIds } };
+      const brandIds = user.brands
+        .map(b => (b.brand?._id || b.brand || b))
+        .filter(id => id); // Remove any nulls
+
+      const objectIdBrands = brandIds.map(id => {
+        try {
+          return typeof id === 'string' ? new mongoose.Types.ObjectId(id) : id;
+        } catch (e) {
+          console.error(`[ERROR] Invalid Brand ID in user.brands: ${id}`);
+          return null;
+        }
+      }).filter(id => id);
+
+      console.log(`[DEBUG] applyBrandFilter: Applying $in filter for brands: ${objectIdBrands.join(', ')}`);
+      req.brandFilter = { brand: { $in: objectIdBrands } };
     } else {
+      console.warn(`[WARN] applyBrandFilter: User has no brands assigned!`);
       // If user has no brands assigned, they can't see any brand-specific data
       req.brandFilter = { _id: null }; // This will match nothing
     }
