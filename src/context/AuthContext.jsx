@@ -12,9 +12,13 @@ function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [selectedBrand, setSelectedBrand] = useState(() => {
-    // Initialize from localStorage or default to null
+    // Initialize from localStorage
     const saved = localStorage.getItem("selectedBrand");
-    const brand = saved ? JSON.parse(saved) : null;
+    if (!saved || saved === "all") {
+      updateBrandTheme(ALL_BRANDS_THEME_COLOR);
+      return null; // null = All Brands view
+    }
+    const brand = JSON.parse(saved);
     if (brand && brand.themeColor) {
       updateBrandTheme(brand.themeColor);
     } else {
@@ -74,11 +78,12 @@ function AuthProvider({ children }) {
           ));
         setIsAdmin(!!isAdminUser);
 
-        if (!selectedBrand && user && Array.isArray(user.brands) && user.brands.length > 0) {
+        // Only auto-select a brand on first-ever login (not when user explicitly chose All Brands)
+        const allBrandsChosen = localStorage.getItem("selectedBrand") === "all";
+        if (!selectedBrand && !allBrandsChosen && user && Array.isArray(user.brands) && user.brands.length > 0) {
           const firstBrandAssoc = user.brands[0];
           const brandToSelect = firstBrandAssoc.brand;
           if (brandToSelect) {
-            // Use selectBrand to ensure indices/themes/reload are handled
             selectBrand(brandToSelect);
           }
         }
@@ -126,8 +131,10 @@ function AuthProvider({ children }) {
     // Initial admin check (will be refined in checkAuth after brand-related reload)
     setIsAdmin(!!userData.isAdmin);
 
-    // Auto-select brand if none selected and user has access to at least one
-    if (!selectedBrand && userData && Array.isArray(userData.brands) && userData.brands.length > 0) {
+    // Auto-select brand if none selected and user has access to at least one,
+    // but only if they haven't explicitly chosen All Brands
+    const allBrandsChosen = localStorage.getItem("selectedBrand") === "all";
+    if (!selectedBrand && !allBrandsChosen && userData && Array.isArray(userData.brands) && userData.brands.length > 0) {
       const firstBrandAssoc = userData.brands[0];
       const brandToSelect = firstBrandAssoc.brand;
       if (brandToSelect) {
@@ -156,8 +163,8 @@ function AuthProvider({ children }) {
     if (brand) {
       localStorage.setItem("selectedBrand", JSON.stringify(brand));
     } else {
-      localStorage.removeItem("selectedBrand");
-      updateBrandTheme(ALL_BRANDS_THEME_COLOR);
+      // Store sentinel so reload knows the user explicitly chose All Brands
+      localStorage.setItem("selectedBrand", "all");
     }
     // Optional: reload page to refresh all data immediately
     window.location.reload();
