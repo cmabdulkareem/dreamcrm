@@ -6,25 +6,24 @@
 /**
  * Check if user has admin, manager, or counselor privileges
  * Maintains backward compatibility with isAdmin flag
- * As per requirements: existing functionalities should work for admin, manager, and counselor
+ * @param {Object} user - User object
+ * @param {String} brandId - Optional brand ID context
  */
-export function hasAdminOrManagerOrCounsellorAccess(user) {
+export function hasAdminOrManagerOrCounsellorAccess(user, brandId = null) {
   if (!user) return false;
 
   // Check isAdmin flag for backward compatibility
   if (user.isAdmin) return true;
 
-  // Check roles array
-  const userRoles = Array.isArray(user.roles) ? user.roles : (typeof user.roles === 'string' ? [user.roles] : []);
+  const BRAND_ADMIN_ROLES = ['Owner', 'Brand Manager', 'Manager', 'Counsellor', 'Counselor'];
 
-  // Admin roles (Owner, Academic Coordinator)
-  if (userRoles.includes('Owner')) return true;
-
-  // Manager roles (Brand Manager, Manager)
-  if (userRoles.includes('Brand Manager') || userRoles.includes('Manager')) return true;
-
-  // Counselor role
-  if (userRoles.includes('Counsellor') || userRoles.includes('Counselor')) return true;
+  // Check brand-specific roles
+  if (brandId && user.brands) {
+    const brandAssoc = user.brands.find(b => (b.brand?._id || b.brand || b).toString() === brandId);
+    if (brandAssoc && brandAssoc.roles) {
+      if (BRAND_ADMIN_ROLES.some(role => brandAssoc.roles.includes(role))) return true;
+    }
+  }
 
   return false;
 }
@@ -32,100 +31,84 @@ export function hasAdminOrManagerOrCounsellorAccess(user) {
 /**
  * Check if user has admin privileges (Owner or Admin role, or isAdmin flag)
  */
-export function isAdmin(user) {
+export function isAdmin(user, brandId = null) {
   if (!user) return false;
 
   // Check isAdmin flag for backward compatibility
   if (user.isAdmin) return true;
 
-  // Check roles array
-  const userRoles = Array.isArray(user.roles) ? user.roles : (typeof user.roles === 'string' ? [user.roles] : []);
-
-  // Admin roles
-  return userRoles.includes('Owner');
+  return hasRole(user, 'Owner', brandId);
 }
 
 /**
  * Check if user has owner privileges (Owner role)
  */
-export function isOwner(user) {
+export function isOwner(user, brandId = null) {
   if (!user) return false;
-
-  // Check roles array
-  const userRoles = Array.isArray(user.roles) ? user.roles : (typeof user.roles === 'string' ? [user.roles] : []);
-
-  return userRoles.includes('Owner');
+  return hasRole(user, 'Owner', brandId);
 }
 
 /**
  * Check if user has a specific role
  */
-export function hasRole(user, role) {
-  if (!user) return false;
-
-  // Check isAdmin flag for backward compatibility with Admin role
-  if (user.isAdmin && (role === 'Owner')) {
-    return true;
-  }
-
-  // Check roles array
-  const userRoles = Array.isArray(user.roles) ? user.roles : (typeof user.roles === 'string' ? [user.roles] : []);
-  return userRoles.includes(role);
-}
-
-export function hasAnyRole(user, roles) {
+export function hasRole(user, role, brandId = null) {
   if (!user) return false;
 
   // Check isAdmin flag for backward compatibility
-  if (user.isAdmin && (roles.includes('Owner'))) {
+  if (user.isAdmin && (role === 'Owner' || role === 'Admin')) {
     return true;
   }
 
-  const userRoles = Array.isArray(user.roles) ? user.roles : (typeof user.roles === 'string' ? [user.roles] : []);
-  return roles.some(role => userRoles.includes(role));
+  // Check brand-specific roles
+  if (brandId && user.brands) {
+    const brandAssoc = user.brands.find(b => (b.brand?._id || b.brand || b).toString() === brandId);
+    if (brandAssoc && brandAssoc.roles) {
+      return brandAssoc.roles.includes(role);
+    }
+  }
+
+  return false;
+}
+
+export function hasAnyRole(user, roles, brandId = null) {
+  if (!user) return false;
+  return roles.some(role => hasRole(user, role, brandId));
 }
 
 /**
  * Check if user has manager privileges (Owner, Admin, Brand Manager, Manager, Academic Coordinator)
  */
-export function isManager(user) {
+export function isManager(user, brandId = null) {
   if (!user) return false;
 
-  if (isAdmin(user)) return true;
+  if (isAdmin(user, brandId)) return true;
 
-  const userRoles = Array.isArray(user.roles) ? user.roles : (typeof user.roles === 'string' ? [user.roles] : []);
-
-  return userRoles.includes('Brand Manager') || userRoles.includes('Owner') || userRoles.includes('Manager') || userRoles.includes('Academic Coordinator');
+  const MANAGER_ROLES = ['Brand Manager', 'Owner', 'Manager', 'Academic Coordinator'];
+  return hasAnyRole(user, MANAGER_ROLES, brandId);
 }
 
 /**
  * Check if user has academic coordinator privileges
  */
-export function isAcademicCoordinator(user) {
-  if (!user) return false;
-  const userRoles = Array.isArray(user.roles) ? user.roles : (typeof user.roles === 'string' ? [user.roles] : []);
-  return userRoles.includes('Academic Coordinator');
+export function isAcademicCoordinator(user, brandId = null) {
+  return hasRole(user, 'Academic Coordinator', brandId);
 }
 
 /**
  * Check if user has instructor privileges (Instructor role)
  */
-export function isInstructor(user) {
-  if (!user) return false;
-
-  const userRoles = Array.isArray(user.roles) ? user.roles : (typeof user.roles === 'string' ? [user.roles] : []);
-  return userRoles.includes('Instructor');
+export function isInstructor(user, brandId = null) {
+  return hasRole(user, 'Instructor', brandId);
 }
 
 
 /**
  * Check if user has counsellor privileges
  */
-export function isCounsellor(user) {
+export function isCounsellor(user, brandId = null) {
   if (!user) return false;
-
-  const userRoles = Array.isArray(user.roles) ? user.roles : (typeof user.roles === 'string' ? [user.roles] : []);
-  return userRoles.includes('Counsellor') || userRoles.includes('Counselor') || userRoles.includes('Academic Counsellor') || userRoles.includes('Academic Coordinator');
+  const COUNSELLOR_ROLES = ['Counsellor', 'Counselor', 'Academic Counsellor', 'Academic Coordinator'];
+  return hasAnyRole(user, COUNSELLOR_ROLES, brandId);
 }
 
 /**

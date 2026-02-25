@@ -35,9 +35,20 @@ const userSchema = new mongoose.Schema(
     isAdmin: { type: Boolean, default: false },
     mustChangePassword: { type: Boolean, default: false }, // Force password change flag
 
-    // Role-based access control
-    roles: {
-      type: [{
+    // Added missing fields
+    dob: { type: Date, default: null },
+    joiningDate: { type: Date, default: null },
+    company: { type: String, default: "" },
+    location: { type: String, default: "DreamZone, Kasaragod" },
+    avatar: { type: String, default: null },
+
+    // Brand associations - which brands this user can access with specific roles
+    brands: [{
+      brand: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Brand'
+      },
+      roles: [{
         type: String,
         enum: [
           'Owner',
@@ -58,21 +69,7 @@ const userSchema = new mongoose.Schema(
           'General',
           'Student'
         ]
-      }],
-      default: ['General']
-    },
-
-    // Added missing fields
-    dob: { type: Date, default: null },
-    joiningDate: { type: Date, default: null }, // new field added
-    company: { type: String, default: "" },
-    location: { type: String, default: "DreamZone, Kasaragod" },
-    avatar: { type: String, default: null },
-
-    // Brand associations - which brands this user can access
-    brands: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Brand'
+      }]
     }],
 
     // New profile fields
@@ -91,18 +88,21 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// Pre-save middleware to handle first user as Owner
+// Pre-save middleware to handle first user as Owner and Admin
 userSchema.pre('save', async function (next) {
   // Check if this is a new user
   if (this.isNew) {
-    // Count existing users
-    const userCount = await mongoose.model('User').countDocuments();
+    try {
+      // Count existing users
+      const userCount = await mongoose.model('User').countDocuments();
 
-    // If this is the first user, make them Owner
-    if (userCount === 0) {
-      this.isAdmin = true;
-      this.roles = ['Owner'];
-      this.accountStatus = 'Active';
+      // If this is the first user, make them Admin
+      if (userCount === 0) {
+        this.isAdmin = true;
+        this.accountStatus = 'Active';
+      }
+    } catch (err) {
+      return next(err);
     }
   }
   next();

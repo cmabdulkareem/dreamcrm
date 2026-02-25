@@ -267,11 +267,12 @@ export default function RecentOrders() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Permission flags
-  const hasManagerRole = isManager(user);
-  const isCounsellor = user?.roles?.includes('Counsellor') || false;
-  const canDeleteLeads = isAdmin(user) || isManager(user);
-  const isRegularUser = !isAdmin(user) && !hasManagerRole;
-  const canAssignLeads = isAdmin(user) || isManager(user);
+  const brandIdForRoles = selectedBrand?._id || selectedBrand?.id;
+  const hasManagerRole = isManager(user, brandIdForRoles);
+  const isCounsellor = isCounsellorHelper(user, brandIdForRoles);
+  const canDeleteLeads = isAdmin(user, brandIdForRoles) || hasManagerRole;
+  const isRegularUser = !isAdmin(user, brandIdForRoles) && !hasManagerRole;
+  const canAssignLeads = isAdmin(user, brandIdForRoles) || hasManagerRole;
 
   // Fetch customers from database
   useEffect(() => {
@@ -284,9 +285,9 @@ export default function RecentOrders() {
   // Fetch available users for admins/managers
   useEffect(() => {
     const checkAndFetchUsers = () => {
-      const currentUserIsAdmin = user?.isAdmin;
-      const hasManagerRole = isManager(user);
-      if (currentUserIsAdmin || hasManagerRole) {
+      const currentUserIsAdmin = user?.isAdmin || isAdmin(user, selectedBrand?._id || selectedBrand?.id);
+      const hasManagerRoleAccess = isManager(user, selectedBrand?._id || selectedBrand?.id);
+      if (currentUserIsAdmin || hasManagerRoleAccess) {
         fetchAvailableUsers(selectedBrand?._id || selectedBrand?.id);
       }
     };
@@ -329,7 +330,7 @@ export default function RecentOrders() {
       });
 
       // Add "Add New Contact Point" option at the end if user is manager
-      if (isManager(user)) {
+      if (hasManagerRole) {
         formattedContactPoints.push({
           value: "__add_new__",
           label: "+ Add New Contact Point"
@@ -341,7 +342,7 @@ export default function RecentOrders() {
       console.error("Error fetching contact points:", error);
       // Fallback to hardcoded contact points if API fails
       const fallbackOptions = [...contactPoints];
-      if (isManager(user)) {
+      if (hasManagerRole) {
         fallbackOptions.push({ value: "__add_new__", label: "+ Add New Contact Point" });
       }
       setContactPointOptions(fallbackOptions);
@@ -1868,7 +1869,7 @@ export default function RecentOrders() {
                       id="firstName"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      disabled={!isAdmin(user) && !isManager(user)}
+                      disabled={!isAdmin(user, brandIdForRoles) && !hasManagerRole}
                     />
 
                   </div>
@@ -1881,7 +1882,7 @@ export default function RecentOrders() {
                       onChange={handleEmailChange}
                       placeholder="Enter email"
                       hint={error ? "This is an invalid email address." : ""}
-                      disabled={!isAdmin(user) && !isManager(user)}
+                      disabled={!isAdmin(user, brandIdForRoles) && !hasManagerRole}
                     />
 
                   </div>
@@ -1895,7 +1896,7 @@ export default function RecentOrders() {
                       onChange={handlePhone1Change}
                       error={!!validationErrors.phone1 || phoneExists}
                       hint={validationErrors.phone1}
-                      disabled={!isAdmin(user) && !isManager(user)}
+                      disabled={!isAdmin(user, brandIdForRoles) && !hasManagerRole}
                     />
                     {checkingPhone && <p className="text-xs text-gray-400 mt-1">Checking uniqueness...</p>}
 
@@ -1991,10 +1992,10 @@ export default function RecentOrders() {
                       )}
                     </div>
                     <Select
-                      options={isManager(user) ? contactPointOptions : contactPointOptions.filter(cp => cp.value !== "__add_new__")}
+                      options={hasManagerRole ? contactPointOptions : contactPointOptions.filter(cp => cp.value !== "__add_new__")}
                       value={contactPoint}
                       onChange={setContactPoint}
-                      disabled={!isManager(user)}
+                      disabled={!hasManagerRole}
                     />
                   </div>
                   <div className="w-full md:w-1/4">
@@ -2026,7 +2027,7 @@ export default function RecentOrders() {
                       value={campaign}
                       placeholder="Campaigns"
                       onChange={handleCampaignChange}
-                      disabled={!isManager(user)}
+                      disabled={!hasManagerRole}
                     />
 
                   </div>

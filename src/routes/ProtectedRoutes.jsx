@@ -20,8 +20,8 @@ function ProtectedRoutes({ children, requireAdmin = false, requireManager = fals
         return <Navigate to={redirectTo} />;
     }
 
-    // Check allowedRoles if provided
-    if (allowedRoles.length > 0) {
+    // Check allowedRoles if provided (admins bypass this check)
+    if (allowedRoles.length > 0 && !isAdmin) {
         if (!hasAnyRole(user, allowedRoles)) {
             return <Navigate to={redirectTo} />;
         }

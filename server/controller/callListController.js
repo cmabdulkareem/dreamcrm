@@ -49,10 +49,11 @@ export const getAllCallLists = async (req, res) => {
 
         // 1. Role-based base query restriction (Security)
         const { hasRole } = await import("../utils/roleHelpers.js");
-        const isACRole = hasRole(req.user, "Academic Coordinator");
+        const headerBrandId = req.headers['x-brand-id'];
+        const isACRole = hasRole(req.user, "Academic Coordinator", headerBrandId);
 
         let baseQuery = { ...brandFilter };
-        if ((!isOwner(req.user) && !isManager(req.user)) || isACRole) {
+        if ((!isOwner(req.user, headerBrandId) && !isManager(req.user, headerBrandId)) || isACRole) {
             baseQuery.$or = [
                 { assignedTo: req.user.id },
                 { createdBy: req.user.id }
@@ -264,7 +265,8 @@ export const deleteCallList = async (req, res) => {
         const { id } = req.params;
 
         // Check if user is owner or manager
-        if (!isOwner(req.user) && !isManager(req.user)) {
+        const brandId = req.headers['x-brand-id'];
+        if (!isOwner(req.user, brandId) && !isManager(req.user, brandId)) {
             return res.status(403).json({ message: "Only owners and managers can delete call list entries." });
         }
 
@@ -400,8 +402,9 @@ export const updateCallListStatus = async (req, res) => {
 export const bulkAssignCallLists = async (req, res) => {
     try {
         const { ids, assignedTo } = req.body;
+        const brandId = req.headers['x-brand-id'];
 
-        if (!isOwner(req.user) && !isManager(req.user)) {
+        if (!isOwner(req.user, brandId) && !isManager(req.user, brandId)) {
             return res.status(403).json({ message: "Only owners and managers can bulk assign call lists." });
         }
 
@@ -457,8 +460,9 @@ export const bulkAssignCallLists = async (req, res) => {
 export const bulkDeleteCallLists = async (req, res) => {
     try {
         const { ids } = req.body;
+        const brandId = req.headers['x-brand-id'];
 
-        if (!isOwner(req.user) && !isManager(req.user)) {
+        if (!isOwner(req.user, brandId) && !isManager(req.user, brandId)) {
             return res.status(403).json({ message: "Only owners and managers can bulk delete call lists." });
         }
 

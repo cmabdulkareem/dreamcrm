@@ -61,20 +61,24 @@ function AuthProvider({ children }) {
           // Add timeout to prevent hanging requests
           timeout: 20000
         });
-        const { user, role } = res.data;
+        const { user } = res.data;
         setUser(user);
         setIsLoggedIn(true);
-        // Check if user has admin role (Owner or Admin) or isAdmin flag is true
-        const userRoles = user?.roles || role || [];
-        const rolesArray = Array.isArray(userRoles) ? userRoles : (typeof userRoles === 'string' ? [userRoles] : []);
-        const isAdminUser = user?.isAdmin ||
-          rolesArray.includes('Owner');
-        setIsAdmin(isAdminUser);
+
+        // Check if user has admin privileges
+        const brandId = selectedBrand?._id || selectedBrand?.id;
+        const isAdminUser = user?.isAdmin || (brandId && user?.brands?.some(b =>
+          (b.brand?._id || b.brand || b).toString() === brandId && b.roles?.includes('Owner')
+        ));
+        setIsAdmin(!!isAdminUser);
 
         if (!selectedBrand && user && Array.isArray(user.brands) && user.brands.length > 0) {
-          const firstBrand = user.brands[0];
-          // Use selectBrand to ensure indices/themes/reload are handled
-          selectBrand(firstBrand);
+          const firstBrandAssoc = user.brands[0];
+          const brandToSelect = firstBrandAssoc.brand;
+          if (brandToSelect) {
+            // Use selectBrand to ensure indices/themes/reload are handled
+            selectBrand(brandToSelect);
+          }
         }
 
 
@@ -117,20 +121,18 @@ function AuthProvider({ children }) {
       localStorage.setItem("accessToken", token);
     }
 
-    // Check if user has admin role (Owner or Admin) or isAdmin flag is true
-    const userRoles = userData.roles || role || [];
-    const rolesArray = Array.isArray(userRoles) ? userRoles : (typeof userRoles === 'string' ? [userRoles] : []);
-    const isAdminUser = userData.isAdmin ||
-      rolesArray.includes('Owner') ||
-      rolesArray.includes('Academic Coordinator');
-    setIsAdmin(isAdminUser);
+    // Initial admin check (will be refined in checkAuth after brand-related reload)
+    setIsAdmin(!!userData.isAdmin);
 
     // Auto-select brand if none selected and user has access to at least one
     if (!selectedBrand && userData && Array.isArray(userData.brands) && userData.brands.length > 0) {
-      const firstBrand = userData.brands[0];
-      // We must ensure the token is saved BEFORE selectBrand reloads the page
-      selectBrand(firstBrand);
-      return; // selectBrand will handle the reload
+      const firstBrandAssoc = userData.brands[0];
+      const brandToSelect = firstBrandAssoc.brand;
+      if (brandToSelect) {
+        // We must ensure the token is saved BEFORE selectBrand reloads the page
+        selectBrand(brandToSelect);
+        return; // selectBrand will handle the reload
+      }
     }
 
 

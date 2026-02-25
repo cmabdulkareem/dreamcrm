@@ -14,6 +14,21 @@ import MultiSelect from "../../components/form/MultiSelect";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import { AuthContext } from "../../context/AuthContext";
 import { isAdmin } from "../../utils/roleHelpers";
+import {
+  User,
+  Briefcase,
+  Shield,
+  Globe,
+  Settings,
+  CheckCircle,
+  Mail,
+  Phone,
+  Hash,
+  Building,
+  Calendar,
+  Layers,
+  Award
+} from "lucide-react";
 
 import "react-toastify/dist/ReactToastify.css";
 
@@ -37,7 +52,6 @@ const UserManagement = () => {
     employmentType: "fullTime",
     joiningDate: "",
     company: "",
-    roles: [{ value: "General", label: "General" }],
     isAdmin: false,
     accountStatus: "Pending",
     brands: []
@@ -56,8 +70,9 @@ const UserManagement = () => {
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (user.employeeCode && user.employeeCode.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    // Role filter
-    const matchesRole = roleFilter === "all" || (user.roles && user.roles.includes(roleFilter));
+    // Role filter is now problematic as roles are brand-specific
+    // We'll keep the filter UI for now but it might need adjustment
+    const matchesRole = true;
 
     // Status filter
     const matchesStatus = statusFilter === "all" || user.accountStatus === statusFilter;
@@ -199,14 +214,10 @@ const UserManagement = () => {
     setSelectedUser(user);
     setUpdateMode(true);
 
-    let userBrands = [];
-    if (user.brands && Array.isArray(user.brands)) {
-      if (user.brands.length > 0 && user.brands[0]._id) {
-        userBrands = user.brands.map((brand) => brand._id);
-      } else {
-        userBrands = user.brands;
-      }
-    }
+    let userBrands = (user.brands || []).map(b => ({
+      brand: b.brand?._id || b.brand || b._id || b,
+      roles: b.roles || []
+    }));
 
     setFormData({
       fullName: user.fullName || "",
@@ -218,7 +229,7 @@ const UserManagement = () => {
       employmentType: user.employmentType || "fullTime",
       joiningDate: user.joiningDate ? user.joiningDate.split("T")[0] : "",
       company: user.company || "",
-      roles: user.roles || ["General"],
+
       isAdmin: user.isAdmin || false,
       accountStatus: user.accountStatus || "Pending",
       brands: userBrands
@@ -235,14 +246,10 @@ const UserManagement = () => {
     setSelectedUser(user);
     setUpdateMode(false);
 
-    let userBrands = [];
-    if (user.brands && Array.isArray(user.brands)) {
-      if (user.brands.length > 0 && user.brands[0]._id) {
-        userBrands = user.brands.map((brand) => brand._id);
-      } else {
-        userBrands = user.brands;
-      }
-    }
+    let userBrands = (user.brands || []).map(b => ({
+      brand: b.brand?._id || b.brand || b._id || b,
+      roles: b.roles || []
+    }));
 
     setFormData({
       fullName: user.fullName || "",
@@ -254,7 +261,7 @@ const UserManagement = () => {
       employmentType: user.employmentType || "fullTime",
       joiningDate: user.joiningDate ? user.joiningDate.split("T")[0] : "",
       company: user.company || "",
-      roles: user.roles || ["General"],
+
       isAdmin: user.isAdmin || false,
       accountStatus: user.accountStatus || "Pending",
       brands: userBrands
@@ -262,18 +269,29 @@ const UserManagement = () => {
     setShowModal(true);
   };
 
-  const handleRoleChange = (selectedRoles) => {
-    setFormData((prev) => ({
-      ...prev,
-      roles: selectedRoles
-    }));
+
+  const handleBrandChange = (selectedBrandIds) => {
+    setFormData((prev) => {
+      // Keep existing brand roles if they are still selected
+      const updatedBrands = selectedBrandIds.map(brandId => {
+        const existing = prev.brands.find(b => (b.brand?._id || b.brand || b) === brandId);
+        return existing || { brand: brandId, roles: [] };
+      });
+      return { ...prev, brands: updatedBrands };
+    });
   };
 
-  const handleBrandChange = (selectedBrands) => {
-    setFormData((prev) => ({
-      ...prev,
-      brands: selectedBrands
-    }));
+  const handleBrandRoleChange = (brandId, selectedRoles) => {
+    setFormData((prev) => {
+      const updatedBrands = prev.brands.map(b => {
+        const bId = b.brand?._id || b.brand || b;
+        if (bId === brandId) {
+          return { ...b, roles: selectedRoles };
+        }
+        return b;
+      });
+      return { ...prev, brands: updatedBrands };
+    });
   };
 
   const handleAdminChange = (e) => {
@@ -293,7 +311,6 @@ const UserManagement = () => {
 
     try {
       const updateData = {
-        roles: formData.roles,
         isAdmin: formData.isAdmin,
         accountStatus: formData.accountStatus,
         brands: formData.brands
@@ -344,7 +361,6 @@ const UserManagement = () => {
         employmentType: "fullTime",
         joiningDate: "",
         company: "",
-        roles: [{ value: "General", label: "General" }],
         isAdmin: false,
         accountStatus: "Pending",
         brands: []
@@ -375,7 +391,6 @@ const UserManagement = () => {
       employmentType: "fullTime",
       joiningDate: "",
       company: "",
-      roles: ["General"],
       isAdmin: false,
       accountStatus: "Pending",
       brands: []
@@ -384,22 +399,28 @@ const UserManagement = () => {
     setShowModal(false);
   };
 
-  const getBrandNames = (brands) => {
-    if (!brands || brands.length === 0) return "No brands assigned";
+  const getBrandNames = (userBrands) => {
+    if (!userBrands || userBrands.length === 0) return "No brands assigned";
 
-    if (brands[0] && brands[0]._id) {
-      return (
-        <div className="flex flex-col gap-1">
-          {brands.map((brand, index) => (
-            <span key={index} className="text-sm">
-              {brand.name}
-            </span>
-          ))}
-        </div>
-      );
-    }
+    const allBrands = brands; // Reference to the state variable
 
-    return "Brands assigned";
+    return (
+      <div className="flex flex-col gap-2">
+        {userBrands.map((b, index) => {
+          const bId = b.brand?._id || (typeof b.brand === 'string' ? b.brand : b);
+          const brandInfo = allBrands.find(brand => brand._id === bId);
+          const brandName = b.brand?.name || brandInfo?.name || (typeof bId === 'string' ? `ID: ${bId.substring(0, 8)}...` : "Unknown Brand");
+
+          const roles = b.roles && b.roles.length > 0 ? b.roles.join(", ") : "No roles";
+          return (
+            <div key={index} className="text-sm">
+              <span className="font-semibold text-gray-700 dark:text-gray-300">{brandName}:</span>
+              <span className="ml-1 text-gray-600 dark:text-gray-400">({roles})</span>
+            </div>
+          );
+        })}
+      </div>
+    );
   };
 
   if (!currentUser?.isAdmin) {
@@ -448,14 +469,6 @@ const UserManagement = () => {
                   />
                 </div>
                 <div>
-                  <Label>Role</Label>
-                  <Select
-                    options={[{ value: "all", label: "All Roles" }, ...roleOptions]}
-                    value={roleFilter}
-                    onChange={(val) => setRoleFilter(val)}
-                  />
-                </div>
-                <div>
                   <Label>Department</Label>
                   <Select
                     options={[{ value: "all", label: "All Depts" }, ...departmentOptions]}
@@ -496,12 +509,6 @@ const UserManagement = () => {
                         className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
                       >
                         User
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                      >
-                        Roles
                       </th>
                       <th
                         scope="col"
@@ -558,13 +565,6 @@ const UserManagement = () => {
                                   {user.email}
                                 </div>
                               </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="text-sm text-gray-900 dark:text-white">
-                              {user.roles && user.roles.length > 0
-                                ? user.roles.join(", ")
-                                : "No roles"}
                             </div>
                           </td>
                           <td className="px-6 py-4">
@@ -641,7 +641,7 @@ const UserManagement = () => {
               &#8203;
             </span>
 
-            <div className="inline-block overflow-hidden text-left align-middle transition-all transform bg-white rounded-lg shadow-xl sm:my-8 sm:max-w-lg sm:w-full dark:bg-gray-800">
+            <div className="inline-block overflow-hidden text-left align-middle transition-all transform bg-white rounded-lg shadow-xl sm:my-8 sm:max-w-4xl sm:w-full dark:bg-gray-800">
               <form onSubmit={handleSubmit}>
                 <div className="px-4 pt-5 pb-4 bg-white sm:p-6 sm:pb-4 dark:bg-gray-800">
                   <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-white">
@@ -649,198 +649,250 @@ const UserManagement = () => {
                     {selectedUser.fullName}
                   </h3>
 
-                  <div className="mt-4 space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-                    {updateMode ? (
-                      <div className="space-y-4">
-                        <div>
-                          <Label>Full Name *</Label>
+                  <div className="mt-6 space-y-8 max-h-[70vh] overflow-y-auto pr-4 custom-scrollbar">
+                    {/* section: General Information */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-gray-700">
+                        <div className="p-1.5 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
+                          <User size={18} />
+                        </div>
+                        <h4 className="text-sm font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">General Information</h4>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
+                        <div className="space-y-1.5">
+                          <Label className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                            <User size={14} className="text-gray-400" /> Full Name *
+                          </Label>
                           <Input
                             type="text"
                             value={formData.fullName}
-                            onChange={(e) =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                fullName: e.target.value
-                              }))
-                            }
-                            placeholder="Enter full name"
+                            onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
+                            placeholder="e.g. John Doe"
                             required
+                            className="bg-gray-50/30 dark:bg-gray-900/40 border-gray-200 dark:border-gray-800 focus:bg-white dark:focus:bg-gray-900 transition-all font-medium"
                           />
                         </div>
 
-                        <div>
-                          <Label>Email *</Label>
+                        <div className="space-y-1.5">
+                          <Label className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                            <Mail size={14} className="text-gray-400" /> Email Address *
+                          </Label>
                           <Input
                             type="email"
                             value={formData.email}
-                            onChange={(e) =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                email: e.target.value
-                              }))
-                            }
-                            placeholder="Enter email"
+                            onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                            placeholder="john@example.com"
                             required
+                            className="bg-gray-50/30 dark:bg-gray-900/40 border-gray-200 dark:border-gray-800 focus:bg-white dark:focus:bg-gray-900 transition-all font-medium"
                           />
                         </div>
 
-                        <div>
-                          <Label>Phone *</Label>
+                        <div className="space-y-1.5">
+                          <Label className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                            <Phone size={14} className="text-gray-400" /> Phone Number *
+                          </Label>
                           <Input
                             type="tel"
                             value={formData.phone}
-                            onChange={(e) =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                phone: e.target.value
-                              }))
-                            }
-                            placeholder="Enter phone number"
+                            onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                            placeholder="+91 00000 00000"
                             required
+                            className="bg-gray-50/30 dark:bg-gray-900/40 border-gray-200 dark:border-gray-800 focus:bg-white dark:focus:bg-gray-900 transition-all font-medium"
                           />
                         </div>
 
-                        <div>
-                          <Label>Employee Code</Label>
+                        <div className="space-y-1.5">
+                          <Label className="flex items-center gap-1.5 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                            <Hash size={14} className="text-gray-400" /> Employee Code
+                          </Label>
                           <Input
                             type="text"
                             value={formData.employeeCode}
-                            onChange={(e) =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                employeeCode: e.target.value
-                              }))
-                            }
-                            placeholder="Enter employee code"
-                          />
-                        </div>
-
-                        <div>
-                          <Label>Department</Label>
-                          <Select
-                            options={departmentOptions}
-                            value={formData.department}
-                            onChange={(value) =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                department: value
-                              }))
-                            }
-                          />
-                        </div>
-
-                        <div>
-                          <Label>Designation</Label>
-                          <Input
-                            type="text"
-                            value={formData.designation}
-                            onChange={(e) =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                designation: e.target.value
-                              }))
-                            }
-                            placeholder="Enter designation"
-                          />
-                        </div>
-
-                        <div>
-                          <Label>Employment Type</Label>
-                          <Select
-                            options={employmentTypeOptions}
-                            value={formData.employmentType}
-                            onChange={(value) =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                employmentType: value
-                              }))
-                            }
-                          />
-                        </div>
-
-                        <div>
-                          <Label>Joining Date</Label>
-                          <input
-                            type="date"
-                            value={formData.joiningDate}
-                            onChange={(e) =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                joiningDate: e.target.value
-                              }))
-                            }
-                            className="w-full rounded-lg border border-gray-300 bg-white py-2 px-3 text-sm text-gray-700 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-                          />
-                        </div>
-
-                        <div>
-                          <Label>Company</Label>
-                          <input
-                            type="text"
-                            value={formData.company}
-                            onChange={(e) =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                company: e.target.value
-                              }))
-                            }
-                            className="w-full rounded-lg border border-gray-300 bg-white py-2 px-3 text-sm text-gray-700 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                            onChange={(e) => setFormData(prev => ({ ...prev, employeeCode: e.target.value }))}
+                            placeholder="EMP-123"
+                            className="bg-gray-50/30 dark:bg-gray-900/40 border-gray-200 dark:border-gray-800 focus:bg-white dark:focus:bg-gray-900 transition-all font-medium"
                           />
                         </div>
                       </div>
-                    ) : (
-                      <div className="space-y-4">
-                        <div>
-                          <Label>Roles *</Label>
-                          <MultiSelect
-                            label=""
-                            options={roleOptions}
-                            selectedValues={formData.roles}
-                            onChange={handleRoleChange}
-                          />
+                    </div>
+
+                    {/* Section: Employment Details */}
+                    {updateMode && (
+                      <div className="space-y-4 pt-2">
+                        <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-gray-700">
+                          <div className="p-1.5 bg-purple-50 dark:bg-purple-900/30 rounded-lg text-purple-600 dark:text-purple-400">
+                            <Briefcase size={18} />
+                          </div>
+                          <h4 className="text-sm font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Employment Details</h4>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="space-y-1">
+                            <Label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase">
+                              <Building size={12} /> Department
+                            </Label>
+                            <Select
+                              options={departmentOptions}
+                              value={formData.department}
+                              onChange={(value) => setFormData(prev => ({ ...prev, department: value }))}
+                              className="bg-gray-50/50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <Label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase">
+                              <Award size={12} /> Designation
+                            </Label>
+                            <Input
+                              type="text"
+                              value={formData.designation}
+                              onChange={(e) => setFormData(prev => ({ ...prev, designation: e.target.value }))}
+                              placeholder="e.g. Senior Manager"
+                              className="bg-gray-50/50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <Label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase">
+                              <Layers size={12} /> Employment Type
+                            </Label>
+                            <Select
+                              options={employmentTypeOptions}
+                              value={formData.employmentType}
+                              onChange={(value) => setFormData(prev => ({ ...prev, employmentType: value }))}
+                              className="bg-gray-50/50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <Label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase">
+                              <Calendar size={12} /> Joining Date
+                            </Label>
+                            <input
+                              type="date"
+                              value={formData.joiningDate}
+                              onChange={(e) => setFormData(prev => ({ ...prev, joiningDate: e.target.value }))}
+                              className="w-full rounded-lg border border-gray-300 bg-gray-50/50 py-2 px-3 text-sm text-gray-700 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:border-gray-700 dark:bg-gray-900/50 dark:text-white"
+                            />
+                          </div>
+
+                          <div className="space-y-1 sm:col-span-2">
+                            <Label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase">
+                              <Globe size={12} /> Company
+                            </Label>
+                            <Input
+                              type="text"
+                              value={formData.company}
+                              onChange={(e) => setFormData(prev => ({ ...prev, company: e.target.value }))}
+                              placeholder="Company name"
+                              className="bg-gray-50/50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Section: Roles & Access */}
+                    {!updateMode && (
+                      <div className="space-y-5 pt-2">
+                        <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-gray-700">
+                          <div className="p-1.5 bg-orange-50 dark:bg-orange-900/30 rounded-lg text-orange-600 dark:text-orange-400">
+                            <Shield size={18} />
+                          </div>
+                          <h4 className="text-sm font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Access & Roles</h4>
                         </div>
 
                         {isAdmin(currentUser) && (
-                          <div className="mt-4">
-                            <Label>Assigned Brands *</Label>
-                            <MultiSelect
-                              label=""
-                              options={brands.map((brand) => ({
-                                value: brand._id,
-                                label: brand.name
-                              }))}
-                              selectedValues={formData.brands}
-                              onChange={handleBrandChange}
-                              placeholder="Select brands..."
-                            />
+                          <div className="space-y-5">
+                            <div className="space-y-2">
+                              <Label className="text-xs font-semibold text-gray-500 uppercase tracking-tight">Assigned Brands *</Label>
+                              <MultiSelect
+                                label=""
+                                options={brands.map((brand) => ({
+                                  value: brand._id,
+                                  label: brand.name
+                                }))}
+                                selectedValues={formData.brands.map(b => b.brand?._id || b.brand || b)}
+                                onChange={handleBrandChange}
+                                placeholder="Select brands..."
+                              />
+                            </div>
+
+                            {formData.brands.length > 0 && (
+                              <div className="mt-4 p-5 bg-gradient-to-br from-indigo-50/50 to-white dark:from-indigo-900/10 dark:to-gray-800/50 rounded-xl border border-indigo-100/50 dark:border-indigo-900/20 shadow-sm">
+                                <div className="flex items-center gap-2 mb-4">
+                                  <div className="w-1.5 h-6 bg-indigo-500 rounded-full"></div>
+                                  <h4 className="text-sm font-bold text-indigo-900 dark:text-indigo-100">Brand Specific Roles</h4>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                  {formData.brands.map((b) => {
+                                    const bId = b.brand?._id || b.brand || b;
+                                    const brandInfo = brands.find(brand => brand._id === bId);
+                                    if (!brandInfo) return null;
+
+                                    return (
+                                      <div key={bId} className="group relative flex flex-col bg-white dark:bg-gray-900/40 p-5 rounded-2xl border border-gray-200 dark:border-gray-800/60 hover:border-indigo-300 dark:hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/5 transition-all duration-300">
+                                        <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-50 dark:border-gray-800">
+                                          <div className="flex items-center gap-2">
+                                            <div className="w-8 h-8 flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg text-[10px] font-black text-gray-400 uppercase tracking-tighter overflow-hidden">
+                                              {brandInfo.name.substring(0, 2)}
+                                            </div>
+                                            <Label className="text-[12px] font-bold text-gray-800 dark:text-gray-200 leading-none mb-0">{brandInfo.name}</Label>
+                                          </div>
+                                          {b.roles?.length > 0 && (
+                                            <span className="px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-[10px] font-bold">Active</span>
+                                          )}
+                                        </div>
+                                        <div className="relative">
+                                          <MultiSelect
+                                            options={roleOptions}
+                                            selectedValues={b.roles || []}
+                                            onChange={(roles) => handleBrandRoleChange(bId, roles)}
+                                          />
+                                          <div className="mt-2 flex flex-wrap gap-1">
+                                            {b.roles?.map(role => (
+                                              <span key={role} className="text-[9px] font-semibold bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded border border-indigo-100 dark:border-indigo-900/30 whitespace-nowrap">
+                                                {role}
+                                              </span>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
 
-                        <div>
-                          <Label>Account Status</Label>
-                          <Select
-                            options={accountStatusOptions}
-                            value={formData.accountStatus}
-                            onChange={(value) =>
-                              setFormData((prev) => ({
-                                ...prev,
-                                accountStatus: value
-                              }))
-                            }
-                          />
-                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
+                          <div className="space-y-1.5">
+                            <Label className="text-xs font-semibold text-gray-500 uppercase tracking-tight">Account Status</Label>
+                            <Select
+                              options={accountStatusOptions}
+                              value={formData.accountStatus}
+                              onChange={(value) => setFormData(prev => ({ ...prev, accountStatus: value }))}
+                              className="bg-gray-50/50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700"
+                            />
+                          </div>
 
-                        <div className="flex items-center">
-                          <input
-                            type="checkbox"
-                            id="isAdmin"
-                            checked={formData.isAdmin}
-                            onChange={handleAdminChange}
-                            className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-                          />
-                          <Label htmlFor="isAdmin" className="ml-2 mb-0">
-                            Is Admin User
-                          </Label>
+                          <div className="flex items-center space-x-3 bg-gray-50/50 dark:bg-gray-900/50 p-3 rounded-lg border border-dashed border-gray-300 dark:border-gray-700 hover:bg-gray-100/50 transition-colors cursor-pointer group"
+                            onClick={() => handleAdminChange({ target: { checked: !formData.isAdmin } })}>
+                            <div className={`flex items-center justify-center p-2 rounded-md ${formData.isAdmin ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200 dark:shadow-none' : 'bg-gray-200 dark:bg-gray-800 text-gray-400 group-hover:text-gray-500'} transition-all`}>
+                              <Shield size={16} />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-bold text-gray-800 dark:text-gray-200 leading-none">System Admin</span>
+                              <span className="text-[10px] text-gray-500 mt-1">Full system-wide access</span>
+                            </div>
+                            <div className="ml-auto">
+                              <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${formData.isAdmin ? 'border-indigo-600 bg-indigo-600' : 'border-gray-300 dark:border-gray-600'}`}>
+                                {formData.isAdmin && <div className="w-1.5 h-1.5 rounded-full bg-white"></div>}
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     )}

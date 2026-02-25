@@ -5,7 +5,7 @@ dotenv.config();
 export default function verifyToken(req, res, next) {
   // Check for token in cookies first
   let token = req.cookies?.token;
-  
+
   // If not in cookies, check Authorization header
   if (!token && req.headers.authorization) {
     const authHeader = req.headers.authorization;
@@ -13,7 +13,7 @@ export default function verifyToken(req, res, next) {
       token = authHeader.substring(7);
     }
   }
-  
+
   if (!token) {
     console.log("Token is missing");
     return res.status(401).json({ message: "Unauthorized - Token missing" });

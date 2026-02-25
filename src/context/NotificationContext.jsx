@@ -52,8 +52,11 @@ export const NotificationProvider = ({ children }) => {
       return;
     }
 
-    // API is like "http://localhost:3000/api", we need "http://localhost:3000"
-    const socketUrl = API.replace('/api', '');
+    // Construct socketUrl correctly regardless of environment
+    const isRelativeAPI = API.startsWith('/');
+    const socketUrl = isRelativeAPI
+      ? window.location.origin // Socket.io needs the full origin, even if requests are relative
+      : API.replace('/api', '');
 
     const newSocket = io(socketUrl, {
       path: '/api/socket.io',

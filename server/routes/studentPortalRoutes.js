@@ -16,7 +16,10 @@ router.post("/signup", studentSignup);
 router.get("/dashboard", verifyToken, async (req, res) => {
     try {
         // Ensure user is a student
-        if (!req.user.roles.includes("Student")) {
+        const isStudent = req.user.designation === "Student" ||
+            (req.user.brands && req.user.brands.some(b => b.roles && b.roles.includes("Student")));
+
+        if (!isStudent) {
             return res.status(403).json({ message: "Access denied. Student role required." });
         }
 

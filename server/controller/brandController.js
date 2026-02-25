@@ -6,7 +6,7 @@ import mongoose from "mongoose";
 export const createBrand = async (req, res) => {
   try {
     // Only admins can create brands
-    if (!req.user.isAdmin && !req.user.roles.includes('Owner') && !req.user.roles.includes('Admin')) {
+    if (!req.user.isAdmin) {
       return res.status(403).json({
         message: "Access denied. Only administrators can create brands."
       });
@@ -102,7 +102,7 @@ export const getBrandById = async (req, res) => {
 export const updateBrand = async (req, res) => {
   try {
     // Only admins can update brands
-    if (!req.user.isAdmin && !req.user.roles.includes('Owner') && !req.user.roles.includes('Admin')) {
+    if (!req.user.isAdmin) {
       return res.status(403).json({
         message: "Access denied. Only administrators can update brands."
       });
@@ -175,9 +175,9 @@ export const updateBrand = async (req, res) => {
 export const deleteBrand = async (req, res) => {
   try {
     // Only owners can delete brands
-    if (!req.user.roles.includes('Owner')) {
+    if (!req.user.isAdmin) {
       return res.status(403).json({
-        message: "Access denied. Only owners can delete brands."
+        message: "Access denied. Only administrators can delete brands."
       });
     }
 
@@ -218,9 +218,7 @@ export const deleteBrand = async (req, res) => {
 export const assignBrandsToUser = async (req, res) => {
   try {
     // Only admins and owners can assign brands
-    const isAdminUser = req.user.isAdmin ||
-      req.user.roles.includes('Owner') ||
-      req.user.roles.includes('Admin');
+    const isAdminUser = req.user.isAdmin;
 
     if (!isAdminUser) {
       return res.status(403).json({
@@ -259,7 +257,12 @@ export const assignBrandsToUser = async (req, res) => {
     }
 
     // Assign brands to user
-    user.brands = brandIds;
+    const formattedBrands = brandIds.map(brandId => ({
+      brand: brandId,
+      roles: [] // Default to no roles when just assigning brand
+    }));
+
+    user.brands = formattedBrands;
     await user.save();
 
     return res.status(200).json({

@@ -42,7 +42,7 @@ export const addHoliday = async (req, res) => {
             return res.status(400).json({ message: "Brand ID is required." });
         }
 
-        if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
+        if (!isAdmin(req.user, brandId) && !isOwner(req.user, brandId) && !isManager(req.user, brandId)) {
             return res.status(403).json({ message: "Only administrators can add holidays." });
         }
 
@@ -75,7 +75,8 @@ export const deleteHoliday = async (req, res) => {
     try {
         const { id } = req.params;
 
-        if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
+        const brandId = req.headers['x-brand-id'];
+        if (!isAdmin(req.user, brandId) && !isOwner(req.user, brandId) && !isManager(req.user, brandId)) {
             return res.status(403).json({ message: "Only administrators can delete holidays." });
         }
 

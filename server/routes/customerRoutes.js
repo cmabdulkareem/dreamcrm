@@ -27,19 +27,19 @@ router.use(applyBrandFilter);
 
 router.get('/check-phone', checkPhoneUniqueness);
 router.post('/create', createCustomer);
-router.get('/all', verifyToken, getAllCustomers);
-router.get('/all-unfiltered', verifyToken, getAllCustomersUnfiltered);
-router.get('/converted', verifyToken, getConvertedCustomers);
-router.get('/all-leads-count', verifyToken, getAllLeadsCount);
-router.get('/brand-conversion-metrics', verifyToken, getBrandConversionMetrics);
-router.get('/leaderboard', verifyToken, getLeaderboard);
-router.get('/:id', verifyToken, getCustomerById);
-router.put('/update/:id', verifyToken, updateCustomer);
-router.post('/remark/:id', verifyToken, addRemark);
-router.post('/import-leads', verifyToken, importLeads);
-router.delete('/delete/:id', verifyToken, deleteCustomer);
+router.get('/all', getAllCustomers);
+router.get('/all-unfiltered', getAllCustomersUnfiltered);
+router.get('/converted', getConvertedCustomers);
+router.get('/all-leads-count', getAllLeadsCount);
+router.get('/brand-conversion-metrics', getBrandConversionMetrics);
+router.get('/leaderboard', getLeaderboard);
+router.get('/:id', getCustomerById);
+router.put('/update/:id', updateCustomer);
+router.post('/remark/:id', addRemark);
+router.post('/import-leads', importLeads);
+router.delete('/delete/:id', deleteCustomer);
 // New routes for lead assignment
-router.put('/assign/:id', verifyToken, assignLead);
-router.put('/mark-remark-read/:id/:remarkIndex', verifyToken, markRemarkAsRead);
+router.put('/assign/:id', assignLead);
+router.put('/mark-remark-read/:id/:remarkIndex', markRemarkAsRead);
 
 export default router;

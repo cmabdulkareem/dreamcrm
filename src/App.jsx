@@ -32,6 +32,7 @@ const EcommerceDashboard = lazy(() => import("./pages/Dashboard/RevenewOverview"
 const Calendar = lazy(() => import("./pages/Calendar"));
 const EmailInbox = lazy(() => import("./pages/Email/EmailInbox"));
 const Databases = lazy(() => import("./pages/Marketing/Databases"));
+const Promotional = lazy(() => import("./pages/Marketing/Promotional"));
 
 // HR Module
 const HRDashboard = lazy(() => import("./pages/HR/HRDashboard"));
@@ -75,6 +76,11 @@ const InvoiceDetails = lazy(() => import("./pages/Finance/InvoiceDetails"));
 const SupportDashboard = lazy(() => import("./pages/Support/SupportDashboard"));
 const UserUsageAnalysis = lazy(() => import("./pages/UserUsageAnalysis"));
 
+// Compute Lab Module
+const LabScheduler = lazy(() => import("./pages/Lab/LabScheduler"));
+const Softwares = lazy(() => import("./pages/Lab/Softwares"));
+const Complaints = lazy(() => import("./pages/Lab/Complaints"));
+
 import BrandManagement from "./components/brandManagement/BrandManagement";
 import PublicAttendance from "./pages/PublicAttendance";
 const VerifyTicket = lazy(() => import("./pages/EventManagement/VerifyTicket"));
@@ -116,7 +122,8 @@ function App() {
 
                   <Route path="/calendar" element={<Suspense fallback={<LoadingSpinner />}><Calendar /></Suspense>} />
                   <Route path="/email" element={<Suspense fallback={<LoadingSpinner />}><EmailInbox /></Suspense>} />
-                  <Route path="/databases" element={<Suspense fallback={<LoadingSpinner />}><Databases /></Suspense>} />
+                  <Route path="/databases" element={<ProtectedRoutes><Suspense fallback={<LoadingSpinner />}><Databases /></Suspense></ProtectedRoutes>} />
+                  <Route path="/marketing/promotional" element={<ProtectedRoutes><Suspense fallback={<LoadingSpinner />}><Promotional /></Suspense></ProtectedRoutes>} />
 
                   {/* Settings */}
                   <Route path="/settings/campaigns" element={<ProtectedRoutes requireManager={true}><CampaignSettings /></ProtectedRoutes>} />
@@ -183,6 +190,13 @@ function App() {
                     <Route path="recruitment/candidates" element={<ProtectedRoutes allowedRoles={[...HR_ROLES, ...MANAGER_ROLES]}><Suspense fallback={<LoadingSpinner />}><CandidateList /></Suspense></ProtectedRoutes>} />
                     <Route path="recruitment/interviews" element={<ProtectedRoutes allowedRoles={[...HR_ROLES, ...MANAGER_ROLES]}><Suspense fallback={<LoadingSpinner />}><InterviewSchedule /></Suspense></ProtectedRoutes>} />
                     <Route path="payroll" element={<ProtectedRoutes allowedRoles={[...HR_ROLES, ...MANAGER_ROLES]}><div className="p-6">Payroll Module Coming Soon</div></ProtectedRoutes>} />
+                  </Route>
+
+                  {/* Compute Lab Module Routes */}
+                  <Route path="/compute-lab">
+                    <Route path="scheduler" element={<ProtectedRoutes allowedRoles={['Owner', 'Brand Manager', 'Academic Coordinator', 'Instructor', 'Lab Assistant', 'IT Support']}><Suspense fallback={<LoadingSpinner />}><LabScheduler /></Suspense></ProtectedRoutes>} />
+                    <Route path="softwares" element={<ProtectedRoutes allowedRoles={['Owner', 'Brand Manager', 'Academic Coordinator', 'Instructor', 'Lab Assistant', 'IT Support']}><Suspense fallback={<LoadingSpinner />}><Softwares /></Suspense></ProtectedRoutes>} />
+                    <Route path="complaints" element={<ProtectedRoutes allowedRoles={['Owner', 'Brand Manager', 'Academic Coordinator', 'Instructor', 'Lab Assistant', 'IT Support']}><Suspense fallback={<LoadingSpinner />}><Complaints /></Suspense></ProtectedRoutes>} />
                   </Route>
                 </Route>
 

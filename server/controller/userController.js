@@ -49,7 +49,7 @@ export const studentSignup = async (req, res) => {
 
     if (user) {
       // If user exists, check if they are already a student
-      if (user.roles.includes("Student")) {
+      if (user.designation === "Student") {
         // Reset password and resend
         user.password = hashedPassword;
         await user.save();
@@ -74,7 +74,6 @@ export const studentSignup = async (req, res) => {
       password: hashedPassword,
       consent: true,
       accountStatus: "Active",
-      roles: ["Student"],
       designation: "Student",
       gender: studentRecord.gender || "notDisclosed",
       dob: studentRecord.dob,
@@ -128,8 +127,7 @@ export const signUpUser = async (req, res) => {
       consent,
       // Auto-approve first user and make them admin
       accountStatus: isFirstUser ? "Active" : "Pending",
-      isAdmin: isFirstUser,
-      roles: isFirstUser ? ["Owner"] : ["General"]
+      isAdmin: isFirstUser
     });
 
     await newUser.save();
@@ -183,23 +181,24 @@ export const getUsersForDropdown = async (req, res) => {
       instagram: 1,
       location: 1,
       dob: 1,
+      isAdmin: 1,
       designation: 1,
-      brands: 1,
-      roles: 1 // Include roles
+      brands: 1
     });
 
     // Filter users by brand if brandId is provided
     // (We do this in JS because brands involves array matching which can be tricky if not all users have brands array populated/consistent)
     let filteredUsers = users;
 
-    // Check for global scope access (Admin/Owner/Manager only)
-    const canAccessGlobal = isAdmin(req.user) || isOwner(req.user) || isManager(req.user);
+    // Check for scope access (Admin/Owner/Manager only)
+    const accessBrandId = req.headers['x-brand-id'];
+    const canAccessGlobal = isAdmin(req.user, accessBrandId) || isOwner(req.user, accessBrandId) || isManager(req.user, accessBrandId);
     if (scope === 'global' && canAccessGlobal) {
       // If scope is global and user has permission, do NOT filter by brand
       filteredUsers = users;
     } else if (brandId) {
       filteredUsers = users.filter(user => {
-        const userBrandIds = (user.brands || []).map(b => b.toString());
+        const userBrandIds = (user.brands || []).map(b => (b.brand?._id || b.brand || b).toString());
         return userBrandIds.includes(brandId);
       });
     }
@@ -219,8 +218,7 @@ export const getUsersForDropdown = async (req, res) => {
       location: user.location,
       dob: user.dob,
       designation: user.designation,
-      brands: user.brands || [],
-      roles: user.roles || []
+      brands: user.brands || []
     }));
 
     return res.status(200).json({ users: formattedUsers });
@@ -235,7 +233,7 @@ export const signInUser = async (req, res) => {
   const { email, password, portal } = req.body;
 
   try {
-    const user = await userModel.findOne({ email }).populate('reportingHead', 'fullName email').populate('brands');
+    const user = await userModel.findOne({ email }).populate('reportingHead', 'fullName email').populate({ path: 'brands.brand', model: 'Brand' });
     if (!user) return res.status(401).json({ message: "User not found" });
 
     const isPasswordValid = await comparePassword(password, user.password);
@@ -250,9 +248,11 @@ export const signInUser = async (req, res) => {
     }
 
     // Portal Access Logic
-    const isStudent = user.roles.includes('Student');
-    // Check if user has ANY other role besides Student or General
-    const hasOfficeRole = user.roles.some(role => role !== 'Student' && role !== 'General');
+    const isStudent = user.designation === 'Student';
+    // Check if user has ANY brand-specific office roles
+    const hasOfficeRole = (user.brands || []).some(b =>
+      b.roles && b.roles.some(role => role !== 'Student' && role !== 'General')
+    );
 
     // 1. Student Portal Login
     if (portal === 'student') {
@@ -273,7 +273,6 @@ export const signInUser = async (req, res) => {
     const token = jwt.sign(
       {
         id: user._id,
-        roles: user.roles,
         isAdmin: user.isAdmin,
         fullName: user.fullName,
         email: user.email
@@ -299,7 +298,6 @@ export const signInUser = async (req, res) => {
         fullName: user.fullName,
         email: user.email,
         phone: user.phone,
-        roles: user.roles,
         isAdmin: user.isAdmin,
         avatar: user.avatar ? `${getBaseUrl(req)}${user.avatar}` : null,
         bloodGroup: user.bloodGroup,
@@ -312,11 +310,10 @@ export const signInUser = async (req, res) => {
         dob: user.dob,
         designation: user.designation,
         accountStatus: user.accountStatus,
-        employeeCode: user.employeeCode, // Include employeeCode
-        mustChangePassword: user.mustChangePassword, // Include flag
-        brands: user.brands || [] // Include brands in login response
-      },
-      role: user.roles
+        employeeCode: user.employeeCode,
+        mustChangePassword: user.mustChangePassword,
+        brands: user.brands || []
+      }
     });
   } catch (error) {
     console.error("Login error:", error);
@@ -411,7 +408,7 @@ export const changePassword = async (req, res) => {
 // Auth check
 export const authCheck = async (req, res) => {
   try {
-    const user = await userModel.findById(req.user.id).populate('reportingHead', 'fullName email').populate('brands');
+    const user = await userModel.findById(req.user.id).populate('reportingHead', 'fullName email').populate({ path: 'brands.brand', model: 'Brand' });
     if (!user) return res.status(404).json({ message: "User not found" });
 
     // Check if account is active
@@ -423,7 +420,6 @@ export const authCheck = async (req, res) => {
     const token = jwt.sign(
       {
         id: user._id,
-        roles: user.roles,
         isAdmin: user.isAdmin,
         fullName: user.fullName,
         email: user.email
@@ -448,7 +444,7 @@ export const authCheck = async (req, res) => {
         fullName: user.fullName,
         email: user.email,
         phone: user.phone,
-        roles: user.roles,
+        roles: [...new Set((user.brands || []).flatMap(b => b.roles || []))],
         isAdmin: user.isAdmin,
         avatar: user.avatar ? `${getBaseUrl(req)}${user.avatar}` : null,
         bloodGroup: user.bloodGroup,
@@ -462,9 +458,9 @@ export const authCheck = async (req, res) => {
         designation: user.designation,
         accountStatus: user.accountStatus,
         employeeCode: user.employeeCode, // Include employeeCode
-        brands: user.brands || [] // Include brand information
+        brands: user.brands || []
       },
-      role: user.roles
+      isAdmin: user.isAdmin,
     });
   } catch (error) {
     console.error("AuthCheck error:", error);
@@ -475,19 +471,33 @@ export const authCheck = async (req, res) => {
 // Get all users (admin only)
 export const getAllUsers = async (req, res) => {
   try {
-    console.log("getAllUsers called. User:", req.user ? { id: req.user.id, roles: req.user.roles, isAdmin: req.user.isAdmin } : "No user");
+    console.log("getAllUsers V6 called.");
+    console.log("getAllUsers called. User:", req.user ? { id: req.user.id, isAdmin: req.user.isAdmin } : "No user");
 
-    // Check if user is admin (backward compatible)
-    if (!isAdmin(req.user)) {
+    // Check if user is admin (backward compatible) or authorized for brand
+    const accessBrandId = req.headers['x-brand-id'];
+    if (!isAdmin(req.user, accessBrandId)) {
       console.log("getAllUsers: Access denied. isAdmin returned false.");
       return res.status(403).json({ message: "Access denied. Admin privileges required." });
     }
 
     const users = await userModel.find()
       .populate('reportingHead', 'fullName email')
-      .populate('brands')
+      .populate({
+        path: 'brands.brand',
+        model: 'Brand'
+      })
       .sort({ createdAt: -1 });
-    console.log(`getAllUsers: Found ${users.length} users.`);
+    console.log("getAllUsers: Found", users.length, "users.");
+    if (users.length > 0) {
+      const sample = users.slice(0, 5).map(u => ({
+        fullName: u.fullName,
+        brandCount: u.brands?.length || 0,
+        firstBrandPopulated: !!u.brands?.[0]?.brand?.name,
+        firstBrandName: u.brands?.[0]?.brand?.name
+      }));
+      console.log("User sample:", JSON.stringify(sample, null, 2));
+    }
 
     // Format users with absolute avatar URLs
     const formattedUsers = users.map(user => ({
@@ -495,7 +505,6 @@ export const getAllUsers = async (req, res) => {
       fullName: user.fullName,
       email: user.email,
       phone: user.phone,
-      roles: user.roles,
       isAdmin: user.isAdmin,
       location: user.location,
       instagram: user.instagram,
@@ -576,7 +585,7 @@ export const updateUser = async (req, res) => {
     }
 
     // Check if the requesting user is an admin or updating their own profile
-    const isAdminUser = req.user.isAdmin || (req.user.roles && req.user.roles.includes('Owner'));
+    const isAdminUser = isAdmin(req.user, req.headers['x-brand-id']);
     const isOwnProfile = req.user.id === id;
 
     // Regular users can update their own profile information
@@ -757,8 +766,7 @@ export const updateUser = async (req, res) => {
       // Update account status (admin only)
       if (accountStatus !== undefined) user.accountStatus = accountStatus;
 
-      // Only admins can update roles and admin status
-      if (roles !== undefined) user.roles = roles;
+      // Only admins can update admin status
       if (isAdminValue !== undefined) user.isAdmin = isAdminValue;
 
       // Update personal details
@@ -767,21 +775,28 @@ export const updateUser = async (req, res) => {
       if (state !== undefined) user.state = state;
       if (location !== undefined) user.location = location;
 
-      // Update brand associations
+      // Update brand associations with roles
       if (brands !== undefined) {
         // Validate that brands is an array
         if (!Array.isArray(brands)) {
-          return res.status(400).json({ message: "Brands must be an array of brand IDs." });
+          return res.status(400).json({ message: "Brands must be an array." });
         }
 
-        // Validate each brand ID
-        for (const brandId of brands) {
+        // Validate each brand entry
+        const formattedBrands = [];
+        for (const entry of brands) {
+          const brandId = entry.brand || entry._id || entry; // Support different input formats
           if (!mongoose.Types.ObjectId.isValid(brandId)) {
             return res.status(400).json({ message: `Invalid brand ID: ${brandId}` });
           }
+
+          formattedBrands.push({
+            brand: brandId,
+            roles: Array.isArray(entry.roles) ? entry.roles : []
+          });
         }
 
-        user.brands = brands;
+        user.brands = formattedBrands;
       }
 
       // Update social information
@@ -817,7 +832,6 @@ export const updateUser = async (req, res) => {
       fullName: user.fullName,
       email: user.email,
       phone: user.phone,
-      roles: user.roles,
       isAdmin: user.isAdmin,
       department: user.department,
       designation: user.designation,
@@ -864,10 +878,11 @@ export const updateUser = async (req, res) => {
 export const assignRoles = async (req, res) => {
   try {
     const { id } = req.params;
-    const { roles, isAdmin: isAdminValue, accountStatus, brands } = req.body;
+    const { isAdmin: isAdminValue, accountStatus, brands } = req.body;
 
     // Check if requesting user is admin
-    if (!isAdmin(req.user)) {
+    const accessBrandId = req.headers['x-brand-id'];
+    if (!isAdmin(req.user, accessBrandId)) {
       return res.status(403).json({ message: "Access denied. Admin privileges required." });
     }
 
@@ -876,10 +891,7 @@ export const assignRoles = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Update roles and admin status
-    if (roles) {
-      user.roles = roles;
-    }
+    // Update admin status
 
     if (isAdminValue !== undefined) {
       user.isAdmin = isAdminValue;
@@ -891,8 +903,30 @@ export const assignRoles = async (req, res) => {
     }
 
     // Update brands if provided
-    if (brands !== undefined) {
-      user.brands = brands;
+    let brandsToUpdate = brands;
+    if (brandsToUpdate !== undefined) {
+      if (typeof brandsToUpdate === 'string') {
+        try {
+          brandsToUpdate = JSON.parse(brandsToUpdate);
+        } catch (e) {
+          console.error("Failed to parse brands string:", brandsToUpdate);
+          return res.status(400).json({ message: "Invalid brands format." });
+        }
+      }
+
+      if (!Array.isArray(brandsToUpdate)) {
+        return res.status(400).json({ message: "Brands must be an array." });
+      }
+
+      const formattedBrands = brandsToUpdate.map(entry => {
+        const brandId = entry.brand || entry._id || entry;
+        return {
+          brand: brandId,
+          roles: Array.isArray(entry.roles) ? entry.roles : []
+        };
+      });
+
+      user.brands = formattedBrands;
     }
 
     // Save updated user
@@ -904,7 +938,6 @@ export const assignRoles = async (req, res) => {
         id: user._id,
         fullName: user.fullName,
         email: user.email,
-        roles: user.roles,
         isAdmin: user.isAdmin,
         accountStatus: user.accountStatus,
         brands: user.brands
@@ -913,6 +946,12 @@ export const assignRoles = async (req, res) => {
 
   } catch (error) {
     console.error("Assign roles error:", error);
+    if (error.name === 'ValidationError') {
+      return res.status(400).json({ message: "Validation error: " + error.message });
+    }
+    if (error.name === 'CastError') {
+      return res.status(400).json({ message: "Invalid ID or data format: " + error.message });
+    }
     return res.status(500).json({ message: "Server error. Please try again." });
   }
 };
@@ -1037,8 +1076,9 @@ export const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Check if requesting user is admin (backward compatible)
-    if (!isAdmin(req.user)) {
+    // Check if requesting user is admin
+    const accessBrandId = req.headers['x-brand-id'];
+    if (!isAdmin(req.user, accessBrandId)) {
       return res.status(403).json({ message: "Access denied. Admin privileges required." });
     }
 
@@ -1126,8 +1166,9 @@ export const forgotPassword = async (req, res) => {
 // Get user usage statistics (Owner/Manager only)
 export const getUserUsageStats = async (req, res) => {
   try {
-    if (!isOwner(req.user) && !isManager(req.user)) {
-      return res.status(403).json({ message: "Access denied. Owner or Manager privileges required." });
+    const accessBrandId = req.headers['x-brand-id'];
+    if (!isAdmin(req.user, accessBrandId) && !isOwner(req.user, accessBrandId) && !isManager(req.user, accessBrandId)) {
+      return res.status(403).json({ message: "Access denied. Admin, Owner, or Manager privileges required." });
     }
 
     // Build query
@@ -1136,8 +1177,8 @@ export const getUserUsageStats = async (req, res) => {
       accountStatus: 'Active'
     };
 
-    // Filter by brand if not admin/owner
-    if (!isAdmin(req.user)) {
+    // Filter by brand if not admin
+    if (!isAdmin(req.user, accessBrandId)) {
       // Get the requester's brands from the database since token might not have it
       const requester = await userModel.findById(req.user.id).select('brands');
       if (requester && requester.brands && requester.brands.length > 0) {
@@ -1246,7 +1287,7 @@ export const getUserUsageStats = async (req, res) => {
         fullName: user.fullName,
         email: user.email,
         avatar: user.avatar ? `${getBaseUrl(req)}${user.avatar}` : null,
-        roles: user.roles,
+        roles: [...new Set((user.brands || []).flatMap(b => b.roles || []))],
         lastLogin: user.lastLogin,
         accountStatus: user.accountStatus,
         daysInactive,

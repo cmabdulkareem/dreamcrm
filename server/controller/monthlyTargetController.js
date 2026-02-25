@@ -97,9 +97,10 @@ export const getTargetByMonth = async (req, res) => {
 // Create or update monthly target (Owner and Admin only)
 export const setMonthlyTarget = async (req, res) => {
   try {
+    const brandId = req.headers['x-brand-id'];
     // Check if user is Owner or Admin
-    const userIsOwner = isOwner(req.user);
-    const userIsAdmin = isAdmin(req.user);
+    const userIsOwner = isOwner(req.user, brandId);
+    const userIsAdmin = isAdmin(req.user, brandId);
 
     if (!userIsOwner && !userIsAdmin) {
       return res.status(403).json({
@@ -135,12 +136,12 @@ export const setMonthlyTarget = async (req, res) => {
       });
     }
 
-    const brandId = req.brandFilter.brand;
+    const filterBrandId = req.brandFilter.brand;
 
     const query = {
       year: parseInt(year),
       month: parseInt(month),
-      brand: brandId
+      brand: filterBrandId
     };
 
     // Find existing target or create new one
@@ -188,9 +189,10 @@ export const setMonthlyTarget = async (req, res) => {
 // Delete monthly target (Owner and Admin only)
 export const deleteMonthlyTarget = async (req, res) => {
   try {
+    const brandId = req.headers['x-brand-id'];
     // Check if user is Owner or Admin
-    const userIsOwner = isOwner(req.user);
-    const userIsAdmin = isAdmin(req.user);
+    const userIsOwner = isOwner(req.user, brandId);
+    const userIsAdmin = isAdmin(req.user, brandId);
 
     if (!userIsOwner && !userIsAdmin) {
       return res.status(403).json({

@@ -17,7 +17,8 @@ export const getAllBatches = async (req, res) => {
 
         // If user is an instructor (and NOT an admin/owner/manager), ONLY show assigned batches
         // This overrides the brand filter for pure instructors
-        if (isInstructor(req.user) && !isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
+        const brandId = req.headers['x-brand-id'] || req.brandFilter?.brand;
+        if (isInstructor(req.user, brandId) && !isAdmin(req.user, brandId) && !isOwner(req.user, brandId) && !isManager(req.user, brandId)) {
             finalQuery = {
                 instructor: req.user.id || req.user._id
             };
@@ -149,7 +150,8 @@ export const updateBatch = async (req, res) => {
         }
 
         // Authorization check - Allow Admin, Owner, Manager, and Academic Coordinator
-        if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user) && !isAcademicCoordinator(req.user)) {
+        const brandId = req.headers['x-brand-id'] || batch.brand?.toString();
+        if (!isAdmin(req.user, brandId) && !isOwner(req.user, brandId) && !isManager(req.user, brandId) && !isAcademicCoordinator(req.user, brandId)) {
             const userId = (req.user.id || req.user._id).toString();
             const isAssignedInstructor = batch.instructor && batch.instructor.toString() === userId;
             if (!isAssignedInstructor) {
@@ -198,7 +200,8 @@ export const deleteBatch = async (req, res) => {
         }
 
         // Authorization check - Allow Admin, Owner, Manager, and Academic Coordinator
-        if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user) && !isAcademicCoordinator(req.user)) {
+        const brandId = req.headers['x-brand-id'] || batch.brand?.toString();
+        if (!isAdmin(req.user, brandId) && !isOwner(req.user, brandId) && !isManager(req.user, brandId) && !isAcademicCoordinator(req.user, brandId)) {
             const userId = (req.user.id || req.user._id).toString();
             const isAssignedInstructor = batch.instructor && batch.instructor.toString() === userId;
             if (!isAssignedInstructor) {
@@ -245,7 +248,8 @@ export const getBatchStudents = async (req, res) => {
         }
 
         // Authorization check - Allow Admin, Owner, Manager, Counsellor, and Academic Coordinator
-        if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user) && !isCounsellor(req.user) && !isAcademicCoordinator(req.user)) {
+        const brandId = req.headers['x-brand-id'] || batch.brand?.toString();
+        if (!isAdmin(req.user, brandId) && !isOwner(req.user, brandId) && !isManager(req.user, brandId) && !isCounsellor(req.user, brandId) && !isAcademicCoordinator(req.user, brandId)) {
             const userId = (req.user.id || req.user._id).toString();
             const isAssignedInstructor = batch.instructor && batch.instructor.toString() === userId;
             if (!isAssignedInstructor) {
@@ -298,7 +302,8 @@ export const addStudentToBatch = async (req, res) => {
         }
 
         // Authorization check - Allow Admin, Owner, Manager, and Academic Coordinator
-        if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user) && !isAcademicCoordinator(req.user)) {
+        const brandId = req.headers['x-brand-id'] || batch.brand?.toString();
+        if (!isAdmin(req.user, brandId) && !isOwner(req.user, brandId) && !isManager(req.user, brandId) && !isAcademicCoordinator(req.user, brandId)) {
             const userId = (req.user.id || req.user._id).toString();
             const isAssignedInstructor = batch.instructor && batch.instructor.toString() === userId;
             if (!isAssignedInstructor) {
@@ -377,7 +382,8 @@ export const updateBatchStudent = async (req, res) => {
         }
 
         // Authorization check - Allow Admin, Owner, Manager, and Academic Coordinator
-        if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user) && !isAcademicCoordinator(req.user)) {
+        const brandId = req.headers['x-brand-id'] || batch.brand?.toString();
+        if (!isAdmin(req.user, brandId) && !isOwner(req.user, brandId) && !isManager(req.user, brandId) && !isAcademicCoordinator(req.user, brandId)) {
             const userId = (req.user.id || req.user._id).toString();
             const isAssignedInstructor = batch.instructor && batch.instructor.toString() === userId;
             if (!isAssignedInstructor) {
@@ -410,7 +416,8 @@ export const removeStudentFromBatch = async (req, res) => {
         }
 
         // Authorization check - Allow Admin, Owner, Manager, and Academic Coordinator
-        if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user) && !isAcademicCoordinator(req.user)) {
+        const brandId = req.headers['x-brand-id'] || batch.brand?.toString();
+        if (!isAdmin(req.user, brandId) && !isOwner(req.user, brandId) && !isManager(req.user, brandId) && !isAcademicCoordinator(req.user, brandId)) {
             const userId = (req.user.id || req.user._id).toString();
             const isAssignedInstructor = batch.instructor && batch.instructor.toString() === userId;
             if (!isAssignedInstructor) {
@@ -476,12 +483,13 @@ export const markAttendance = async (req, res) => {
             return res.status(400).json({ message: "Cannot mark attendance: Today is outside the batch duration." });
         }
 
+        const brandId = req.headers['x-brand-id'] || batch.brand?.toString();
         // Permission check
-        if (isAcademicCoordinator(req.user)) {
+        if (isAcademicCoordinator(req.user, brandId)) {
             return res.status(403).json({ message: "Academic coordinators are not authorized to mark attendance." });
         }
 
-        if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
+        if (!isAdmin(req.user, brandId) && !isOwner(req.user, brandId) && !isManager(req.user, brandId)) {
             // For faculty/instructors
             const userId = (req.user.id || req.user._id).toString();
             const isAssignedInstructor = batch.instructor && batch.instructor.toString() === userId;
@@ -503,7 +511,7 @@ export const markAttendance = async (req, res) => {
 
         if (isSunday || holiday) {
             // If it's a holiday or sunday, only allow "Holiday" or "Week Off" status unless Owner/Manager
-            if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
+            if (!isAdmin(req.user, brandId) && !isOwner(req.user, brandId) && !isManager(req.user, brandId)) {
                 const requiredStatus = isSunday ? "Week Off" : "Holiday";
                 const invalidRecord = records.find(r => r.status !== requiredStatus);
                 if (invalidRecord) {
@@ -563,7 +571,8 @@ export const getAttendance = async (req, res) => {
         }
 
         // Authorization check
-        if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user) && !isCounsellor(req.user)) {
+        const brandId = req.headers['x-brand-id'] || batch.brand?.toString();
+        if (!isAdmin(req.user, brandId) && !isOwner(req.user, brandId) && !isManager(req.user, brandId) && !isCounsellor(req.user, brandId)) {
             const userId = (req.user.id || req.user._id).toString();
             const isAssignedInstructor = batch.instructor && batch.instructor.toString() === userId;
             if (!isAssignedInstructor) {
@@ -697,7 +706,8 @@ export const mergeStudentAttendance = async (req, res) => {
         if (!batch) return res.status(404).json({ message: "Batch not found." });
 
         // Authorization check
-        if (!isAdmin(req.user) && !isOwner(req.user) && !isManager(req.user)) {
+        const brandId = req.headers['x-brand-id'] || batch.brand?.toString();
+        if (!isAdmin(req.user, brandId) && !isOwner(req.user, brandId) && !isManager(req.user, brandId)) {
             const userId = (req.user.id || req.user._id).toString();
             const isAssignedInstructor = batch.instructor && batch.instructor.toString() === userId;
             if (!isAssignedInstructor) {

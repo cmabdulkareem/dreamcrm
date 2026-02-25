@@ -208,19 +208,20 @@ export const createCustomer = async (req, res) => {
 // Get all customers/leads
 export const getAllCustomers = async (req, res) => {
   try {
-    // Check user role using role helpers
-    const hasAdminAccess = isAdmin(req.user);
-    const hasManagerAccess = isManager(req.user);
+    // Check user role using brand-aware role helpers
+    const brandId = req.headers['x-brand-id'];
+    const hasAdminAccess = isAdmin(req.user, brandId);
+    const hasManagerAccess = isManager(req.user, brandId);
+    const hasCounsellorAccess = isCounsellor(req.user, brandId);
 
-    const { hasRole } = await import("../utils/roleHelpers.js");
+    console.log(`[DEBUG] getAllCustomers: user=${req.user.email}, brandId=${brandId}, isAdmin=${hasAdminAccess}, isManager=${hasManagerAccess}`);
 
     let query = { ...req.brandFilter };
 
-    const hasCounsellorAccess = isCounsellor(req.user);
-
-    // If user is not admin, manager, or counsellor, only show leads assigned to them
+    // If user is not admin, manager, or counsellor for this brand, only show leads assigned to them
     if (!hasAdminAccess && !hasManagerAccess && !hasCounsellorAccess) {
-      query.assignedTo = req.user.id; // Only leads assigned to the user
+      console.log(`[DEBUG] getAllCustomers: Filtering to assigned user ${req.user._id} because no admin/manager access`);
+      query.assignedTo = req.user._id || req.user.id; // Support both instance and flat object
     }
 
     const customers = await customerModel.find(query)
@@ -229,6 +230,7 @@ export const getAllCustomers = async (req, res) => {
       .populate('createdBy', 'fullName email') // Populate creator
       .sort({ createdAt: -1 });
 
+    console.log(`[DEBUG] getAllCustomers: Returning ${customers.length} leads.`);
     return res.status(200).json({ customers });
   } catch (error) {
     console.error("Error fetching customers:", error);
@@ -240,8 +242,9 @@ export const getAllCustomers = async (req, res) => {
 export const getConvertedCustomers = async (req, res) => {
   try {
     // Check user role using role helpers
-    const hasAdminAccess = isAdmin(req.user);
-    const hasManagerAccess = isManager(req.user);
+    const brandId = req.headers['x-brand-id'];
+    const hasAdminAccess = isAdmin(req.user, brandId);
+    const hasManagerAccess = isManager(req.user, brandId);
 
     const { includeStudents } = req.query;
     let query = { ...req.brandFilter, leadStatus: 'converted' };
@@ -250,7 +253,7 @@ export const getConvertedCustomers = async (req, res) => {
       query.isAdmissionTaken = { $ne: true };
     }
 
-    const hasCounsellorAccess = isCounsellor(req.user);
+    const hasCounsellorAccess = isCounsellor(req.user, brandId);
 
     // If user is not admin, manager, or counsellor, only show leads assigned to them
     if (!hasAdminAccess && !hasManagerAccess && !hasCounsellorAccess) {
@@ -499,11 +502,8 @@ export const deleteCustomer = async (req, res) => {
     // I can't see the top in this replace_chunk.
     // So I will use manual role check for safety: "Owner" role.
 
-    const userRoles = req.user.roles || [];
-    const isOwnerUser = Array.isArray(userRoles) ? userRoles.includes('Owner') : userRoles === 'Owner';
-
-    if (!isOwnerUser) {
-      return res.status(403).json({ message: "Access denied. Only the Owner can delete leads." });
+    if (!req.user.isAdmin) {
+      return res.status(403).json({ message: "Access denied. Only the Owner/Admin can delete leads." });
     }
 
     const customer = await customerModel.findByIdAndDelete(id);
@@ -548,7 +548,8 @@ export const assignLead = async (req, res) => {
     const assignedBy = req.user.id; // Get the assigning user from token
 
     // Check if user has permission to assign leads (Admin, Manager, or Counsellor)
-    const isAuthorized = isAdmin(req.user) || isManager(req.user) || isCounsellor(req.user);
+    const brandId = req.headers['x-brand-id'];
+    const isAuthorized = isAdmin(req.user, brandId) || isManager(req.user, brandId) || isCounsellor(req.user, brandId);
     if (!isAuthorized) {
       return res.status(403).json({ message: "Access denied. Only Admins, Managers, and Counsellors can assign leads." });
     }
@@ -568,7 +569,7 @@ export const assignLead = async (req, res) => {
     // Brand validation: Ensure the assigned user belongs to the same brand as the lead
     if (customer.brand) {
       const leadBrandId = customer.brand.toString();
-      const userBrandIds = (assignedUser.brands || []).map(b => b.toString());
+      const userBrandIds = (assignedUser.brands || []).map(b => (b.brand?._id || b.brand || b).toString());
 
       if (!userBrandIds.includes(leadBrandId)) {
         return res.status(403).json({

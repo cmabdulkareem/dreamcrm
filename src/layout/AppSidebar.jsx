@@ -25,7 +25,7 @@ import {
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import SidebarWidget from "./SidebarWidget";
-import { isManager, hasRole, isAccountant, isCounsellor, isAdmin, isDeveloper, isOwner, isHR } from "../utils/roleHelpers";
+import { isManager, hasRole, isAccountant, isCounsellor, isAdmin, isDeveloper, isOwner, isHR, getUserRoles } from "../utils/roleHelpers";
 
 
 const navItems = [
@@ -74,6 +74,15 @@ const navItems = [
     ]
   },
   {
+    name: "Compute Lab",
+    icon: <BoxCubeIcon />,
+    subItems: [
+      { name: "Lab Scheduler", path: "/compute-lab/scheduler", pro: false },
+      { name: "Softwares", path: "/compute-lab/softwares", pro: false },
+      { name: "Complaints", path: "/compute-lab/complaints", pro: false },
+    ]
+  },
+  {
     name: "Finance",
     icon: <TableIcon />,
     subItems: [
@@ -110,6 +119,7 @@ const navItems = [
     icon: <PageIcon />,
     subItems: [
       { name: "Databases", path: "/databases", pro: true },
+      { name: "Promotional", path: "/marketing/promotional", pro: false },
       { name: "404 Error", path: "/error-404", pro: false },
     ],
   },
@@ -220,8 +230,10 @@ const AppSidebar = () => {
     );
   };
 
+  const brandId = selectedBrand?._id || selectedBrand?.id;
+
   // Check if user has manager privileges (Owner, Academic Coordinator, Brand Manager)
-  const hasManagerAccess = isManager(user);
+  const hasManagerAccess = isManager(user, brandId);
 
   // Helper to determine if an item is global (always accessible)
   const isGlobalItem = (name) => {
@@ -237,8 +249,12 @@ const AppSidebar = () => {
       "Sign Up",  // If present
       "Dashboard",
       "Leads & Conversions",
-
-      "App Backup"
+      "App Backup",
+      // Compute Lab (global - no brand needed)
+      "Compute Lab",
+      "Lab Scheduler",
+      "Softwares",
+      "Complaints",
     ];
     return globalModules.includes(name);
   };
@@ -261,26 +277,26 @@ const AppSidebar = () => {
           "UI Elements"
         ];
 
-        if (restrictedItemsForFaculty.includes(nav.name) && hasRole(user, "Instructor") && !hasManagerAccess) {
+        if (restrictedItemsForFaculty.includes(nav.name) && hasRole(user, "Instructor", brandId) && !hasManagerAccess) {
           return null;
         }
 
         // Restricted items for Counsellors (who are not managers)
-        if (isCounsellor(user) && !isManager(user)) {
+        if (isCounsellor(user, brandId) && !isManager(user, brandId)) {
           // Counsellors need Lead Management, but not Finance or technical/admin items
           const hiddenForCounsellor = ["Finance", "Marketing", "UI Elements"];
           if (hiddenForCounsellor.includes(nav.name)) return null;
         }
 
         // Restricted items for Academic Coordinator
-        if (hasRole(user, "Academic Coordinator")) {
+        if (hasRole(user, "Academic Coordinator", brandId)) {
           // AC ONLY needs Student Management, Settings, Lead Management and Leave Management (will filter subitems below)
           const allowedForAC = ["Student Management", "Settings", "Leave Management", "Lead Management"];
           if (!allowedForAC.includes(nav.name)) return null;
         }
 
         // Restricted items for Accountants (who are not managers)
-        if (isAccountant(user) && !isManager(user)) {
+        if (isAccountant(user, brandId) && !isManager(user, brandId)) {
           // Accountants need Finance, but not Lead/Student management (unless for payments, which are in Finance)
           const hiddenForAccountant = [
             // "Lead Management",
@@ -304,7 +320,13 @@ const AppSidebar = () => {
         }
 
         // Special handling for Finance (hide for non-accountants/non-managers)
-        if (nav.name === "Finance" && !isAccountant(user)) {
+        if (nav.name === "Finance" && !isAccountant(user, brandId)) {
+          return null;
+        }
+
+        // Compute Lab: only show to allowed roles + admins
+        const computeLabRoles = ['Owner', 'Brand Manager', 'Academic Coordinator', 'Instructor', 'Lab Assistant', 'IT Support'];
+        if (nav.name === "Compute Lab" && !user?.isAdmin && !computeLabRoles.some(r => hasRole(user, r, brandId) || hasRole(user, r))) {
           return null;
         }
 
@@ -395,7 +417,7 @@ const AppSidebar = () => {
                     const subItemDisabledClass = !isSubItemEnabled ? "opacity-40 cursor-not-allowed pointer-events-none" : "";
 
                     // RESTRICTION: Hide User Management, Brand Management, and Announcements for non-admin managers
-                    if (isManager(user) && !user?.isAdmin &&
+                    if (isManager(user, brandId) && !user?.isAdmin &&
                       ["User Management", "Brand Management", "Announcements"].includes(subItem.name)) {
                       return null;
                     }
@@ -406,7 +428,7 @@ const AppSidebar = () => {
                     }
 
                     // RESTRICTION: Academic Coordinator only sees Batch Management, Edit Profile, Cold Call list and personal Leave Management
-                    if (hasRole(user, "Academic Coordinator")) {
+                    if (hasRole(user, "Academic Coordinator", brandId)) {
                       const allowedSubItemsAC = ["Batch Management", "Edit Profile", "Apply Leave", "My Leaves", "Cold Call list", "Birthday Calendar", "New Lead", "Manage Leads"];
                       if (!allowedSubItemsAC.includes(subItem.name)) {
                         return null;
@@ -414,12 +436,12 @@ const AppSidebar = () => {
                     }
 
                     // RESTRICTION: Only Owner, HR can see "Manage Leaves"
-                    if (subItem.name === "Manage Leaves" && !(hasRole(user, "Owner") || hasRole(user, "HR"))) {
+                    if (subItem.name === "Manage Leaves" && !(hasRole(user, "Owner", brandId) || hasRole(user, "HR", brandId))) {
                       return null;
                     }
 
                     // RESTRICTION: Instructor should only see "Batch Management" under Student Management
-                    if (hasRole(user, "Instructor") && !hasManagerAccess) {
+                    if (hasRole(user, "Instructor", brandId) && !hasManagerAccess) {
                       const restrictedForFaculty = ["New Student (beta)", "Manage Students (beta)"];
                       if (restrictedForFaculty.includes(subItem.name)) {
                         return null;
@@ -427,7 +449,7 @@ const AppSidebar = () => {
                     }
 
                     // RESTRICTION: Counsellor should only see "Batch Management" and "Birthday Calendar"
-                    if (isCounsellor(user) && !isManager(user)) {
+                    if (isCounsellor(user, brandId) && !isManager(user, brandId)) {
                       const allowedForCounsellor = [
                         "Batch Management",
                         "Birthday Calendar",
@@ -546,7 +568,11 @@ const AppSidebar = () => {
                 className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
                   }`}
               >
-                {isExpanded || isHovered || isMobileOpen ? (user?.roles?.[0] || user?.role || "Menu") : <MoreDotIcon className="size-6" />}
+                {isExpanded || isHovered || isMobileOpen ? (
+                  getUserRoles(user, brandId).length > 0
+                    ? getUserRoles(user, brandId).join(", ")
+                    : (user?.isAdmin ? "Administrator" : "Menu")
+                ) : <MoreDotIcon className="size-6" />}
               </h2>
               {renderMenuItems(navItems, "main")}
             </div>

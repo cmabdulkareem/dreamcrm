@@ -385,23 +385,33 @@ const AppHeader = () => {
                 <div className="relative">
                   <select
                     className="h-10 pl-2 pr-6 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-brand-500 w-[100px] sm:w-auto"
-                    value={selectedBrand ? selectedBrand._id : ""}
+                    value={selectedBrand ? (selectedBrand._id || selectedBrand.id) : ""}
                     onChange={(e) => {
                       const brandId = e.target.value;
                       if (brandId === "") {
                         selectBrand(null); // Select All
                       } else {
-                        const brand = currentUser?.brands?.find(b => b._id === brandId);
-                        selectBrand(brand);
+                        const brandAssoc = currentUser?.brands?.find(b => String(b.brand?._id || b.brand) === String(brandId));
+                        const brand = brandAssoc?.brand;
+                        // brand may be a populated object or a raw ID string — only selectBrand if it's a proper object
+                        if (brand && typeof brand === 'object') {
+                          selectBrand(brand);
+                        }
                       }
                     }}
                   >
                     {(isAdmin(currentUser) || (Array.isArray(currentUser.brands) && currentUser.brands.length > 1)) && <option value="">All Brands</option>}
-                    {currentUser.brands.map((brand) => (
-                      <option key={brand._id} value={brand._id}>
-                        {brand.name}
-                      </option>
-                    ))}
+                    {currentUser.brands.map((assoc) => {
+                      const brand = assoc.brand;
+                      if (!brand) return null;
+                      const bId = brand._id || brand.id || brand;
+                      const bName = brand.name || "Unknown Brand";
+                      return (
+                        <option key={bId} value={bId}>
+                          {bName}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
               )}

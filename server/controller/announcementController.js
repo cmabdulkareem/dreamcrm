@@ -24,9 +24,7 @@ export const createAnnouncement = async (req, res) => {
     // Check if user has manager role (auto-approve)
     const user = await User.findById(userId);
     const isAdmin = user.isAdmin;
-    const userRoles = user.roles || [];
-    const isManager = isAdmin || userRoles.includes('Owner') || userRoles.includes('Admin') ||
-      userRoles.includes('Brand Manager') || userRoles.includes('Manager');
+    const isManager = user.isAdmin || (user.brands && user.brands.some(b => b.roles && b.roles.some(r => ['Brand Manager', 'Manager', 'Owner'].includes(r))));
 
     // Create announcement
     const announcement = new Announcement({
@@ -83,9 +81,7 @@ export const getAnnouncements = async (req, res) => {
 
     // Check if user has manager role
     const isAdmin = user.isAdmin;
-    const userRoles = user.roles || [];
-    const isManager = isAdmin || userRoles.includes('Owner') || userRoles.includes('Admin') ||
-      userRoles.includes('Brand Manager') || userRoles.includes('Manager');
+    const isManager = user.isAdmin || (user.brands && user.brands.some(b => b.roles && b.roles.some(r => ['Brand Manager', 'Manager', 'Owner'].includes(r))));
 
     // Query based on user role
     // Query based on user role and brand filter
@@ -114,9 +110,7 @@ export const approveAnnouncement = async (req, res) => {
     // Check if user has manager role
     const user = await User.findById(userId);
     const isAdmin = user.isAdmin;
-    const userRoles = user.roles || [];
-    const isManager = isAdmin || userRoles.includes('Owner') || userRoles.includes('Admin') ||
-      userRoles.includes('Brand Manager') || userRoles.includes('Manager');
+    const isManager = user.isAdmin || (user.brands && user.brands.some(b => b.roles && b.roles.some(r => ['Brand Manager', 'Manager', 'Owner'].includes(r))));
 
     if (!isManager) {
       return res.status(403).json({ message: 'Access denied. Managers only.' });
@@ -171,9 +165,7 @@ export const rejectAnnouncement = async (req, res) => {
     // Check if user has manager role
     const user = await User.findById(userId);
     const isAdmin = user.isAdmin;
-    const userRoles = user.roles || [];
-    const isManager = isAdmin || userRoles.includes('Owner') || userRoles.includes('Admin') ||
-      userRoles.includes('Brand Manager') || userRoles.includes('Manager');
+    const isManager = user.isAdmin || (user.brands && user.brands.some(b => b.roles && b.roles.some(r => ['Brand Manager', 'Manager', 'Owner'].includes(r))));
 
     if (!isManager) {
       return res.status(403).json({ message: 'Access denied. Managers only.' });
@@ -217,9 +209,7 @@ export const updateAnnouncement = async (req, res) => {
     // Check if user has manager role
     const user = await User.findById(userId);
     const isAdmin = user.isAdmin;
-    const userRoles = user.roles || [];
-    const isManager = isAdmin || userRoles.includes('Owner') || userRoles.includes('Admin') ||
-      userRoles.includes('Brand Manager') || userRoles.includes('Manager');
+    const isManager = user.isAdmin || (user.brands && user.brands.some(b => b.roles && b.roles.some(r => ['Brand Manager', 'Manager', 'Owner'].includes(r))));
 
     if (!isManager) {
       return res.status(403).json({ message: 'Access denied. Managers only.' });

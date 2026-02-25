@@ -37,6 +37,8 @@ import supportRoutes from "./routes/supportRoutes.js";
 import prospectDatabaseRoutes from "./routes/prospectDatabaseRoutes.js";
 import holidayRoutes from "./routes/holidayRoutes.js";
 import studentPortalRoutes from "./routes/studentPortalRoutes.js";
+import labRoutes from "./routes/labRoutes.js";
+import promotionalRoutes from "./routes/promotionalRoutes.js";
 
 import { getBaseUploadDir } from './utils/uploadHelper.js';
 
@@ -99,6 +101,8 @@ app.use('/api/support', supportRoutes)
 app.use('/api/prospect-database', prospectDatabaseRoutes)
 app.use('/api/holidays', holidayRoutes)
 app.use('/api/student-portal', studentPortalRoutes)
+app.use('/api/compute-lab', labRoutes)
+app.use('/api/promotional', promotionalRoutes)
 
 // ================= SPA FALLBACK =================
 

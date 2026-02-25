@@ -13,8 +13,8 @@ export function requireBrandAccess(brandIdParam = 'brandId') {
         return res.status(401).json({ message: "Unauthorized - User not authenticated" });
       }
 
-      // Owners have access to all brands
-      if (req.user.roles && req.user.roles.includes('Owner')) {
+      // Admins/Owners have access to all brands
+      if (req.user.isAdmin) {
         return next();
       }
 
@@ -33,14 +33,15 @@ export function requireBrandAccess(brandIdParam = 'brandId') {
       }
 
       // Admins have access to all brands
-      if (user.isAdmin || (user.roles && user.roles.includes('Admin'))) {
+      if (user.isAdmin) {
         return next();
       }
 
       // Check if the brand is in the user's assigned brands
-      const hasBrandAccess = user.brands && user.brands.some(brand =>
-        brand._id.toString() === brandId || brand.id.toString() === brandId
-      );
+      const hasBrandAccess = user.brands && user.brands.some(b => {
+        const bId = b.brand?._id || b.brand || b;
+        return bId.toString() === brandId;
+      });
 
       if (!hasBrandAccess) {
         return res.status(403).json({
@@ -69,33 +70,32 @@ export async function applyBrandFilter(req, res, next) {
 
     const { 'x-brand-id': headerBrandId } = req.headers;
 
-    // Owners and admins have access to all data (no filter)
-    // UNLESS they specifically selected a brand via header
-    const isOwner = req.user.roles && req.user.roles.includes('Owner');
     const user = await User.findById(req.user.id).populate('brands');
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const isAdmin = user.isAdmin || (user.roles && user.roles.includes('Admin'));
+    const isAdmin = user.isAdmin;
 
     // If a specific brand is selected in the header
     if (headerBrandId) {
       // Verify user has access to this brand
-      if (isOwner || isAdmin) {
+      if (isAdmin) {
         // Admin/Owner can access any brand
         req.brandFilter = { brand: headerBrandId };
         return next();
       }
 
       // Regular user must have explicit access
-      const hasAccess = user.brands && user.brands.some(brand =>
-        brand._id.toString() === headerBrandId || brand.id.toString() === headerBrandId
-      );
+      const hasAccess = user.brands && user.brands.some(b => {
+        const bId = b.brand?._id || b.brand || b;
+        return bId.toString() === headerBrandId;
+      });
 
       if (hasAccess) {
         req.brandFilter = { brand: headerBrandId };
+        req.user = user;
         return next();
       } else {
         return res.status(403).json({ message: "Access denied to selected brand." });
@@ -103,22 +103,23 @@ export async function applyBrandFilter(req, res, next) {
     }
 
     // Default behavior if NO brand is selected (All Brands view)
-
-    if (isOwner || isAdmin) {
+    if (isAdmin) {
       req.brandFilter = {}; // No filter for owners/admins seeing "All Brands"
+      req.user = user;
       return next();
     }
 
     // For regular users, filter by their assigned brands
     // If they select "All Brands", they should only see data for brands they are assigned to
     if (user.brands && user.brands.length > 0) {
-      const brandIds = user.brands.map(brand => brand._id.toString());
+      const brandIds = user.brands.map(b => (b.brand?._id || b.brand || b).toString());
       req.brandFilter = { brand: { $in: brandIds } };
     } else {
       // If user has no brands assigned, they can't see any brand-specific data
       req.brandFilter = { _id: null }; // This will match nothing
     }
 
+    req.user = user;
     next();
   } catch (error) {
     console.error("Error applying brand filter:", error);
@@ -139,13 +140,8 @@ export async function userHasBrandAccess(user, brandId) {
       return false;
     }
 
-    // Owners have access to all brands
-    if (user.roles && user.roles.includes('Owner')) {
-      return true;
-    }
-
     // Admins have access to all brands
-    if (user.isAdmin || (user.roles && user.roles.includes('Admin'))) {
+    if (user.isAdmin) {
       return true;
     }
 
@@ -157,9 +153,10 @@ export async function userHasBrandAccess(user, brandId) {
     }
 
     // Check if the brand is in the user's assigned brands
-    return dbUser.brands && dbUser.brands.some(brand =>
-      brand._id.toString() === brandId || brand.id.toString() === brandId
-    );
+    return dbUser.brands && dbUser.brands.some(b => {
+      const bId = b.brand?._id || b.brand || b;
+      return bId.toString() === brandId;
+    });
   } catch (error) {
     console.error("Error checking brand access:", error);
     return false;
