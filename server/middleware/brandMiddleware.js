@@ -104,15 +104,7 @@ export async function applyBrandFilter(req, res, next) {
     }
 
     // Default behavior if NO brand is selected (All Brands view)
-    if (isAdmin) {
-      console.log(`[DEBUG] applyBrandFilter: User is Global Admin, no filter`);
-      req.brandFilter = {}; // No filter for owners/admins seeing "All Brands"
-      req.user = user;
-      return next();
-    }
-
-    // For regular users, filter by their assigned brands
-    // If they select "All Brands", they should only see data for brands they are assigned to
+    // If the user has explicit brand assignments, we use them to scope the view
     if (user.brands && user.brands.length > 0) {
       const brandIds = user.brands
         .map(b => (b.brand?._id || b.brand || b))
@@ -129,10 +121,17 @@ export async function applyBrandFilter(req, res, next) {
 
       console.log(`[DEBUG] applyBrandFilter: Applying $in filter for brands: ${objectIdBrands.join(', ')}`);
       req.brandFilter = { brand: { $in: objectIdBrands } };
-    } else {
-      console.warn(`[WARN] applyBrandFilter: User has no brands assigned!`);
-      // If user has no brands assigned, they can't see any brand-specific data
-      req.brandFilter = { _id: null }; // This will match nothing
+    }
+    // Fallback: If user IS an admin but has NO specific brands assigned, 
+    // we assume they are a Super Admin and show ALL brands.
+    else if (isAdmin) {
+      console.log(`[DEBUG] applyBrandFilter: User is Global Admin with no specific brand filters, showing all.`);
+      req.brandFilter = {};
+    }
+    // Final fallback: No brands and not admin, show nothing.
+    else {
+      console.warn(`[WARN] applyBrandFilter: User has no brands assigned and is not admin!`);
+      req.brandFilter = { _id: null };
     }
 
     req.user = user;
