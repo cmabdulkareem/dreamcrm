@@ -217,13 +217,29 @@ export const getAllCustomers = async (req, res) => {
     console.log(`[DEBUG] getAllCustomers: user=${req.user.email}, headerBrandId=${brandId}, hasAdminAccess=${hasAdminAccess}, hasManagerAccess=${hasManagerAccess}`);
 
     let query = { ...req.brandFilter };
-    console.log(`[DEBUG] getAllCustomers: Base query from brandFilter:`, JSON.stringify(query));
 
-    // If user is not admin, manager, or counsellor for this brand, only show leads assigned to them
-    if (!hasAdminAccess && !hasManagerAccess && !hasCounsellorAccess) {
-      console.log(`[DEBUG] getAllCustomers: Filtering to assigned user ${req.user._id} because no admin/manager access`);
-      query.assignedTo = req.user._id || req.user.id; // Support both instance and flat object
+    // If viewing All Brands (brandId is null), apply granular role-based filtering
+    if (!brandId && !req.user.isAdmin) {
+      const { getManagedBrandIds } = await import('../utils/roleHelpers.js');
+      const managedBrandIds = getManagedBrandIds(req.user);
+
+      console.log(`[DEBUG] getAllCustomers: Granular filtering. Managed Brands: ${managedBrandIds.length}`);
+
+      query = {
+        ...query,
+        $or: [
+          { brand: { $in: managedBrandIds } },
+          { assignedTo: req.user.id }
+        ]
+      };
     }
+    // If viewing a specific brand, or user is a Global Admin (Super Admin)
+    else if (!hasAdminAccess && !hasManagerAccess && !hasCounsellorAccess) {
+      // Regular user in a specific brand context only sees their own leads
+      query.assignedTo = req.user._id || req.user.id;
+    }
+
+    console.log(`[DEBUG] getAllCustomers: Final Query:`, JSON.stringify(query));
 
     const customers = await customerModel.find(query)
       .populate('assignedTo', 'fullName email')

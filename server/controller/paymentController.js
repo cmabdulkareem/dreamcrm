@@ -175,11 +175,21 @@ export const getPaymentStats = async (req, res) => {
     try {
         // Current state context
         let brandQuery = {};
-        if (req.brandFilter) {
+        const headerBrandId = req.headers['x-brand-id'];
+
+        if (headerBrandId) {
+            brandQuery.brand = new mongoose.Types.ObjectId(headerBrandId);
+        } else if (req.brandFilter) {
             brandQuery = { ...req.brandFilter };
 
-            // Aggregation $match needs explicit ObjectId casting (unlike find)
-            if (brandQuery.brand) {
+            // If viewing All Brands and not a Global Admin, restrict to managed brands only
+            // for the high-level stats view.
+            if (!req.user.isAdmin) {
+                const { getManagedBrandIds } = await import('../utils/roleHelpers.js');
+                const managedBrandIds = getManagedBrandIds(req.user);
+                brandQuery.brand = { $in: managedBrandIds.map(id => new mongoose.Types.ObjectId(id)) };
+            } else if (brandQuery.brand) {
+                // Aggregation $match needs explicit ObjectId casting (unlike find)
                 if (typeof brandQuery.brand === 'string') {
                     brandQuery.brand = new mongoose.Types.ObjectId(brandQuery.brand);
                 } else if (brandQuery.brand.$in) {

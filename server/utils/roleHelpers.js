@@ -122,6 +122,19 @@ export function isCounsellor(user, brandId = null) {
 }
 
 /**
+ * Get IDs of brands where the user has managerial/elevated roles
+ */
+export function getManagedBrandIds(user) {
+  if (!user || !user.brands) return [];
+
+  const BRAND_ADMIN_ROLES = ['Owner', 'Brand Manager', 'Manager', 'Counsellor', 'Counselor'];
+
+  return user.brands
+    .filter(b => b.roles && BRAND_ADMIN_ROLES.some(role => b.roles.includes(role)))
+    .map(b => (b.brand?._id || b.brand || b).toString());
+}
+
+/**
  * Check if user is the designated developer (by email)
  */
 export function isDeveloper(user) {

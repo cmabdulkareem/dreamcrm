@@ -204,7 +204,15 @@ export const createStudent = async (req, res) => {
 // Get all students
 export const getAllStudents = async (req, res) => {
   try {
-    const query = { ...req.brandFilter }; // Apply brand filter
+    let query = { ...req.brandFilter }; // Apply brand filter
+    const headerBrandId = req.headers['x-brand-id'];
+
+    // If viewing All Brands and not a Global Admin, restrict to managed brands only
+    if (!headerBrandId && !req.user.isAdmin) {
+      const { getManagedBrandIds } = await import('../utils/roleHelpers.js');
+      const managedBrandIds = getManagedBrandIds(req.user);
+      query.brand = { $in: managedBrandIds.map(id => new mongoose.Types.ObjectId(id)) };
+    }
 
     // Filter for batch availability if requested
     if (req.query.availableForBatch === 'true') {
