@@ -8,7 +8,7 @@ import UserDropdown from "../components/header/UserDropdown";
 import AnimatedAnnouncement from "../components/header/AnimatedAnnouncement";
 import { ThemeToggleButton } from "../components/common/ThemeToggleButton";
 import { AuthContext } from "../context/AuthContext";
-import { isAdmin, isOwner, isManager } from "../utils/roleHelpers";
+import { isAdmin, isOwner, isManager, isAnyOwner } from "../utils/roleHelpers";
 import { TimeIcon } from "../icons";
 
 const AppHeader = () => {
@@ -400,7 +400,7 @@ const AppHeader = () => {
                       }
                     }}
                   >
-                    {(isAdmin(currentUser) || (Array.isArray(currentUser.brands) && currentUser.brands.length > 1)) && <option value="">All Brands</option>}
+                    {(isAdmin(currentUser) || isAnyOwner(currentUser) || (Array.isArray(currentUser.brands) && currentUser.brands.length > 1)) && <option value="">All Brands</option>}
                     {currentUser.brands.map((assoc) => {
                       const brand = assoc.brand;
                       if (!brand) return null;

@@ -100,6 +100,15 @@ export function isOwner(user, brandId = null) {
 }
 
 /**
+ * Check if user has Owner role in at least one brand.
+ * These users can access the All Brands combined view for their brands.
+ */
+export function isAnyOwner(user) {
+  if (!user || !Array.isArray(user.brands) || user.brands.length === 0) return false;
+  return user.brands.some(b => Array.isArray(b.roles) && b.roles.includes('Owner'));
+}
+
+/**
  * Check if user has counselor privileges
  */
 export function isCounsellor(user, brandId = null) {

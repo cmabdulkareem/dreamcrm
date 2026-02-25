@@ -4,7 +4,7 @@ import { updateBrandTheme, ALL_BRANDS_THEME_COLOR } from "../utils/brandColors";
 
 const AuthContext = createContext();
 import API from "../config/api";
-import { hasRole, isManager, isOwner } from "../utils/roleHelpers";
+import { hasRole, isManager, isOwner, isAnyOwner } from "../utils/roleHelpers";
 
 function AuthProvider({ children }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -67,9 +67,11 @@ function AuthProvider({ children }) {
 
         // Check if user has admin privileges
         const brandId = selectedBrand?._id || selectedBrand?.id;
-        const isAdminUser = user?.isAdmin || (brandId && user?.brands?.some(b =>
-          (b.brand?._id || b.brand || b).toString() === brandId && b.roles?.includes('Owner')
-        ));
+        const isAdminUser = user?.isAdmin
+          || isAnyOwner(user)
+          || (brandId && user?.brands?.some(b =>
+            (b.brand?._id || b.brand || b).toString() === brandId && b.roles?.includes('Owner')
+          ));
         setIsAdmin(!!isAdminUser);
 
         if (!selectedBrand && user && Array.isArray(user.brands) && user.brands.length > 0) {
