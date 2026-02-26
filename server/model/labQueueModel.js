@@ -10,7 +10,13 @@ const labQueueSchema = new mongoose.Schema(
             required: true,
             default: "Early AM"
         },
-        addedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true }
+        addedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+        lab: { type: mongoose.Schema.Types.ObjectId, ref: 'Laboratory', required: true },
+        status: {
+            type: String,
+            enum: ["waiting", "assigned", "completed", "cancelled"],
+            default: "waiting"
+        }
     },
     { timestamps: true }
 );

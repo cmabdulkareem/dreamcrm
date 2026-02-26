@@ -13,7 +13,7 @@ const complaintSubSchema = new mongoose.Schema({
 
 const labPcSchema = new mongoose.Schema(
     {
-        pcNumber: { type: String, required: true, trim: true, unique: true },
+        pcNumber: { type: String, required: true, trim: true },
         label: { type: String, trim: true, default: "" },
         status: { type: String, enum: ["available", "in-use", "maintenance", "offline"], default: "available" },
         specs: { type: String, default: "" },
@@ -22,10 +22,14 @@ const labPcSchema = new mongoose.Schema(
         position: { type: Number, default: 0 },
         notes: { type: String, default: "" },
         softwares: { type: [String], default: [] },
+        lab: { type: mongoose.Schema.Types.ObjectId, ref: 'Laboratory', required: true },
         complaints: { type: [complaintSubSchema], default: [] }
     },
     { timestamps: true }
 );
+
+// Compound index for scoped uniqueness
+labPcSchema.index({ pcNumber: 1, lab: 1 }, { unique: true });
 
 const LabPC = mongoose.model("LabPC", labPcSchema);
 export default LabPC;

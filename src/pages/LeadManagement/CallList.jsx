@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useContext, useMemo } from 'react';
+import React, { useState, useEffect, useContext, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import Papa from 'papaparse';
@@ -19,7 +20,7 @@ import API from '../../config/api';
 import { AuthContext } from '../../context/AuthContext';
 import { isOwner, isManager } from '../../utils/roleHelpers';
 import Select from '../../components/form/Select';
-import { CloseIcon, DownloadIcon, FileIcon, ChevronDownIcon, ChevronUpIcon } from '../../icons';
+import { CloseIcon, DownloadIcon, FileIcon, ChevronDownIcon, ChevronUpIcon, PencilIcon, TrashBinIcon } from '../../icons';
 import { countries, callListStatusOptions } from '../../data/DataSets';
 
 const SearchIcon = ({ className }) => (
@@ -46,6 +47,13 @@ export default function CallList() {
     const { isOpen: isDeleteOpen, openModal: openDeleteModal, closeModal: closeDeleteModal } = useModal();
     const { isOpen: isImportOpen, openModal: openImportModal, closeModal: closeImportModal } = useModal();
     const [showFilters, setShowFilters] = useState(false);
+
+    // Tooltip states for remark history
+    const [hoveredRemarkRow, setHoveredRemarkRow] = useState(null);
+    const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0, arrowLeft: 0 });
+    const [showTooltip, setShowTooltip] = useState(false);
+    const hoverTimeoutRef = useRef(null);
+    const tooltipRef = useRef(null);
 
     // Form states
     const [name, setName] = useState('');
@@ -89,10 +97,10 @@ export default function CallList() {
     } = useMemo(() => {
         // Define simplified categories for breakdown
         const groupedStats = {
-            'interested': { count: 0, color: '#22C55E', label: 'Interested' },
-            'not-interested': { count: 0, color: '#EF4444', label: 'Not Interested' },
-            'failed': { count: 0, color: '#F97316', label: 'Unreachable / Failed' },
-            'converted': { count: 0, color: '#0EA5E9', label: 'Converted to Lead' }
+            'interested': { count: 0, color: '#10B981', label: 'Interested' }, // Emerald
+            'not-interested': { count: 0, color: '#EF4444', label: 'Not Interested' }, // Red
+            'failed': { count: 0, color: '#64748B', label: 'Unreachable / Failed' }, // Slate
+            'converted': { count: 0, color: '#0EA5E9', label: 'Converted to Lead' } // Sky
         };
 
         const statusMapping = {
@@ -224,6 +232,136 @@ export default function CallList() {
         }
     };
 
+
+    // Calculate optimal tooltip position (Ported from RecentOrders.jsx)
+    const calculateTooltipPosition = (rect) => {
+        const tooltipWidth = 384; // w-96 = 384px
+        const padding = 20;
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        const headerHeight = 85;
+
+        // Center-align horizontally
+        let left = rect.left + rect.width / 2 - tooltipWidth / 2;
+
+        // Adjust if tooltip would go off right edge
+        if (left + tooltipWidth > viewportWidth - padding) {
+            left = viewportWidth - tooltipWidth - padding;
+        }
+
+        // Adjust if tooltip would go off left edge
+        if (left < padding) {
+            left = padding;
+        }
+
+        // Recalculate arrowLeft relative to the tooltip's final left position
+        let arrowLeft = (rect.left + rect.width / 2) - left;
+        // Clamp arrow to tooltip bounds
+        arrowLeft = Math.max(24, Math.min(tooltipWidth - 24, arrowLeft));
+
+        // Calculate vertical position
+        const spaceAbove = rect.top - headerHeight - padding;
+        const spaceBelow = viewportHeight - rect.bottom - padding;
+
+        const estimatedTooltipHeight = 350;
+
+        let top = 0;
+        let transform = "";
+        let maxHeight = 0;
+
+        const shouldShowAbove = spaceAbove > estimatedTooltipHeight || spaceAbove > spaceBelow;
+
+        if (shouldShowAbove) {
+            // Show ABOVE
+            top = rect.top;
+            transform = "translateY(-100%) translateY(-6px)";
+            maxHeight = Math.min(spaceAbove, 480);
+        } else {
+            // Show BELOW
+            top = rect.bottom;
+            transform = "translateY(6px)";
+            maxHeight = Math.min(spaceBelow, 480);
+        }
+
+        return { top, left, arrowLeft, transform, maxHeight, isAbove: shouldShowAbove };
+    };
+
+    // Handle tooltip hover with delay
+    const handleTooltipEnter = (e, entry) => {
+        if (entry.remarks && entry.remarks.length > 0) {
+            if (hoverTimeoutRef.current) {
+                clearTimeout(hoverTimeoutRef.current);
+            }
+
+            const rect = e.currentTarget.getBoundingClientRect();
+            const position = calculateTooltipPosition(rect);
+
+            setTooltipPosition(position);
+            setHoveredRemarkRow(entry._id);
+
+            hoverTimeoutRef.current = setTimeout(() => {
+                setShowTooltip(true);
+            }, 150);
+        }
+    };
+
+    const handleTooltipLeave = () => {
+        if (hoverTimeoutRef.current) {
+            clearTimeout(hoverTimeoutRef.current);
+            hoverTimeoutRef.current = null;
+        }
+
+        hoverTimeoutRef.current = setTimeout(() => {
+            setHoveredRemarkRow(null);
+            setShowTooltip(false);
+        }, 300); // Increased delay for ergonomics
+    };
+
+    // Handle window resize/scroll to update tooltip position
+    useEffect(() => {
+        if (!hoveredRemarkRow || !showTooltip) return;
+
+        const handleUpdatePosition = (e) => {
+            // Ignore scroll events originating from WITHIN the tooltip itself
+            if (e && e.type === 'scroll' && tooltipRef.current && tooltipRef.current.contains(e.target)) {
+                return;
+            }
+
+            // Try desktop first, then mobile
+            const element = document.querySelector(`[data-tooltip-id="desktop-${hoveredRemarkRow}"]`) ||
+                document.querySelector(`[data-tooltip-id="mobile-${hoveredRemarkRow}"]`);
+
+            if (element) {
+                const rect = element.getBoundingClientRect();
+                const pos = calculateTooltipPosition(rect);
+
+                // Preserve the initial direction to prevent flipping during scroll
+                if (tooltipPosition) {
+                    const wasAbove = tooltipPosition.transform.includes('-100%');
+                    if (wasAbove) {
+                        pos.top = rect.top;
+                        pos.transform = "translateY(-100%) translateY(-6px)";
+                        pos.maxHeight = Math.min(rect.top - 85 - 20, 480);
+                    } else {
+                        pos.top = rect.bottom;
+                        pos.transform = "translateY(6px)";
+                        pos.maxHeight = Math.min(window.innerHeight - rect.bottom - 20, 480);
+                    }
+                }
+
+                setTooltipPosition(pos);
+            }
+        };
+
+        window.addEventListener('resize', handleUpdatePosition);
+        window.addEventListener('scroll', handleUpdatePosition, true);
+
+        return () => {
+            window.removeEventListener('resize', handleUpdatePosition);
+            window.removeEventListener('scroll', handleUpdatePosition, true);
+        };
+    }, [hoveredRemarkRow, showTooltip]);
+
     const resetForm = () => {
         setName('');
         setPhoneNumber('');
@@ -269,7 +407,7 @@ export default function CallList() {
         setName(entry.name || '');
         setPhoneNumber(entry.phoneNumber || '');
         setSocialMediaId(entry.socialMediaId || '');
-        setRemarks(entry.remarks || '');
+        setRemarks(''); // Start with empty remark for new update
         setSource(entry.source || '');
         setPurpose(entry.purpose || '');
         setAssignedTo(entry.assignedTo?._id || '');
@@ -331,14 +469,15 @@ export default function CallList() {
 
     const handleStatusUpdate = async (id, newStatus) => {
         try {
-            await axios.patch(
+            const response = await axios.patch(
                 `${API}/call-lists/${id}/status`,
                 { status: newStatus },
                 { withCredentials: true }
             );
 
             toast.success("Status updated successfully!");
-            fetchCallLists();
+            // Use the updated data from response for immediate impact on tooltip
+            setCallLists(prev => prev.map(c => c._id === id ? response.data.callList : c));
         } catch (error) {
             console.error("Error updating status:", error);
             toast.error(error.response?.data?.message || "Failed to update status.");
@@ -452,28 +591,49 @@ export default function CallList() {
     const formatDate = (dateString) => {
         if (!dateString) return 'N/A';
         const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        return date.toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
+    };
+
+    const formatDateTime = (dateString) => {
+        if (!dateString) return "N/A";
+        const dateObj = new Date(dateString);
+        return dateObj.toLocaleString("en-IN", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true
+        });
+    };
+
+    const getLatestRemark = (remarks) => {
+        if (!remarks || remarks.length === 0) return '-';
+        if (typeof remarks === 'string') return remarks;
+        if (Array.isArray(remarks)) {
+            const last = remarks[remarks.length - 1];
+            return typeof last === 'string' ? last : (last.remark || '-');
+        }
+        return '-';
     };
 
     const renderActions = (entry) => (
-        <div className="flex items-center gap-1.5">
-            <Button
-                size="sm"
-                variant="outline"
+        <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200 transform translate-x-2 group-hover:translate-x-0">
+            <button
                 onClick={() => handleEdit(entry)}
-                className="h-8 px-2.5 text-xs border-gray-200 dark:border-gray-700 hover:text-brand-500"
+                className="p-2 text-gray-500 hover:text-brand-600 hover:bg-slate-100 rounded-lg transition-colors border border-transparent hover:border-slate-200 shadow-sm hover:shadow"
+                title="Edit Entry"
             >
-                Edit
-            </Button>
+                <PencilIcon className="size-4" />
+            </button>
             {canDelete && (
-                <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 px-2 text-red-500 border-gray-200 dark:border-gray-700 hover:bg-red-50 dark:hover:bg-red-500/10"
+                <button
                     onClick={() => handleDeleteClick(entry)}
+                    className="p-2 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors border border-transparent hover:border-rose-100 shadow-sm hover:shadow"
+                    title="Delete Entry"
                 >
-                    <CloseIcon className="size-4" />
-                </Button>
+                    <TrashBinIcon className="size-4" />
+                </button>
             )}
         </div>
     );
@@ -482,16 +642,22 @@ export default function CallList() {
         const currentStatus = callListStatusOptions.find(opt => opt.value === entry.status) || callListStatusOptions[0];
 
         return (
-            <div className="flex flex-col gap-1.5 min-w-[130px]">
-                <span
-                    className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider w-fit text-white shadow-sm"
-                    style={{ backgroundColor: currentStatus.color || '#A3A3A3' }}
-                >
-                    {currentStatus.label}
-                </span>
-                <div className="relative group">
+            <div className="relative group/status flex items-center">
+                <div className="relative flex items-center">
+                    <span
+                        className="px-2.5 py-1.5 rounded-full text-[12px] font-bold tracking-tight flex items-center gap-1.5 cursor-pointer transition-all hover:ring-2 hover:ring-offset-1 dark:hover:ring-offset-gray-900 shadow-sm active:scale-95"
+                        style={{
+                            backgroundColor: `${currentStatus.color}15`,
+                            color: currentStatus.color,
+                            border: `1px solid ${currentStatus.color}40`
+                        }}
+                    >
+                        <span className="size-1.5 rounded-full shadow-sm" style={{ backgroundColor: currentStatus.color }}></span>
+                        {currentStatus.label}
+                        <ChevronDownIcon className="size-2.5 opacity-60" />
+                    </span>
                     <select
-                        className="w-full text-[11px] font-medium bg-gray-50/50 dark:bg-white/[0.03] border border-gray-200 dark:border-gray-700 rounded-md px-2 py-1 outline-none focus:border-brand-500 appearance-none cursor-pointer transition-all hover:bg-white dark:hover:bg-gray-800"
+                        className="absolute inset-0 w-full opacity-0 cursor-pointer"
                         value={entry.status || 'pending'}
                         onChange={(e) => handleStatusUpdate(entry._id, e.target.value)}
                     >
@@ -501,9 +667,6 @@ export default function CallList() {
                             </option>
                         ))}
                     </select>
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                        <ChevronDownIcon className="size-3" />
-                    </div>
                 </div>
             </div>
         );
@@ -552,7 +715,7 @@ export default function CallList() {
                                 size="sm"
                                 variant="outline"
                                 onClick={() => setShowFilters(!showFilters)}
-                                className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:border-brand-500 text-gray-600 dark:text-gray-400"
+                                className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:border-slate-400 text-gray-600 dark:text-gray-400"
                                 startIcon={showFilters ? <ChevronUpIcon className="size-4" /> : <ChevronDownIcon className="size-4" />}
                             >
                                 {showFilters ? "Filters" : "Filters"}
@@ -561,7 +724,7 @@ export default function CallList() {
                                 size="sm"
                                 variant="outline"
                                 onClick={openImportModal}
-                                className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:border-brand-500 text-gray-600 dark:text-gray-400"
+                                className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:border-slate-400 text-gray-600 dark:text-gray-400"
                                 startIcon={<FileIcon className="size-4" />}
                             >
                                 Import
@@ -580,41 +743,41 @@ export default function CallList() {
                     {/* Integrated Efficiency Stats - Custom Grouped Layout */}
                     <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-3 pt-3 text-xs">
                         {/* Called Group */}
-                        <div className="flex items-center gap-2">
-                            <span className="font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wide">
-                                Called:
+                        <div className="flex items-center gap-2 bg-slate-50/50 dark:bg-white/5 px-3 py-1.5 rounded-lg border border-slate-200/50 dark:border-white/10 shadow-sm">
+                            <span className="font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest text-[9px]">
+                                Total Called:
                             </span>
-                            <span className="font-bold text-brand-600 dark:text-brand-400 text-sm">
+                            <span className="font-black text-green-600 dark:text-brand-400 text-base tabular-nums leading-none">
                                 {totalCalled}
                             </span>
                         </div>
 
                         {/* Breakdown inside brackets */}
-                        <div className="flex items-center gap-3 px-3 py-1.5 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-800">
-
+                        <div className="flex items-center gap-4 px-4 py-2 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-800 shadow-inner">
                             {breakdown.map((stat, idx) => (
-                                <div key={idx} className="flex items-center gap-1.5">
+                                <div key={idx} className="flex items-center gap-2 pr-3 last:pr-0 border-r last:border-0 border-gray-200 dark:border-gray-700/50">
                                     <span
                                         className="size-1.5 rounded-full"
                                         style={{ backgroundColor: stat.color }}
                                     />
-                                    <span className="font-medium text-gray-500 dark:text-gray-400">
-                                        {stat.label}:
-                                    </span>
-                                    <span className="font-bold text-gray-700 dark:text-gray-200">
-                                        {stat.count}
-                                    </span>
+                                    <div className="flex flex-col">
+                                        <span className="font-bold text-gray-400 dark:text-gray-500 uppercase tracking-tighter text-[8px]">
+                                            {stat.label}
+                                        </span>
+                                        <span className="font-black text-gray-800 dark:text-gray-100 text-[13px] tabular-nums leading-none">
+                                            {stat.count}
+                                        </span>
+                                    </div>
                                 </div>
                             ))}
-
                         </div>
 
                         {/* Pending Group */}
-                        <div className="flex items-center gap-2">
-                            <span className="font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wide">
+                        <div className="flex items-center gap-2 bg-gray-50/50 dark:bg-gray-800/50 px-3 py-1.5 rounded-lg border border-gray-100 dark:border-gray-800 shadow-sm">
+                            <span className="font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest text-[9px]">
                                 Pending:
                             </span>
-                            <span className="font-bold text-gray-500 dark:text-gray-400 text-sm">
+                            <span className="font-black text-yellow-600 dark:text-gray-300 text-base tabular-nums leading-none">
                                 {pendingCount}
                             </span>
                         </div>
@@ -696,9 +859,9 @@ export default function CallList() {
                 <div className="space-y-6">
                     {/* Bulk Action Bar integrated inside the same card */}
                     {selectedIds.length > 0 && (
-                        <div className="p-4 bg-brand-50/50 dark:bg-brand-500/5 border border-brand-100 dark:border-brand-500/20 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 mb-6">
+                        <div className="p-4 bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 mb-6">
                             <div className="flex items-center gap-3">
-                                <div className="flex items-center justify-center size-8 bg-brand-500 text-white text-sm font-bold rounded-lg shadow-lg shadow-brand-500/20">
+                                <div className="flex items-center justify-center size-8 bg-gray-800 dark:bg-gray-700 text-white text-sm font-bold rounded-lg shadow-lg">
                                     {selectedIds.length}
                                 </div>
                                 <div className="text-left">
@@ -780,78 +943,95 @@ export default function CallList() {
                             {/* Mobile view Cards */}
                             <div className="grid grid-cols-1 gap-4 md:hidden">
                                 {filteredData.map((entry, index) => (
-                                    <div key={entry._id} className="bg-white dark:bg-white/[0.03] border border-gray-100 dark:border-gray-800 rounded-xl p-4 shadow-sm">
+                                    <div key={entry._id} className="group bg-white dark:bg-white/[0.03] border border-gray-100 dark:border-gray-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-all">
                                         <div className="flex justify-between items-start mb-3">
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-3">
                                                 {(isOwner(user) || isManager(user)) && (
                                                     <input
                                                         type="checkbox"
-                                                        className="size-5 rounded border-gray-300 text-brand-500 focus:ring-brand-500 cursor-pointer"
+                                                        className="size-5 rounded border-gray-300 text-brand-500 focus:ring-brand-500 cursor-pointer shadow-sm"
                                                         checked={selectedIds.includes(entry._id)}
                                                         onChange={(e) => toggleSelect(entry._id, index, e)}
                                                     />
                                                 )}
-                                                <span className="text-xs font-bold text-gray-400">#{index + 1}</span>
-                                                <h3 className="font-semibold text-gray-800 dark:text-white">{entry.name || 'Unnamed'}</h3>
+                                                <div
+                                                    className="cursor-default"
+                                                    data-tooltip-id={`mobile-${entry._id}`}
+                                                    onMouseEnter={(e) => handleTooltipEnter(e, entry)}
+                                                    onMouseLeave={handleTooltipLeave}
+                                                >
+                                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-0.5">Entry #{index + 1}</span>
+                                                    <h3 className="font-bold text-[15px] text-gray-800 dark:text-white leading-snug tracking-tight">{entry.name || 'Unnamed'}</h3>
+                                                </div>
                                             </div>
                                             {renderStatus(entry)}
                                         </div>
 
-                                        <div className="space-y-2 mb-4">
+                                        <div className="space-y-3 mb-4">
                                             {entry.phoneNumber && (
-                                                <div className="flex items-center gap-2 text-sm">
-                                                    <span className="text-gray-500 dark:text-gray-400">Phone:</span>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-gray-400 bg-gray-50 dark:bg-white/[0.03] p-1.5 rounded-lg">
+                                                        <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                                                    </span>
                                                     <a
                                                         href={`tel:${entry.phoneNumber}`}
-                                                        className="text-brand-500 hover:underline font-medium"
+                                                        className="text-gray-900 dark:text-white hover:text-brand-600 font-bold text-sm tracking-tight underline decoration-gray-200 underline-offset-4"
                                                     >
                                                         {entry.phoneNumber}
                                                     </a>
                                                 </div>
                                             )}
-                                            {entry.socialMediaId && (
-                                                <div className="flex items-center gap-2 text-sm">
-                                                    <span className="text-gray-500 dark:text-gray-400">Social:</span>
-                                                    <span className="text-gray-700 dark:text-gray-300">{entry.socialMediaId}</span>
+
+                                            <div className="grid grid-cols-2 gap-3 border-y border-gray-50 dark:border-gray-800/50 py-3">
+                                                <div>
+                                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Assigned To</span>
+                                                    <div className="font-bold text-[13px] text-gray-700 dark:text-gray-300">{entry.assignedTo?.fullName || 'Unassigned'}</div>
                                                 </div>
-                                            )}
-                                            <div className="flex items-center gap-2 text-sm">
-                                                <span className="text-gray-500 dark:text-gray-400">Assigned:</span>
-                                                <span className="text-gray-700 dark:text-gray-300">{entry.assignedTo?.fullName || 'Unassigned'}</span>
+                                                {(entry.source || entry.purpose) && (
+                                                    <div>
+                                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Source / Purpose</span>
+                                                        <div className="flex flex-wrap gap-1.5">
+                                                            {entry.source && (
+                                                                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-sky-50 text-sky-700 dark:bg-sky-900/20 dark:text-sky-400 border border-sky-100 dark:border-sky-800/40 truncate max-w-[120px]" title={entry.source}>
+                                                                    {entry.source}
+                                                                </span>
+                                                            )}
+                                                            {entry.purpose && (
+                                                                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-violet-50 text-violet-700 dark:bg-violet-900/20 dark:text-violet-400 border border-violet-100 dark:border-violet-800/40 truncate max-w-[120px]" title={entry.purpose}>
+                                                                    {entry.purpose}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
-                                            {entry.source && (
-                                                <div className="flex items-center gap-2 text-sm">
-                                                    <span className="text-gray-500 dark:text-gray-400">Source:</span>
-                                                    <span className="text-gray-700 dark:text-gray-300">{entry.source}</span>
-                                                </div>
-                                            )}
-                                            {entry.purpose && (
-                                                <div className="flex items-center gap-2 text-sm">
-                                                    <span className="text-gray-500 dark:text-gray-400">Purpose:</span>
-                                                    <span className="text-gray-700 dark:text-gray-300">{entry.purpose}</span>
-                                                </div>
-                                            )}
-                                            {entry.remarks && (
-                                                <div className="mt-2 p-2 bg-gray-50 dark:bg-white/[0.02] rounded text-xs text-gray-600 dark:text-gray-400 italic">
-                                                    "{entry.remarks}"
+
+                                            {getLatestRemark(entry.remarks) !== '-' && (
+                                                <div className="mt-2 p-3 bg-gray-50/50 dark:bg-white/5 border border-gray-100 dark:border-gray-800 rounded-xl text-[12px] text-gray-700 dark:text-gray-300 leading-relaxed font-medium">
+                                                    {(() => {
+                                                        const txt = getLatestRemark(entry.remarks);
+                                                        return txt.charAt(0).toUpperCase() + txt.slice(1);
+                                                    })()}
                                                 </div>
                                             )}
                                         </div>
 
-                                        <div className="flex justify-between items-center pt-3 border-t border-gray-50 dark:border-gray-800">
-                                            <span className="text-[10px] text-gray-400">{formatDate(entry.createdAt)}</span>
-                                            {renderActions(entry)}
+                                        <div className="flex justify-between items-center pt-3 mt-4 border-t border-gray-50 dark:border-gray-800/50">
+                                            <span className="text-[10px] font-bold text-gray-500 bg-gray-100 dark:bg-white/10 py-1 px-2.5 rounded-lg uppercase tracking-wider">{formatDate(entry.createdAt)}</span>
+                                            <div className="flex items-center gap-1.5">
+                                                {renderActions(entry)}
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
                             </div>
 
-                            <div className="hidden md:block overflow-x-auto">
-                                <Table className="min-w-[1100px]">
-                                    <TableHeader className="border-gray-200 dark:border-gray-700 border-y bg-gray-50/50 dark:bg-gray-800/20">
+                            <div className="hidden md:block overflow-auto max-h-[calc(100vh-320px)] rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm custom-scrollbar">
+                                <Table className="min-w-full border-collapse">
+                                    <TableHeader className="sticky top-0 z-20 bg-gray-50 dark:bg-gray-900 shadow-[0_1px_0_0_rgba(0,0,0,0.05)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.05)]">
                                         <TableRow>
                                             {(isOwner(user) || isManager(user)) && (
-                                                <TableCell isHeader className="py-3 px-4">
+                                                <TableCell isHeader className="py-4 px-4 bg-inherit w-12 sticky left-0 z-30 shadow-[1px_0_4px_-2px_rgba(0,0,0,0.1)] dark:shadow-[1px_0_4px_-2px_rgba(255,255,255,0.1)]">
                                                     <input
                                                         type="checkbox"
                                                         className="size-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500 cursor-pointer transition-all"
@@ -860,20 +1040,20 @@ export default function CallList() {
                                                     />
                                                 </TableCell>
                                             )}
-                                            <TableCell isHeader className="py-3 px-4 font-bold text-gray-700 text-start text-[11px] dark:text-gray-300 uppercase tracking-widest w-16">#</TableCell>
-                                            <TableCell isHeader className="py-3 px-4 font-bold text-gray-700 text-start text-[11px] dark:text-gray-300 uppercase tracking-widest min-w-[220px]">Contact Details</TableCell>
-                                            <TableCell isHeader className="py-3 px-4 font-bold text-gray-700 text-start text-[11px] dark:text-gray-300 uppercase tracking-widest min-w-[120px]">Assigned To</TableCell>
-                                            <TableCell isHeader className="py-3 px-4 font-bold text-gray-700 text-start text-[11px] dark:text-gray-300 uppercase tracking-widest min-w-[140px]">Source / Purpose</TableCell>
-                                            <TableCell isHeader className="py-3 px-4 font-bold text-gray-700 text-start text-[11px] dark:text-gray-300 uppercase tracking-widest min-w-[200px]">Remarks</TableCell>
-                                            <TableCell isHeader className="py-3 px-4 font-bold text-gray-700 text-start text-[11px] dark:text-gray-300 uppercase tracking-widest min-w-[140px]">Status</TableCell>
-                                            <TableCell isHeader className="py-3 px-4 font-bold text-gray-700 text-start text-[11px] dark:text-gray-300 uppercase tracking-widest min-w-[100px]">Actions</TableCell>
+                                            <TableCell isHeader className="py-4 px-3 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest w-12 bg-inherit sticky left-12 z-30 shadow-[1px_0_4px_-2px_rgba(0,0,0,0.1)] dark:shadow-[1px_0_4px_-2px_rgba(255,255,255,0.1)]">#</TableCell>
+                                            <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest min-w-[220px] bg-inherit sticky left-[88px] z-30 shadow-[2px_0_6px_-2px_rgba(0,0,0,0.15)] dark:shadow-[2px_0_6px_-2px_rgba(255,255,255,0.15)]">Contact Details</TableCell>
+                                            <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest min-w-[130px] bg-inherit border-l border-gray-100 dark:border-gray-800/50">Assigned To</TableCell>
+                                            <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest min-w-[140px] bg-inherit border-l border-gray-100 dark:border-gray-800/50">Source / Purpose</TableCell>
+                                            <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest min-w-[260px] bg-inherit border-l border-gray-100 dark:border-gray-800/50">Remarks</TableCell>
+                                            <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest min-w-[160px] bg-inherit border-l border-gray-100 dark:border-gray-800/50">Status</TableCell>
+                                            <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-center text-[10.5px] dark:text-gray-400 uppercase tracking-widest min-w-[100px] bg-inherit border-l border-gray-100 dark:border-gray-800/50">Actions</TableCell>
                                         </TableRow>
                                     </TableHeader>
-                                    <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
+                                    <TableBody className="bg-white dark:bg-transparent">
                                         {filteredData.map((entry, index) => (
-                                            <TableRow key={entry._id} className="transition-colors hover:bg-gray-50/50 dark:hover:bg-white/[0.02] even:bg-gray-50/40 even:dark:bg-white/[0.01]">
+                                            <TableRow key={entry._id} className="group transition-all hover:bg-slate-50/80 dark:hover:bg-white/5 odd:bg-transparent even:bg-gray-50/30 dark:even:bg-white/[0.01] border-b border-gray-100 dark:border-gray-800/50 last:border-0">
                                                 {(isOwner(user) || isManager(user)) && (
-                                                    <TableCell className="py-3 px-4">
+                                                    <TableCell className="py-4 px-4 sticky left-0 z-10 bg-inherit shadow-[1px_0_4px_-2px_rgba(0,0,0,0.1)] dark:shadow-[1px_0_4px_-2px_rgba(255,255,255,0.1)]">
                                                         <input
                                                             type="checkbox"
                                                             className="size-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500 cursor-pointer transition-all"
@@ -882,48 +1062,67 @@ export default function CallList() {
                                                         />
                                                     </TableCell>
                                                 )}
-                                                <TableCell className="py-3 px-4 text-gray-400 text-xs font-bold leading-none">
+                                                <TableCell className="py-4 px-3 text-gray-500 dark:text-gray-400 text-[11px] font-bold tabular-nums sticky left-12 z-10 bg-inherit shadow-[1px_0_4px_-2px_rgba(0,0,0,0.1)] dark:shadow-[1px_0_4px_-2px_rgba(255,255,255,0.1)]">
                                                     {(page - 1) * itemsPerPage + index + 1}
                                                 </TableCell>
-                                                <TableCell className="py-3 px-4">
+                                                <TableCell className="py-4 px-4 sticky left-[88px] z-10 bg-inherit shadow-[2px_0_6px_-2px_rgba(0,0,0,0.15)] dark:shadow-[2px_0_6px_-2px_rgba(255,255,255,0.15)]">
                                                     <div className="flex flex-col gap-0.5">
-                                                        <div className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-tighter">{formatDate(entry.createdAt)}</div>
-                                                        <div className="text-gray-900 text-sm font-bold dark:text-white leading-tight">{entry.name || 'Unnamed'}</div>
+                                                        <p
+                                                            className="font-semibold text-gray-800 text-theme-sm dark:text-white/90 leading-tight tracking-tight transition-colors cursor-default"
+                                                            data-tooltip-id={`desktop-${entry._id}`}
+                                                            onMouseEnter={(e) => handleTooltipEnter(e, entry)}
+                                                            onMouseLeave={handleTooltipLeave}
+                                                        >
+                                                            {entry.name || 'Unnamed Entry'}
+                                                        </p>
                                                         {entry.phoneNumber && (
-                                                            <a href={`tel:${entry.phoneNumber}`} className="text-brand-600 hover:text-brand-700 hover:underline font-semibold text-xs flex items-center gap-1.5 mt-0.5">
-                                                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
-                                                                {entry.phoneNumber}
-                                                            </a>
+                                                            <div className="flex items-center gap-1.5">
+                                                                <a href={`tel:${entry.phoneNumber}`} className="text-blue-500 hover:underline text-[12px] font-medium">
+                                                                    {entry.phoneNumber}
+                                                                </a>
+                                                                <span className="text-gray-300 dark:text-gray-600 font-light">•</span>
+                                                                <span className="text-gray-400 text-xs">{formatDate(entry.createdAt)}</span>
+                                                            </div>
                                                         )}
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="py-3 px-4 text-gray-600 dark:text-gray-400 text-xs font-medium">{entry.assignedTo?.fullName || 'Unassigned'}</TableCell>
-                                                <TableCell className="py-3 px-4 text-xs">
-                                                    <div className="flex flex-col gap-0.5">
+                                                <TableCell className="py-4 px-4 border-l border-gray-100 dark:border-gray-800/50">
+                                                    <span className="text-gray-700 dark:text-gray-300 text-theme-sm font-medium">
+                                                        {entry.assignedTo?.fullName || 'Unassigned'}
+                                                    </span>
+                                                </TableCell>
+                                                <TableCell className="py-4 px-4 border-l border-gray-100 dark:border-gray-800/50">
+                                                    <div className="flex flex-col gap-1.5">
                                                         {entry.source && (
-                                                            <div className="flex items-center gap-1">
-                                                                <span className="text-[10px] font-bold text-gray-400 uppercase">Src:</span>
-                                                                <span className="text-gray-700 dark:text-gray-300 font-medium">{entry.source}</span>
-                                                            </div>
+                                                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-sky-50 text-sky-700 dark:bg-sky-900/20 dark:text-sky-400 border border-sky-100 dark:border-sky-800/40 max-w-[130px] truncate" title={entry.source}>
+                                                                {entry.source}
+                                                            </span>
                                                         )}
                                                         {entry.purpose && (
-                                                            <div className="flex items-center gap-1">
-                                                                <span className="text-[10px] font-bold text-gray-400 uppercase">Purp:</span>
-                                                                <span className="text-gray-700 dark:text-gray-300 font-medium">{entry.purpose}</span>
-                                                            </div>
+                                                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-violet-50 text-violet-700 dark:bg-violet-900/20 dark:text-violet-400 border border-violet-100 dark:border-violet-800/40 max-w-[130px] truncate" title={entry.purpose}>
+                                                                {entry.purpose}
+                                                            </span>
+                                                        )}
+                                                        {!entry.source && !entry.purpose && (
+                                                            <span className="text-gray-400 text-xs">—</span>
                                                         )}
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="py-3 px-4 text-xs text-gray-600 dark:text-gray-400 italic">
-                                                    <div className="max-w-[200px] truncate" title={entry.remarks}>
-                                                        {entry.remarks || '-'}
+                                                <TableCell className="py-4 px-4 border-l border-gray-100 dark:border-gray-800/50">
+                                                    <div className="text-theme-sm text-gray-700 dark:text-gray-300 font-medium leading-relaxed max-w-[280px] break-words">
+                                                        {(() => {
+                                                            const txt = getLatestRemark(entry.remarks);
+                                                            return txt === '-' ? '-' : (txt.charAt(0).toUpperCase() + txt.slice(1));
+                                                        })()}
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="py-3 px-4">
+                                                <TableCell className="py-4 px-4 border-l border-gray-100 dark:border-gray-800/50">
                                                     {renderStatus(entry)}
                                                 </TableCell>
-                                                <TableCell className="py-3 px-4">
-                                                    {renderActions(entry)}
+                                                <TableCell className="py-4 px-4 border-l border-gray-100 dark:border-gray-800/50">
+                                                    <div className="flex justify-center min-w-[80px]">
+                                                        {renderActions(entry)}
+                                                    </div>
                                                 </TableCell>
                                             </TableRow>
                                         ))}
@@ -1003,7 +1202,7 @@ export default function CallList() {
                                     </div>
                                 )
                             }
-                        </div >
+                        </div>
                     ) : (
                         <div className="text-center py-10">
                             <p className="text-gray-500 dark:text-gray-400 mb-4">No call list entries found.</p>
@@ -1087,7 +1286,7 @@ export default function CallList() {
                         </div>
                     )}
                     <div>
-                        <Label htmlFor="remarks">Remarks</Label>
+                        <Label htmlFor="remarks">Add New Remark</Label>
                         <textarea
                             id="remarks"
                             value={remarks}
@@ -1175,7 +1374,8 @@ export default function CallList() {
                         </div>
                     )}
                     <div>
-                        <Label htmlFor="editRemarks">Remarks</Label>
+                        <Label htmlFor="editRemarks">Add New Remark</Label>
+                        <p className="text-[10px] text-gray-400 mb-1.5 font-medium italic">* Previous remarks are preserved in the call lifecycle history.</p>
                         <textarea
                             id="editRemarks"
                             value={remarks}
@@ -1482,7 +1682,132 @@ export default function CallList() {
                 </div>
             </Modal>
 
+            {/* Lifecycle Tooltip */}
+            {showTooltip && hoveredRemarkRow && createPortal(
+                <div
+                    ref={tooltipRef}
+                    className="fixed z-[99999] w-96 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800 overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col"
+                    style={{
+                        top: tooltipPosition.top,
+                        left: tooltipPosition.left,
+                        transform: tooltipPosition.transform,
+                        maxHeight: tooltipPosition.maxHeight
+                    }}
+                    onMouseEnter={() => {
+                        if (hoverTimeoutRef.current) {
+                            clearTimeout(hoverTimeoutRef.current);
+                        }
+                    }}
+                    onMouseLeave={handleTooltipLeave}
+                >
+                    {/* Arrow Pointer */}
+                    <div
+                        className="absolute w-3 h-3 bg-white dark:bg-gray-900 border-r border-b border-gray-100 dark:border-gray-800 z-10"
+                        style={{
+                            left: tooltipPosition.arrowLeft,
+                            bottom: tooltipPosition.transform.includes('-100%') ? '-6px' : 'auto',
+                            top: tooltipPosition.transform.includes('-100%') ? 'auto' : '-6px',
+                            transform: `translateX(-50%) rotate(${tooltipPosition.transform.includes('-100%') ? '45deg' : '225deg'})`,
+                        }}
+                    />
+
+                    <div className="bg-gray-50 dark:bg-white/[0.03] border-b border-gray-100 dark:border-gray-800 px-5 py-4 flex items-center justify-between relative z-20">
+                        <div className="flex items-center gap-2.5">
+                            <div className="size-8 rounded-lg bg-brand-500/10 flex items-center justify-center">
+                                <svg className="size-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-bold text-gray-900 dark:text-white">Call Lifecycle</h4>
+                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Remark History</p>
+                            </div>
+                        </div>
+                        <div className="text-[11px] font-bold text-gray-400 bg-white dark:bg-white/5 px-2 py-1 rounded-md border border-gray-100 dark:border-white/5 shadow-sm">
+                            {(callLists || []).find(c => c._id === hoveredRemarkRow)?.remarks?.length || 0} Events
+                        </div>
+                    </div>
+
+                    <div className="p-5 overflow-y-auto custom-scrollbar flex-1 min-h-0 overscroll-contain">
+                        <div className="space-y-6 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[1.5px] before:bg-gradient-to-b before:from-brand-500/30 before:via-gray-100 dark:before:via-white/10 before:to-transparent">
+                            {(() => {
+                                const rawRemarks = (callLists || []).find(c => c._id === hoveredRemarkRow)?.remarks || [];
+                                const normalizedRemarks = Array.isArray(rawRemarks) ? [...rawRemarks].reverse() : [{
+                                    remark: rawRemarks,
+                                    updatedOn: (callLists || []).find(c => c._id === hoveredRemarkRow)?.createdAt
+                                }];
+
+                                return normalizedRemarks.map((rem, idx) => {
+                                    const text = rem.remark || '';
+                                    const isEntryCreated = text.toLowerCase() === 'entry created';
+                                    const isStatusChange = text.toLowerCase().includes('status updated to');
+                                    const isAssignment = text.toLowerCase().startsWith('assigned to');
+
+                                    let eventColor = 'text-gray-400';
+                                    let dotColor = 'bg-gray-400';
+                                    let bgColor = 'bg-white border-gray-100 dark:bg-white/[0.02] dark:border-white/5 text-gray-600 dark:text-gray-400';
+
+                                    if (isEntryCreated) {
+                                        eventColor = 'text-emerald-600 dark:text-emerald-400';
+                                        dotColor = 'bg-emerald-500';
+                                        bgColor = 'bg-emerald-50/30 border-emerald-100 dark:bg-emerald-500/5 dark:border-emerald-500/20 text-gray-700 dark:text-emerald-300';
+                                    } else if (isStatusChange) {
+                                        eventColor = 'text-blue-600 dark:text-blue-400';
+                                        dotColor = 'bg-blue-500';
+                                        bgColor = 'bg-blue-50/30 border-blue-100 dark:bg-blue-500/5 dark:border-blue-500/20 text-gray-700 dark:text-blue-300';
+                                    } else if (isAssignment) {
+                                        eventColor = 'text-violet-600 dark:text-violet-400';
+                                        dotColor = 'bg-violet-500';
+                                        bgColor = 'bg-violet-50/30 border-violet-100 dark:bg-violet-500/5 dark:border-violet-500/20 text-gray-700 dark:text-violet-300';
+                                    } else if (idx === 0) {
+                                        eventColor = 'text-brand-600 dark:text-brand-400';
+                                        dotColor = 'bg-brand-500';
+                                        bgColor = 'bg-brand-50/40 border-brand-100 dark:bg-brand-500/10 dark:border-brand-500/20 text-gray-800 dark:text-gray-200 font-semibold';
+                                    }
+
+                                    return (
+                                        <div key={rem._id || idx} className="relative pl-8">
+                                            <div className={`absolute left-0 top-1.5 size-[22px] rounded-full border-2 border-white dark:border-gray-900 flex items-center justify-center z-10 shadow-sm ${idx === 0 ? 'bg-brand-500' : 'bg-gray-100 dark:bg-gray-800'}`}>
+                                                <div className={`size-1.5 rounded-full ${idx === 0 ? 'bg-white' : dotColor}`} />
+                                            </div>
+                                            <div className="flex flex-col gap-1.5">
+                                                <div className="flex items-center justify-between">
+                                                    <span className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${eventColor}`}>
+                                                        <span className={`size-1.5 rounded-full ${dotColor}`} />
+                                                        {(() => {
+                                                            if (isEntryCreated) return 'Entry Created';
+                                                            if (isStatusChange) return 'Status Change';
+                                                            if (isAssignment) return 'Assignment';
+                                                            return rem.status?.replace('-', ' ') || 'Remark Added';
+                                                        })()}
+                                                    </span>
+                                                    <span className="text-[10px] font-medium text-gray-400 bg-gray-50 dark:bg-white/5 py-0.5 px-2 rounded-full border border-gray-100 dark:border-white/5">
+                                                        {formatDateTime(rem.updatedOn || ((callLists || []).find(c => c._id === hoveredRemarkRow))?.createdAt)}
+                                                    </span>
+                                                </div>
+                                                <div className={`p-3 rounded-xl border leading-relaxed text-[12px] shadow-sm ${bgColor}`}>
+                                                    {typeof rem === 'string' ? rem : (rem.remark ? (rem.remark.charAt(0).toUpperCase() + rem.remark.slice(1)) : `Status updated to ${rem.status?.replace('-', ' ')}`)}
+                                                </div>
+                                                {rem.updatedBy && (
+                                                    <div className="flex items-center gap-1.5 ml-1">
+                                                        <div className="size-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-[8px] font-bold text-gray-500">
+                                                            {rem.updatedBy.fullName?.charAt(0)}
+                                                        </div>
+                                                        <span className="text-[10px] text-gray-400 font-medium">Logged by {rem.updatedBy.fullName}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            })()}
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+
             <ToastContainer position="top-center" autoClose={3000} className="!z-[999999]" style={{ zIndex: 999999 }} />
         </div>
-    );
+    )
 }

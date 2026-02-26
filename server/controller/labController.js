@@ -1,14 +1,93 @@
 import LabPC from "../model/labPcModel.js";
 import LabSchedule from "../model/labScheduleModel.js";
 import LabRow from "../model/labRowModel.js";
+import Laboratory from "../model/laboratoryModel.js";
+import LabQueue from "../model/labQueueModel.js";
+import mongoose from "mongoose";
 
-// ─────────────────────────────────────────────
-// PCs
-// ─────────────────────────────────────────────
+// ─── Laboratories ────────────────────────────────
+export const getLaboratories = async (req, res) => {
+    try {
+        let query = {};
 
+        // Admins/Owners see all. Others see labs associated with their permitted brands.
+        if (!req.user.isAdmin) {
+            const userBrands = req.user.brands.map(b => (b.brand?._id || b.brand || b).toString());
+            query.brands = { $in: userBrands };
+        }
+
+        const labs = await Laboratory.find(query).sort({ name: 1 });
+        res.json(labs);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+export const addLaboratory = async (req, res) => {
+    try {
+        const { name, description, location, brands } = req.body;
+        if (!name) return res.status(400).json({ message: "Lab name is required" });
+
+        // Ensure brands is handled correctly
+        const lab = await Laboratory.create({
+            name,
+            description: description || "",
+            location: location || "",
+            brands: brands || []
+        });
+
+        // Return full object for frontend to use (especially the _id)
+        res.status(201).json(lab);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+export const updateLaboratory = async (req, res) => {
+    try {
+        const lab = await Laboratory.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+        if (!lab) return res.status(404).json({ message: "Laboratory not found" });
+        res.json(lab);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+export const deleteLaboratory = async (req, res) => {
+    try {
+        const labId = req.params.id;
+
+        // 1. Find all PCs in this lab to delete their schedules
+        const pcs = await LabPC.find({ lab: labId });
+        const pcIds = pcs.map(p => p._id);
+
+        // 2. Delete all schedules for these PCs
+        await LabSchedule.deleteMany({ pc: { $in: pcIds } });
+
+        // 3. Delete all PCs in this lab
+        await LabPC.deleteMany({ lab: labId });
+
+        // 4. Delete all rows in this lab
+        await LabRow.deleteMany({ lab: labId });
+
+        // 5. Delete the laboratory itself
+        const lab = await Laboratory.findByIdAndDelete(labId);
+
+        if (!lab) return res.status(404).json({ message: "Laboratory not found" });
+
+        res.json({ message: "Laboratory and all associated assets deleted successfully" });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+// ─── PCs ─────────────────────────────────────
 export const getPCs = async (req, res) => {
     try {
-        const rawPcs = await LabPC.find().sort({ row: 1, position: 1, pcNumber: 1 });
+        const { labId } = req.query;
+        if (!labId) return res.status(400).json({ message: "labId is required" });
+
+        const rawPcs = await LabPC.find({ lab: labId }).sort({ row: 1, position: 1, pcNumber: 1 });
         const pcs = rawPcs.map(pc => {
             const row = pc.row ? pc.row.replace(/Row\s+/i, '').trim().toUpperCase() : 'A';
             return { ...pc.toObject(), row };
@@ -21,15 +100,21 @@ export const getPCs = async (req, res) => {
 
 export const addPC = async (req, res) => {
     try {
-        let { pcNumber, label, status, specs, location, row, position, notes, softwares } = req.body;
-        if (row) row = row.replace(/Row\s+/i, '').trim().toUpperCase();
-        else row = 'A';
+        let { pcNumber, label, status, specs, location, row, position, notes, softwares, labId } = req.body;
+        if (!labId) return res.status(400).json({ message: "labId is required" });
         if (!pcNumber) return res.status(400).json({ message: "PC number is required" });
 
-        const exists = await LabPC.findOne({ pcNumber: pcNumber.trim() });
-        if (exists) return res.status(409).json({ message: `PC number "${pcNumber}" already exists` });
+        if (row) row = row.replace(/Row\s+/i, '').trim().toUpperCase();
+        else row = 'A';
 
-        const pc = await LabPC.create({ pcNumber, label, status, specs, location, row, position, notes, softwares: softwares || [] });
+        const exists = await LabPC.findOne({ pcNumber: pcNumber.trim(), lab: labId });
+        if (exists) return res.status(409).json({ message: `PC number "${pcNumber}" already exists in this lab` });
+
+        const pc = await LabPC.create({
+            pcNumber, label, status, specs, location, row, position, notes,
+            softwares: softwares || [],
+            lab: labId
+        });
         res.status(201).json(pc);
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -57,23 +142,25 @@ export const deletePC = async (req, res) => {
     }
 };
 
-// ─────────────────────────────────────────────
-// Schedules
-// ─────────────────────────────────────────────
-
+// ─── Schedules ───────────────────────────────
 export const getSchedules = async (req, res) => {
     try {
-        const { date, pc } = req.query;
-        const filter = {};
+        const { date, labId } = req.query;
+        let query = {};
         if (date) {
             const d = new Date(date);
             const next = new Date(d);
             next.setDate(next.getDate() + 1);
-            filter.date = { $gte: d, $lt: next };
+            query.date = { $gte: d, $lt: next };
         }
-        if (pc) filter.pc = pc;
 
-        const schedules = await LabSchedule.find(filter)
+        if (labId) {
+            const labPcs = await LabPC.find({ lab: labId }).select('_id');
+            const pcIds = labPcs.map(p => p._id);
+            query.pc = { $in: pcIds };
+        }
+
+        const schedules = await LabSchedule.find(query)
             .populate("pc", "pcNumber label")
             .populate("student", "name studentId")
             .populate("assignedBy", "fullName")
@@ -86,35 +173,18 @@ export const getSchedules = async (req, res) => {
 
 export const addSchedule = async (req, res) => {
     try {
-        const { pc, student, studentName, date, timeSlot, purpose, notes } = req.body;
-        if (!pc || !date || !timeSlot)
-            return res.status(400).json({ message: "PC, date, and time slot are required" });
-
-        const schedDate = new Date(date); schedDate.setHours(0, 0, 0, 0);
-        const nextDate = new Date(schedDate); nextDate.setDate(nextDate.getDate() + 1);
-
-        const existingBooking = await LabSchedule.findOne({
-            pc, timeSlot, date: { $gte: schedDate, $lt: nextDate }
-        });
-        if (existingBooking)
-            return res.status(409).json({ message: `This PC is already booked for ${timeSlot} on this date.` });
-
+        const { pc, student, studentName, date, timeSlot, purpose, notes, queueItem } = req.body;
         const schedule = await LabSchedule.create({
-            pc, student, studentName, date, timeSlot, purpose, notes,
-            assignedBy: req.user.id || req.user._id
+            pc, student, studentName, date, timeSlot, purpose, notes, queueItem,
+            assignedBy: req.user.id
         });
 
-        const today = new Date(); today.setHours(0, 0, 0, 0);
-        if (schedDate.getTime() === today.getTime()) {
-            await LabPC.findByIdAndUpdate(pc, { status: "in-use" });
+        // If from waitlist, transition to 'assigned'
+        if (queueItem) {
+            await LabQueue.findByIdAndUpdate(queueItem, { status: 'assigned' });
         }
 
-        const populated = await LabSchedule.findById(schedule._id)
-            .populate("pc", "pcNumber label")
-            .populate("student", "name studentId")
-            .populate("assignedBy", "fullName");
-
-        res.status(201).json(populated);
+        res.status(201).json(schedule);
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
@@ -122,11 +192,14 @@ export const addSchedule = async (req, res) => {
 
 export const updateSchedule = async (req, res) => {
     try {
-        const schedule = await LabSchedule.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true })
-            .populate("pc", "pcNumber label")
-            .populate("student", "name studentId")
-            .populate("assignedBy", "fullName");
-        if (!schedule) return res.status(404).json({ message: "Schedule not found" });
+        const { queueItem } = req.body;
+        const schedule = await LabSchedule.findByIdAndUpdate(req.params.id, req.body, { new: true });
+
+        // If updating with a queue item, transition that item to 'assigned'
+        if (queueItem) {
+            await LabQueue.findByIdAndUpdate(queueItem, { status: 'assigned' });
+        }
+
         res.json(schedule);
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -135,38 +208,42 @@ export const updateSchedule = async (req, res) => {
 
 export const deleteSchedule = async (req, res) => {
     try {
-        const schedule = await LabSchedule.findByIdAndDelete(req.params.id);
+        const schedule = await LabSchedule.findById(req.params.id);
         if (!schedule) return res.status(404).json({ message: "Schedule not found" });
-        res.json({ message: "Schedule removed" });
+
+        // If it was linked to a queue entry, transition to 'completed'
+        if (schedule.queueItem) {
+            await LabQueue.findByIdAndUpdate(schedule.queueItem, { status: 'completed' });
+        }
+
+        await LabSchedule.findByIdAndDelete(req.params.id);
+        res.json({ message: "Schedule deleted and student released" });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
 };
 
-// ─────────────────────────────────────────────
-// Complaints (embedded in LabPC)
-// ─────────────────────────────────────────────
-
+// ─── Complaints ──────────────────────────────
 export const getComplaints = async (req, res) => {
     try {
-        const { status } = req.query;
-        const pcs = await LabPC.find({ "complaints.0": { $exists: true } })
+        const { labId } = req.query;
+        let pcQuery = {};
+        if (labId) {
+            pcQuery.lab = labId;
+        }
+
+        const pcs = await LabPC.find({ ...pcQuery, "complaints.0": { $exists: true } })
             .populate("complaints.raisedBy", "fullName")
             .populate("complaints.resolvedBy", "fullName");
 
-        let complaints = [];
-        for (const pc of pcs) {
-            for (const c of pc.complaints) {
-                if (!status || c.status === status) {
-                    complaints.push({
-                        ...c.toObject(),
-                        pc: { _id: pc._id, pcNumber: pc.pcNumber, label: pc.label }
-                    });
-                }
-            }
-        }
-        complaints.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        res.json(complaints);
+        const allComplaints = pcs.flatMap(pc =>
+            pc.complaints.map(c => ({
+                ...c.toObject(),
+                pcId: pc._id,
+                pcNumber: pc.pcNumber
+            }))
+        );
+        res.json(allComplaints);
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
@@ -174,25 +251,24 @@ export const getComplaints = async (req, res) => {
 
 export const addComplaint = async (req, res) => {
     try {
-        const { pc, title, description, priority } = req.body;
-        if (!pc || !title) return res.status(400).json({ message: "PC and title are required" });
+        const { pcId, title, description, priority } = req.body;
+        if (!pcId || !title) return res.status(400).json({ message: "PC and title are required" });
 
         const complaint = {
             title, description, priority,
-            raisedBy: req.user.id || req.user._id
+            raisedBy: req.user.id
         };
 
         const updated = await LabPC.findByIdAndUpdate(
-            pc,
+            pcId,
             { $push: { complaints: complaint } },
             { new: true }
         ).populate("complaints.raisedBy", "fullName");
 
+        if (!updated) return res.status(404).json({ message: "PC not found" });
+
         const newComplaint = updated.complaints[updated.complaints.length - 1];
-        res.status(201).json({
-            ...newComplaint.toObject(),
-            pc: { _id: updated._id, pcNumber: updated.pcNumber, label: updated.label }
-        });
+        res.status(201).json(newComplaint);
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
@@ -200,28 +276,19 @@ export const addComplaint = async (req, res) => {
 
 export const updateComplaint = async (req, res) => {
     try {
-        const { id } = req.params;  // complaint subdocument _id
-        const update = { ...req.body };
-
-        const setFields = {};
-        for (const [key, val] of Object.entries(update)) {
-            setFields[`complaints.$.${key}`] = val;
-        }
-        if (req.body.status === "resolved") {
-            setFields["complaints.$.resolvedBy"] = req.user.id || req.user._id;
-            setFields["complaints.$.resolvedAt"] = new Date();
-        }
-
-        const pc = await LabPC.findOneAndUpdate(
-            { "complaints._id": id },
-            { $set: setFields },
-            { new: true }
-        ).populate("complaints.raisedBy", "fullName")
-            .populate("complaints.resolvedBy", "fullName");
-
+        const { status, resolutionNotes } = req.body;
+        const pc = await LabPC.findOne({ "complaints._id": req.params.id });
         if (!pc) return res.status(404).json({ message: "Complaint not found" });
-        const complaint = pc.complaints.find(c => c._id.toString() === id);
-        res.json({ ...complaint.toObject(), pc: { _id: pc._id, pcNumber: pc.pcNumber, label: pc.label } });
+
+        const complaint = pc.complaints.id(req.params.id);
+        if (status) complaint.status = status;
+        if (resolutionNotes) {
+            complaint.resolutionNotes = resolutionNotes;
+            complaint.resolvedBy = req.user.id;
+            complaint.resolvedAt = new Date();
+        }
+        await pc.save();
+        res.json(complaint);
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
@@ -229,26 +296,23 @@ export const updateComplaint = async (req, res) => {
 
 export const deleteComplaint = async (req, res) => {
     try {
-        const { id } = req.params;
-        const pc = await LabPC.findOneAndUpdate(
-            { "complaints._id": id },
-            { $pull: { complaints: { _id: id } } },
-            { new: true }
-        );
+        const pc = await LabPC.findOne({ "complaints._id": req.params.id });
         if (!pc) return res.status(404).json({ message: "Complaint not found" });
+        pc.complaints.pull(req.params.id);
+        await pc.save();
         res.json({ message: "Complaint deleted" });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
 };
 
-// ─────────────────────────────────────────────
-// Rows (replaces Sections + Slots)
-// ─────────────────────────────────────────────
-
+// ─── Rows ────────────────────────────────────
 export const getRows = async (req, res) => {
     try {
-        const rows = await LabRow.find().sort({ name: 1 });
+        const { labId } = req.query;
+        if (!labId) return res.status(400).json({ message: "labId is required" });
+
+        const rows = await LabRow.find({ lab: labId }).sort({ name: 1 });
         res.json(rows);
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -257,15 +321,30 @@ export const getRows = async (req, res) => {
 
 export const addRow = async (req, res) => {
     try {
-        let { name } = req.body;
+        let { name, labId } = req.body;
+        if (!labId) return res.status(400).json({ message: "labId is required" });
         if (!name) return res.status(400).json({ message: "Row name is required" });
         name = name.replace(/Row\s+/i, '').trim().toUpperCase();
 
-        const exists = await LabRow.findOne({ name });
-        if (exists) return res.status(409).json({ message: `Row "${name}" already exists` });
+        const exists = await LabRow.findOne({ name, lab: labId });
+        if (exists) return res.status(409).json({ message: `Row "${name}" already exists in this lab` });
 
-        const row = await LabRow.create({ name, emptySlots: [] });
+        const row = await LabRow.create({
+            name,
+            emptySlots: [],
+            lab: labId
+        });
         res.status(201).json(row);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+export const updateRow = async (req, res) => {
+    try {
+        const row = await LabRow.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+        if (!row) return res.status(404).json({ message: "Row not found" });
+        res.json(row);
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
@@ -282,17 +361,16 @@ export const deleteRow = async (req, res) => {
 
 export const addEmptySlot = async (req, res) => {
     try {
-        const { row, position } = req.body;
-        if (!row || position === undefined) return res.status(400).json({ message: "Row and position are required" });
-        const rowName = row.replace(/Row\s+/i, '').trim().toUpperCase();
+        const { rowId, position } = req.body;
+        if (!rowId || position === undefined) return res.status(400).json({ message: "rowId and position are required" });
 
-        const updated = await LabRow.findOneAndUpdate(
-            { name: rowName },
+        const updated = await LabRow.findByIdAndUpdate(
+            rowId,
             { $addToSet: { emptySlots: position } },
-            { new: true, upsert: true }
+            { new: true }
         );
-        // Return shape compatible with old LabSlot: { _id, row, position }
-        res.status(201).json({ _id: `${updated._id}_${position}`, row: rowName, position });
+        if (!updated) return res.status(404).json({ message: "Row not found" });
+        res.status(201).json({ _id: `${updated._id}_${position}`, row: updated.name, position });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
@@ -300,7 +378,6 @@ export const addEmptySlot = async (req, res) => {
 
 export const removeEmptySlot = async (req, res) => {
     try {
-        // id format: "<rowId>_<position>"
         const [rowId, posStr] = req.params.id.split('_');
         const position = parseInt(posStr);
         const updated = await LabRow.findByIdAndUpdate(
@@ -310,6 +387,51 @@ export const removeEmptySlot = async (req, res) => {
         );
         if (!updated) return res.status(404).json({ message: "Row not found" });
         res.json({ message: "Slot removed" });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+// ─── Queue ───────────────────────────────────
+export const getQueue = async (req, res) => {
+    try {
+        const { labId, all } = req.query;
+        if (!labId) return res.status(400).json({ message: "labId is required" });
+
+        // Default to only 'waiting' students unless 'all' is specified
+        const query = { lab: labId };
+        if (!all) query.status = 'waiting';
+
+        const queue = await LabQueue.find(query).sort({ createdAt: 1 });
+        res.json(queue);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+export const addToQueue = async (req, res) => {
+    try {
+        const { studentName, purpose, batchPreference, labId } = req.body;
+        if (!labId || !studentName) return res.status(400).json({ message: "labId and studentName are required" });
+
+        const item = await LabQueue.create({
+            studentName,
+            purpose: purpose || "",
+            batchPreference: batchPreference || "Early AM",
+            lab: labId,
+            addedBy: req.user.id
+        });
+        res.status(201).json(item);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};
+
+export const removeFromQueue = async (req, res) => {
+    try {
+        const item = await LabQueue.findByIdAndUpdate(req.params.id, { status: 'cancelled' }, { new: true });
+        if (!item) return res.status(404).json({ message: "Queue item not found" });
+        res.json({ message: "Student removed from waitlist (cancelled)" });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }

@@ -3,10 +3,51 @@ import API from "../config/api";
 import { toast } from "react-toastify";
 
 export const labService = {
-    // ─── PCs ──────────────────────────────────────
-    getPCs: async () => {
+    // ─── Laboratories ─────────────────────────────
+    getLabs: async () => {
         try {
-            const res = await axios.get(`${API}/compute-lab/pcs`, { withCredentials: true });
+            const res = await axios.get(`${API}/compute-lab/laboratories`, { withCredentials: true });
+            return res.data;
+        } catch (err) {
+            toast.error(err.response?.data?.message || "Failed to load laboratories");
+            return [];
+        }
+    },
+
+    addLab: async (data) => {
+        try {
+            const res = await axios.post(`${API}/compute-lab/laboratories`, data, { withCredentials: true });
+            toast.success("Laboratory created");
+            return res.data;
+        } catch (err) {
+            throw new Error(err.response?.data?.message || "Failed to add laboratory");
+        }
+    },
+
+    updateLab: async (id, data) => {
+        try {
+            const res = await axios.put(`${API}/compute-lab/laboratories/${id}`, data, { withCredentials: true });
+            toast.success("Laboratory updated");
+            return res.data;
+        } catch (err) {
+            throw new Error(err.response?.data?.message || "Failed to update laboratory");
+        }
+    },
+
+    deleteLab: async (id) => {
+        try {
+            await axios.delete(`${API}/compute-lab/laboratories/${id}`, { withCredentials: true });
+            toast.success("Laboratory deleted");
+            return true;
+        } catch (err) {
+            throw new Error(err.response?.data?.message || "Failed to delete laboratory");
+        }
+    },
+
+    // ─── PCs ──────────────────────────────────────
+    getPCs: async (labId) => {
+        try {
+            const res = await axios.get(`${API}/compute-lab/pcs`, { params: { labId }, withCredentials: true });
             return res.data;
         } catch (err) {
             toast.error(err.response?.data?.message || "Failed to load PCs");
@@ -123,9 +164,9 @@ export const labService = {
     },
 
     // ─── Rows (Unified Layout) ────────────────────
-    getRows: async () => {
+    getRows: async (labId) => {
         try {
-            const res = await axios.get(`${API}/compute-lab/rows`, { withCredentials: true });
+            const res = await axios.get(`${API}/compute-lab/rows`, { params: { labId }, withCredentials: true });
             return res.data;
         } catch (err) {
             toast.error("Failed to load lab rows");
@@ -139,6 +180,15 @@ export const labService = {
             return res.data;
         } catch (err) {
             throw new Error(err.response?.data?.message || "Failed to save row");
+        }
+    },
+
+    updateRow: async (id, data) => {
+        try {
+            const res = await axios.put(`${API}/compute-lab/rows/${id}`, data, { withCredentials: true });
+            return res.data;
+        } catch (err) {
+            throw new Error(err.response?.data?.message || "Failed to update section");
         }
     },
 
@@ -166,6 +216,36 @@ export const labService = {
             return true;
         } catch (err) {
             throw new Error(err.response?.data?.message || "Failed to remove slot");
+        }
+    },
+
+    // ─── Queue ────────────────────────────────────
+    getQueue: async (labId, all = false) => {
+        try {
+            const res = await axios.get(`${API}/compute-lab/queue`, { params: { labId, all }, withCredentials: true });
+            return res.data;
+        } catch (err) {
+            toast.error("Failed to load student queue");
+            return [];
+        }
+    },
+
+    addToQueue: async (data) => {
+        try {
+            const res = await axios.post(`${API}/compute-lab/queue`, data, { withCredentials: true });
+            toast.success("Student added to waitlist");
+            return res.data;
+        } catch (err) {
+            throw new Error(err.response?.data?.message || "Failed to add to queue");
+        }
+    },
+
+    removeFromQueue: async (id) => {
+        try {
+            await axios.delete(`${API}/compute-lab/queue/${id}`, { withCredentials: true });
+            return true;
+        } catch (err) {
+            throw new Error(err.response?.data?.message || "Failed to remove from queue");
         }
     }
 };

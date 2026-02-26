@@ -4,6 +4,7 @@ const labScheduleSchema = new mongoose.Schema(
     {
         pc: { type: mongoose.Schema.Types.ObjectId, ref: "LabPC", required: true },
         student: { type: mongoose.Schema.Types.ObjectId, ref: "Student", default: null },
+        queueItem: { type: mongoose.Schema.Types.ObjectId, ref: "LabQueue", default: null },
         studentName: { type: String, default: "" }, // fallback if not linked to Student model
         assignedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
         date: { type: Date, required: true },

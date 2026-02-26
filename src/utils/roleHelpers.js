@@ -86,6 +86,20 @@ export function isManager(user, brandId = null) {
 }
 
 /**
+ * Check if user has manager privileges in ANY brand
+ */
+export function isAnyManager(user) {
+  if (!user) return false;
+  if (isAdmin(user)) return true;
+  if (!user.brands || !Array.isArray(user.brands)) return false;
+
+  return user.brands.some(b => {
+    const roles = b.roles || [];
+    return roles.some(r => MANAGER_ROLES.includes(r));
+  });
+}
+
+/**
  * Check if user has academic coordinator privileges
  */
 export function isAcademicCoordinator(user, brandId = null) {

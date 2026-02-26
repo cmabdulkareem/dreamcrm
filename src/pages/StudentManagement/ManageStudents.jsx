@@ -611,12 +611,12 @@ export default function ManageStudents() {
                         <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
                           <div className="flex flex-col">
                             <span
-                              className="font-medium text-gray-900 dark:text-white cursor-pointer hover:text-indigo-600 transition-colors"
+                              className="font-semibold text-gray-800 text-theme-sm dark:text-white/90 cursor-pointer hover:text-brand-500 transition-colors"
                               onClick={() => handleViewProfile(student)}
                             >
                               {student.fullName}
                             </span>
-                            <span className="text-xs text-gray-500 dark:text-gray-400">{student.studentId}</span>
+                            <span className="text-gray-400 text-xs">{student.studentId}</span>
                             <div className="mt-1">
                               {student.batchScheduled ? (
                                 <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-success-50 text-success-600 dark:bg-success-900/20 dark:text-success-400 whitespace-nowrap inline-block">
@@ -632,35 +632,36 @@ export default function ManageStudents() {
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
                           <div className="flex flex-col">
-                            <span className="text-gray-900 dark:text-white">{student.email}</span>
-                            <span className="text-xs text-gray-500 dark:text-gray-400">{student.phone1}</span>
+                            <span className="text-gray-400 text-xs truncate max-w-[160px]">{student.email}</span>
+                            <a href={`tel:${student.phone1}`} className="text-brand-500 hover:underline text-[12px] font-medium mt-0.5">{student.phone1}</a>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                          <div className="max-w-[200px] break-words">
-                            {student.courseDetails ?
-                              `${student.courseDetails.courseCode} - ${student.courseDetails.courseName}` :
-                              student.coursePreference}
+                        <td className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
+                          <div className="max-w-[200px]">
+                            <p className="font-medium text-gray-700 dark:text-gray-300 truncate">
+                              {student.courseDetails ?
+                                `${student.courseDetails.courseCode} - ${student.courseDetails.courseName}` :
+                                student.coursePreference}
+                            </p>
                             {student.additionalCourseDetails && student.additionalCourseDetails.length > 0 && (
-                              <div className="text-xs text-gray-400 mt-1">
+                              <p className="text-xs text-gray-400 mt-0.5">
                                 +{student.additionalCourseDetails.length} additional course(s)
-                              </div>
+                              </p>
                             )}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                          <div className="flex flex-col">
-                            <span className="font-medium text-gray-900 dark:text-white text-xs">Final: ₹{student.finalAmount || 0}</span>
-                            <span className="text-[10px] text-gray-500 dark:text-gray-400 line-through">Val: ₹{student.totalCourseValue || 0}</span>
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full mt-1 w-fit ${student.feeType === 'singleShot' ? 'bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400' : 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'}`}>
+                        <td className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
+                          <div className="flex flex-col gap-0.5">
+                            <span className="font-semibold text-gray-800 dark:text-white/90 text-theme-sm">₹{student.finalAmount || 0}</span>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full w-fit ${student.feeType === 'singleShot' ? 'bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400' : 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'}`}>
                               {student.feeType === 'singleShot' ? 'Single Shot' : 'Normal Fee'}
                             </span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        <td className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
                           {new Date(student.enrollmentDate).toLocaleDateString()}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <td className="py-3 text-center">
                           <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">
                             Active
                           </span>

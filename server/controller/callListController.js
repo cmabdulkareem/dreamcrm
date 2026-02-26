@@ -96,7 +96,7 @@ export const getAllCallLists = async (req, res) => {
                     { name: searchRegex },
                     { phoneNumber: searchRegex },
                     { socialMediaId: searchRegex },
-                    { remarks: searchRegex },
+                    { "remarks.remark": searchRegex },
                     { source: searchRegex },
                     { purpose: searchRegex }
                 ]
@@ -169,7 +169,20 @@ export const createCallList = async (req, res) => {
             name: name || '',
             phoneNumber: phoneNumber || '',
             socialMediaId: socialMediaId || '',
-            remarks: remarks || '',
+            remarks: [
+                {
+                    remark: 'Entry Created',
+                    status: 'pending',
+                    updatedBy: req.user.id,
+                    updatedOn: new Date()
+                },
+                ...(remarks?.trim() ? [{
+                    remark: remarks.trim(),
+                    status: 'pending',
+                    updatedBy: req.user.id,
+                    updatedOn: new Date()
+                }] : [])
+            ],
             source: source || '',
             purpose: purpose || '',
             brand: brandId,
@@ -230,19 +243,57 @@ export const updateCallList = async (req, res) => {
             name: name || '',
             phoneNumber: phoneNumber || '',
             socialMediaId: socialMediaId || '',
-            remarks: remarks || '',
             source: source || '',
             purpose: purpose || '',
             assignedTo: assignedTo || null
         };
 
+        const updateOperation = {
+            $set: updateData
+        };
+
+        const newRemarks = [];
+
+        // Track manual remarks
+        if (remarks && remarks.trim()) {
+            newRemarks.push({
+                remark: remarks.trim(),
+                status: existingCallList.status,
+                updatedBy: req.user.id,
+                updatedOn: new Date()
+            });
+        }
+
+        // Track assignment changes
+        if (assignedTo !== undefined && String(assignedTo) !== String(existingCallList.assignedTo)) {
+            let assigneeName = 'Unassigned';
+            if (assignedTo) {
+                const User = mongoose.model('User');
+                const user = await User.findById(assignedTo).select('fullName');
+                assigneeName = user ? user.fullName : 'Unknown User';
+            }
+            newRemarks.push({
+                remark: `Assigned to ${assigneeName}`,
+                status: existingCallList.status,
+                updatedBy: req.user.id,
+                updatedOn: new Date()
+            });
+        }
+
+        if (newRemarks.length > 0) {
+            updateOperation.$push = {
+                remarks: { $each: newRemarks }
+            };
+        }
+
         const updatedCallList = await CallList.findOneAndUpdate(
             query,
-            updateData,
+            updateOperation,
             { new: true }
         ).populate([
             { path: 'createdBy', select: 'fullName' },
-            { path: 'assignedTo', select: 'fullName' }
+            { path: 'assignedTo', select: 'fullName' },
+            { path: 'remarks.updatedBy', select: 'fullName' }
         ]);
 
         if (!updatedCallList) {
@@ -336,7 +387,12 @@ export const importCallLists = async (req, res) => {
                 socialMediaId: socialMediaId || '',
                 source: source || '',
                 purpose: purpose || '',
-                remarks: remarks || '',
+                remarks: remarks ? [{
+                    remark: remarks,
+                    status: entry.status || 'pending',
+                    updatedBy: req.user.id,
+                    updatedOn: new Date()
+                }] : [],
                 status: entry.status || 'pending',
                 brand: brandId,
                 createdBy: req.user.id
@@ -378,11 +434,22 @@ export const updateCallListStatus = async (req, res) => {
         const query = { _id: id, ...req.brandFilter };
         const updatedCallList = await CallList.findOneAndUpdate(
             query,
-            { status },
+            {
+                status,
+                $push: {
+                    remarks: {
+                        remark: `Status updated to ${status}`,
+                        status,
+                        updatedBy: req.user.id,
+                        updatedOn: new Date()
+                    }
+                }
+            },
             { new: true }
         ).populate([
             { path: 'createdBy', select: 'fullName' },
-            { path: 'assignedTo', select: 'fullName' }
+            { path: 'assignedTo', select: 'fullName' },
+            { path: 'remarks.updatedBy', select: 'fullName' }
         ]);
 
         if (!updatedCallList) {
@@ -435,16 +502,32 @@ export const bulkAssignCallLists = async (req, res) => {
             return res.status(400).json({ message: "No fields provided to update." });
         }
 
-        // Ensure we only update items in the current brand's context
-        const query = {
-            ...req.brandFilter,
-            _id: { $in: ids }
-        };
+        // For bulk assignments, we want to update each item's history
+        const User = mongoose.model('User');
+        let assigneeName = 'Unassigned';
+        if (updateData.assignedTo) {
+            const user = await User.findById(updateData.assignedTo).select('fullName');
+            assigneeName = user ? user.fullName : 'Unknown User';
+        }
 
-        const result = await CallList.updateMany(
-            query,
-            { $set: updateData }
-        );
+        const bulkOps = ids.map(id => ({
+            updateOne: {
+                filter: { _id: id, ...req.brandFilter },
+                update: {
+                    $set: updateData,
+                    $push: {
+                        remarks: {
+                            remark: `Assigned to ${assigneeName}`,
+                            status: 'pending', // or maintain current, but pending is default for reassign
+                            updatedBy: req.user.id,
+                            updatedOn: new Date()
+                        }
+                    }
+                }
+            }
+        }));
+
+        const result = await CallList.bulkWrite(bulkOps);
 
         return res.status(200).json({
             message: `Successfully assigned ${result.modifiedCount} entries.`,
