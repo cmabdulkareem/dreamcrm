@@ -34,22 +34,40 @@ async function migrate() {
 
         console.log(`Found ${entriesWithLegacyRemarks.length} entries with legacy string remarks.`);
 
+        let successCount = 0;
+        let failCount = 0;
+
         for (const entry of entriesWithLegacyRemarks) {
-            const oldRemark = entry.remarks;
+            try {
+                const oldRemark = entry.remarks;
 
-            // Convert to array format
-            // If empty string, start with empty array, else wrap the string as the first remark
-            entry.remarks = oldRemark.trim() ? [{
-                remark: oldRemark,
-                status: 'pending', // Fallback status
-                updatedOn: entry.createdAt || new Date()
-            }] : [];
+                // Convert to array format
+                // If empty string, start with empty array, else wrap the string as the first remark
+                entry.remarks = oldRemark.trim() ? [{
+                    remark: oldRemark.trim(),
+                    status: entry.status || 'pending',
+                    updatedBy: entry.createdBy || null,
+                    updatedOn: entry.createdAt || new Date()
+                }] : [];
 
-            await entry.save();
-            console.log(`Migrated entry: ${entry._id}`);
+                // Use updateOne to bypass any schema validation issues during migration if necessary,
+                // or just save if the model is updated. 
+                await CallList.updateOne(
+                    { _id: entry._id },
+                    { $set: { remarks: entry.remarks } }
+                );
+                
+                successCount++;
+                if (successCount % 100 === 0) {
+                    console.log(`Migrated ${successCount} entries...`);
+                }
+            } catch (err) {
+                console.error(`Failed to migrate entry ${entry._id}:`, err.message);
+                failCount++;
+            }
         }
 
-        console.log('Migration completed successfully');
+        console.log(`Migration completed. Success: ${successCount}, Failed: ${failCount}`);
         process.exit(0);
     } catch (error) {
         console.error('Migration failed:', error);
@@ -58,3 +76,4 @@ async function migrate() {
 }
 
 migrate();
+
