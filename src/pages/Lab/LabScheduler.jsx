@@ -65,6 +65,20 @@ const getEffectiveStatus = (pc, todaySlots) => {
 };
 
 const PCSeat = ({ pc, cfg, todaySlots, inUse, onAssign, onEdit, onDelete, onMovePC, onComplaint }) => {
+    const [showMobileActions, setShowMobileActions] = useState(false);
+    const actionRef = useRef(null);
+
+    // Close mobile actions when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (actionRef.current && !actionRef.current.contains(event.target)) {
+                setShowMobileActions(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
     const [{ isDragging }, drag] = useDrag(() => ({
         type: ItemTypes.PC,
         item: { id: pc._id, row: pc.row, position: pc.position },
@@ -109,12 +123,19 @@ const PCSeat = ({ pc, cfg, todaySlots, inUse, onAssign, onEdit, onDelete, onMove
             onMouseLeave={handleMouseLeave}
             className={`group relative flex flex-col items-center cursor-move transition-all duration-300 
                 ${isDragging ? 'opacity-30 scale-90 grayscale' : 'opacity-100'}
-                ${isHovered ? 'z-[500]' : 'z-10'}
+                ${isHovered || showMobileActions ? 'z-[500]' : 'z-10'}
                 ${isOver ? 'scale-110 rotate-1' : ''}
             `}
+            onClick={() => {
+                // If on mobile (no hover usually), first click shows actions
+                if (window.matchMedia("(max-width: 768px)").matches && !showMobileActions) {
+                    setShowMobileActions(true);
+                } else {
+                    onAssign(pc);
+                }
+            }}
         >
             <div
-                onClick={() => onAssign(pc)}
                 className={`w-20 h-24 rounded-xl border-2 flex flex-col items-center justify-between p-2.5 shadow-sm transition-all duration-200
                     ${inUse ? 'bg-blue-50 border-blue-400 dark:bg-blue-900/20 dark:border-blue-800' : 'bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700'}
                     ${isOver ? 'border-brand-500 shadow-brand-200 dark:shadow-brand-900/20 ring-4 ring-brand-500/10' : ''}
@@ -179,20 +200,21 @@ const PCSeat = ({ pc, cfg, todaySlots, inUse, onAssign, onEdit, onDelete, onMove
                 )}
             </div>
 
-            {/* Action Buttons: Flipped for Row A to prevent collision */}
-            {isHovered && (
+            {/* Action Buttons: Flipped for Row A to prevent collision. Shown on hover (desktop) or toggle (mobile) */}
+            {(isHovered || showMobileActions) && (
                 <div
-                    className={`absolute ${pc.row === 'A' ? '-top-6' : '-bottom-6'} left-1/2 -translate-x-1/2 flex gap-1.5 bg-white dark:bg-gray-800 shadow-xl border border-gray-100 dark:border-gray-700 p-1.5 rounded-xl z-[520]`}
-                    onMouseEnter={handleMouseEnter}
+                    ref={actionRef}
+                    className={`absolute ${pc.row === 'A' ? '-top-10 md:-top-6' : '-bottom-10 md:-bottom-6'} left-1/2 -translate-x-1/2 flex gap-2.5 md:gap-1.5 bg-white dark:bg-gray-800 shadow-2xl md:shadow-xl border border-gray-100 dark:border-gray-700 p-2 md:p-1.5 rounded-2xl md:rounded-xl z-[520] transition-all`}
+                    onClick={(e) => e.stopPropagation()}
                 >
-                    <button onClick={(e) => { e.stopPropagation(); onComplaint(pc); }} className="p-2.5 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 text-yellow-500 rounded-lg transition-colors" title="Raise Complaint">
-                        <AlertIcon className="w-4 h-4" />
+                    <button onClick={(e) => { e.stopPropagation(); onComplaint(pc); setShowMobileActions(false); }} className="p-3 md:p-2.5 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 text-yellow-500 rounded-xl md:rounded-lg transition-colors" title="Raise Complaint">
+                        <AlertIcon className="w-5 h-5 md:w-4 md:h-4" />
                     </button>
-                    <button onClick={(e) => { e.stopPropagation(); onEdit(pc); }} className="p-2.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500 transition-colors">
-                        <PencilIcon className="w-4 h-4" />
+                    <button onClick={(e) => { e.stopPropagation(); onEdit(pc); setShowMobileActions(false); }} className="p-3 md:p-2.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl md:rounded-lg text-gray-500 transition-colors" title="Edit PC">
+                        <PencilIcon className="w-5 h-5 md:w-4 md:h-4" />
                     </button>
-                    <button onClick={(e) => { e.stopPropagation(); onDelete(pc._id, pc.row, pc.position); }} className="p-2.5 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-400 hover:text-red-500 rounded-lg transition-colors">
-                        <TrashBinIcon className="w-4 h-4" />
+                    <button onClick={(e) => { e.stopPropagation(); onDelete(pc._id, pc.row, pc.position); setShowMobileActions(false); }} className="p-3 md:p-2.5 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-400 hover:text-red-500 rounded-xl md:rounded-lg transition-colors" title="Delete PC">
+                        <TrashBinIcon className="w-5 h-5 md:w-4 md:h-4" />
                     </button>
                 </div>
             )}
