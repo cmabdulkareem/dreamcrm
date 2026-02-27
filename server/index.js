@@ -40,7 +40,13 @@ import studentPortalRoutes from "./routes/studentPortalRoutes.js";
 import labRoutes from "./routes/labRoutes.js";
 import promotionalRoutes from "./routes/promotionalRoutes.js";
 
+import { runRemarksMigration } from './fix_remarks_schema.js';
+
 import { getBaseUploadDir } from './utils/uploadHelper.js';
+
+// Run migrations
+runRemarksMigration();
+
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
