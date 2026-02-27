@@ -20,7 +20,7 @@ import API from '../../config/api';
 import { AuthContext } from '../../context/AuthContext';
 import { isOwner, isManager } from '../../utils/roleHelpers';
 import Select from '../../components/form/Select';
-import { CloseIcon, DownloadIcon, FileIcon, ChevronDownIcon, ChevronUpIcon, PencilIcon, TrashBinIcon } from '../../icons';
+import { CloseIcon, DownloadIcon, FileIcon, ChevronDownIcon, ChevronUpIcon, PencilIcon, TrashBinIcon, CalenderIcon } from '../../icons';
 import { countries, callListStatusOptions } from '../../data/DataSets';
 
 const SearchIcon = ({ className }) => (
@@ -47,6 +47,7 @@ export default function CallList() {
     const { isOpen: isDeleteOpen, openModal: openDeleteModal, closeModal: closeDeleteModal } = useModal();
     const { isOpen: isImportOpen, openModal: openImportModal, closeModal: closeImportModal } = useModal();
     const [showFilters, setShowFilters] = useState(false);
+    const [showCalendar, setShowCalendar] = useState(false);
 
     // Tooltip states for remark history
     const [hoveredRemarkRow, setHoveredRemarkRow] = useState(null);
@@ -682,7 +683,7 @@ export default function CallList() {
 
             <div className="rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6">
                 <div className="mb-6">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-gray-100 dark:border-gray-800 pb-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pb-5">
                         <div>
                             <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">Cold Call List</h3>
                             <div className="flex items-center gap-2 mt-0.5">
@@ -700,71 +701,36 @@ export default function CallList() {
                             </div>
                         </div>
 
-                        <div className="flex flex-wrap items-center gap-2 lg:justify-end">
-                            <div className="w-full sm:w-52 group">
-                                <RangeDatePicker
-                                    value={dateRange}
-                                    onChange={(dates) => {
-                                        setDateRange(dates);
-                                        setPage(1);
-                                    }}
-                                    placeholder="Filter dates"
-                                />
-                            </div>
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setShowFilters(!showFilters)}
-                                className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:border-slate-400 text-gray-600 dark:text-gray-400"
-                                startIcon={showFilters ? <ChevronUpIcon className="size-4" /> : <ChevronDownIcon className="size-4" />}
-                            >
-                                {showFilters ? "Filters" : "Filters"}
-                            </Button>
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={openImportModal}
-                                className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:border-slate-400 text-gray-600 dark:text-gray-400"
-                                startIcon={<FileIcon className="size-4" />}
-                            >
-                                Import
-                            </Button>
-                            <Button
-                                size="sm"
-                                variant="primary"
-                                onClick={openAddModal}
-                                className="h-[34px] px-4 font-bold tracking-tight shadow-md hover:shadow-lg transition-all"
-                            >
-                                Add New Entry
-                            </Button>
-                        </div>
+                        {/* Compact Calendar and Filters will be in the actions list if needed, or we just move them below */}
                     </div>
+                </div>
 
-                    {/* Integrated Efficiency Stats - Custom Grouped Layout */}
-                    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-3 pt-3 text-xs">
+                {/* Integrated Action Buttons & Efficiency Stats - Pill-Style Grouped Layout */}
+                <div className="flex flex-wrap items-center justify-between gap-4 mt-6">
+                    <div className="flex flex-wrap items-center gap-3 text-xs">
                         {/* Called Group */}
-                        <div className="flex items-center gap-2 bg-slate-50/50 dark:bg-white/5 px-3 py-1.5 rounded-lg border border-slate-200/50 dark:border-white/10 shadow-sm">
+                        <div className="flex items-center gap-3 px-4 py-2 bg-slate-50/50 dark:bg-white/5 rounded-full border border-slate-200/50 dark:border-white/10 h-10 shadow-sm transition-all hover:bg-slate-100/50 dark:hover:bg-white/10">
                             <span className="font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest text-[9px]">
                                 Total Called:
                             </span>
-                            <span className="font-black text-green-600 dark:text-brand-400 text-base tabular-nums leading-none">
+                            <span className="font-black text-green-600 dark:text-brand-400 text-[15px] tabular-nums leading-none">
                                 {totalCalled}
                             </span>
                         </div>
 
-                        {/* Breakdown inside brackets */}
-                        <div className="flex items-center gap-4 px-4 py-2 bg-gray-50/50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-800 shadow-inner">
+                        {/* Breakdown Group */}
+                        <div className="flex items-center gap-5 px-5 py-2 bg-gray-50/50 dark:bg-gray-800/50 rounded-full border border-gray-100 dark:border-gray-800 h-10 shadow-sm">
                             {breakdown.map((stat, idx) => (
-                                <div key={idx} className="flex items-center gap-2 pr-3 last:pr-0 border-r last:border-0 border-gray-200 dark:border-gray-700/50">
+                                <div key={idx} className="flex items-center gap-2">
                                     <span
-                                        className="size-1.5 rounded-full"
+                                        className="size-2 rounded-full shadow-sm"
                                         style={{ backgroundColor: stat.color }}
                                     />
-                                    <div className="flex flex-col">
-                                        <span className="font-bold text-gray-400 dark:text-gray-500 uppercase tracking-tighter text-[8px]">
-                                            {stat.label}
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="font-bold text-gray-400 dark:text-gray-500 uppercase tracking-tighter text-[9px]">
+                                            {stat.label}:
                                         </span>
-                                        <span className="font-black text-gray-800 dark:text-gray-100 text-[13px] tabular-nums leading-none">
+                                        <span className="font-black text-gray-800 dark:text-gray-100 text-[14px] tabular-nums leading-none">
                                             {stat.count}
                                         </span>
                                     </div>
@@ -773,14 +739,73 @@ export default function CallList() {
                         </div>
 
                         {/* Pending Group */}
-                        <div className="flex items-center gap-2 bg-gray-50/50 dark:bg-gray-800/50 px-3 py-1.5 rounded-lg border border-gray-100 dark:border-gray-800 shadow-sm">
+                        <div className="flex items-center gap-3 bg-gray-50/50 dark:bg-gray-800/50 px-4 py-2 rounded-full border border-gray-100 dark:border-gray-800 h-10 shadow-sm transition-all hover:bg-gray-100/50 dark:hover:bg-gray-700/50">
                             <span className="font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest text-[9px]">
                                 Pending:
                             </span>
-                            <span className="font-black text-yellow-600 dark:text-gray-300 text-base tabular-nums leading-none">
+                            <span className="font-black text-yellow-600 dark:text-gray-300 text-[15px] tabular-nums leading-none">
                                 {pendingCount}
                             </span>
                         </div>
+                    </div>
+
+                    {/* Actions Row (Moved from top) */}
+                    <div className="flex items-center gap-2">
+                        <div className="relative">
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setShowCalendar(!showCalendar)}
+                                className={`h-10 w-10 !p-0 !rounded-full bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:border-slate-400 text-gray-600 dark:text-gray-400 transition-all ${showCalendar ? 'ring-2 ring-brand-500 border-brand-500' : ''}`}
+                                title="Filter by Date"
+                            >
+                                <CalenderIcon className="size-6" />
+                            </Button>
+
+                            {showCalendar && (
+                                <div className="absolute right-0 top-full mt-2 z-[50] w-72 shadow-2xl animate-in fade-in slide-in-from-top-2">
+                                    <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-3">
+                                        <RangeDatePicker
+                                            value={dateRange}
+                                            onChange={(dates) => {
+                                                setDateRange(dates);
+                                                setPage(1);
+                                            }}
+                                            placeholder="Filter dates"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setShowFilters(!showFilters)}
+                            className={`h-10 px-4 !rounded-full bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:border-slate-400 text-gray-600 dark:text-gray-400 ${showFilters ? 'bg-slate-50 dark:bg-white/5' : ''}`}
+                            startIcon={showFilters ? <ChevronUpIcon className="size-4" /> : <ChevronDownIcon className="size-4" />}
+                        >
+                            Filters
+                        </Button>
+
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={openImportModal}
+                            className="h-10 px-4 !rounded-full bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:border-slate-400 text-gray-600 dark:text-gray-400"
+                            startIcon={<FileIcon className="size-4" />}
+                        >
+                            Import
+                        </Button>
+
+                        <Button
+                            size="sm"
+                            variant="primary"
+                            onClick={openAddModal}
+                            className="h-10 px-6 !rounded-full font-bold tracking-tight shadow-md hover:shadow-lg transition-all"
+                        >
+                            Add New Entry
+                        </Button>
                     </div>
                 </div>
 
@@ -1218,7 +1243,7 @@ export default function CallList() {
             {/* Add Modal */}
             <Modal isOpen={isAddOpen} onClose={closeAddModal} className="max-w-2xl p-6">
                 <h2 className="text-xl font-semibold text-gray-800 dark:text-white/90 mb-4">Add Call List Entry</h2>
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                     <div>
                         <Label htmlFor="name">Name</Label>
                         <Input
@@ -1246,7 +1271,7 @@ export default function CallList() {
                             type="text"
                             value={socialMediaId}
                             onChange={(e) => setSocialMediaId(e.target.value)}
-                            placeholder="Instagram, Facebook, etc. (optional)"
+                            placeholder="Instagram, etc. (optional)"
                         />
                     </div>
                     <div>
@@ -1256,7 +1281,7 @@ export default function CallList() {
                             type="text"
                             value={source}
                             onChange={(e) => setSource(e.target.value)}
-                            placeholder="e.g. LinkedIn, Referral (optional)"
+                            placeholder="e.g. LinkedIn (optional)"
                         />
                     </div>
                     <div>
@@ -1266,7 +1291,7 @@ export default function CallList() {
                             type="text"
                             value={purpose}
                             onChange={(e) => setPurpose(e.target.value)}
-                            placeholder="e.g. Sales, Inquiry (optional)"
+                            placeholder="e.g. Sales (optional)"
                         />
                     </div>
                     {(isOwner(user) || isManager(user)) && (
@@ -1276,7 +1301,7 @@ export default function CallList() {
                                 id="assignedTo"
                                 value={assignedTo}
                                 onChange={(e) => setAssignedTo(e.target.value)}
-                                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:ring focus:ring-brand-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 shadow-theme-xs outline-none"
+                                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:ring focus:ring-brand-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 shadow-theme-xs outline-none h-[42px]"
                             >
                                 <option value="">Select User (Optional)</option>
                                 {users.map(u => (
@@ -1285,7 +1310,7 @@ export default function CallList() {
                             </select>
                         </div>
                     )}
-                    <div>
+                    <div className="md:col-span-2">
                         <Label htmlFor="remarks">Add New Remark</Label>
                         <textarea
                             id="remarks"
@@ -1296,17 +1321,17 @@ export default function CallList() {
                             className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:ring focus:ring-blue-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 shadow-theme-xs"
                         />
                     </div>
-                    <div className="flex gap-3 justify-end mt-4">
-                        <Button variant="outline" onClick={closeAddModal}>Cancel</Button>
-                        <Button variant="primary" onClick={handleAdd} loading={isSubmitting}>Add Entry</Button>
-                    </div>
+                </div>
+                <div className="flex gap-3 justify-end mt-4">
+                    <Button variant="outline" onClick={closeAddModal}>Cancel</Button>
+                    <Button variant="primary" onClick={handleAdd} loading={isSubmitting}>Add Entry</Button>
                 </div>
             </Modal>
 
             {/* Edit Modal */}
             <Modal isOpen={isEditOpen} onClose={closeEditModal} className="max-w-2xl p-6">
                 <h2 className="text-xl font-semibold text-gray-800 dark:text-white/90 mb-4">Edit Call List Entry</h2>
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                     <div>
                         <Label htmlFor="editName">Name</Label>
                         <Input
@@ -1334,7 +1359,7 @@ export default function CallList() {
                             type="text"
                             value={socialMediaId}
                             onChange={(e) => setSocialMediaId(e.target.value)}
-                            placeholder="Instagram, Facebook, etc. (optional)"
+                            placeholder="Instagram, etc. (optional)"
                         />
                     </div>
                     <div>
@@ -1344,7 +1369,7 @@ export default function CallList() {
                             type="text"
                             value={source}
                             onChange={(e) => setSource(e.target.value)}
-                            placeholder="e.g. LinkedIn, Referral (optional)"
+                            placeholder="e.g. LinkedIn (optional)"
                         />
                     </div>
                     <div>
@@ -1354,7 +1379,7 @@ export default function CallList() {
                             type="text"
                             value={purpose}
                             onChange={(e) => setPurpose(e.target.value)}
-                            placeholder="e.g. Sales, Inquiry (optional)"
+                            placeholder="e.g. Sales (optional)"
                         />
                     </div>
                     {(isOwner(user) || isManager(user)) && (
@@ -1364,7 +1389,7 @@ export default function CallList() {
                                 id="editAssignedTo"
                                 value={assignedTo}
                                 onChange={(e) => setAssignedTo(e.target.value)}
-                                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:ring focus:ring-brand-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 shadow-theme-xs outline-none"
+                                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:ring focus:ring-brand-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 shadow-theme-xs outline-none h-[42px]"
                             >
                                 <option value="">Select User (Optional)</option>
                                 {users.map(u => (
@@ -1373,7 +1398,7 @@ export default function CallList() {
                             </select>
                         </div>
                     )}
-                    <div>
+                    <div className="md:col-span-2">
                         <Label htmlFor="editRemarks">Add New Remark</Label>
                         <p className="text-[10px] text-gray-400 mb-1.5 font-medium italic">* Previous remarks are preserved in the call lifecycle history.</p>
                         <textarea
@@ -1385,10 +1410,10 @@ export default function CallList() {
                             className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:ring focus:ring-blue-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 shadow-theme-xs"
                         />
                     </div>
-                    <div className="flex gap-3 justify-end mt-4">
-                        <Button variant="outline" onClick={closeEditModal}>Cancel</Button>
-                        <Button variant="primary" onClick={handleUpdate} loading={isSubmitting}>Update Entry</Button>
-                    </div>
+                </div>
+                <div className="flex gap-3 justify-end mt-4">
+                    <Button variant="outline" onClick={closeEditModal}>Cancel</Button>
+                    <Button variant="primary" onClick={handleUpdate} loading={isSubmitting}>Update Entry</Button>
                 </div>
             </Modal>
 
@@ -1680,134 +1705,136 @@ export default function CallList() {
                         Confirm Import
                     </Button>
                 </div>
-            </Modal>
+            </Modal >
 
             {/* Lifecycle Tooltip */}
-            {showTooltip && hoveredRemarkRow && createPortal(
-                <div
-                    ref={tooltipRef}
-                    className="fixed z-[99999] w-96 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800 overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col"
-                    style={{
-                        top: tooltipPosition.top,
-                        left: tooltipPosition.left,
-                        transform: tooltipPosition.transform,
-                        maxHeight: tooltipPosition.maxHeight
-                    }}
-                    onMouseEnter={() => {
-                        if (hoverTimeoutRef.current) {
-                            clearTimeout(hoverTimeoutRef.current);
-                        }
-                    }}
-                    onMouseLeave={handleTooltipLeave}
-                >
-                    {/* Arrow Pointer */}
+            {
+                showTooltip && hoveredRemarkRow && createPortal(
                     <div
-                        className="absolute w-3 h-3 bg-white dark:bg-gray-900 border-r border-b border-gray-100 dark:border-gray-800 z-10"
+                        ref={tooltipRef}
+                        className="fixed z-[99999] w-96 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800 overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col"
                         style={{
-                            left: tooltipPosition.arrowLeft,
-                            bottom: tooltipPosition.transform.includes('-100%') ? '-6px' : 'auto',
-                            top: tooltipPosition.transform.includes('-100%') ? 'auto' : '-6px',
-                            transform: `translateX(-50%) rotate(${tooltipPosition.transform.includes('-100%') ? '45deg' : '225deg'})`,
+                            top: tooltipPosition.top,
+                            left: tooltipPosition.left,
+                            transform: tooltipPosition.transform,
+                            maxHeight: tooltipPosition.maxHeight
                         }}
-                    />
+                        onMouseEnter={() => {
+                            if (hoverTimeoutRef.current) {
+                                clearTimeout(hoverTimeoutRef.current);
+                            }
+                        }}
+                        onMouseLeave={handleTooltipLeave}
+                    >
+                        {/* Arrow Pointer */}
+                        <div
+                            className="absolute w-3 h-3 bg-white dark:bg-gray-900 border-r border-b border-gray-100 dark:border-gray-800 z-10"
+                            style={{
+                                left: tooltipPosition.arrowLeft,
+                                bottom: tooltipPosition.transform.includes('-100%') ? '-6px' : 'auto',
+                                top: tooltipPosition.transform.includes('-100%') ? 'auto' : '-6px',
+                                transform: `translateX(-50%) rotate(${tooltipPosition.transform.includes('-100%') ? '45deg' : '225deg'})`,
+                            }}
+                        />
 
-                    <div className="bg-gray-50 dark:bg-white/[0.03] border-b border-gray-100 dark:border-gray-800 px-5 py-4 flex items-center justify-between relative z-20">
-                        <div className="flex items-center gap-2.5">
-                            <div className="size-8 rounded-lg bg-brand-500/10 flex items-center justify-center">
-                                <svg className="size-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
+                        <div className="bg-gray-50 dark:bg-white/[0.03] border-b border-gray-100 dark:border-gray-800 px-5 py-4 flex items-center justify-between relative z-20">
+                            <div className="flex items-center gap-2.5">
+                                <div className="size-8 rounded-lg bg-brand-500/10 flex items-center justify-center">
+                                    <svg className="size-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-bold text-gray-900 dark:text-white">Call Lifecycle</h4>
+                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Remark History</p>
+                                </div>
                             </div>
-                            <div>
-                                <h4 className="text-sm font-bold text-gray-900 dark:text-white">Call Lifecycle</h4>
-                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Remark History</p>
+                            <div className="text-[11px] font-bold text-gray-400 bg-white dark:bg-white/5 px-2 py-1 rounded-md border border-gray-100 dark:border-white/5 shadow-sm">
+                                {(callLists || []).find(c => c._id === hoveredRemarkRow)?.remarks?.length || 0} Events
                             </div>
                         </div>
-                        <div className="text-[11px] font-bold text-gray-400 bg-white dark:bg-white/5 px-2 py-1 rounded-md border border-gray-100 dark:border-white/5 shadow-sm">
-                            {(callLists || []).find(c => c._id === hoveredRemarkRow)?.remarks?.length || 0} Events
-                        </div>
-                    </div>
 
-                    <div className="p-5 overflow-y-auto custom-scrollbar flex-1 min-h-0 overscroll-contain">
-                        <div className="space-y-6 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[1.5px] before:bg-gradient-to-b before:from-brand-500/30 before:via-gray-100 dark:before:via-white/10 before:to-transparent">
-                            {(() => {
-                                const rawRemarks = (callLists || []).find(c => c._id === hoveredRemarkRow)?.remarks || [];
-                                const normalizedRemarks = Array.isArray(rawRemarks) ? [...rawRemarks].reverse() : [{
-                                    remark: rawRemarks,
-                                    updatedOn: (callLists || []).find(c => c._id === hoveredRemarkRow)?.createdAt
-                                }];
+                        <div className="p-5 overflow-y-auto custom-scrollbar flex-1 min-h-0 overscroll-contain">
+                            <div className="space-y-6 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[1.5px] before:bg-gradient-to-b before:from-brand-500/30 before:via-gray-100 dark:before:via-white/10 before:to-transparent">
+                                {(() => {
+                                    const rawRemarks = (callLists || []).find(c => c._id === hoveredRemarkRow)?.remarks || [];
+                                    const normalizedRemarks = Array.isArray(rawRemarks) ? [...rawRemarks].reverse() : [{
+                                        remark: rawRemarks,
+                                        updatedOn: (callLists || []).find(c => c._id === hoveredRemarkRow)?.createdAt
+                                    }];
 
-                                return normalizedRemarks.map((rem, idx) => {
-                                    const text = rem.remark || '';
-                                    const isEntryCreated = text.toLowerCase() === 'entry created';
-                                    const isStatusChange = text.toLowerCase().includes('status updated to');
-                                    const isAssignment = text.toLowerCase().startsWith('assigned to');
+                                    return normalizedRemarks.map((rem, idx) => {
+                                        const text = rem.remark || '';
+                                        const isEntryCreated = text.toLowerCase() === 'entry created';
+                                        const isStatusChange = text.toLowerCase().includes('status updated to');
+                                        const isAssignment = text.toLowerCase().startsWith('assigned to');
 
-                                    let eventColor = 'text-gray-400';
-                                    let dotColor = 'bg-gray-400';
-                                    let bgColor = 'bg-white border-gray-100 dark:bg-white/[0.02] dark:border-white/5 text-gray-600 dark:text-gray-400';
+                                        let eventColor = 'text-gray-400';
+                                        let dotColor = 'bg-gray-400';
+                                        let bgColor = 'bg-white border-gray-100 dark:bg-white/[0.02] dark:border-white/5 text-gray-600 dark:text-gray-400';
 
-                                    if (isEntryCreated) {
-                                        eventColor = 'text-emerald-600 dark:text-emerald-400';
-                                        dotColor = 'bg-emerald-500';
-                                        bgColor = 'bg-emerald-50/30 border-emerald-100 dark:bg-emerald-500/5 dark:border-emerald-500/20 text-gray-700 dark:text-emerald-300';
-                                    } else if (isStatusChange) {
-                                        eventColor = 'text-blue-600 dark:text-blue-400';
-                                        dotColor = 'bg-blue-500';
-                                        bgColor = 'bg-blue-50/30 border-blue-100 dark:bg-blue-500/5 dark:border-blue-500/20 text-gray-700 dark:text-blue-300';
-                                    } else if (isAssignment) {
-                                        eventColor = 'text-violet-600 dark:text-violet-400';
-                                        dotColor = 'bg-violet-500';
-                                        bgColor = 'bg-violet-50/30 border-violet-100 dark:bg-violet-500/5 dark:border-violet-500/20 text-gray-700 dark:text-violet-300';
-                                    } else if (idx === 0) {
-                                        eventColor = 'text-brand-600 dark:text-brand-400';
-                                        dotColor = 'bg-brand-500';
-                                        bgColor = 'bg-brand-50/40 border-brand-100 dark:bg-brand-500/10 dark:border-brand-500/20 text-gray-800 dark:text-gray-200 font-semibold';
-                                    }
+                                        if (isEntryCreated) {
+                                            eventColor = 'text-emerald-600 dark:text-emerald-400';
+                                            dotColor = 'bg-emerald-500';
+                                            bgColor = 'bg-emerald-50/30 border-emerald-100 dark:bg-emerald-500/5 dark:border-emerald-500/20 text-gray-700 dark:text-emerald-300';
+                                        } else if (isStatusChange) {
+                                            eventColor = 'text-blue-600 dark:text-blue-400';
+                                            dotColor = 'bg-blue-500';
+                                            bgColor = 'bg-blue-50/30 border-blue-100 dark:bg-blue-500/5 dark:border-blue-500/20 text-gray-700 dark:text-blue-300';
+                                        } else if (isAssignment) {
+                                            eventColor = 'text-violet-600 dark:text-violet-400';
+                                            dotColor = 'bg-violet-500';
+                                            bgColor = 'bg-violet-50/30 border-violet-100 dark:bg-violet-500/5 dark:border-violet-500/20 text-gray-700 dark:text-violet-300';
+                                        } else if (idx === 0) {
+                                            eventColor = 'text-brand-600 dark:text-brand-400';
+                                            dotColor = 'bg-brand-500';
+                                            bgColor = 'bg-brand-50/40 border-brand-100 dark:bg-brand-500/10 dark:border-brand-500/20 text-gray-800 dark:text-gray-200 font-semibold';
+                                        }
 
-                                    return (
-                                        <div key={rem._id || idx} className="relative pl-8">
-                                            <div className={`absolute left-0 top-1.5 size-[22px] rounded-full border-2 border-white dark:border-gray-900 flex items-center justify-center z-10 shadow-sm ${idx === 0 ? 'bg-brand-500' : 'bg-gray-100 dark:bg-gray-800'}`}>
-                                                <div className={`size-1.5 rounded-full ${idx === 0 ? 'bg-white' : dotColor}`} />
-                                            </div>
-                                            <div className="flex flex-col gap-1.5">
-                                                <div className="flex items-center justify-between">
-                                                    <span className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${eventColor}`}>
-                                                        <span className={`size-1.5 rounded-full ${dotColor}`} />
-                                                        {(() => {
-                                                            if (isEntryCreated) return 'Entry Created';
-                                                            if (isStatusChange) return 'Status Change';
-                                                            if (isAssignment) return 'Assignment';
-                                                            return rem.status?.replace('-', ' ') || 'Remark Added';
-                                                        })()}
-                                                    </span>
-                                                    <span className="text-[10px] font-medium text-gray-400 bg-gray-50 dark:bg-white/5 py-0.5 px-2 rounded-full border border-gray-100 dark:border-white/5">
-                                                        {formatDateTime(rem.updatedOn || ((callLists || []).find(c => c._id === hoveredRemarkRow))?.createdAt)}
-                                                    </span>
+                                        return (
+                                            <div key={rem._id || idx} className="relative pl-8">
+                                                <div className={`absolute left-0 top-1.5 size-[22px] rounded-full border-2 border-white dark:border-gray-900 flex items-center justify-center z-10 shadow-sm ${idx === 0 ? 'bg-brand-500' : 'bg-gray-100 dark:bg-gray-800'}`}>
+                                                    <div className={`size-1.5 rounded-full ${idx === 0 ? 'bg-white' : dotColor}`} />
                                                 </div>
-                                                <div className={`p-3 rounded-xl border leading-relaxed text-[12px] shadow-sm ${bgColor}`}>
-                                                    {typeof rem === 'string' ? rem : (rem.remark ? (rem.remark.charAt(0).toUpperCase() + rem.remark.slice(1)) : `Status updated to ${rem.status?.replace('-', ' ')}`)}
-                                                </div>
-                                                {rem.updatedBy && (
-                                                    <div className="flex items-center gap-1.5 ml-1">
-                                                        <div className="size-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-[8px] font-bold text-gray-500">
-                                                            {rem.updatedBy.fullName?.charAt(0)}
-                                                        </div>
-                                                        <span className="text-[10px] text-gray-400 font-medium">Logged by {rem.updatedBy.fullName}</span>
+                                                <div className="flex flex-col gap-1.5">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${eventColor}`}>
+                                                            <span className={`size-1.5 rounded-full ${dotColor}`} />
+                                                            {(() => {
+                                                                if (isEntryCreated) return 'Entry Created';
+                                                                if (isStatusChange) return 'Status Change';
+                                                                if (isAssignment) return 'Assignment';
+                                                                return rem.status?.replace('-', ' ') || 'Remark Added';
+                                                            })()}
+                                                        </span>
+                                                        <span className="text-[10px] font-medium text-gray-400 bg-gray-50 dark:bg-white/5 py-0.5 px-2 rounded-full border border-gray-100 dark:border-white/5">
+                                                            {formatDateTime(rem.updatedOn || ((callLists || []).find(c => c._id === hoveredRemarkRow))?.createdAt)}
+                                                        </span>
                                                     </div>
-                                                )}
+                                                    <div className={`p-3 rounded-xl border leading-relaxed text-[12px] shadow-sm ${bgColor}`}>
+                                                        {typeof rem === 'string' ? rem : (rem.remark ? (rem.remark.charAt(0).toUpperCase() + rem.remark.slice(1)) : `Status updated to ${rem.status?.replace('-', ' ')}`)}
+                                                    </div>
+                                                    {rem.updatedBy && (
+                                                        <div className="flex items-center gap-1.5 ml-1">
+                                                            <div className="size-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-[8px] font-bold text-gray-500">
+                                                                {rem.updatedBy.fullName?.charAt(0)}
+                                                            </div>
+                                                            <span className="text-[10px] text-gray-400 font-medium">Logged by {rem.updatedBy.fullName}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
-                                        </div>
-                                    );
-                                })
-                            })()}
+                                        );
+                                    })
+                                })()}
+                            </div>
                         </div>
-                    </div>
-                </div>,
-                document.body
-            )}
+                    </div>,
+                    document.body
+                )
+            }
 
             <ToastContainer position="top-center" autoClose={3000} className="!z-[999999]" style={{ zIndex: 999999 }} />
-        </div>
+        </div >
     )
 }

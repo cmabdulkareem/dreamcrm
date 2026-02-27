@@ -11,7 +11,7 @@ import { createPortal } from "react-dom";
 import axios from "axios";
 import Papa from "papaparse";
 import Button from "../../components/ui/button/Button";
-import { DownloadIcon, PencilIcon, CloseIcon, BoltIcon, ChevronDownIcon, ChevronUpIcon, FileIcon, VerticalDotsIcon } from "../../icons";
+import { DownloadIcon, PencilIcon, CloseIcon, BoltIcon, ChevronDownIcon, ChevronUpIcon, FileIcon, VerticalDotsIcon, CalendarIcon, UserIcon, ChatIcon, TrashBinIcon } from "../../icons";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import ComponentCard from "../common/ComponentCard.jsx";
@@ -141,31 +141,21 @@ const getDueDateBadgeColor = (followUpDate) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-
-  const dayAfterTomorrow = new Date(today);
-  dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
-
   const dueDate = new Date(followUpDate);
   dueDate.setHours(0, 0, 0, 0);
 
-  // If due date is today or in the past - red background
-  if (dueDate <= today) {
+  // If due date is in the past - red background
+  if (dueDate < today) {
     return "error";
   }
 
-  // If due date is tomorrow - orange background
-  if (dueDate.getTime() === tomorrow.getTime()) {
+  // If due date is today - orange background
+  if (dueDate.getTime() === today.getTime()) {
     return "warning";
   }
 
-  // If due date is day after tomorrow - green background
-  if (dueDate.getTime() === dayAfterTomorrow.getTime()) {
-    return "success";
-  }
-
-  return "light"; // Default light background for other dates
+  // If due date is in the future - blue background
+  return "info";
 };
 
 // Helper function to get due date badge text
@@ -1157,57 +1147,72 @@ export default function RecentOrders() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-gray-100 dark:border-gray-800 pb-4">
               <div>
                 <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">Enquiries</h3>
-                {isRegularUser && (
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Showing only leads assigned to you
-                  </p>
-                )}
-                <div className="flex items-center gap-2 mt-1">
-                  {selectedLeads.length > 0 && (
-                    <p className="text-xs text-brand-500 font-medium">
-                      {selectedLeads.length} lead(s) selected
-                    </p>
-                  )}
+                <div className="flex items-center gap-2 mt-0.5">
                   <p className="text-xs text-gray-400">
                     Total: {filteredData.length} records
                   </p>
+                  {selectedLeads.length > 0 && (
+                    <>
+                      <span className="text-gray-300 dark:text-gray-700 font-light">|</span>
+                      <p className="text-xs text-brand-500 font-medium">
+                        {selectedLeads.length} selected
+                      </p>
+                    </>
+                  )}
                 </div>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800/60">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Lead Potential:</span>
+                {isRegularUser && (
+                  <p className="text-[10px] text-gray-400 mt-1 italic">
+                    * Showing only leads assigned to you
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Actions Row (Pills + Controls) */}
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div className="flex flex-wrap items-center gap-3 text-xs">
+                {/* Lead Potential Group */}
+                <div className="flex items-center gap-4 px-4 py-2 bg-gray-50/50 dark:bg-gray-800/50 rounded-full border border-gray-100 dark:border-gray-800 h-10">
+                  <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mr-1">Potential:</span>
                   <div className="flex items-center gap-1.5">
-                    <span className="size-2 rounded-full bg-green-500" />
-                    <span className="text-xs text-gray-600 dark:text-gray-400">Strong</span>
+                    <span className="size-1.5 rounded-full bg-green-500" />
+                    <span className="font-bold text-gray-700 dark:text-gray-300 text-[10px]">Strong</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <span className="size-2 rounded-full bg-blue-500" />
-                    <span className="text-xs text-gray-600 dark:text-gray-400">Potential</span>
+                    <span className="size-1.5 rounded-full bg-blue-500" />
+                    <span className="font-bold text-gray-700 dark:text-gray-300 text-[10px]">Potential</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <span className="size-2 rounded-full bg-orange-500" />
-                    <span className="text-xs text-gray-600 dark:text-gray-400">Weak</span>
+                    <span className="size-1.5 rounded-full bg-orange-500" />
+                    <span className="font-bold text-gray-700 dark:text-gray-300 text-[10px]">Weak</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <span className="size-2 rounded-full bg-gray-400" />
-                    <span className="text-xs text-gray-600 dark:text-gray-400">Not a prospect</span>
+                    <span className="size-1.5 rounded-full bg-gray-400" />
+                    <span className="font-bold text-gray-700 dark:text-gray-300 text-[10px]">None</span>
                   </div>
                 </div>
 
                 {/* Contact Point Statistics */}
                 {Object.keys(contactPointStats).length > 0 && (
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800/60">
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">This Month:</span>
-                    {Object.entries(contactPointStats).map(([contactPoint, count]) => {
-                      const { icon: Icon, label, color } = getContactPointIcon(contactPoint);
-                      return (
-                        <div key={contactPoint} className="flex items-center gap-1.5" title={label}>
-                          <Icon className={`size-3.5 ${color}`} />
-                          <span className="text-xs font-semibold text-brand-600 dark:text-brand-400">{count}</span>
-                        </div>
-                      );
-                    })}
+                  <div className="flex items-center gap-3 px-4 py-2 bg-slate-50/50 dark:bg-white/5 rounded-full border border-slate-200/50 dark:border-white/10 h-10">
+                    <span className="font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest text-[9px]">
+                      This Month:
+                    </span>
+                    <div className="flex items-center gap-3">
+                      {Object.entries(contactPointStats).map(([contactPoint, count]) => {
+                        const { icon: Icon, label, color } = getContactPointIcon(contactPoint);
+                        return (
+                          <div key={contactPoint} className="flex items-center gap-1" title={label}>
+                            <Icon className={`size-3 ${color}`} />
+                            <span className="font-black text-gr-600 dark:text-brand-400 text-xs tabular-nums leading-none">{count}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
+
               <div className="flex flex-wrap items-center gap-3">
                 <div className="w-full sm:w-56">
                   <RangeDatePicker
@@ -1222,14 +1227,16 @@ export default function RecentOrders() {
                   variant="outline"
                   onClick={() => setShowFilters(!showFilters)}
                   startIcon={showFilters ? <ChevronUpIcon className="size-5" /> : <ChevronDownIcon className="size-5" />}
+                  className="h-10"
                 >
-                  {showFilters ? "Hide Filters" : "Show Filters"}
+                  {showFilters ? "Hide" : "Filters"}
                 </Button>
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={openImportModal}
                   startIcon={<FileIcon className="size-5" />}
+                  className="h-10"
                 >
                   Import
                 </Button>
@@ -1239,6 +1246,7 @@ export default function RecentOrders() {
                   onClick={downloadPDF}
                   endIcon={<DownloadIcon className="size-5" />}
                   disabled={selectedLeads.length === 0}
+                  className="h-10"
                 >
                   PDF
                 </Button>
@@ -1312,28 +1320,28 @@ export default function RecentOrders() {
           </div>
 
           {/* Table */}
-          <div className="hidden md:block max-w-full overflow-x-auto">
-            <Table>
-              <TableHeader className="border-gray-100 dark:border-gray-800 border-y">
+          <div className="hidden md:block overflow-auto max-h-[calc(100vh-320px)] rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm custom-scrollbar">
+            <Table className="min-w-full border-collapse">
+              <TableHeader className="sticky top-0 z-20 bg-gray-50 dark:bg-gray-900 shadow-[0_1px_0_0_rgba(0,0,0,0.05)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.05)] border-b border-gray-100 dark:border-gray-800">
                 <TableRow>
-                  <TableCell isHeader className="py-3 pl-8 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">
+                  <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest pl-8 bg-inherit">
                     <div className="flex items-center gap-3">
                       <input
                         type="checkbox"
                         checked={filteredData.length > 0 && selectedLeads.length === filteredData.length}
                         onChange={handleSelectAll}
-                        className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+                        className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500 cursor-pointer"
                       />
                       <div className="size-6 invisible shrink-0" />
                     </div>
                   </TableCell>
-                  <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Name</TableCell>
-                  <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Date Added</TableCell>
-                  <TableCell isHeader className="py-3 font-medium text-gray-500 text-center text-theme-xs dark:text-gray-400">Contact Point</TableCell>
-                  <TableCell isHeader className="py-3 font-medium text-gray-500 text-center text-theme-xs dark:text-gray-400">Campaign</TableCell>
-                  <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Status & Remark</TableCell>
-                  <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Next Follow-up</TableCell>
-                  <TableCell isHeader className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400">Actions</TableCell>
+                  <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit border-l border-gray-100 dark:border-gray-800/50">Name</TableCell>
+                  <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit border-l border-gray-100 dark:border-gray-800/50">Date Added</TableCell>
+                  <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-center text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit border-l border-gray-100 dark:border-gray-800/50">Contact Point</TableCell>
+                  <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-center text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit border-l border-gray-100 dark:border-gray-800/50">Campaign</TableCell>
+                  <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit border-l border-gray-100 dark:border-gray-800/50">Status & Remark</TableCell>
+                  <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit border-l border-gray-100 dark:border-gray-800/50">Next Follow-up</TableCell>
+                  <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-center text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit border-l border-gray-100 dark:border-gray-800/50">Actions</TableCell>
                 </TableRow>
               </TableHeader>
 
@@ -1352,7 +1360,7 @@ export default function RecentOrders() {
                     const styles = getLeadPotentialStyles(row.leadPotential);
 
                     return (
-                      <TableRow key={row._id} className="group overflow-hidden transition-colors even:bg-gray-50/40 even:dark:bg-white/[0.01] hover:bg-gray-50/50 dark:hover:bg-white/[0.02]">
+                      <TableRow key={row._id} className="group transition-all hover:bg-slate-50/80 dark:hover:bg-white/5 odd:bg-transparent even:bg-gray-50/30 dark:even:bg-white/[0.01] border-b border-gray-100 dark:border-gray-800/50 last:border-0">
                         <TableCell className="py-4 pl-8 relative">
                           {/* Vertical Status Strip */}
                           <div className={`absolute left-0 top-0 bottom-0 w-[6px] ${styles.bar}`} />
@@ -1373,7 +1381,7 @@ export default function RecentOrders() {
                           </div>
                         </TableCell>
 
-                        <TableCell className="py-4">
+                        <TableCell className="py-4 px-4 border-l border-gray-100 dark:border-gray-800/50">
                           <div
                             className="flex flex-col min-w-0 cursor-help"
                             onMouseEnter={(e) => handleAnalysisEnter(e, row)}
@@ -1383,20 +1391,20 @@ export default function RecentOrders() {
                             <p className="text-gray-400 text-xs truncate max-w-[180px]">
                               {row.coursePreference?.join(", ") || "N/A"}
                             </p>
-                            <a href={`tel:${row.phone1}`} className="text-brand-500 hover:underline text-[12px] font-medium mt-0.5">
+                            <a href={`tel:${row.phone1}`} className="text-blue-500 hover:underline text-[12px] font-medium mt-0.5">
                               {row.phone1}
                             </a>
                           </div>
                         </TableCell>
-                        <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
+                        <TableCell className="py-3 px-4 border-l border-gray-100 dark:border-gray-800/50 text-gray-500 text-theme-sm dark:text-gray-400">
                           <div className="flex flex-col gap-0.5">
                             <p>{formatDate(row.createdAt)}</p>
                             <p className="text-gray-400 text-xs truncate max-w-[180px]">
-                              By:&nbsp;{row.createdBy?.fullName || row.handledBy || "N/A"}
+                              {row.createdBy?.fullName || row.handledBy || "N/A"}
                             </p>
                           </div>
                         </TableCell>
-                        <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400 text-center">
+                        <TableCell className="py-3 px-4 border-l border-gray-100 dark:border-gray-800/50 text-gray-500 text-theme-sm dark:text-gray-400 text-center">
                           <div className="flex flex-col items-center justify-center">
                             {(() => {
                               const { icon: Icon, label, color } = getContactPointIcon(row.contactPoint, row.otherContactPoint);
@@ -1415,8 +1423,8 @@ export default function RecentOrders() {
                           </div>
                         </TableCell>
 
-                        <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400 text-center">{row.campaign || "N/A"}</TableCell>
-                        <TableCell className="py-3">
+                        <TableCell className="py-3 px-4 border-l border-gray-100 dark:border-gray-800/50 text-gray-500 text-theme-sm dark:text-gray-400 text-center">{row.campaign || "N/A"}</TableCell>
+                        <TableCell className="py-3 px-4 border-l border-gray-100 dark:border-gray-800/50">
                           <div className="flex flex-col gap-1.5">
                             <div className="flex items-center gap-2">
                               <Badge
@@ -1446,7 +1454,7 @@ export default function RecentOrders() {
                           </div>
                         </TableCell>
 
-                        <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
+                        <TableCell className="py-3 px-4 border-l border-gray-100 dark:border-gray-800/50 text-gray-500 text-theme-sm dark:text-gray-400">
                           <div className="flex flex-col gap-1 items-start">
                             <Badge
                               size="sm"
@@ -1461,8 +1469,8 @@ export default function RecentOrders() {
                             )}
                           </div>
                         </TableCell>
-                        <TableCell className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
-                          <div className="flex items-center">
+                        <TableCell className="py-3 px-4 border-l border-gray-100 dark:border-gray-800/50 text-gray-500 text-theme-sm dark:text-gray-400">
+                          <div className="flex items-center justify-center">
                             <Button size="sm" variant="outline" className="mr-2" endIcon={<PencilIcon className="size-5" />} onClick={() => handleEdit(row)} />
 
                             {/* Dropdown for other actions */}
@@ -1500,7 +1508,7 @@ export default function RecentOrders() {
                                   <BoltIcon className="size-4" />
                                   Follow-up
                                 </DropdownItem>
-                                {isOwner(user) && (
+                                {(isAdmin(user) || isManager(user) || isOwner(user)) && (
                                   <DropdownItem
                                     onClick={() => {
                                       setOpenDropdownId(null);
@@ -1527,7 +1535,7 @@ export default function RecentOrders() {
           {/* Mobile Card View */}
           <div className="grid grid-cols-1 gap-4 md:hidden">
             {filteredData.length === 0 ? (
-              <div className="py-8 text-center text-gray-500 bg-white dark:bg-white/[0.03] rounded-xl border border-gray-100 dark:border-gray-800">
+              <div className="py-12 text-center text-gray-500 bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
                 {isRegularUser ? "No leads assigned to you." : "No leads found."}
               </div>
             ) : (
@@ -1537,149 +1545,148 @@ export default function RecentOrders() {
                 const hasUnread = hasUnreadRemarks(row.remarks);
 
                 return (
-                  <div key={row._id} className="relative overflow-hidden bg-white dark:bg-white/[0.03] border border-gray-100 dark:border-gray-800 rounded-xl p-4 shadow-sm">
-                    {/* Vertical Status Strip */}
-                    <div className={`absolute left-0 top-0 bottom-0 w-[4px] ${styles.bar}`} />
+                  <div key={row._id} className="relative overflow-hidden bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-5 shadow-sm transition-all hover:shadow-md">
+                    {/* Status Strip */}
+                    <div className="absolute left-0 top-0 bottom-0 w-1.5 opacity-60" style={{ backgroundColor: getLeadStatusColor(row.leadStatus) === 'primary' ? '#e91e63' : (getLeadStatusColor(row.leadStatus) === 'success' ? '#10b981' : (getLeadStatusColor(row.leadStatus) === 'warning' ? '#f59e0b' : '#3b82f6')) }} />
 
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="checkbox"
-                          checked={selectedLeads.includes(row._id)}
-                          onChange={() => handleSelectLead(row._id)}
-                          className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
-                        />
-                        <div
-                          className="cursor-help"
-                          onMouseEnter={(e) => handleAnalysisEnter(e, row)}
-                          onMouseLeave={handleAnalysisLeave}
-                        >
-                          <div className="flex items-baseline gap-2">
-                            <h4 className="font-semibold text-gray-800 dark:text-white/90">{row.fullName}</h4>
-                            {(() => {
-                              const { icon: Icon, label, color } = getContactPointIcon(row.contactPoint, row.otherContactPoint);
-                              const details = (row.contactPoint?.toLowerCase() === "other" ||
-                                row.contactPoint?.toLowerCase() === "reference" ||
-                                row.contactPoint?.toLowerCase() === "referance") && row.otherContactPoint
-                                ? `: ${row.otherContactPoint}` : "";
-                              return (
-                                <div title={`${label}${details}`}>
-                                  <Icon className={`size-3.5 ${color} opacity-80`} />
-                                </div>
-                              );
-                            })()}
-                          </div>
-                          <a href={`tel:${row.phone1}`} className="text-brand-500 text-sm font-medium hover:underline">
-                            {row.phone1}
-                          </a>
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-end gap-2">
-                        <Badge size="sm" color={getLeadStatusColor(row.leadStatus)}>
+                    {/* Header Section: [ Name ] [ Actions ] [ Status ] */}
+                    <div className="flex justify-between items-start mb-4 pl-1">
+                      <div className="flex flex-col gap-1.5">
+                        <h4 className="text-[18px] font-black text-gray-950 dark:text-white leading-tight">{row.fullName}</h4>
+                        <Badge variant="secondary" color={getLeadStatusColor(row.leadStatus)} className="w-fit font-bold px-2.5 py-0.5 text-[10px] uppercase tracking-wider shadow-sm opacity-80">
                           {getLeadStatusLabel(row.leadStatus)}
                         </Badge>
-                        {hasUnread && (
-                          <div className="size-5 rounded-full bg-red-600 flex items-center justify-center shadow-sm">
-                            <BoltIcon className="size-3 text-white" />
-                          </div>
-                        )}
                       </div>
-                    </div>
 
-                    <div className="space-y-2 mb-4">
-                      <div className="flex justify-between text-xs">
-                        <span className="text-gray-500 dark:text-gray-400">Course Preference:</span>
-                        <span className="text-gray-700 dark:text-gray-200 text-right max-w-[150px] truncate">
-                          {row.coursePreference?.join(", ") || "N/A"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-gray-500 dark:text-gray-400">Added:</span>
-                        <span className="text-gray-700 dark:text-gray-200">
-                          {formatDate(row.createdAt)} by {row.createdBy?.fullName || row.handledBy || "N/A"}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-xs">
-                        <span className="text-gray-500 dark:text-gray-400">Next Follow-up:</span>
-                        <Badge size="sm" color={getDueDateBadgeColor(row.followUpDate)}>
-                          {getDueDateBadgeText(row.followUpDate)}
-                        </Badge>
-                      </div>
-                      {row.assignedTo && (
-                        <div className="flex justify-between text-xs">
-                          <span className="text-gray-500 dark:text-gray-400">Assigned To:</span>
-                          <span className="text-gray-700 dark:text-gray-200 font-medium">
-                            {row.assignedTo.fullName}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-3 mb-4">
-                      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Latest Remark:</p>
-                      <p className="text-xs text-gray-700 dark:text-gray-300 line-clamp-2">
-                        {latestRemark || "No remarks yet"}
-                      </p>
-                      {row.assignmentRemark && (
-                        <p className="text-[10px] text-red-500 dark:text-red-400 mt-2 font-medium">
-                          Suggestion: {row.assignmentRemark}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100 dark:border-gray-800">
-                      <Button size="sm" variant="primary" className="px-3 mr-auto" onClick={() => handleEdit(row)}>
-                        Edit
-                      </Button>
-
-                      <div className="relative">
+                      <div className="flex items-center gap-2">
                         <button
-                          onClick={() => toggleDropdown(row._id + "_mobile")}
-                          className="dropdown-toggle size-9 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-700 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-400 dark:hover:bg-white/[0.05]"
+                          onClick={() => handleEdit(row)}
+                          className="size-10 flex items-center justify-center rounded-xl bg-white dark:bg-gray-800 text-brand-500 border border-gray-100 dark:border-gray-700 shadow-sm active:scale-95 transition-all"
+                          title="Edit Lead"
                         >
-                          <VerticalDotsIcon className="size-5" />
+                          <PencilIcon className="size-4.5" />
                         </button>
 
-                        <Dropdown
-                          isOpen={openDropdownId === row._id + "_mobile"}
-                          onClose={() => setOpenDropdownId(null)}
-                          className="w-40 bottom-full mb-2"
-                        >
-                          {canAssignLeads && (
+                        <div className="relative">
+                          <button
+                            onClick={() => toggleDropdown(row._id + "_mobile")}
+                            className="size-10 flex items-center justify-center rounded-xl border border-gray-100 bg-white text-gray-400 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 transition-all active:scale-95"
+                          >
+                            <VerticalDotsIcon className="size-5" />
+                          </button>
+
+                          <Dropdown
+                            isOpen={openDropdownId === row._id + "_mobile"}
+                            onClose={() => setOpenDropdownId(null)}
+                            className="w-48 top-full mt-2 shadow-2xl"
+                          >
+                            {canAssignLeads && (
+                              <DropdownItem
+                                onClick={() => {
+                                  setOpenDropdownId(null);
+                                  openAssignModal(row);
+                                }}
+                                className="flex items-center gap-3 py-3 px-4 text-blue-600 dark:text-blue-400 font-semibold text-sm"
+                              >
+                                <UserIcon className="size-4" />
+                                Assign Lead
+                              </DropdownItem>
+                            )}
                             <DropdownItem
                               onClick={() => {
                                 setOpenDropdownId(null);
-                                openAssignModal(row);
+                                handleAlarm(row);
                               }}
-                              className="flex items-center gap-2 text-blue-500"
+                              className="flex items-center gap-3 py-3 px-4 text-yellow-600 dark:text-yellow-400 font-semibold text-sm"
                             >
-                              Assign
+                              <BoltIcon className="size-4" />
+                              Follow-up
                             </DropdownItem>
-                          )}
-                          <DropdownItem
-                            onClick={() => {
-                              setOpenDropdownId(null);
-                              handleAlarm(row);
-                            }}
-                            className="flex items-center gap-2 text-yellow-500"
-                          >
-                            <BoltIcon className="size-4" />
-                            Follow-up
-                          </DropdownItem>
-                          {isOwner(user) && (
                             <DropdownItem
                               onClick={() => {
                                 setOpenDropdownId(null);
                                 handleDelete(row);
                               }}
-                              className="flex items-center gap-2 text-red-500"
+                              className="flex items-center gap-3 py-3 px-4 text-red-600 dark:text-red-400 font-semibold text-sm"
                             >
-                              <CloseIcon className="size-4" />
-                              Delete
+                              <TrashBinIcon className="size-4" />
+                              Delete Lead
                             </DropdownItem>
-                          )}
-                        </Dropdown>
+                          </Dropdown>
+                        </div>
                       </div>
+                    </div>
+
+                    {/* Phone Number */}
+                    <div className="mb-4 pl-1">
+                      <a href={`tel:${row.phone1}`} className="text-gray-600 dark:text-gray-300 text-[15px] font-semibold flex items-center gap-2.5 hover:text-brand-600 transition-colors">
+                        <BoltIcon className="size-4 rotate-45 text-gray-400" />
+                        {row.phone1}
+                      </a>
+                    </div>
+
+                    {/* Follow-up Section (Highlighted) */}
+                    <div className="mb-5 pl-1">
+                      <div className={`inline-flex items-center gap-2 rounded-full py-1.5 px-4 border shadow-sm ${getDueDateBadgeColor(row.followUpDate) === 'danger' ? 'bg-red-50 text-red-700 border-red-100' :
+                        getDueDateBadgeColor(row.followUpDate) === 'warning' ? 'bg-orange-50 text-orange-700 border-orange-100' :
+                          'bg-blue-50 text-blue-700 border-blue-100'
+                        }`}>
+                        <CalendarIcon className="size-3.5 opacity-60" />
+                        <span className="text-[13px] font-bold">Follow-up: {getDueDateBadgeText(row.followUpDate)}</span>
+                      </div>
+                    </div>
+
+                    {/* Metadata List (Vertical) */}
+                    <div className="space-y-3.5 mb-5 pl-1 text-[13px]">
+                      <div className="flex items-center gap-3">
+                        <div className="size-7 rounded-lg bg-gray-50 dark:bg-gray-800 flex items-center justify-center shrink-0">
+                          <UserIcon className="size-4 text-gray-400" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-tight">Assigned To</span>
+                          <span className="text-gray-900 dark:text-gray-100 font-bold truncate">
+                            {row.assignedTo?.fullName || "Unassigned"}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="size-7 rounded-lg bg-gray-50 dark:bg-gray-800 flex items-center justify-center shrink-0">
+                          <FileIcon className="size-4 text-gray-400" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-tight">Course</span>
+                          <span className="text-gray-900 dark:text-gray-100 font-semibold truncate">
+                            {row.coursePreference?.join(", ") || "N/A"}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="size-7 rounded-lg bg-gray-50 dark:bg-gray-800 flex items-center justify-center shrink-0">
+                          <CalendarIcon className="size-4 text-gray-400" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-tight">Date Added</span>
+                          <span className="text-gray-700 dark:text-gray-200 font-medium text-[12px]">
+                            {formatDate(row.createdAt)} by <span className="italic font-semibold">{row.createdBy?.fullName || row.handledBy || "N/A"}</span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Remark Section (Neutralized) */}
+                    <div className="mb-2 ml-1 pl-4 border-l-2 border-gray-100 dark:border-gray-800 bg-gray-50/40 dark:bg-white/[0.02] py-3 pr-3 rounded-r-xl">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <ChatIcon className="size-3.5 text-gray-400" />
+                        <span className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Latest Remark</span>
+                      </div>
+                      <p className="text-[13px] text-gray-800 dark:text-gray-200 leading-relaxed italic font-medium">
+                        "{latestRemark || "No remarks yet"}"
+                      </p>
+                      {row.assignmentRemark && (
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 font-bold mt-2.5">
+                          Remark: {row.assignmentRemark}
+                        </p>
+                      )}
                     </div>
                   </div>
                 );
@@ -2102,7 +2109,7 @@ export default function RecentOrders() {
               {/* Right column - History */}
               <div className="space-y-6">
                 <ComponentCard title="History & Remarks">
-                  <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent dark:scrollbar-thumb-gray-700 hover:scrollbar-thumb-gray-400 dark:hover:scrollbar-thumb-gray-600">
+                  <div className="space-y-4 max-h-[480px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent dark:scrollbar-thumb-gray-700 hover:scrollbar-thumb-gray-400 dark:hover:scrollbar-thumb-gray-600">
                     {selectedRow?.remarks && selectedRow.remarks.length > 0 ? (
                       // Sort remarks from latest to oldest (reverse order)
                       [...selectedRow.remarks].reverse().map((remark, index) => (
