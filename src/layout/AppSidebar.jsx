@@ -74,7 +74,7 @@ const navItems = [
     ]
   },
   {
-    name: "Compute Lab",
+    name: "Computer Lab",
     icon: <BoxCubeIcon />,
     subItems: [
       { name: "Lab Scheduler", path: "/compute-lab/scheduler", pro: false },
@@ -288,6 +288,12 @@ const AppSidebar = () => {
           if (hiddenForCounsellor.includes(nav.name)) return null;
         }
 
+        // Restricted items for IT Support
+        if (hasRole(user, "IT Support", brandId)) {
+          const allowedForIT = ["Computer Lab", "Settings"];
+          if (!allowedForIT.includes(nav.name)) return null;
+        }
+
         // Restricted items for Academic Coordinator
         if (hasRole(user, "Academic Coordinator", brandId)) {
           // AC ONLY needs Student Management, Settings, Lead Management and Leave Management (will filter subitems below)
@@ -425,6 +431,13 @@ const AppSidebar = () => {
                     // Only show Campaigns, Contact Points, Course Management, and App Backup to managers
                     if (["Campaigns", "Contact Points", "Course Management", "App Backup"].includes(subItem.name) && !hasManagerAccess) {
                       return null;
+                    }
+
+                    // RESTRICTION: IT Support only sees Edit Profile under Settings
+                    if (hasRole(user, "IT Support", brandId)) {
+                      if (nav.name === "Settings" && subItem.name !== "Edit Profile") {
+                        return null;
+                      }
                     }
 
                     // RESTRICTION: Academic Coordinator only sees Batch Management, Edit Profile, Cold Call list and personal Leave Management

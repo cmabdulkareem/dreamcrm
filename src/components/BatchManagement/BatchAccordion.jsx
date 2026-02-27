@@ -48,65 +48,82 @@ export default function BatchAccordion({ batch, onUpdate, onDelete }) {
     };
 
     return (
-        <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-gray-800 shadow-sm">
+        <div className="border border-gray-100 dark:border-gray-700/50 rounded-2xl overflow-hidden bg-white dark:bg-gray-800 transition-all duration-300 group hover:border-gray-200 dark:hover:border-gray-600">
             {/* Accordion Header */}
             <div
-                className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                className="flex flex-col lg:flex-row items-start lg:items-center justify-between p-5 md:p-6 cursor-pointer group-hover:bg-gray-50/50 dark:group-hover:bg-gray-700/50 transition-colors"
                 onClick={handleToggle}
             >
-                <div className="flex items-start sm:items-center space-x-4 w-full sm:w-auto">
-                    <div className={`transform transition-transform mt-1 sm:mt-0 ${isExpanded ? 'rotate-90' : ''}`}>
-                        <svg className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                {/* Left: Title + metadata */}
+                <div className="flex items-start space-x-4 w-full lg:w-3/4">
+                    <div className={`transform transition-transform mt-1.5 ${isExpanded ? 'rotate-90' : ''}`}>
+                        <svg className="h-5 w-5 text-gray-400 group-hover:text-gray-600 dark:text-gray-500 dark:group-hover:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
                         </svg>
                     </div>
-                    <div>
-                        <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{batch.batchName}</h4>
-                        <div className="flex flex-wrap gap-y-2 gap-x-6 text-sm text-gray-600 dark:text-gray-300">
-                            <div className="flex items-center">
-                                <span className="font-medium text-gray-500 mr-2">Subject:</span>
-                                <span>{batch.subject}</span>
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-4">
+                            <h4 className="text-xl font-semibold text-gray-900 dark:text-gray-50 tracking-tight">
+                                {batch.batchName}
+                            </h4>
+                            <div className="flex items-center px-2.5 py-0.5 bg-gray-50 dark:bg-gray-900/50 rounded-md border border-gray-100 dark:border-gray-700">
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mr-2 border-r border-gray-200 dark:border-gray-700 pr-2 leading-none">Instructor</span>
+                                <span className="text-gray-600 dark:text-gray-300 font-semibold text-xs leading-none">{batch.instructorName}</span>
                             </div>
-                            <div className="flex items-center">
-                                <span className="font-medium text-gray-500 mr-2">Duration:</span>
-                                <span>{new Date(batch.startDate).toLocaleDateString()} - {new Date(batch.expectedEndDate).toLocaleDateString()}</span>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2.5 text-sm">
+                            {/* Subject */}
+                            <div className="flex items-center px-3 py-1 bg-white dark:bg-gray-800/50 rounded-full border border-gray-200 dark:border-gray-700 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mr-2">Subject</span>
+                                <span className="text-gray-600 dark:text-gray-300 font-medium">{batch.subject}</span>
                             </div>
-                            <div className="flex items-center">
-                                <span className="font-medium text-gray-500 mr-2">Timing:</span>
-                                <span>{batch.batchTime.from} - {batch.batchTime.to}</span>
-                            </div>
-                            <div className="flex items-center">
-                                <span className="font-medium text-gray-500 mr-2">Mode:</span>
-                                <span className={`uppercase font-bold text-xs px-2 py-0.5 rounded ${batch.mode === 'online' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
-                                    {batch.mode}
+
+                            {/* Duration */}
+                            <div className="flex items-center px-3 py-1 bg-white dark:bg-gray-800/50 rounded-full border border-gray-200 dark:border-gray-700 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mr-2">Duration</span>
+                                <span className="text-gray-600 dark:text-gray-300 font-medium whitespace-nowrap">
+                                    {new Date(batch.startDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })} - {new Date(batch.expectedEndDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                                 </span>
                             </div>
-                            <div className="flex items-center">
-                                <span className="font-medium text-gray-500 mr-2">Instructor:</span>
-                                <span>{batch.instructorName}</span>
+
+                            {/* Timing */}
+                            <div className="flex items-center px-3 py-1 bg-white dark:bg-gray-800/50 rounded-full border border-gray-200 dark:border-gray-700 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 mr-2">Timing</span>
+                                <span className="text-gray-600 dark:text-gray-300 font-medium">{batch.batchTime.from} - {batch.batchTime.to}</span>
                             </div>
+
+                            {/* Mode Dot */}
+                            <div className="flex items-center self-center px-1.5" title={`Mode: ${batch.mode}`}>
+                                <span className={`h-2.5 w-2.5 rounded-full ${batch.mode === 'online' ? 'bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.4)]' : 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]'}`}></span>
+                            </div>
+
                         </div>
                     </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-2 mt-4 sm:mt-0 w-full sm:w-auto">
+
+                {/* Right: Actions */}
+                <div className="flex flex-wrap items-center justify-end gap-2.5 mt-6 lg:mt-0 w-full lg:w-1/4">
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
                             setIsAttendanceModalOpen(true);
                         }}
-                        className="px-3 py-1 text-xs font-medium bg-brand-50 text-brand-600 rounded-full hover:bg-brand-100 dark:bg-brand-900/30 dark:text-brand-400 dark:hover:bg-brand-900/50 transition-colors"
+                        className="px-5 py-2 text-[13px] font-bold bg-blue-950 dark:bg-blue-900 text-white rounded-lg hover:bg-blue-900 dark:hover:bg-blue-800 active:scale-[0.98] transition-all min-w-[130px]"
                     >
                         {canMarkAttendance ? "Mark Attendance" : "View Attendance"}
                     </button>
+
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
                             setIsMonthlyReportOpen(true);
                         }}
-                        className="px-3 py-1 text-xs font-medium bg-green-50 text-green-600 rounded-full hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50 transition-colors"
+                        className="px-5 py-2 text-[13px] font-medium bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 active:scale-[0.98] transition-all"
                     >
                         Monthly Report
                     </button>
+
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
@@ -117,19 +134,19 @@ export default function BatchAccordion({ batch, onUpdate, onDelete }) {
                                 toast.error("Failed to copy link.");
                             });
                         }}
-                        className="px-3 py-1 text-xs font-medium bg-blue-50 text-blue-600 rounded-full hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 transition-colors flex items-center gap-1"
+                        className="p-2 text-gray-400 dark:text-gray-500 bg-gray-50/50 dark:bg-gray-900/20 rounded-lg hover:bg-gray-100/50 dark:hover:bg-gray-900/40 transition-all active:scale-95"
                         title="Copy Shareable Link for Students"
                     >
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                         </svg>
-                        Share Link
                     </button>
+
                     {canEdit && (
-                        <>
+                        <div className="flex items-center gap-1 ml-1 pl-1 border-l border-gray-100 dark:border-gray-700">
                             <button
                                 onClick={handleEdit}
-                                className="p-2 text-gray-400 hover:text-brand-600 dark:hover:text-brand-400"
+                                className="p-2 text-gray-300 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
                                 title="Edit Batch"
                             >
                                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -138,14 +155,14 @@ export default function BatchAccordion({ batch, onUpdate, onDelete }) {
                             </button>
                             <button
                                 onClick={handleDelete}
-                                className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400"
+                                className="p-2 text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                                 title="Delete Batch"
                             >
                                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                 </svg>
                             </button>
-                        </>
+                        </div>
                     )}
                 </div>
             </div>

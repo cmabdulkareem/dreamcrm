@@ -85,9 +85,17 @@ export const deleteLaboratory = async (req, res) => {
 export const getPCs = async (req, res) => {
     try {
         const { labId } = req.query;
-        if (!labId) return res.status(400).json({ message: "labId is required" });
+        let query = {};
 
-        const rawPcs = await LabPC.find({ lab: labId }).sort({ row: 1, position: 1, pcNumber: 1 });
+        if (labId) {
+            query.lab = labId;
+        } else {
+            // Find all labs the user has access to via brand filtering
+            const labs = await Laboratory.find(req.brandFilter || {}).select('_id');
+            query.lab = { $in: labs.map(l => l._id) };
+        }
+
+        const rawPcs = await LabPC.find(query).sort({ row: 1, position: 1, pcNumber: 1 });
         const pcs = rawPcs.map(pc => {
             const row = pc.row ? pc.row.replace(/Row\s+/i, '').trim().toUpperCase() : 'A';
             return { ...pc.toObject(), row };
@@ -310,9 +318,17 @@ export const deleteComplaint = async (req, res) => {
 export const getRows = async (req, res) => {
     try {
         const { labId } = req.query;
-        if (!labId) return res.status(400).json({ message: "labId is required" });
+        let query = {};
 
-        const rows = await LabRow.find({ lab: labId }).sort({ name: 1 });
+        if (labId) {
+            query.lab = labId;
+        } else {
+            // Find all labs the user has access to via brand filtering
+            const labs = await Laboratory.find(req.brandFilter || {}).select('_id');
+            query.lab = { $in: labs.map(l => l._id) };
+        }
+
+        const rows = await LabRow.find(query).sort({ name: 1 });
         res.json(rows);
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -396,11 +412,18 @@ export const removeEmptySlot = async (req, res) => {
 export const getQueue = async (req, res) => {
     try {
         const { labId, all } = req.query;
-        if (!labId) return res.status(400).json({ message: "labId is required" });
 
         // Default to only 'waiting' students unless 'all' is specified
-        const query = { lab: labId };
+        let query = {};
         if (!all) query.status = 'waiting';
+
+        if (labId) {
+            query.lab = labId;
+        } else {
+            // Find all labs the user has access to via brand filtering
+            const labs = await Laboratory.find(req.brandFilter || {}).select('_id');
+            query.lab = { $in: labs.map(l => l._id) };
+        }
 
         const queue = await LabQueue.find(query).sort({ createdAt: 1 });
         res.json(queue);

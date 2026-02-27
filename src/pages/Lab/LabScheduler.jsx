@@ -6,10 +6,10 @@ import PageBreadcrumb from '../../components/common/PageBreadCrumb';
 import ComponentCard from '../../components/common/ComponentCard';
 import Button from '../../components/ui/button/Button';
 import { labService } from '../../services/labService';
-import { PlusIcon, PencilIcon, TrashBinIcon } from '../../icons';
+import { PlusIcon, PencilIcon, TrashBinIcon, AlertIcon } from '../../icons';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../context/AuthContext';
-import { isManager, isAnyManager, isAdmin as checkAdmin } from '../../utils/roleHelpers';
+import { isManager, isAnyManager, isAdmin as checkAdmin, hasRole } from '../../utils/roleHelpers';
 
 const ItemTypes = {
     PC: 'pc'
@@ -35,6 +35,7 @@ const emptyPC = { pcNumber: '', label: '', status: 'available', specs: '', locat
 const emptySchedule = { studentName: '', date: '', timeSlot: 'Early AM', purpose: '', notes: '' };
 
 const TIME_SLOTS = ["Early AM", "Late AM", "Midday", "Early PM", "Late PM"];
+const emptyComplaintForm = { pcId: '', title: '', description: '', priority: 'medium' };
 
 // [startHour, startMin, endHour, endMin]
 const SLOT_TIMES = {
@@ -63,7 +64,7 @@ const getEffectiveStatus = (pc, todaySlots) => {
     return storedStatus === 'in-use' ? 'available' : storedStatus;
 };
 
-const PCSeat = ({ pc, cfg, todaySlots, inUse, onAssign, onEdit, onDelete, onMovePC }) => {
+const PCSeat = ({ pc, cfg, todaySlots, inUse, onAssign, onEdit, onDelete, onMovePC, onComplaint }) => {
     const [{ isDragging }, drag] = useDrag(() => ({
         type: ItemTypes.PC,
         item: { id: pc._id, row: pc.row, position: pc.position },
@@ -184,6 +185,9 @@ const PCSeat = ({ pc, cfg, todaySlots, inUse, onAssign, onEdit, onDelete, onMove
                     className={`absolute ${pc.row === 'A' ? '-top-6' : '-bottom-6'} left-1/2 -translate-x-1/2 flex gap-1.5 bg-white dark:bg-gray-800 shadow-xl border border-gray-100 dark:border-gray-700 p-1.5 rounded-xl z-[520]`}
                     onMouseEnter={handleMouseEnter}
                 >
+                    <button onClick={(e) => { e.stopPropagation(); onComplaint(pc); }} className="p-2.5 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 text-yellow-500 rounded-lg transition-colors" title="Raise Complaint">
+                        <AlertIcon className="w-4 h-4" />
+                    </button>
                     <button onClick={(e) => { e.stopPropagation(); onEdit(pc); }} className="p-2.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg text-gray-500 transition-colors">
                         <PencilIcon className="w-4 h-4" />
                     </button>
@@ -289,8 +293,9 @@ const RowContainer = ({ row, pcsInRow, emptySlotsInRow, onMovePC, onQuickAdd, on
 
 function ArrangementContent() {
     const { user, selectedBrand } = useAuth();
-    const canManageLab = isAnyManager(user);
-    const canManageWorkstations = isManager(user, selectedBrand?._id || selectedBrand?.id);
+    const canManageLab = isAnyManager(user) || hasRole(user, 'IT Support');
+    const brandId = selectedBrand?._id || selectedBrand?.id;
+    const canManageWorkstations = isManager(user, brandId) || hasRole(user, 'IT Support', brandId);
 
     const [pcs, setPCs] = useState([]);
     const [schedules, setSchedules] = useState([]);
@@ -327,6 +332,11 @@ function ArrangementContent() {
     const [isQueueSyncing, setIsQueueSyncing] = useState(false);
     const [showQueueHistory, setShowQueueHistory] = useState(false);
     const [activeSearchSlot, setActiveSearchSlot] = useState(null);
+
+    // Complaint State
+    const [showComplaintModal, setShowComplaintModal] = useState(false);
+    const [complaintForm, setComplaintForm] = useState(emptyComplaintForm);
+    const [savingComplaint, setSavingComplaint] = useState(false);
 
     const today = new Date().toISOString().split('T')[0];
 
@@ -728,6 +738,21 @@ function ArrangementContent() {
         setShowLabModal(true);
     };
 
+    const handleSaveComplaint = async (e) => {
+        e.preventDefault();
+        if (!complaintForm.pcId || !complaintForm.title.trim()) return;
+        setSavingComplaint(true);
+        try {
+            await labService.addComplaint(complaintForm);
+            setShowComplaintModal(false);
+            setComplaintForm(emptyComplaintForm);
+        } catch (e) {
+            toast.error(e.message || "Failed to raise complaint");
+        } finally {
+            setSavingComplaint(false);
+        }
+    };
+
     const rowsMap = pcs.reduce((acc, pc) => {
         const r = normalizeRow(pc.row);
         if (!acc[r]) acc[r] = [];
@@ -1053,6 +1078,10 @@ function ArrangementContent() {
                                                         }}
                                                         onDelete={handleDeletePC}
                                                         onMovePC={handleMovePC}
+                                                        onComplaint={(pc) => {
+                                                            setComplaintForm({ ...emptyComplaintForm, pcId: pc._id });
+                                                            setShowComplaintModal(true);
+                                                        }}
                                                     />
                                                 )
                                             }}
@@ -1498,6 +1527,56 @@ function ArrangementContent() {
                     </div>
                 )
             }
+
+            {/* Raise Complaint Modal */}
+            {showComplaintModal && (
+                <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/60 backdrop-blur-md px-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-md p-8 border border-white/20">
+                        <h3 className="text-xl font-black text-gray-900 dark:text-white mb-8 italic uppercase tracking-tighter flex items-center gap-3">
+                            <AlertIcon className="w-6 h-6 text-yellow-500" />
+                            Issue Reporting
+                        </h3>
+                        <form onSubmit={handleSaveComplaint} className="space-y-6">
+                            <div>
+                                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Workstation</label>
+                                <div className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl px-5 py-4 text-sm font-bold text-gray-500">
+                                    {pcs.find(p => p._id === complaintForm.pcId)?.pcNumber || 'Selected Workstation'}
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Issue Headline *</label>
+                                <input required value={complaintForm.title} onChange={e => setComplaintForm(f => ({ ...f, title: e.target.value }))}
+                                    placeholder="e.g. Hardware Malfunction" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-5 py-4 text-sm font-bold text-gray-800 dark:text-white outline-none focus:border-brand-500 transition-all" />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 ml-1">Priority Matrix</label>
+                                <div className="flex gap-2">
+                                    {['low', 'medium', 'high'].map(p => (
+                                        <button key={p} type="button" onClick={() => setComplaintForm(f => ({ ...f, priority: p }))}
+                                            className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl border transition-all duration-300 ${complaintForm.priority === p
+                                                ? 'border-brand-500 bg-brand-500 text-white shadow-lg shadow-brand-500/20 scale-105'
+                                                : 'border-gray-200 dark:border-gray-700 text-gray-400 hover:border-brand-300'}`}>
+                                            {p}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Detailed Log</label>
+                                <textarea value={complaintForm.description} onChange={e => setComplaintForm(f => ({ ...f, description: e.target.value }))}
+                                    rows={3} placeholder="Describe the technical issue in detail..." className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-5 py-4 text-sm font-medium text-gray-800 dark:text-white outline-none focus:border-brand-500 resize-none transition-all leading-relaxed" />
+                            </div>
+
+                            <div className="flex gap-4 mt-8 pt-4 border-t border-gray-100 dark:border-gray-800">
+                                <Button variant="outline" className="flex-1" onClick={() => setShowComplaintModal(false)} disabled={savingComplaint}>Abort</Button>
+                                <Button type="submit" className="flex-1" disabled={savingComplaint || !complaintForm.title.trim()}>
+                                    {savingComplaint ? 'Committing...' : 'Commit Log'}
+                                </Button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

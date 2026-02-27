@@ -31,9 +31,8 @@ export default function CreateBatchModal({ isOpen, onClose, onCreated, onUpdated
             const fetchInstructors = async () => {
                 try {
                     const response = await axios.get(`${API}/users/dropdown?roles=Instructor`, { withCredentials: true });
-                    const allowedRoles = ['Instructor'];
                     const filteredUsers = response.data.users.filter(user =>
-                        user.roles && user.roles.some(role => allowedRoles.includes(role))
+                        user.roles && user.roles.includes('Instructor')
                     );
                     const instructors = filteredUsers.map(user => ({
                         value: user._id,

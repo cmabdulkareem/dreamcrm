@@ -13,7 +13,7 @@ const PRIORITY_CONFIG = {
 };
 
 const STATUS_TABS = ['all', 'open', 'in-progress', 'resolved'];
-const emptyForm = { pc: '', title: '', description: '', priority: 'medium' };
+const emptyForm = { pcId: '', title: '', description: '', priority: 'medium' };
 
 export default function Complaints() {
     const [complaints, setComplaints] = useState([]);
@@ -37,7 +37,7 @@ export default function Complaints() {
 
     const save = async (e) => {
         if (e) e.preventDefault();
-        if (!form.pc || !form.title.trim()) return;
+        if (!form.pcId || !form.title.trim()) return;
         setSaving(true);
         try {
             const created = await labService.addComplaint(form);
@@ -188,7 +188,7 @@ export default function Complaints() {
                             <div>
                                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Workstation Assignment *</label>
                                 <div className="relative group/select">
-                                    <select required value={form.pc} onChange={e => setForm(f => ({ ...f, pc: e.target.value }))}
+                                    <select required value={form.pcId} onChange={e => setForm(f => ({ ...f, pcId: e.target.value }))}
                                         className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-5 py-4 text-sm font-bold text-gray-800 dark:text-white outline-none focus:border-brand-500 appearance-none transition-all pr-12">
                                         <option value="">Select Target PC</option>
                                         {pcs.map(pc => <option key={pc._id} value={pc._id}>{pc.pcNumber}{pc.label ? ` · ${pc.label}` : ''}</option>)}

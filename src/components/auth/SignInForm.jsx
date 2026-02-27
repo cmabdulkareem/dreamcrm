@@ -46,13 +46,15 @@ export default function SignInForm() {
 
       // Strict redirect for Faculty (NOT Managers/Admins/Owners)
       const isFaculty = data.user && hasRole(data.user, "Instructor") && !isManager(data.user) && !data.user.isAdmin && !isOwner(data.user);
-
       const isAC = data.user && hasRole(data.user, "Academic Coordinator");
+      const isITSupport = data.user && hasRole(data.user, "IT Support");
 
       if (isFaculty) {
         navigate("/calendar");
       } else if (isAC) {
         navigate("/batch-management");
+      } else if (isITSupport) {
+        navigate("/compute-lab/scheduler");
       } else {
         navigate("/");
       }
