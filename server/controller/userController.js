@@ -1184,16 +1184,19 @@ export const getUserUsageStats = async (req, res) => {
       accountStatus: 'Active'
     };
 
-    // Filter by brand if not admin
-    if (!isAdmin(req.user, accessBrandId)) {
-      // Get the requester's brands from the database since token might not have it
-      const requester = await userModel.findById(req.user.id).select('brands');
-      if (requester && requester.brands && requester.brands.length > 0) {
-        query.brands = { $in: requester.brands };
+    // Filter by brand if not global admin
+    if (!fullUser.isAdmin) {
+      const brandIds = (fullUser.brands || []).map(b => (b.brand?._id || b.brand || b).toString());
+
+      if (accessBrandId && brandIds.includes(accessBrandId)) {
+        // Strict filter by current brand if provided and user belongs to it
+        query["brands.brand"] = accessBrandId;
+      } else if (brandIds.length > 0) {
+        // Filter by all brands the user belongs to
+        query["brands.brand"] = { $in: brandIds };
       } else {
-        // If they have no brands associated, they shouldn't see anyone (except maybe themselves, but usually brand managers have brands)
-        // For safety, if they aren't admin and have no brands, return empty or limit to themselves
-        query._id = req.user.id;
+        // Fallback: only see themselves
+        query._id = fullUser._id;
       }
     }
 
