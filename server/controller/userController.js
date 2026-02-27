@@ -164,7 +164,8 @@ export const getUsersForDropdown = async (req, res) => {
     // Filter by roles if provided
     if (roles) {
       const roleArray = roles.split(',').map(r => r.trim());
-      query.roles = { $in: roleArray };
+      // Query nested roles within brands array
+      query["brands.roles"] = { $in: roleArray };
     }
 
     // Fetch only necessary user information for dropdown
@@ -187,14 +188,13 @@ export const getUsersForDropdown = async (req, res) => {
     });
 
     // Filter users by brand if brandId is provided
-    // (We do this in JS because brands involves array matching which can be tricky if not all users have brands array populated/consistent)
     let filteredUsers = users;
 
     // Check for scope access (Admin/Owner/Manager only)
     const accessBrandId = req.headers['x-brand-id'];
     const canAccessGlobal = isAdmin(req.user, accessBrandId) || isOwner(req.user, accessBrandId) || isManager(req.user, accessBrandId);
+
     if (scope === 'global' && canAccessGlobal) {
-      // If scope is global and user has permission, do NOT filter by brand
       filteredUsers = users;
     } else if (brandId) {
       filteredUsers = users.filter(user => {
@@ -203,7 +203,7 @@ export const getUsersForDropdown = async (req, res) => {
       });
     }
 
-    // Format avatar URLs if they exist
+    // Format avatar URLs and flatten roles for frontend convenience
     const formattedUsers = filteredUsers.map(user => ({
       _id: user._id,
       fullName: user.fullName,
@@ -218,7 +218,9 @@ export const getUsersForDropdown = async (req, res) => {
       location: user.location,
       dob: user.dob,
       designation: user.designation,
-      brands: user.brands || []
+      brands: user.brands || [],
+      // Flatten all roles across all brands into a single array for the frontend
+      roles: [...new Set((user.brands || []).flatMap(b => b.roles || []))]
     }));
 
     return res.status(200).json({ users: formattedUsers });
