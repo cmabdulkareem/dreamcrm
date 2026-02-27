@@ -1,4 +1,19 @@
 import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+dotenv.config({ path: join(__dirname, '.env') });
+
+const MONGODB_URI = process.env.MONGODB_URI;
+
+if (!MONGODB_URI) {
+    console.error('MONGODB_URI is not defined in .env');
+    process.exit(1);
+}
 
 // Minimal schema for migration
 const callListSchema = new mongoose.Schema({
@@ -7,56 +22,39 @@ const callListSchema = new mongoose.Schema({
 
 const CallList = mongoose.model('CallList', callListSchema);
 
-export async function runRemarksMigration() {
+async function migrate() {
     try {
-        console.log('Checking for legacy remarks migration...');
+        await mongoose.connect(MONGODB_URI);
+        console.log('Connected to MongoDB');
 
         // Find all documents where remarks is a string
         const entriesWithLegacyRemarks = await CallList.find({
             remarks: { $type: 'string' }
         });
 
-        if (entriesWithLegacyRemarks.length === 0) {
-            console.log('No legacy remarks found. Migration not needed.');
-            return;
-        }
-
-        console.log(`Found ${entriesWithLegacyRemarks.length} entries with legacy string remarks. Starting migration...`);
-
-        let successCount = 0;
-        let failCount = 0;
+        console.log(`Found ${entriesWithLegacyRemarks.length} entries with legacy string remarks.`);
 
         for (const entry of entriesWithLegacyRemarks) {
-            try {
-                const oldRemark = entry.remarks;
+            const oldRemark = entry.remarks;
 
-                // Convert to array format
-                entry.remarks = oldRemark.trim() ? [{
-                    remark: oldRemark.trim(),
-                    status: entry.status || 'pending',
-                    updatedBy: entry.createdBy || null,
-                    updatedOn: entry.createdAt || new Date()
-                }] : [];
+            // Convert to array format
+            // If empty string, start with empty array, else wrap the string as the first remark
+            entry.remarks = oldRemark.trim() ? [{
+                remark: oldRemark,
+                status: 'pending', // Fallback status
+                updatedOn: entry.createdAt || new Date()
+            }] : [];
 
-                await CallList.updateOne(
-                    { _id: entry._id },
-                    { $set: { remarks: entry.remarks } }
-                );
-
-                successCount++;
-                if (successCount % 100 === 0) {
-                    console.log(`Migrated ${successCount} entries...`);
-                }
-            } catch (err) {
-                console.error(`Failed to migrate entry ${entry._id}:`, err.message);
-                failCount++;
-            }
+            await entry.save();
+            console.log(`Migrated entry: ${entry._id}`);
         }
 
-        console.log(`Migration completed. Success: ${successCount}, Failed: ${failCount}`);
+        console.log('Migration completed successfully');
+        process.exit(0);
     } catch (error) {
         console.error('Migration failed:', error);
+        process.exit(1);
     }
 }
 
-
+migrate();

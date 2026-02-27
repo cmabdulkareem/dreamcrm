@@ -16,14 +16,10 @@ const callListSchema = new mongoose.Schema({
         trim: true,
         default: ''
     },
-    remarks: [
-        {
-            remark: { type: String, trim: true },
-            status: { type: String },
-            updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-            updatedOn: { type: Date, default: Date.now }
-        }
-    ],
+    remarks: {
+        type: mongoose.Schema.Types.Mixed,
+        default: []
+    },
 
     source: {
         type: String,
