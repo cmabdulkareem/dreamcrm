@@ -1169,7 +1169,12 @@ export const forgotPassword = async (req, res) => {
 export const getUserUsageStats = async (req, res) => {
   try {
     const accessBrandId = req.headers['x-brand-id'];
-    if (!isAdmin(req.user, accessBrandId) && !isOwner(req.user, accessBrandId) && !isManager(req.user, accessBrandId)) {
+
+    // Fetch full user to get brand-specific roles for permission check
+    const fullUser = await userModel.findById(req.user.id);
+    if (!fullUser) return res.status(404).json({ message: "User not found." });
+
+    if (!isAdmin(fullUser, accessBrandId) && !isOwner(fullUser, accessBrandId) && !isManager(fullUser, accessBrandId)) {
       return res.status(403).json({ message: "Access denied. Admin, Owner, or Manager privileges required." });
     }
 
