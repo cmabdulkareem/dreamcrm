@@ -55,7 +55,7 @@ const navItems = [
     ],
   },
   {
-    name: "Human Resources",
+    name: "EMS",
     icon: <UserCircleIcon />,
     subItems: [
       { name: "Dashboard", path: "/hr", pro: false },
@@ -65,9 +65,7 @@ const navItems = [
       // The sidebar component supports 1 level of subItems based on code reading.
       // So we will add them as Flat Booking style: "Recruitment: Jobs", etc. or just "Jobs", "Candidates".
       // Let's try to group them logically or just list them.
-      { name: "Job Postings", path: "/hr/recruitment/jobs", pro: false },
-      { name: "Candidates", path: "/hr/recruitment/candidates", pro: false },
-      { name: "Interviews", path: "/hr/recruitment/interviews", pro: false },
+      { name: "Recruitment & Candidates", path: "/hr/recruitment/candidates", pro: false },
       { name: "Leave Requests", path: "/leave-management/requests", pro: false },
       { name: "Payroll", path: "/hr/payroll", pro: false },
     ]

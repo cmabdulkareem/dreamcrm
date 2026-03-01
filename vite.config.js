@@ -26,9 +26,9 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 6000000, // 6MB
       },
       manifest: {
-        name: 'DreamCRM',
-        short_name: 'DreamCRM',
-        description: 'DreamCRM - Your Business Management Solution',
+        name: 'CDC Insights',
+        short_name: 'CDC Insights',
+        description: 'CDC Insights - Your Business Management Solution',
         theme_color: '#ffffff',
         background_color: '#ffffff',
         display: 'standalone',

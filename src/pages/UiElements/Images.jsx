@@ -9,8 +9,8 @@ export default function Images() {
   return (
     <>
       <PageMeta
-        title="Images | DreamCRM"
-        description="Images page for DreamCRM"
+        title="Images | CDC Insights"
+        description="Images page for CDC Insights"
       />
       <PageBreadcrumb pageTitle="Images" />
       <div className="space-y-5 sm:space-y-6">

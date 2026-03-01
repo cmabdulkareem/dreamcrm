@@ -307,7 +307,7 @@ export default function EmailInbox() {
 
   return (
     <div>
-      <PageMeta title="Email Inbox | DreamCRM" description="Manage your emails" />
+      <PageMeta title="Email Inbox | CDC Insights" description="Manage your emails" />
       <PageBreadcrumb pageTitle="Email" />
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">

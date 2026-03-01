@@ -6,8 +6,8 @@ export default function SignIn() {
   return (
     <>
       <PageMeta
-        title="Sign In | DreamCRM"
-        description="Sign in to your DreamCRM account"
+        title="Sign In | CDC Insights"
+        description="Sign in to your CDC Insights account"
       />
       <AuthLayout>
         <SignInForm />

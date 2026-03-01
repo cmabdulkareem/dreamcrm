@@ -41,7 +41,6 @@ const EmployeeForm = lazy(() => import("./pages/HR/EmployeeForm"));
 const JobPostings = lazy(() => import('./pages/HR/Recruitment/JobPostings'));
 const JobForm = lazy(() => import('./pages/HR/Recruitment/JobForm'));
 const CandidateList = lazy(() => import('./pages/HR/Recruitment/CandidateList'));
-const InterviewSchedule = lazy(() => import("./pages/HR/Recruitment/InterviewSchedule"));
 const ManageEvents = lazy(() => import("./pages/EventManagement/ManageEvents"));
 const CreateEvent = lazy(() => import("./pages/EventManagement/CreateEvent"));
 const EventRegistrations = lazy(() => import("./pages/EventManagement/EventRegistrations"));
@@ -94,6 +93,7 @@ const StudentAttendance = lazy(() => import("./pages/StudentPortal/StudentAttend
 const StudentProfile = lazy(() => import("./pages/StudentPortal/StudentProfile"));
 const StudentRequests = lazy(() => import("./pages/StudentPortal/StudentRequests"));
 const ChangePassword = lazy(() => import("./pages/StudentPortal/ChangePassword"));
+const PublicJobApply = lazy(() => import("./pages/HR/Recruitment/PublicJobApply"));
 
 import PageMeta from "./components/common/PageMeta";
 
@@ -188,7 +188,6 @@ function App() {
                     <Route path="recruitment/jobs/new" element={<ProtectedRoutes allowedRoles={[...HR_ROLES, ...MANAGER_ROLES]}><Suspense fallback={<LoadingSpinner />}><JobForm /></Suspense></ProtectedRoutes>} />
                     <Route path="recruitment/jobs/:id/edit" element={<ProtectedRoutes allowedRoles={[...HR_ROLES, ...MANAGER_ROLES]}><Suspense fallback={<LoadingSpinner />}><JobForm /></Suspense></ProtectedRoutes>} />
                     <Route path="recruitment/candidates" element={<ProtectedRoutes allowedRoles={[...HR_ROLES, ...MANAGER_ROLES]}><Suspense fallback={<LoadingSpinner />}><CandidateList /></Suspense></ProtectedRoutes>} />
-                    <Route path="recruitment/interviews" element={<ProtectedRoutes allowedRoles={[...HR_ROLES, ...MANAGER_ROLES]}><Suspense fallback={<LoadingSpinner />}><InterviewSchedule /></Suspense></ProtectedRoutes>} />
                     <Route path="payroll" element={<ProtectedRoutes allowedRoles={[...HR_ROLES, ...MANAGER_ROLES]}><div className="p-6">Payroll Module Coming Soon</div></ProtectedRoutes>} />
                   </Route>
 
@@ -216,6 +215,7 @@ function App() {
                 {/* Public Routes */}
                 <Route path="/event-registration/:link" element={<EventRegistration />} />
                 <Route path="/public/attendance/:shareToken" element={<PublicAttendance />} />
+                <Route path="/jobs/apply/:id" element={<Suspense fallback={<LoadingSpinner />}><PublicJobApply /></Suspense>} />
 
                 {/* Student Portal Routes */}
                 <Route path="/student/signup" element={<Suspense fallback={<LoadingSpinner />}><StudentSignup /></Suspense>} />

@@ -600,7 +600,7 @@ export default function NewStudent() {
   return (
     <div>
       <PageMeta
-        title="New Student | DreamCRM"
+        title="New Student | CDC Insights"
         description="Add new student here"
       />
       <PageBreadcrumb pageTitle="New Student" />

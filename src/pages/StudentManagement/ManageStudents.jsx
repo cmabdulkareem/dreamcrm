@@ -510,7 +510,7 @@ export default function ManageStudents() {
   return (
     <div>
       <PageMeta
-        title="Manage Students | DreamCRM"
+        title="Manage Students | CDC Insights"
         description="Manage your students here"
       />
       <PageBreadcrumb pageTitle="Manage Students" />

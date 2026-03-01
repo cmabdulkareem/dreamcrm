@@ -10,8 +10,8 @@ export default function Home() {
   return (
     <>
       <PageMeta
-        title="Revenue Overview | DreamCRM"
-        description="Revenue Overview Dashboard for DreamCRM"
+        title="Revenue Overview | CDC Insights"
+        description="Revenue Overview Dashboard for CDC Insights"
       />
       <div className="grid grid-cols-12 gap-4 md:gap-6">
         <div className="col-span-12 space-y-6 xl:col-span-7">

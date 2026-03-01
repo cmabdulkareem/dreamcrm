@@ -7,8 +7,8 @@ export default function LineChart() {
   return (
     <>
       <PageMeta
-        title="Performance | DreamCRM"
-        description="Performance Dashboard for DreamCRM"
+        title="Performance | CDC Insights"
+        description="Performance Dashboard for CDC Insights"
       />
       <PageBreadcrumb pageTitle="Line Chart" />
       <div className="space-y-6">

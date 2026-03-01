@@ -365,7 +365,7 @@ const CourseManagement = () => {
   return (
     <div>
       <PageMeta
-        title="Course Management | DreamCRM"
+        title="Course Management | CDC Insights"
         description="Manage courses and categories here"
       />
       <PageBreadcrumb pageTitle="Course Management" />

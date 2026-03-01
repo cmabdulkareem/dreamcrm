@@ -154,5 +154,57 @@ export const hrService = {
             toast.error(error.response?.data?.message || "Failed to load interviews");
             return [];
         }
+    },
+
+    // Public Job Methods
+    getPublicJob: async (id) => {
+        try {
+            const response = await axios.get(`${API}/hr/public/jobs/${id}`);
+            return response.data;
+        } catch (error) {
+            throw new Error(error.response?.data?.message || "Failed to fetch job details");
+        }
+    },
+
+    submitApplication: async (data) => {
+        try {
+            const response = await axios.post(`${API}/hr/jobs/apply`, data);
+            toast.success('Application submitted successfully!');
+            return response.data;
+        } catch (error) {
+            throw new Error(error.response?.data?.message || "Failed to submit application");
+        }
+    },
+
+    getJobApplications: async (id) => {
+        try {
+            const response = await axios.get(`${API}/hr/jobs/${id}/applications`, { withCredentials: true });
+            return response.data;
+        } catch (error) {
+            console.error("Failed to fetch applications", error);
+            toast.error(error.response?.data?.message || "Failed to load applications");
+            return [];
+        }
+    },
+
+    getAllApplications: async () => {
+        try {
+            const response = await axios.get(`${API}/hr/applications`, { withCredentials: true });
+            return response.data;
+        } catch (error) {
+            console.error("Failed to fetch all applications", error);
+            toast.error(error.response?.data?.message || "Failed to load candidates");
+            return [];
+        }
+    },
+
+    updateApplicationStatus: async (id, status, remark) => {
+        try {
+            const response = await axios.patch(`${API}/hr/applications/${id}/status`, { status, remark }, { withCredentials: true });
+            return response.data;
+        } catch (error) {
+            console.error("Failed to update application status", error);
+            throw new Error(error.response?.data?.message || "Failed to update status");
+        }
     }
 };

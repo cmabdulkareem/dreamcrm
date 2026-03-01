@@ -187,7 +187,7 @@ const ApplyLeave = () => {
                                     value={formData.reason}
                                     onChange={handleInputChange}
                                     rows="4"
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-hidden focus:ring-3 focus:ring-brand-500/20 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 bg-transparent text-gray-800 focus:border-brand-300 dark:border-gray-700 dark:focus:border-brand-800 rounded-lg shadow-theme-xs"
+                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-hidden focus:ring-3 focus:ring-blue-950/10 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 bg-transparent text-gray-800 focus:border-blue-950 dark:border-gray-700 dark:focus:border-blue-800 rounded-lg shadow-theme-xs"
                                     required
                                 ></textarea>
                             </div>
@@ -203,7 +203,7 @@ const ApplyLeave = () => {
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="px-4 py-2 bg-brand-500 text-white rounded-md hover:bg-brand-600 disabled:opacity-50"
+                                    className="px-4 py-2 bg-blue-950 text-white rounded-md hover:bg-blue-900 disabled:opacity-50 transition-colors"
                                 >
                                     {loading ? 'Submitting...' : 'Submit Request'}
                                 </button>
@@ -216,7 +216,7 @@ const ApplyLeave = () => {
                             Want to check your leave usage?{' '}
                             <Link
                                 to="/leave-management/my-leaves"
-                                className="text-brand-500 dark:text-brand-400 hover:underline"
+                                className="text-blue-950 dark:text-blue-400 hover:underline"
                             >
                                 View My Leaves
                             </Link>

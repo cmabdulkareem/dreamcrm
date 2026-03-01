@@ -73,7 +73,7 @@ const InstallPWA = () => {
 
         toast.info(
             <div className="flex flex-col gap-2 p-1 text-left">
-                <p className="font-bold text-gray-800 dark:text-white">Install DreamCRM on iOS</p>
+                <p className="font-bold text-gray-800 dark:text-white">Install CDC Insights on iOS</p>
                 <p className="text-xs text-gray-600 dark:text-gray-300">
                     Tap the <span className="font-bold">Share</span> button (the square with an arrow) and then select <span className="font-bold">Add to Home Screen</span>.
                 </p>
@@ -105,7 +105,7 @@ const InstallPWA = () => {
 
         toast.info(
             <div className="flex flex-col gap-2 p-1 text-left">
-                <p className="font-bold text-gray-800 dark:text-white">Install DreamCRM App</p>
+                <p className="font-bold text-gray-800 dark:text-white">Install CDC Insights App</p>
                 <p className="text-xs text-gray-600 dark:text-gray-300">Get a better mobile experience and faster access by installing our app.</p>
                 <div className="flex gap-2 justify-end mt-1">
                     <button

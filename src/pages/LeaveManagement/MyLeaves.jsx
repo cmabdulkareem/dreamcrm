@@ -89,7 +89,7 @@ const MyLeaves = () => {
                             <p className="text-gray-500 dark:text-gray-400 mb-4">No leave records found.</p>
                             <Link
                                 to="/leave-management/apply"
-                                className="px-4 py-2 bg-brand-500 text-white rounded-md hover:bg-brand-600"
+                                className="px-4 py-2 bg-blue-950 text-white rounded-md hover:bg-blue-900 transition-colors"
                             >
                                 Apply for Leave
                             </Link>

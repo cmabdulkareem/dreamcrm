@@ -55,7 +55,7 @@ export default function BatchManagement() {
     return (
         <div className="p-4 md:p-6">
             <PageMeta
-                title="Batch Management | DreamCRM"
+                title="Batch Management | CDC Insights"
                 description="Manage students in structured batches"
             />
             <PageBreadcrumb pageTitle="Batch Management" />

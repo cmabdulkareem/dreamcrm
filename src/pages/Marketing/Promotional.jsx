@@ -178,7 +178,7 @@ export default function Promotional() {
 
     return (
         <div className="p-6">
-            <PageMeta title="Promotional Materials | DreamCRM" />
+            <PageMeta title="Promotional Materials | CDC Insights" />
             <PageBreadcrumb
                 pageTitle="Promotional Materials"
                 items={[

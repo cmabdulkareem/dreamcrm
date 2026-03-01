@@ -27,7 +27,7 @@ const sendPasswordResetEmail = async (user, resetUrl) => {
     console.log('Sending password reset email via Brevo to:', user.email);
 
     const sendSmtpEmail = new brevo.SendSmtpEmail();
-    sendSmtpEmail.sender = { email: process.env.EMAIL_FROM, name: 'DreamCRM' };
+    sendSmtpEmail.sender = { email: process.env.EMAIL_FROM, name: 'CDC Insights' };
     sendSmtpEmail.to = [{ email: user.email, name: user.fullName }];
     sendSmtpEmail.subject = 'Password Reset Request';
     sendSmtpEmail.htmlContent = `
@@ -79,7 +79,7 @@ const sendPasswordResetEmail = async (user, resetUrl) => {
 const sendWelcomeEmail = async (user) => {
   try {
     const sendSmtpEmail = new brevo.SendSmtpEmail();
-    sendSmtpEmail.sender = { email: process.env.EMAIL_FROM, name: 'DreamCRM' };
+    sendSmtpEmail.sender = { email: process.env.EMAIL_FROM, name: 'CDC Insights' };
     sendSmtpEmail.to = [{ email: user.email, name: user.fullName }];
     sendSmtpEmail.subject = 'Welcome to Our CRM System!';
     sendSmtpEmail.htmlContent = `
@@ -124,7 +124,7 @@ const sendNewUserNotification = async (user, adminEmails) => {
     if (!adminEmails?.length) return;
 
     const sendSmtpEmail = new brevo.SendSmtpEmail();
-    sendSmtpEmail.sender = { email: process.env.EMAIL_FROM, name: 'DreamCRM' };
+    sendSmtpEmail.sender = { email: process.env.EMAIL_FROM, name: 'CDC Insights' };
     sendSmtpEmail.to = adminEmails.map(email => ({ email }));
     sendSmtpEmail.subject = 'New User Registration';
     sendSmtpEmail.htmlContent = `

@@ -125,7 +125,7 @@ const EmployeeForm = () => {
                     </div>
                     <div className="flex justify-end gap-4">
                         <button type="button" onClick={() => navigate('/hr/employees')} className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700">Cancel</button>
-                        <button type="submit" className="px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600">Save Employee</button>
+                        <button type="submit" className="px-4 py-2 bg-blue-950 text-white rounded-lg hover:bg-blue-900 transition-colors">Save Employee</button>
                     </div>
                 </form>
             </ComponentCard>

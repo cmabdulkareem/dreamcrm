@@ -36,11 +36,11 @@ const ReceiptVoucher = ({ receipt, onPrint, onClose }) => {
                 <div className="flex justify-between items-start mb-10">
                     <div className="flex flex-col gap-4">
                         <div className="flex items-center gap-3">
-                            <img src="/images/logo/logo.svg" alt="DreamCRM Logo" className="h-10 w-auto print:h-12" />
+                            <img src="/images/logo/logo.svg" alt="CDC Insights Logo" className="h-10 w-auto print:h-12" />
                         </div>
                         <div className="space-y-0.5">
                             <h2 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">
-                                {receipt.brand?.name || 'DreamCRM'}
+                                {receipt.brand?.name || 'CDC Insights'}
                             </h2>
                             <div className="text-[13px] text-gray-500 dark:text-gray-400 leading-normal max-w-[250px]">
                                 <p>3rd Floor, Square 9 Mall,</p>

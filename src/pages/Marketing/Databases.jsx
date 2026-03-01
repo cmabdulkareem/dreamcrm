@@ -304,7 +304,7 @@ const Databases = () => {
 
     return (
         <div className="p-6">
-            <PageMeta title="Prospect Databases | DreamCRM" description="Manage schools, streams, classes and students" />
+            <PageMeta title="Prospect Databases | CDC Insights" description="Manage schools, streams, classes and students" />
 
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                 <div>

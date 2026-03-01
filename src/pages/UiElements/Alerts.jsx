@@ -7,8 +7,8 @@ export default function Alerts() {
   return (
     <>
       <PageMeta
-        title="Alerts | DreamCRM"
-        description="Alerts page for DreamCRM"
+        title="Alerts | CDC Insights"
+        description="Alerts page for CDC Insights"
       />
       <PageBreadcrumb pageTitle="Alerts" />
       <div className="space-y-5 sm:space-y-6">

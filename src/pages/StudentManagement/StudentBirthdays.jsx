@@ -77,7 +77,7 @@ const StudentBirthdays = () => {
     return (
         <>
             <PageMeta
-                title="Student Birthdays | DreamCRM"
+                title="Student Birthdays | CDC Insights"
                 description="View student birthdays on a calendar"
             />
 

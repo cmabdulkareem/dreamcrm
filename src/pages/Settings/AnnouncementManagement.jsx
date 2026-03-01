@@ -259,7 +259,7 @@ const AnnouncementManagement = () => {
   return (
     <>
       <PageMeta
-        title="Announcement Management | DreamCRM"
+        title="Announcement Management | CDC Insights"
         description="Create and manage system announcements"
       />
 

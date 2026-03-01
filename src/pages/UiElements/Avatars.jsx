@@ -7,8 +7,8 @@ export default function Avatars() {
   return (
     <>
       <PageMeta
-        title="Avatars | DreamCRM"
-        description="Avatars page for DreamCRM"
+        title="Avatars | CDC Insights"
+        description="Avatars page for CDC Insights"
       />
       <PageBreadcrumb pageTitle="Avatars" />
       <div className="space-y-5 sm:space-y-6">

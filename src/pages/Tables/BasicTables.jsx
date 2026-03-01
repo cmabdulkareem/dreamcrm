@@ -7,8 +7,8 @@ export default function BasicTables() {
   return (
     <>
       <PageMeta
-        title="Basic Tables | DreamCRM"
-        description="Basic Tables for DreamCRM"
+        title="Basic Tables | CDC Insights"
+        description="Basic Tables for CDC Insights"
       />
       <PageBreadcrumb pageTitle="Basic Tables" />
       <div className="space-y-6">

@@ -676,7 +676,7 @@ export default function CallList() {
     return (
         <div className="">
             <PageMeta
-                title="Cold Call list | DreamCRM"
+                title="Cold Call list | CDC Insights"
                 description="Manage customer contact information"
             />
             <PageBreadcrumb pageTitle="Manage Your Cold Call Lists Here" />

@@ -45,7 +45,7 @@ const JobPostings = () => {
             <ComponentCard
                 title="Job Postings"
                 action={
-                    <Link to="/hr/recruitment/jobs/new" className="flex items-center gap-2 bg-brand-500 text-white px-4 py-2 rounded-lg hover:bg-brand-600 transition-colors">
+                    <Link to="/hr/recruitment/jobs/new" className="flex items-center gap-2 bg-blue-950 text-white px-4 py-2 rounded-lg hover:bg-blue-900 transition-colors">
                         <PlusIcon className="w-5 h-5" />
                         <span>Post Job</span>
                     </Link>

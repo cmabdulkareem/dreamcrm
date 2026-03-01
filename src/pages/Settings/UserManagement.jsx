@@ -426,7 +426,7 @@ const UserManagement = () => {
   if (!currentUser?.isAdmin) {
     return (
       <div>
-        <PageMeta title="Access Denied | DreamCRM" description="Access denied" />
+        <PageMeta title="Access Denied | CDC Insights" description="Access denied" />
         <PageBreadcrumb pageTitle="Access Denied" />
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
@@ -445,7 +445,7 @@ const UserManagement = () => {
   return (
     <div>
       <PageMeta
-        title="User Management | DreamCRM"
+        title="User Management | CDC Insights"
         description="Manage users and assign roles"
       />
       <PageBreadcrumb pageTitle="User Management" />

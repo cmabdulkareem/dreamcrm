@@ -1,6 +1,8 @@
 import React from "react";
 
 const TextArea = ({
+  name,          // 👈 add this
+  id,            // 👈 add this
   placeholder = "Enter your message", // Default placeholder
   rows = 3, // Default number of rows
   value = "", // Default value
@@ -12,7 +14,7 @@ const TextArea = ({
 }) => {
   const handleChange = (e) => {
     if (onChange) {
-      onChange(e.target.value);
+      onChange(e);
     }
   };
 
@@ -29,6 +31,8 @@ const TextArea = ({
   return (
     <div className="relative">
       <textarea
+        name={name}        // 👈 pass it
+        id={id}            // 👈 pass it
         placeholder={placeholder}
         rows={rows}
         value={value}
@@ -38,9 +42,8 @@ const TextArea = ({
       />
       {hint && (
         <p
-          className={`mt-2 text-sm ${
-            error ? "text-error-500" : "text-gray-500 dark:text-gray-400"
-          }`}
+          className={`mt-2 text-sm ${error ? "text-error-500" : "text-gray-500 dark:text-gray-400"
+            }`}
         >
           {hint}
         </p>

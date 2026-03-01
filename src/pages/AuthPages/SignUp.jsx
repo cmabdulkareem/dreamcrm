@@ -7,7 +7,7 @@ export default function SignUp() {
     <>
       <PageMeta
         title="SignUp for Dream CRM | Take your first step to lead your business"
-        description="Sign up for DreamCRM"
+        description="Sign up for CDC Insights"
       />
       <AuthLayout>
         <SignUpForm />
