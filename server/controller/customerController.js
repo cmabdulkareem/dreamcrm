@@ -214,7 +214,6 @@ export const getAllCustomers = async (req, res) => {
     const hasManagerAccess = isManager(req.user, brandId);
     const hasCounsellorAccess = isCounsellor(req.user, brandId);
 
-    console.log(`[DEBUG] getAllCustomers: user=${req.user.email}, headerBrandId=${brandId}, hasAdminAccess=${hasAdminAccess}, hasManagerAccess=${hasManagerAccess}`);
 
     let query = { ...req.brandFilter };
 
@@ -223,7 +222,6 @@ export const getAllCustomers = async (req, res) => {
       const { getManagedBrandIds } = await import('../utils/roleHelpers.js');
       const managedBrandIds = getManagedBrandIds(req.user);
 
-      console.log(`[DEBUG] getAllCustomers: Granular filtering. Managed Brands: ${managedBrandIds.length}`);
 
       query = {
         ...query,
@@ -239,7 +237,6 @@ export const getAllCustomers = async (req, res) => {
       query.assignedTo = req.user._id || req.user.id;
     }
 
-    console.log(`[DEBUG] getAllCustomers: Final Query:`, JSON.stringify(query));
 
     const customers = await customerModel.find(query)
       .populate('assignedTo', 'fullName email')
@@ -247,7 +244,6 @@ export const getAllCustomers = async (req, res) => {
       .populate('createdBy', 'fullName email') // Populate creator
       .sort({ createdAt: -1 });
 
-    console.log(`[DEBUG] getAllCustomers: Returning ${customers.length} leads.`);
     return res.status(200).json({ customers });
   } catch (error) {
     console.error("Error fetching customers:", error);

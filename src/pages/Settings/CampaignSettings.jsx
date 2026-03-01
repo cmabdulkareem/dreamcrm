@@ -24,7 +24,7 @@ import { isManager } from "../../utils/roleHelpers";
 import API from "../../config/api";
 
 export default function CampaignSettings() {
-  const { user } = useContext(AuthContext);
+  const { user, selectedBrand } = useContext(AuthContext);
   const { addNotification } = useNotifications();
 
   // Check if user has appropriate role (Owner, Admin, Centre Head/Manager)
@@ -45,17 +45,26 @@ export default function CampaignSettings() {
   const { isOpen: isEditOpen, openModal: openEditModal, closeModal: closeEditModal } = useModal();
   const { isOpen: isDeleteOpen, openModal: openDeleteModal, closeModal: closeDeleteModal } = useModal();
 
+  // Refetch when global selectedBrand changes
   useEffect(() => {
-    if (hasAccess) {
+    if (selectedBrand?._id) {
       fetchCampaigns();
     } else {
+      setCampaigns([]);
       setLoading(false);
     }
-  }, [hasAccess]);
+  }, [selectedBrand]);
+
 
   const fetchCampaigns = async () => {
     try {
-      const response = await axios.get(`${API}/campaigns/all`, { withCredentials: true });
+      const brandId = selectedBrand?._id;
+      if (!brandId) return;
+      setLoading(true);
+      const response = await axios.get(`${API}/campaigns/all`, {
+        withCredentials: true,
+        headers: { 'x-brand-id': brandId }
+      });
       setCampaigns(response.data.campaigns);
       setLoading(false);
     } catch (error) {
@@ -110,7 +119,7 @@ export default function CampaignSettings() {
           cashback: cashback ? parseFloat(cashback) : 0,
           isActive
         },
-        { withCredentials: true }
+        { withCredentials: true, headers: { 'x-brand-id': selectedBrand?._id } }
       );
 
       toast.success("Campaign created successfully!");
@@ -150,7 +159,7 @@ export default function CampaignSettings() {
           cashback: cashback ? parseFloat(cashback) : 0,
           isActive
         },
-        { withCredentials: true }
+        { withCredentials: true, headers: { 'x-brand-id': selectedBrand?._id } }
       );
 
       toast.success("Campaign updated successfully!");
@@ -178,7 +187,7 @@ export default function CampaignSettings() {
     try {
       await axios.delete(
         `${API}/campaigns/delete/${selectedCampaign._id}`,
-        { withCredentials: true }
+        { withCredentials: true, headers: { 'x-brand-id': selectedBrand?._id } }
       );
 
       toast.success("Campaign deleted successfully!");
@@ -243,6 +252,14 @@ export default function CampaignSettings() {
               Manage campaigns used across the CRM system
             </p>
           </div>
+        </div>
+
+        <div className="flex items-center justify-between bg-white dark:bg-white/[0.03] p-4 rounded-xl border border-gray-200 dark:border-gray-800">
+          <div>
+            <p className="text-sm text-gray-500">
+              Selected Brand: <span className="font-semibold text-gray-700 dark:text-white/90">{selectedBrand?.name || "None"}</span>
+            </p>
+          </div>
           <Button onClick={handleAdd} endIcon={<PlusIcon className="size-5" />}>
             Add Campaign
           </Button>
@@ -271,7 +288,7 @@ export default function CampaignSettings() {
                   {campaigns.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={6} className="py-8 text-center text-gray-500">
-                        No campaigns found. Create your first campaign!
+                        {selectedBrand?._id ? "No campaigns found. Create your first campaign!" : "Please select a brand from the switcher to view campaigns."}
                       </TableCell>
                     </TableRow>
                   ) : (

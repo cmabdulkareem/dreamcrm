@@ -1,19 +1,31 @@
-import courseCategoryModel from '../model/courseCategoryModel.js';
+import Brand from '../model/brandModel.js';
 
 // Get all categories
 export const getAllCategories = async (req, res) => {
     try {
-        const brandId = req.brandFilter?.brand || req.headers['x-brand-id'];
+        const headerBrandId = req.headers['x-brand-id'];
+        let query = {};
 
-        let finalQuery = {};
-        if (req.brandFilter) {
-            finalQuery = { ...req.brandFilter };
-        } else if (req.headers['x-brand-id']) {
-            finalQuery = { brand: req.headers['x-brand-id'] };
+        if (headerBrandId) {
+            query._id = headerBrandId;
+        } else if (req.brandFilter) {
+            if (req.brandFilter.brand) {
+                query._id = req.brandFilter.brand;
+            } else {
+                query = req.brandFilter;
+            }
         }
 
-        const categories = await courseCategoryModel.find(finalQuery).sort({ createdAt: -1 });
-        return res.status(200).json({ categories });
+        const brands = await Brand.find(query);
+        if (!brands || brands.length === 0) {
+            if (headerBrandId) return res.status(404).json({ message: "Brand not found" });
+            return res.status(200).json({ categories: [] });
+        }
+
+        let allCategories = brands.flatMap(brand => brand.courseCategories || []);
+        allCategories.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+        return res.status(200).json({ categories: allCategories });
     } catch (error) {
         console.error("Error fetching categories:", error);
         return res.status(500).json({ message: "Internal server error" });
@@ -25,28 +37,26 @@ export const createCategory = async (req, res) => {
     try {
         const { name, description, isActive } = req.body;
         const brandId = req.brandFilter?.brand || req.headers['x-brand-id'] || null;
+        if (!brandId) return res.status(400).json({ message: "Brand ID is required" });
+
+        const brand = await Brand.findById(brandId);
+        if (!brand) return res.status(404).json({ message: "Brand not found" });
 
         // Check if category with this name already exists for this brand
-        const existingCategory = await courseCategoryModel.findOne({
-            name,
-            brand: brandId
-        });
-        if (existingCategory) {
-            return res.status(400).json({ message: "Category with this name already exists." });
-        }
+        const exists = brand.courseCategories.some(c => c.name === name);
+        if (exists) return res.status(400).json({ message: "Category with this name already exists." });
 
-        const newCategory = new courseCategoryModel({
+        brand.courseCategories.push({
             name,
             description,
-            isActive: isActive === 'true' || isActive === true,
-            brand: brandId
+            isActive: isActive === 'true' || isActive === true
         });
 
-        await newCategory.save();
+        await brand.save();
 
         return res.status(201).json({
             message: "Category created successfully.",
-            category: newCategory
+            category: brand.courseCategories[brand.courseCategories.length - 1]
         });
     } catch (error) {
         console.error("Create category error:", error);
@@ -60,27 +70,20 @@ export const updateCategory = async (req, res) => {
         const { id } = req.params;
         const updateData = req.body;
 
-        const category = await courseCategoryModel.findById(id);
-        if (!category) {
-            return res.status(404).json({ message: "Category not found." });
-        }
+        const brand = await Brand.findOne({ "courseCategories._id": id });
+        if (!brand) return res.status(404).json({ message: "Category not found." });
 
-        // Update fields
+        const category = brand.courseCategories.id(id);
+
         if (updateData.name && updateData.name !== category.name) {
-            const existingCategory = await courseCategoryModel.findOne({
-                name: updateData.name,
-                brand: category.brand,
-                _id: { $ne: id }
-            });
-            if (existingCategory) {
-                return res.status(400).json({ message: "Category with this name already exists for this brand." });
-            }
+            const exists = brand.courseCategories.some(c => c._id.toString() !== id && c.name === updateData.name);
+            if (exists) return res.status(400).json({ message: "Category with this name already exists for this brand." });
             category.name = updateData.name;
         }
         if (updateData.description !== undefined) category.description = updateData.description;
         if (updateData.isActive !== undefined) category.isActive = updateData.isActive === 'true' || updateData.isActive === true;
 
-        await category.save();
+        await brand.save();
 
         return res.status(200).json({
             message: "Category updated successfully.",
@@ -97,10 +100,11 @@ export const deleteCategory = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const category = await courseCategoryModel.findByIdAndDelete(id);
-        if (!category) {
-            return res.status(404).json({ message: "Category not found." });
-        }
+        const brand = await Brand.findOne({ "courseCategories._id": id });
+        if (!brand) return res.status(404).json({ message: "Category not found." });
+
+        brand.courseCategories.pull(id);
+        await brand.save();
 
         return res.status(200).json({ message: "Category deleted successfully." });
     } catch (error) {
@@ -114,13 +118,12 @@ export const toggleCategoryStatus = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const category = await courseCategoryModel.findById(id);
-        if (!category) {
-            return res.status(404).json({ message: "Category not found." });
-        }
+        const brand = await Brand.findOne({ "courseCategories._id": id });
+        if (!brand) return res.status(404).json({ message: "Category not found." });
 
+        const category = brand.courseCategories.id(id);
         category.isActive = !category.isActive;
-        await category.save();
+        await brand.save();
 
         return res.status(200).json({
             message: `Category ${category.isActive ? 'activated' : 'deactivated'} successfully.`,

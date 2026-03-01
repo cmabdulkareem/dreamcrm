@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import flatpickr from "flatpickr";
 import "flatpickr/dist/flatpickr.css";
 import Label from "./Label";
-import { CalenderIcon } from "../../icons";
+import { CalendarIcon } from "../../icons";
 
 export default function RangeDatePicker({
     id,
@@ -60,7 +60,7 @@ export default function RangeDatePicker({
                     data-toggle
                     className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-gray-500 transition-colors hover:text-brand-500 dark:text-gray-400"
                 >
-                    <CalenderIcon className="size-6" />
+                    <CalendarIcon className="size-6" />
                 </span>
             </div>
         </div>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { CalenderIcon, BellIcon } from "../../icons";
+import { CalendarIcon, BellIcon } from "../../icons";
 import Button from "../ui/button/Button";
 import Badge from "../ui/badge/Badge";
 import LoadingSpinner from "../common/LoadingSpinner";
@@ -195,14 +195,14 @@ export default function FollowUpsDue() {
             "Today",
             followUps.today,
             "warning",
-            <CalenderIcon className="size-5 text-orange-500" />
+            <CalendarIcon className="size-5 text-orange-500" />
           )}
 
           {followUps.upcoming.length > 0 && renderFollowUpList(
             "Upcoming (7 days)",
             followUps.upcoming,
             "info",
-            <CalenderIcon className="size-5 text-blue-500" />
+            <CalendarIcon className="size-5 text-blue-500" />
           )}
 
           {followUps.today.length === 0 &&

@@ -60,15 +60,19 @@ export default function FormElements() {
   const [leadRemarks, setLeadRemarks] = useState("");
   const [followUpDate, setFollowUpDate] = useState("");
   const [leadPotential, setLeadPotential] = useState(""); // Added state for lead potential
-  const [error, setError] = useState(false);
+    const [error, setError] = useState(false);
   const [phoneExists, setPhoneExists] = useState(false);
   const [checkingPhone, setCheckingPhone] = useState(false);
   const [campaignOptions, setCampaignOptions] = useState([]);
   const [contactPointOptions, setContactPointOptions] = useState([]);
   const [courseOptions, setCourseOptions] = useState([]); // Dynamic course options
+  const [brands, setBrands] = useState([]); // Brand options
+  const { selectedBrand: globalSelectedBrand } = useContext(AuthContext);
+  const [selectedBrand, setSelectedBrand] = useState(globalSelectedBrand?._id || "");
 
   // Validation error states
   const [validationErrors, setValidationErrors] = useState({});
+
 
   // Campaign modal states
   const { isOpen: isCampaignModalOpen, openModal: openCampaignModal, closeModal: closeCampaignModal } = useModal();
@@ -95,16 +99,47 @@ export default function FormElements() {
       sessionStorage.removeItem('prefillLeadData');
     }
 
-    fetchCampaigns();
-    fetchContactPoints();
-    fetchCourseCategories();
+    fetchBrands();
   }, []);
+
+  // Update selectedBrand when global selection changes
+  useEffect(() => {
+    if (globalSelectedBrand?._id && !selectedBrand) {
+      setSelectedBrand(globalSelectedBrand._id);
+    }
+  }, [globalSelectedBrand, selectedBrand]);
+
+  // Refetch dropdowns when selectedBrand changes
+  useEffect(() => {
+    if (selectedBrand) {
+      fetchCampaigns();
+      fetchContactPoints();
+      fetchCourseCategories();
+    } else {
+      setCampaignOptions([]);
+      setContactPointOptions([]);
+      setCourseOptions([]);
+    }
+  }, [selectedBrand]);
+
+  const fetchBrands = async () => {
+    try {
+      const response = await axios.get(`${API}/brands`, { withCredentials: true });
+      setBrands(response.data.brands || []);
+    } catch (error) {
+      console.error("Error fetching brands:", error);
+    }
+  };
 
   const fetchCourseCategories = async () => {
     try {
+      if (!selectedBrand) return;
       const response = await axios.get(
         `${API}/course-categories/all`,
-        { withCredentials: true }
+        {
+          withCredentials: true,
+          headers: { 'x-brand-id': selectedBrand }
+        }
       );
       const categories = response.data.categories.filter(c => c.isActive).map(c => ({
         value: c.name, // Using name as value to match existing data structure logic if needed, or ID
@@ -122,9 +157,13 @@ export default function FormElements() {
 
   const fetchCampaigns = async () => {
     try {
+      if (!selectedBrand) return;
       const response = await axios.get(
         `${API}/campaigns/active`,
-        { withCredentials: true }
+        {
+          withCredentials: true,
+          headers: { 'x-brand-id': selectedBrand }
+        }
       );
       const formattedCampaigns = response.data.campaigns.map(c => ({
         value: c.value,
@@ -151,9 +190,13 @@ export default function FormElements() {
 
   const fetchContactPoints = async () => {
     try {
+      if (!selectedBrand) return;
       const response = await axios.get(
         `${API}/contact-points/active`,
-        { withCredentials: true }
+        {
+          withCredentials: true,
+          headers: { 'x-brand-id': selectedBrand }
+        }
       );
       const formattedContactPoints = response.data.contactPoints.map(c => ({
         value: c.value,
@@ -213,8 +256,11 @@ export default function FormElements() {
     setCheckingPhone(true);
     try {
       const response = await axios.get(
-        `${API}/customers/check-phone?phone=${phone}`,
-        { withCredentials: true }
+        `${API}/customers/check-phone?phone=${phone}${selectedBrand ? `&brandId=${selectedBrand}` : ''}`,
+        {
+          withCredentials: true,
+          headers: selectedBrand ? { 'x-brand-id': selectedBrand } : {}
+        }
       );
       if (response.data.exists) {
         setPhoneExists(true);
@@ -286,7 +332,10 @@ export default function FormElements() {
           cashback: newCampaignCashback ? parseFloat(newCampaignCashback) : 0,
           isActive: newCampaignActive
         },
-        { withCredentials: true }
+        {
+          withCredentials: true,
+          headers: { 'x-brand-id': selectedBrand }
+        }
       );
 
       toast.success("Campaign created successfully!");
@@ -324,7 +373,10 @@ export default function FormElements() {
           description: newContactPointDesc,
           isActive: newContactPointActive
         },
-        { withCredentials: true }
+        {
+          withCredentials: true,
+          headers: { 'x-brand-id': selectedBrand }
+        }
       );
 
       toast.success("Contact point created successfully!");
@@ -352,6 +404,10 @@ export default function FormElements() {
 
     if (!fullName.trim()) {
       errors.fullName = "Full Name is required";
+    }
+
+    if (!selectedBrand) {
+      errors.selectedBrand = "Please select a brand";
     }
 
     // Email is optional, but if provided, it must be valid
@@ -482,7 +538,10 @@ export default function FormElements() {
       const response = await axios.post(
         `${API}/customers/create`,
         formData,
-        { withCredentials: true }
+        {
+          withCredentials: true,
+          headers: { 'x-brand-id': selectedBrand }
+        }
       );
 
       if (response.status === 201) {
@@ -563,7 +622,7 @@ export default function FormElements() {
             <ComponentCard title="Basic Details">
               <div className="space-y-6">
                 <div className="flex flex-col md:flex-row gap-4">
-                  <div className="w-full md:w-1/2">
+                  <div className="w-full md:w-1/3">
                     <Label htmlFor="firstName" required={true}>Full Name</Label>
                     <Input
                       type="text"
@@ -574,7 +633,17 @@ export default function FormElements() {
                       hint={validationErrors.fullName}
                     />
                   </div>
-                  <div className="w-full md:w-1/2">
+                  <div className="w-full md:w-1/3">
+                    <Label>Brand *</Label>
+                    <Select
+                      options={brands.map(b => ({ value: b._id, label: `${b.name} (${b.code})` }))}
+                      value={selectedBrand}
+                      placeholder="Select Brand"
+                      onChange={setSelectedBrand}
+                      error={!!validationErrors.selectedBrand}
+                    />
+                  </div>
+                  <div className="w-full md:w-1/3">
                     <Label>Email</Label>
                     <Input
                       type="email"

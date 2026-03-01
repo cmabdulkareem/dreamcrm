@@ -473,13 +473,10 @@ export const authCheck = async (req, res) => {
 // Get all users (admin only)
 export const getAllUsers = async (req, res) => {
   try {
-    console.log("getAllUsers V6 called.");
-    console.log("getAllUsers called. User:", req.user ? { id: req.user.id, isAdmin: req.user.isAdmin } : "No user");
 
     // Check if user is admin (backward compatible) or authorized for brand
     const accessBrandId = req.headers['x-brand-id'];
     if (!isAdmin(req.user, accessBrandId)) {
-      console.log("getAllUsers: Access denied. isAdmin returned false.");
       return res.status(403).json({ message: "Access denied. Admin privileges required." });
     }
 
@@ -490,7 +487,6 @@ export const getAllUsers = async (req, res) => {
         model: 'Brand'
       })
       .sort({ createdAt: -1 });
-    console.log("getAllUsers: Found", users.length, "users.");
     if (users.length > 0) {
       const sample = users.slice(0, 5).map(u => ({
         fullName: u.fullName,
@@ -498,7 +494,6 @@ export const getAllUsers = async (req, res) => {
         firstBrandPopulated: !!u.brands?.[0]?.brand?.name,
         firstBrandName: u.brands?.[0]?.brand?.name
       }));
-      console.log("User sample:", JSON.stringify(sample, null, 2));
     }
 
     // Format users with absolute avatar URLs

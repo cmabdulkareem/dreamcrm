@@ -123,6 +123,25 @@ export function emitNotification({ recipients, brandId, notification }) {
 	}
 }
 
+export function emitLabUpdate({ labId, brandIds, type, data }) {
+	if (!ioInstance) return;
+
+	const payload = { labId, type, data, timestamp: new Date() };
+
+	// 1. Notify specific brand rooms if provided
+	if (brandIds && Array.isArray(brandIds)) {
+		brandIds.forEach(brandId => {
+			const bId = normalizeId(brandId);
+			if (bId) {
+				ioInstance.to(`brand:${bId}`).emit('lab:update', payload);
+			}
+		});
+	}
+
+	// 2. Also notify general admin room
+	ioInstance.to('room:admin').emit('lab:update', payload);
+}
+
 export function getOnlineUsers() {
 	return Array.from(userIdToSocketIds.keys());
 }

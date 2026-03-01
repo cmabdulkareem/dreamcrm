@@ -107,6 +107,7 @@ export default function Softwares() {
                     <Button
                         size="sm"
                         onClick={openAdd}
+                        className="!bg-blue-950 hover:!bg-blue-900"
                         startIcon={<PlusIcon className="w-4 h-4" />}
                     >
                         Add Software
@@ -118,7 +119,7 @@ export default function Softwares() {
                     <input
                         value={search} onChange={e => setSearch(e.target.value)}
                         placeholder="Search by name or vendor..."
-                        className="w-full max-w-sm rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-2 text-sm bg-white dark:bg-gray-900 text-gray-800 dark:text-white outline-none focus:border-brand-500"
+                        className="w-full max-w-sm rounded-lg border border-gray-200 dark:border-gray-700 px-4 py-2 text-sm bg-white dark:bg-gray-900 text-gray-800 dark:text-white outline-none focus:border-blue-950"
                     />
                 </div>
 
@@ -163,7 +164,7 @@ export default function Softwares() {
                                                 <div className="flex flex-wrap gap-1">
                                                     {sw.installedOn?.length > 0
                                                         ? sw.installedOn.map(p => (
-                                                            <span key={p._id} className="text-[10px] font-bold bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400 px-2 py-0.5 rounded">{p.pcNumber}</span>
+                                                            <span key={p._id} className="text-[10px] font-bold bg-blue-50 dark:bg-blue-950/20 text-blue-900 dark:text-blue-300 px-2 py-0.5 rounded">{p.pcNumber}</span>
                                                         ))
                                                         : <span className="text-gray-400 text-xs">—</span>}
                                                 </div>
@@ -171,7 +172,7 @@ export default function Softwares() {
                                             <td className="px-6 py-4 text-gray-500 dark:text-gray-400">{sw.vendor || '—'}</td>
                                             <td className="px-6 py-4">
                                                 <div className="flex gap-4 items-center">
-                                                    <button onClick={() => openEdit(sw)} className="text-xs font-bold text-brand-500 hover:text-brand-600 uppercase tracking-wider">Edit</button>
+                                                    <button onClick={() => openEdit(sw)} className="text-xs font-bold text-blue-950 hover:text-blue-900 uppercase tracking-wider">Edit</button>
                                                     <button onClick={() => deleteSW(sw._id)} className="text-xs font-bold text-red-400 hover:text-red-500 uppercase tracking-wider">Delete</button>
                                                 </div>
                                             </td>
@@ -195,38 +196,38 @@ export default function Softwares() {
                             <div>
                                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-0.5">Application Name *</label>
                                 <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                                    placeholder="e.g. AutoCAD 2024" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-800 dark:text-white outline-none focus:border-brand-500" />
+                                    placeholder="e.g. AutoCAD 2024" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-800 dark:text-white outline-none focus:border-blue-950" />
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-0.5">Version</label>
                                     <input value={form.version} onChange={e => setForm(f => ({ ...f, version: e.target.value }))}
-                                        placeholder="2024.1" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-800 dark:text-white outline-none focus:border-brand-500" />
+                                        placeholder="2024.1" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-800 dark:text-white outline-none focus:border-blue-950" />
                                 </div>
                                 <div>
                                     <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-0.5">Vendor</label>
                                     <input value={form.vendor} onChange={e => setForm(f => ({ ...f, vendor: e.target.value }))}
-                                        placeholder="Autodesk" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-800 dark:text-white outline-none focus:border-brand-500" />
+                                        placeholder="Autodesk" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-800 dark:text-white outline-none focus:border-blue-950" />
                                 </div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-0.5">License Model</label>
                                     <select value={form.licenseType} onChange={e => setForm(f => ({ ...f, licenseType: e.target.value }))}
-                                        className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-800 dark:text-white outline-none focus:border-brand-500 uppercase font-bold text-[11px] tracking-wide">
+                                        className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-800 dark:text-white outline-none focus:border-blue-950 uppercase font-bold text-[11px] tracking-wide">
                                         {LICENSE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                                     </select>
                                 </div>
                                 <div>
                                     <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-0.5">Expiry Date</label>
                                     <input type="date" value={form.expiryDate} onChange={e => setForm(f => ({ ...f, expiryDate: e.target.value }))}
-                                        className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-800 dark:text-white outline-none focus:border-brand-500" />
+                                        className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-800 dark:text-white outline-none focus:border-blue-950" />
                                 </div>
                             </div>
                             <div>
                                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-0.5">License Key</label>
                                 <input value={form.licenseKey} onChange={e => setForm(f => ({ ...f, licenseKey: e.target.value }))}
-                                    placeholder="XXXX-XXXX-XXXX" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm font-mono text-gray-800 dark:text-white outline-none focus:border-brand-500" />
+                                    placeholder="XXXX-XXXX-XXXX" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm font-mono text-gray-800 dark:text-white outline-none focus:border-blue-950" />
                             </div>
                             {/* PC Selection */}
                             {pcs.length > 0 && (
@@ -239,8 +240,8 @@ export default function Softwares() {
                                                 type="button"
                                                 onClick={() => togglePC(pc._id)}
                                                 className={`text-[10px] font-bold px-3 py-1 rounded-full border transition-all ${form.installedOn.includes(pc._id)
-                                                    ? 'bg-brand-500 text-white border-brand-500 shadow-md scale-105'
-                                                    : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-brand-300'
+                                                    ? 'bg-blue-950 text-white border-blue-950 shadow-md scale-105'
+                                                    : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-blue-300'
                                                     }`}
                                             >
                                                 {pc.pcNumber}
@@ -252,12 +253,12 @@ export default function Softwares() {
                             <div>
                                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-0.5">Administrative Notes</label>
                                 <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-                                    rows={2} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-800 dark:text-white outline-none focus:border-brand-500 resize-none" />
+                                    rows={2} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-3 text-sm text-gray-800 dark:text-white outline-none focus:border-blue-950 resize-none" />
                             </div>
 
                             <div className="flex gap-4 mt-8 pt-4 border-t border-gray-100 dark:border-gray-800">
                                 <Button variant="outline" className="flex-1" onClick={() => setShowModal(false)} disabled={saving}>Cancel</Button>
-                                <Button type="submit" className="flex-1" disabled={saving || !form.name.trim()} loading={saving}>
+                                <Button type="submit" className="flex-1 !bg-blue-950 hover:!bg-blue-900" disabled={saving || !form.name.trim()} loading={saving}>
                                     {editing ? 'Update Registry' : 'Commit SW'}
                                 </Button>
                             </div>

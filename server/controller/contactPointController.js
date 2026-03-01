@@ -1,12 +1,32 @@
-import ContactPoint from '../model/contactPointModel.js';
+import Brand from '../model/brandModel.js';
 import Customer from '../model/customerModel.js';
 
 // Get all contact points
 export const getAllContactPoints = async (req, res) => {
   try {
-    const query = { ...req.brandFilter };
-    const contactPoints = await ContactPoint.find(query).sort({ createdAt: -1 });
-    return res.status(200).json({ contactPoints });
+    const headerBrandId = req.headers['x-brand-id'];
+    let query = {};
+
+    if (headerBrandId) {
+      query._id = headerBrandId;
+    } else if (req.brandFilter) {
+      if (req.brandFilter.brand) {
+        query._id = req.brandFilter.brand;
+      } else {
+        query = req.brandFilter;
+      }
+    }
+
+    const brands = await Brand.find(query);
+    if (!brands || brands.length === 0) {
+      if (headerBrandId) return res.status(404).json({ message: "Brand not found" });
+      return res.status(200).json({ contactPoints: [] });
+    }
+
+    let allContactPoints = brands.flatMap(brand => brand.contactPoints || []);
+    allContactPoints.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+    return res.status(200).json({ contactPoints: allContactPoints });
   } catch (error) {
     console.error('Get contact points error:', error);
     return res.status(500).json({ message: 'Server error' });
@@ -16,9 +36,29 @@ export const getAllContactPoints = async (req, res) => {
 // Get active contact points only (for dropdowns)
 export const getActiveContactPoints = async (req, res) => {
   try {
-    const query = { isActive: true, ...req.brandFilter };
-    const contactPoints = await ContactPoint.find(query).sort({ name: 1 });
-    return res.status(200).json({ contactPoints });
+    const headerBrandId = req.headers['x-brand-id'];
+    let query = {};
+
+    if (headerBrandId) {
+      query._id = headerBrandId;
+    } else if (req.brandFilter) {
+      if (req.brandFilter.brand) {
+        query._id = req.brandFilter.brand;
+      } else {
+        query = req.brandFilter;
+      }
+    }
+
+    const brands = await Brand.find(query);
+    if (!brands || brands.length === 0) {
+      if (headerBrandId) return res.status(404).json({ message: "Brand not found" });
+      return res.status(200).json({ contactPoints: [] });
+    }
+
+    let activeContactPoints = brands.flatMap(brand => brand.contactPoints || []).filter(cp => cp.isActive);
+    activeContactPoints.sort((a, b) => a.name.localeCompare(b.name));
+
+    return res.status(200).json({ contactPoints: activeContactPoints });
   } catch (error) {
     console.error('Get active contact points error:', error);
     return res.status(500).json({ message: 'Server error' });
@@ -29,54 +69,31 @@ export const getActiveContactPoints = async (req, res) => {
 export const createContactPoint = async (req, res) => {
   try {
     const { name, description, isActive } = req.body;
+    if (!name || !name.trim()) return res.status(400).json({ message: 'Contact point name is required' });
 
-    if (!name || !name.trim()) {
-      return res.status(400).json({ message: 'Contact point name is required' });
-    }
-
-    // Generate value from name (lowercase, replace spaces with hyphens)
     const value = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-
-    // Validate that value is not empty after processing
-    if (!value || value.trim() === '') {
-      return res.status(400).json({ message: 'Contact point name must contain at least one alphanumeric character' });
-    }
+    if (!value) return res.status(400).json({ message: 'Contact point name must contain at least one alphanumeric character' });
 
     const brandId = req.brandFilter?.brand || req.headers['x-brand-id'] || null;
+    if (!brandId) return res.status(400).json({ message: "Brand ID is required" });
 
-    // Check if contact point with same name or value exists within the same brand
-    const existingContactPoint = await ContactPoint.findOne({
-      brand: brandId,
-      $or: [{ name: name.trim() }, { value }]
-    });
+    const brand = await Brand.findById(brandId);
+    if (!brand) return res.status(404).json({ message: "Brand not found" });
 
-    if (existingContactPoint) {
-      return res.status(400).json({ message: 'Contact point already exists for this brand' });
-    }
+    const exists = brand.contactPoints.some(cp => cp.name === name.trim() || cp.value === value);
+    if (exists) return res.status(400).json({ message: 'Contact point already exists for this brand' });
 
-    const contactPoint = new ContactPoint({
+    brand.contactPoints.push({
       name: name.trim(),
       value,
       description: description ? description.trim() : '',
-      isActive: isActive !== undefined ? isActive : true,
-      brand: brandId // Strict brand assignment
+      isActive: isActive !== undefined ? isActive : true
     });
 
-    await contactPoint.save();
-    return res.status(201).json({ message: 'Contact point created successfully', contactPoint });
+    await brand.save();
+    return res.status(201).json({ message: 'Contact point created successfully', contactPoint: brand.contactPoints[brand.contactPoints.length - 1] });
   } catch (error) {
     console.error('Create contact point error:', error);
-
-    // Handle MongoDB duplicate key error
-    if (error.code === 11000) {
-      return res.status(400).json({ message: 'Contact point with this name or value already exists' });
-    }
-
-    // Handle Mongoose validation errors
-    if (error.name === 'ValidationError') {
-      return res.status(400).json({ message: error.message });
-    }
-
     return res.status(500).json({ message: 'Server error' });
   }
 };
@@ -87,86 +104,42 @@ export const updateContactPoint = async (req, res) => {
     const { id } = req.params;
     const { name, description, isActive } = req.body;
 
-    // Validate ObjectId format
-    if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
-      return res.status(400).json({ message: 'Invalid contact point ID' });
-    }
+    const brand = await Brand.findOne({ "contactPoints._id": id });
+    if (!brand) return res.status(404).json({ message: 'Contact point not found' });
 
-    const contactPoint = await ContactPoint.findById(id);
-    if (!contactPoint) {
-      return res.status(404).json({ message: 'Contact point not found' });
-    }
-
-    const oldName = contactPoint.name; // Capture old name
+    const contactPoint = brand.contactPoints.id(id);
 
     if (name !== undefined) {
       const trimmedName = name.trim();
-      if (!trimmedName) {
-        return res.status(400).json({ message: 'Contact point name is required' });
-      }
+      if (!trimmedName) return res.status(400).json({ message: 'Contact point name is required' });
 
       if (trimmedName !== contactPoint.name) {
-        // Generate new value from name
+        const oldValue = contactPoint.value;
+        const oldName = contactPoint.name;
         const newValue = trimmedName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 
-        // Validate that value is not empty after processing
-        if (!newValue || newValue.trim() === '') {
-          return res.status(400).json({ message: 'Contact point name must contain at least one alphanumeric character' });
-        }
+        if (!newValue) return res.status(400).json({ message: 'Contact point name must contain at least one alphanumeric character' });
 
-        // Check if new name or value already exists within the same brand
-        const existingContactPoint = await ContactPoint.findOne({
-          brand: contactPoint.brand,
-          _id: { $ne: id },
-          $or: [{ name: trimmedName }, { value: newValue }]
-        });
-
-        if (existingContactPoint) {
-          return res.status(400).json({ message: 'Contact point with this name or value already exists for this brand' });
-        }
-
-        const oldValue = contactPoint.value; // Capture old value
+        const exists = brand.contactPoints.some(cp => cp._id.toString() !== id && (cp.name === trimmedName || cp.value === newValue));
+        if (exists) return res.status(400).json({ message: 'Contact point with this name or value already exists for this brand' });
 
         contactPoint.name = trimmedName;
-        // Update value when name changes
         contactPoint.value = newValue;
 
-        // Update related customers
-        console.log(`Updating customers with contactPoint: "${oldName}" OR "${oldValue}" to "${newValue}" for brand: ${contactPoint.brand}`);
-        const updateResult = await Customer.updateMany(
-          {
-            contactPoint: { $in: [oldName, oldValue] },
-            brand: contactPoint.brand
-          },
+        await Customer.updateMany(
+          { contactPoint: { $in: [oldName, oldValue] }, brand: brand._id },
           { contactPoint: newValue }
         );
-        console.log('Update result:', updateResult);
       }
     }
 
     if (description !== undefined) contactPoint.description = description ? description.trim() : '';
     if (isActive !== undefined) contactPoint.isActive = isActive;
 
-    await contactPoint.save();
+    await brand.save();
     return res.status(200).json({ message: 'Contact point updated successfully', contactPoint });
   } catch (error) {
     console.error('Update contact point error:', error);
-
-    // Handle MongoDB duplicate key error
-    if (error.code === 11000) {
-      return res.status(400).json({ message: 'Contact point with this name or value already exists' });
-    }
-
-    // Handle Mongoose validation errors
-    if (error.name === 'ValidationError') {
-      return res.status(400).json({ message: error.message });
-    }
-
-    // Handle CastError (invalid ObjectId)
-    if (error.name === 'CastError') {
-      return res.status(400).json({ message: 'Invalid contact point ID' });
-    }
-
     return res.status(500).json({ message: 'Server error' });
   }
 };
@@ -176,25 +149,15 @@ export const deleteContactPoint = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Validate ObjectId format
-    if (!id || !id.match(/^[0-9a-fA-F]{24}$/)) {
-      return res.status(400).json({ message: 'Invalid contact point ID' });
-    }
+    const brand = await Brand.findOne({ "contactPoints._id": id });
+    if (!brand) return res.status(404).json({ message: 'Contact point not found' });
 
-    const contactPoint = await ContactPoint.findByIdAndDelete(id);
-    if (!contactPoint) {
-      return res.status(404).json({ message: 'Contact point not found' });
-    }
+    brand.contactPoints.pull(id);
+    await brand.save();
 
     return res.status(200).json({ message: 'Contact point deleted successfully' });
   } catch (error) {
     console.error('Delete contact point error:', error);
-
-    // Handle CastError (invalid ObjectId)
-    if (error.name === 'CastError') {
-      return res.status(400).json({ message: 'Invalid contact point ID' });
-    }
-
     return res.status(500).json({ message: 'Server error' });
   }
 };

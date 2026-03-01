@@ -6,7 +6,6 @@ import {
     getPCs, addPC, updatePC, deletePC,
     getSchedules, addSchedule, updateSchedule, deleteSchedule,
     getComplaints, addComplaint, updateComplaint, deleteComplaint,
-    getQueue, addToQueue, removeFromQueue,
     getRows, addRow, updateRow, deleteRow, addEmptySlot, removeEmptySlot
 } from "../controller/labController.js";
 
@@ -47,9 +46,24 @@ router.delete("/rows/:id", deleteRow);
 router.post("/rows/slots", addEmptySlot);
 router.delete("/rows/slots/:id", removeEmptySlot);
 
-// ─── Queue ───────────────────────────────────
+// ─── Lab Lifecycle (Queue & Sessions) ────────
+import {
+    getQueue, addToQueue, removeFromQueue,
+    assignSession, startSession, endSession, transferSession,
+    getActiveSessions, getLabAnalytics, getLabHistory
+} from "../controller/labController.js";
+
 router.get("/queue", getQueue);
 router.post("/queue", addToQueue);
 router.delete("/queue/:id", removeFromQueue);
+
+router.get("/sessions/active", getActiveSessions);
+router.post("/sessions/assign", assignSession);
+router.post("/sessions/:id/start", startSession);
+router.post("/sessions/:id/end", endSession);
+router.post("/sessions/:id/transfer", transferSession);
+
+router.get("/analytics/usage", getLabAnalytics);
+router.get("/history", getLabHistory);
 
 export default router;

@@ -5,7 +5,6 @@ import { AuthContext } from "../context/AuthContext";
 // Assume these icons are imported from an icon library
 import {
   BoxCubeIcon,
-  CalenderIcon,
   ChevronDownIcon,
   GridIcon,
   MoreDotIcon,

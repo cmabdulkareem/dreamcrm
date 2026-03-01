@@ -75,9 +75,17 @@ export default function NewStudent() {
   // Fetch converted leads
   useEffect(() => {
     fetchConvertedLeads();
-    fetchCourses(); // Fetch courses for value calculation
     fetchBrands(); // Fetch brands for selection
   }, []);
+
+  // Refetch courses when selectedBrand changes
+  useEffect(() => {
+    if (selectedBrand) {
+      fetchCourses();
+    } else {
+      setCourses([]);
+    }
+  }, [selectedBrand]);
 
   // Sync with global selected brand if it changes or initializes
   useEffect(() => {
@@ -88,12 +96,16 @@ export default function NewStudent() {
 
   const fetchCourses = useCallback(async () => {
     try {
-      const response = await axios.get(`${API}/courses/all`, { withCredentials: true });
+      if (!selectedBrand) return;
+      const response = await axios.get(`${API}/courses/all`, {
+        withCredentials: true,
+        headers: { 'x-brand-id': selectedBrand }
+      });
       setCourses(response.data.courses);
     } catch (error) {
       console.error("Error fetching courses:", error);
     }
-  }, []);
+  }, [selectedBrand]);
 
   const fetchConvertedLeads = useCallback(async () => {
     try {

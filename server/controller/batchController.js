@@ -4,7 +4,7 @@ import BatchStudent from '../model/batchStudentModel.js';
 import Attendance from '../model/attendanceModel.js';
 import Student from '../model/studentModel.js';
 import User from '../model/userModel.js';
-import courseModel from '../model/courseModel.js';
+import Brand from '../model/brandModel.js';
 import Holiday from '../model/holidayModel.js';
 import { isAdmin, isOwner, hasRole, isManager, isInstructor, isCounsellor, isAcademicCoordinator } from '../utils/roleHelpers.js';
 
@@ -266,9 +266,21 @@ export const getBatchStudents = async (req, res) => {
             const bsObj = bs.toObject();
             if (bsObj.studentId && bsObj.studentId.coursePreference) {
                 try {
-                    const course = await courseModel.findById(bsObj.studentId.coursePreference);
-                    if (course) {
-                        bsObj.studentId.courseName = course.courseName;
+                    // coursePreference may already be a string name (new) or an ObjectId (legacy)
+                    const courseRef = bsObj.studentId.coursePreference;
+                    const isObjectId = mongoose.Types.ObjectId.isValid(courseRef) && courseRef.toString().length === 24;
+                    if (isObjectId) {
+                        // Legacy: look up the course within any Brand's courses array
+                        const brandWithCourse = await Brand.findOne(
+                            { 'courses._id': courseRef },
+                            { 'courses.$': 1 }
+                        );
+                        if (brandWithCourse && brandWithCourse.courses.length > 0) {
+                            bsObj.studentId.courseName = brandWithCourse.courses[0].courseName;
+                        }
+                    } else {
+                        // Already a plain string name
+                        bsObj.studentId.courseName = courseRef;
                     }
                 } catch (courseError) {
                     console.error("Error fetching course for student:", bsObj.studentId._id, courseError);

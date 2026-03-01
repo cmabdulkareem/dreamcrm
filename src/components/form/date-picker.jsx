@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import flatpickr from "flatpickr";
 import "flatpickr/dist/flatpickr.css";
 import Label from "./Label";
-import { CalenderIcon } from "../../icons";
+import { CalendarIcon } from "../../icons";
 
 export default function DatePicker({
   id,
@@ -197,7 +197,7 @@ export default function DatePicker({
           data-toggle // Toggle trigger for flatpickr wrap: true
           className="absolute text-gray-500 -translate-y-1/2 right-3 top-1/2 dark:text-gray-400 cursor-pointer hover:text-brand-500 transition-colors"
         >
-          <CalenderIcon className="size-6" />
+          <CalendarIcon className="size-6" />
         </span>
       </div>
     </div>

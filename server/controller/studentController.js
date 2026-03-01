@@ -1,6 +1,7 @@
 import studentModel from "../model/studentModel.js";
 import customerModel from "../model/customerModel.js";
-import courseModel from "../model/courseModel.js";
+import Brand from "../model/brandModel.js";
+import * as mongoose from "mongoose";
 import { generateStudentId } from "../helpers/studentIdGenerator.js";
 import multer from "multer";
 import path from "path";
@@ -11,6 +12,20 @@ import { v4 as uuidv4 } from "uuid";
 import { getUploadDir, getUploadUrl } from "../utils/uploadHelper.js";
 import { emitNotification } from '../realtime/socket.js';
 import { logActivity } from "../utils/activityLogger.js";
+
+/**
+ * Look up an embedded course sub-document by its _id across all Brand documents.
+ * Returns the course object or null.
+ */
+async function findCourseById(courseId) {
+  if (!courseId) return null;
+  try {
+    const brand = await Brand.findOne({ "courses._id": courseId }, { "courses.$": 1 });
+    return brand ? brand.courses[0] : null;
+  } catch {
+    return null;
+  }
+}
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -219,6 +234,41 @@ export const getAllStudents = async (req, res) => {
       query.batchScheduled = { $ne: true };
     }
 
+    // Add brands filter if specifically requested (e.g. from Lab module)
+    if (req.query.brands) {
+      const brandIds = req.query.brands.split(',').filter(Boolean);
+      if (brandIds.length > 0) {
+        const objectIdBrands = brandIds.map(id => new mongoose.Types.ObjectId(id));
+
+        // If query.brand already exists (from middleware), we intersect it
+        if (query.brand) {
+          if (query.brand.$in) {
+            const authorizedIds = query.brand.$in.map(id => id.toString());
+            const filtered = objectIdBrands.filter(id => authorizedIds.includes(id.toString()));
+            query.brand = { $in: filtered };
+          } else {
+            const authId = query.brand.toString();
+            if (objectIdBrands.some(id => id.toString() === authId)) {
+              query.brand = authId;
+            } else {
+              query.brand = { $in: [] }; // No match
+            }
+          }
+        } else {
+          query.brand = { $in: objectIdBrands };
+        }
+      }
+    }
+
+    // Add search filter if provided
+    if (req.query.search) {
+      const searchRegex = new RegExp(req.query.search, 'i');
+      query.$or = [
+        { fullName: searchRegex },
+        { studentId: searchRegex }
+      ];
+    }
+
     const students = await studentModel.find(query).sort({ createdAt: -1 }).populate('leadId', 'fullName email');
     // Populate course details for each student
     const studentsWithCourseDetails = await Promise.all(students.map(async (student) => {
@@ -226,16 +276,14 @@ export const getAllStudents = async (req, res) => {
 
       // Populate primary course details
       if (student.coursePreference) {
-        const course = await courseModel.findById(student.coursePreference);
+        const course = await findCourseById(student.coursePreference);
         studentObj.courseDetails = course;
       }
 
       // Populate additional courses details
       if (student.additionalCourses && student.additionalCourses.length > 0) {
         studentObj.additionalCourseDetails = await Promise.all(
-          student.additionalCourses.map(async (courseId) => {
-            return await courseModel.findById(courseId);
-          })
+          student.additionalCourses.map(courseId => findCourseById(courseId))
         );
       }
 
@@ -262,23 +310,15 @@ export const getStudentById = async (req, res) => {
 
     // Populate primary course details
     if (student.coursePreference) {
-      const course = await courseModel.findById(student.coursePreference);
+      const course = await findCourseById(student.coursePreference);
       studentObj.courseDetails = course;
     }
 
     // Populate additional courses details
     if (student.additionalCourses && student.additionalCourses.length > 0) {
       studentObj.additionalCourseDetails = await Promise.all(
-        student.additionalCourses.map(async (courseId) => {
-          try {
-            return await courseModel.findById(courseId);
-          } catch (err) {
-            console.error(`Error populating additional course ${courseId}:`, err);
-            return null;
-          }
-        })
+        student.additionalCourses.map(courseId => findCourseById(courseId))
       );
-      // Filter out any null results from failed lookups
       studentObj.additionalCourseDetails = studentObj.additionalCourseDetails.filter(c => c !== null);
     }
 

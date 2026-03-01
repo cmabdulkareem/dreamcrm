@@ -24,7 +24,7 @@ import { isManager } from "../../utils/roleHelpers";
 import API from "../../config/api";
 
 export default function ContactPointSettings() {
-  const { user } = useContext(AuthContext);
+  const { user, selectedBrand } = useContext(AuthContext);
   const { addNotification, areToastsEnabled } = useNotifications();
 
   // Check if user has appropriate role (Owner, Admin, Centre Head/Manager)
@@ -43,17 +43,25 @@ export default function ContactPointSettings() {
   const { isOpen: isEditOpen, openModal: openEditModal, closeModal: closeEditModal } = useModal();
   const { isOpen: isDeleteOpen, openModal: openDeleteModal, closeModal: closeDeleteModal } = useModal();
 
+  // Refetch when selectedBrand changes
   useEffect(() => {
-    if (hasAccess) {
+    if (selectedBrand?._id) {
       fetchContactPoints();
     } else {
+      setContactPoints([]);
       setLoading(false);
     }
-  }, [hasAccess]);
+  }, [selectedBrand]);
 
   const fetchContactPoints = async () => {
     try {
-      const response = await axios.get(`${API}/contact-points/all`, { withCredentials: true });
+      const brandId = selectedBrand?._id;
+      if (!brandId) return;
+      setLoading(true);
+      const response = await axios.get(`${API}/contact-points/all`, {
+        withCredentials: true,
+        headers: { 'x-brand-id': brandId }
+      });
       setContactPoints(response.data.contactPoints);
       setLoading(false);
     } catch (error) {
@@ -102,7 +110,10 @@ export default function ContactPointSettings() {
           description,
           isActive
         },
-        { withCredentials: true }
+        {
+          withCredentials: true,
+          headers: { 'x-brand-id': selectedBrand?._id }
+        }
       );
 
       if (areToastsEnabled()) {
@@ -149,7 +160,10 @@ export default function ContactPointSettings() {
           description,
           isActive
         },
-        { withCredentials: true }
+        {
+          withCredentials: true,
+          headers: { 'x-brand-id': selectedBrand?._id }
+        }
       );
 
       if (areToastsEnabled()) {
@@ -186,7 +200,10 @@ export default function ContactPointSettings() {
     try {
       await axios.delete(
         `${API}/contact-points/delete/${selectedContactPoint._id}`,
-        { withCredentials: true }
+        {
+          withCredentials: true,
+          headers: { 'x-brand-id': selectedBrand?._id }
+        }
       );
 
       if (areToastsEnabled()) {
@@ -255,6 +272,14 @@ export default function ContactPointSettings() {
               Manage contact points used across the CRM system
             </p>
           </div>
+        </div>
+
+        <div className="flex items-center justify-between bg-white dark:bg-white/[0.03] p-4 rounded-xl border border-gray-200 dark:border-gray-800">
+          <div>
+            <p className="text-sm text-gray-500">
+              Selected Brand: <span className="font-semibold text-gray-700 dark:text-white/90">{selectedBrand?.name || "None"}</span>
+            </p>
+          </div>
           <Button onClick={handleAdd} endIcon={<PlusIcon className="size-5" />}>
             Add Contact Point
           </Button>
@@ -281,7 +306,7 @@ export default function ContactPointSettings() {
                   {contactPoints.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={4} className="py-8 text-center text-gray-500">
-                        No contact points found. Create your first contact point!
+                        {selectedBrand?._id ? "No contact points found. Create your first contact point!" : "Please select a brand from the switcher to view contact points."}
                       </TableCell>
                     </TableRow>
                   ) : (

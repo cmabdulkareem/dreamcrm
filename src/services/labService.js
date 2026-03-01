@@ -217,35 +217,5 @@ export const labService = {
         } catch (err) {
             throw new Error(err.response?.data?.message || "Failed to remove slot");
         }
-    },
-
-    // ─── Queue ────────────────────────────────────
-    getQueue: async (labId, all = false) => {
-        try {
-            const res = await axios.get(`${API}/compute-lab/queue`, { params: { labId, all }, withCredentials: true });
-            return res.data;
-        } catch (err) {
-            toast.error("Failed to load student queue");
-            return [];
-        }
-    },
-
-    addToQueue: async (data) => {
-        try {
-            const res = await axios.post(`${API}/compute-lab/queue`, data, { withCredentials: true });
-            toast.success("Student added to waitlist");
-            return res.data;
-        } catch (err) {
-            throw new Error(err.response?.data?.message || "Failed to add to queue");
-        }
-    },
-
-    removeFromQueue: async (id) => {
-        try {
-            await axios.delete(`${API}/compute-lab/queue/${id}`, { withCredentials: true });
-            return true;
-        } catch (err) {
-            throw new Error(err.response?.data?.message || "Failed to remove from queue");
-        }
     }
 };

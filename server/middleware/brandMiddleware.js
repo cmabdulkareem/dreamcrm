@@ -119,13 +119,11 @@ export async function applyBrandFilter(req, res, next) {
         }
       }).filter(id => id);
 
-      console.log(`[DEBUG] applyBrandFilter: Applying $in filter for brands: ${objectIdBrands.join(', ')}`);
       req.brandFilter = { brand: { $in: objectIdBrands } };
     }
     // Fallback: If user IS an admin but has NO specific brands assigned, 
     // we assume they are a Super Admin and show ALL brands.
     else if (isAdmin) {
-      console.log(`[DEBUG] applyBrandFilter: User is Global Admin with no specific brand filters, showing all.`);
       req.brandFilter = {};
     }
     // Final fallback: No brands and not admin, show nothing.

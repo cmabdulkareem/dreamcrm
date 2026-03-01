@@ -1,21 +1,37 @@
-import courseModel from '../model/courseModel.js';
+import Brand from '../model/brandModel.js';
 import Customer from '../model/customerModel.js';
 
 // Get all courses
 export const getAllCourses = async (req, res) => {
   try {
-    // Check for brand filter from middleware (if authenticated) or header (if public)
-    const brandId = req.brandFilter?.brand || req.headers['x-brand-id'];
+    const headerBrandId = req.headers['x-brand-id'];
+    let query = {};
 
-    let finalQuery = {};
-    if (req.brandFilter) {
-      finalQuery = { ...req.brandFilter };
-    } else if (req.headers['x-brand-id']) {
-      finalQuery = { brand: req.headers['x-brand-id'] };
+    if (headerBrandId) {
+      query._id = headerBrandId;
+    } else if (req.brandFilter) {
+      // If brandFilter has a 'brand' key (standard for our middleware), translate it to '_id' for Brand model
+      if (req.brandFilter.brand) {
+        query._id = req.brandFilter.brand;
+      } else {
+        query = req.brandFilter;
+      }
     }
 
-    const courses = await courseModel.find(finalQuery).sort({ createdAt: -1 });
-    return res.status(200).json({ courses });
+    const brands = await Brand.find(query);
+    if (!brands || brands.length === 0) {
+      // If a specific brand was requested but not found
+      if (headerBrandId) return res.status(404).json({ message: "Brand not found" });
+      return res.status(200).json({ courses: [] });
+    }
+
+    // Aggregate all courses from all matching brands
+    let allCourses = brands.flatMap(brand => brand.courses || []);
+
+    // Sort by createdAt descending
+    allCourses.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+    return res.status(200).json({ courses: allCourses });
   } catch (error) {
     console.error("Error fetching courses:", error);
     return res.status(500).json({ message: "Internal server error" });
@@ -26,12 +42,13 @@ export const getAllCourses = async (req, res) => {
 export const getCourseById = async (req, res) => {
   try {
     const { id } = req.params;
-    const course = await courseModel.findById(id);
+    const brand = await Brand.findOne({ "courses._id": id });
 
-    if (!course) {
+    if (!brand) {
       return res.status(404).json({ message: "Course not found." });
     }
 
+    const course = brand.courses.id(id);
     return res.status(200).json({ course });
   } catch (error) {
     console.error("Error fetching course:", error);
@@ -54,21 +71,18 @@ export const createCourse = async (req, res) => {
     } = req.body;
 
     const brandId = req.brandFilter?.brand || req.headers['x-brand-id'] || null;
+    if (!brandId) return res.status(400).json({ message: "Brand ID is required" });
+
+    const brand = await Brand.findById(brandId);
+    if (!brand) return res.status(404).json({ message: "Brand not found" });
 
     // Check if course code or name already exists FOR THIS BRAND
-    const existingCourse = await courseModel.findOne({
-      $or: [{ courseCode }, { courseName }],
-      brand: brandId
-    });
-
-    if (existingCourse) {
-      if (existingCourse.courseCode === courseCode) {
-        return res.status(400).json({ message: "Course with this code already exists for this brand." });
-      }
-      return res.status(400).json({ message: "Course with this name already exists for this brand." });
+    const exists = brand.courses.some(c => c.courseCode === courseCode || c.courseName === courseName);
+    if (exists) {
+      return res.status(400).json({ message: "Course with this code or name already exists in this brand." });
     }
 
-    const newCourse = new courseModel({
+    brand.courses.push({
       courseCode,
       courseName,
       modules,
@@ -76,15 +90,14 @@ export const createCourse = async (req, res) => {
       mode,
       singleShotFee: parseFloat(singleShotFee),
       normalFee: parseFloat(normalFee),
-      isActive: isActive === 'true' || isActive === true,
-      brand: brandId
+      isActive: isActive === 'true' || isActive === true
     });
 
-    await newCourse.save();
+    await brand.save();
 
     return res.status(201).json({
       message: "Course created successfully.",
-      course: newCourse
+      course: brand.courses[brand.courses.length - 1]
     });
   } catch (error) {
     console.error("Create course error:", error);
@@ -98,33 +111,23 @@ export const updateCourse = async (req, res) => {
     const { id } = req.params;
     const updateData = req.body;
 
-    const course = await courseModel.findById(id);
-    if (!course) {
+    const brand = await Brand.findOne({ "courses._id": id });
+    if (!brand) {
       return res.status(404).json({ message: "Course not found." });
     }
 
-    // Track if course name changed
-    let oldCourseName = null;
+    const course = brand.courses.id(id);
+    let oldCourseName = course.courseName;
 
     // Update fields
     for (const key of Object.keys(updateData)) {
       if (key === 'courseCode' || key === 'courseName') {
-        const query = {
-          _id: { $ne: id },
-          brand: course.brand,
-          [key]: updateData[key]
-        };
-        const existing = await courseModel.findOne(query);
+        const existing = brand.courses.some(c => c._id.toString() !== id && c[key] === updateData[key]);
         if (existing) {
           return res.status(400).json({
             message: `Course with this ${key === 'courseCode' ? 'code' : 'name'} already exists for this brand.`
           });
         }
-
-        if (key === 'courseName') {
-          oldCourseName = course.courseName;
-        }
-
         course[key] = updateData[key];
       } else if (key === 'duration') {
         course[key] = parseInt(updateData[key]);
@@ -137,16 +140,14 @@ export const updateCourse = async (req, res) => {
       }
     }
 
-    await course.save();
+    await brand.save();
 
     // Update related customers if course name changed
     if (oldCourseName && oldCourseName !== course.courseName) {
-      console.log(`Updating customers with coursePreference: "${oldCourseName}" to "${course.courseName}" for brand: ${course.brand}`);
-      const updateResult = await Customer.updateMany(
-        { coursePreference: oldCourseName, brand: course.brand },
+      await Customer.updateMany(
+        { coursePreference: oldCourseName, brand: brand._id },
         { $set: { "coursePreference.$": course.courseName } }
       );
-      console.log('Update result:', updateResult);
     }
 
     return res.status(200).json({
@@ -164,10 +165,13 @@ export const deleteCourse = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const course = await courseModel.findByIdAndDelete(id);
-    if (!course) {
+    const brand = await Brand.findOne({ "courses._id": id });
+    if (!brand) {
       return res.status(404).json({ message: "Course not found." });
     }
+
+    brand.courses.pull(id);
+    await brand.save();
 
     return res.status(200).json({ message: "Course deleted successfully." });
   } catch (error) {
@@ -181,13 +185,14 @@ export const toggleCourseStatus = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const course = await courseModel.findById(id);
-    if (!course) {
+    const brand = await Brand.findOne({ "courses._id": id });
+    if (!brand) {
       return res.status(404).json({ message: "Course not found." });
     }
 
+    const course = brand.courses.id(id);
     course.isActive = !course.isActive;
-    await course.save();
+    await brand.save();
 
     return res.status(200).json({
       message: `Course ${course.isActive ? 'activated' : 'deactivated'} successfully.`,

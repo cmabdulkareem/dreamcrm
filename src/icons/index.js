@@ -27,7 +27,6 @@ import { ReactComponent as EyeIcon } from "./eye.svg?react";
 import { ReactComponent as EyeCloseIcon } from "./eye-close.svg?react";
 import { ReactComponent as TimeIcon } from "./time.svg?react";
 import { ReactComponent as BellIcon } from "./bell.svg?react";
-import { ReactComponent as CalenderIcon } from "./calender-line.svg?react";
 import { ReactComponent as EnvelopeIcon } from "./envelope.svg?react";
 import { ReactComponent as MoreDotIcon } from "./horizontal-dots.svg?react";
 import { ReactComponent as PencilIcon } from "./pencil.svg?react";
@@ -78,7 +77,6 @@ export {
   EyeCloseIcon,
   TimeIcon,
   BellIcon,
-  CalenderIcon,
   EnvelopeIcon,
   MoreDotIcon,
   PencilIcon,

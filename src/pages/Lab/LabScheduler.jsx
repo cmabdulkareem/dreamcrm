@@ -5,20 +5,30 @@ import PageMeta from '../../components/common/PageMeta';
 import PageBreadcrumb from '../../components/common/PageBreadCrumb';
 import ComponentCard from '../../components/common/ComponentCard';
 import Button from '../../components/ui/button/Button';
+import { Modal } from '../../components/ui/modal';
+import Label from '../../components/form/Label';
+import Input from '../../components/form/input/InputField';
 import { labService } from '../../services/labService';
-import { PlusIcon, PencilIcon, TrashBinIcon, AlertIcon } from '../../icons';
+import { labLifecycleService } from '../../services/labLifecycleService';
+import { PencilIcon, TrashBinIcon, AlertIcon, UserIcon } from '../../icons';
+import { XMarkIcon, CheckIcon, PlusIcon, ClockIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../context/AuthContext';
 import { isManager, isAnyManager, isAdmin as checkAdmin, hasRole } from '../../utils/roleHelpers';
+import { useNotifications } from '../../context/NotificationContext';
+import axios from 'axios';
+import API from '../../config/api';
 
 const ItemTypes = {
     PC: 'pc'
 };
 
 const STATUS_CONFIG = {
-    available: { label: 'Available', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', dot: 'bg-green-500', iconColor: 'text-green-500' },
-    'in-use': { label: 'In Use', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400', dot: 'bg-blue-500', iconColor: 'text-blue-500' },
-    maintenance: { label: 'Maintenance', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/10 dark:text-yellow-400', dot: 'bg-yellow-500', iconColor: 'text-yellow-500' },
+    available: { label: 'Available', color: 'bg-gray-50 text-gray-600 dark:bg-gray-900/20 dark:text-gray-400', dot: 'bg-gray-300', iconColor: 'text-gray-300' },
+    'in-use': { label: 'Active', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400', dot: 'bg-green-500', iconColor: 'text-green-500' },
+    assigned: { label: 'Assigned', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400', dot: 'bg-yellow-500', iconColor: 'text-yellow-500' },
+    overdue: { label: 'Overdue', color: 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400', dot: 'bg-red-500', iconColor: 'text-red-500' },
+    maintenance: { label: 'Maintenance', color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/10 dark:text-orange-400', dot: 'bg-orange-500', iconColor: 'text-orange-500' },
     offline: { label: 'Offline', color: 'bg-red-100 text-red-700 dark:bg-red-900/10 dark:text-red-400', dot: 'bg-red-500', iconColor: 'text-red-500' },
 };
 
@@ -37,6 +47,15 @@ const emptySchedule = { studentName: '', date: '', timeSlot: 'Early AM', purpose
 const TIME_SLOTS = ["Early AM", "Late AM", "Midday", "Early PM", "Late PM"];
 const emptyComplaintForm = { pcId: '', title: '', description: '', priority: 'medium' };
 
+const QUEUE_STATUS_CONFIG = {
+    waiting: { label: 'In Queue', bg: 'bg-yellow-100 text-yellow-700', icon: '🟡' },
+    assigned: { label: 'Assigned', bg: 'bg-brand-100 text-brand-700', icon: '🔵' },
+    active: { label: 'Active', bg: 'bg-green-100 text-green-700', icon: '🟢' },
+    completed: { label: 'Completed', bg: 'bg-gray-100 text-gray-700', icon: '⚫' },
+    cancelled: { label: 'Cancelled', bg: 'bg-red-100 text-red-700', icon: '🔴' },
+    overdue: { label: 'Overdue', bg: 'bg-red-200 text-red-800', icon: '🚨' }
+};
+
 // [startHour, startMin, endHour, endMin]
 const SLOT_TIMES = {
     "Early AM": [9, 0, 10, 30],
@@ -46,7 +65,12 @@ const SLOT_TIMES = {
     "Late PM": [15, 30, 17, 0],
 };
 
-const getEffectiveStatus = (pc, todaySlots) => {
+const getEffectiveStatus = (pc, todaySlots, activeSessions = []) => {
+    // Priority 1: Active/Assigned Sessions from Lifecycle
+    const session = activeSessions.find(s => s.pcId === pc._id && (s.status === 'active' || s.status === 'assigned'));
+    if (session) return session.status === 'active' ? 'in-use' : 'assigned';
+
+    // Priority 2: Traditional Slot Bookings
     const now = new Date();
     const nowMins = now.getHours() * 60 + now.getMinutes();
     const bookedNow = todaySlots.some(s => {
@@ -57,27 +81,32 @@ const getEffectiveStatus = (pc, todaySlots) => {
         const end = eh * 60 + em;
         return nowMins >= start && nowMins < end;
     });
-    if (bookedNow) return 'in-use';
-    // Don't inherit 'in-use' from DB — that's set by backend when booking, but
-    // real-time occupancy is determined solely by the current slot window above.
+    if (bookedNow) return 'assigned';
+
+    // Priority 3: Stored PC status (maintenance/offline)
     const storedStatus = pc.status || 'available';
     return storedStatus === 'in-use' ? 'available' : storedStatus;
 };
 
-const PCSeat = ({ pc, cfg, todaySlots, inUse, onAssign, onEdit, onDelete, onMovePC, onComplaint }) => {
+const PCSeat = ({ pc, cfg, todaySlots, activeSessions = [], inUse, onAssign, onEdit, onDelete, onMovePC, onComplaint, isExpanded, onToggleExpand, hoveredPCId, setHoveredPCId }) => {
     const [showMobileActions, setShowMobileActions] = useState(false);
     const actionRef = useRef(null);
+    const popoverRef = useRef(null);
+    const isHovered = hoveredPCId === pc._id;
 
-    // Close mobile actions when clicking outside
+    // Close mobile actions and popover when clicking outside
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (actionRef.current && !actionRef.current.contains(event.target)) {
                 setShowMobileActions(false);
             }
+            if (popoverRef.current && !popoverRef.current.contains(event.target)) {
+                if (isExpanded) onToggleExpand(null);
+            }
         };
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
+    }, [isExpanded, onToggleExpand]);
 
     const [{ isDragging }, drag] = useDrag(() => ({
         type: ItemTypes.PC,
@@ -87,17 +116,21 @@ const PCSeat = ({ pc, cfg, todaySlots, inUse, onAssign, onEdit, onDelete, onMove
         }),
     }), [pc]);
 
-    const [isHovered, setIsHovered] = useState(false);
     const hoverTimeout = useRef(null);
 
     const handleMouseEnter = () => {
-        if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
-        setIsHovered(true);
+        if (hoverTimeout.current) {
+            clearTimeout(hoverTimeout.current);
+            hoverTimeout.current = null;
+        }
+        setHoveredPCId(pc._id);
     };
 
     const handleMouseLeave = () => {
+        if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
         hoverTimeout.current = setTimeout(() => {
-            setIsHovered(false);
+            setHoveredPCId(current => current === pc._id ? null : current);
+            hoverTimeout.current = null;
         }, 200);
     };
 
@@ -122,12 +155,12 @@ const PCSeat = ({ pc, cfg, todaySlots, inUse, onAssign, onEdit, onDelete, onMove
             onMouseEnter={handleMouseEnter}
             onMouseLeave={handleMouseLeave}
             className={`group relative flex flex-col items-center cursor-move transition-all duration-300 
-                ${isDragging ? 'opacity-30 scale-90 grayscale' : 'opacity-100'}
-                ${isHovered || showMobileActions ? 'z-[500]' : 'z-10'}
-                ${isOver ? 'scale-110 rotate-1' : ''}
-            `}
-            onClick={() => {
-                // If on mobile (no hover usually), first click shows actions
+                    ${isDragging ? 'opacity-30 scale-90 grayscale' : 'opacity-100'}
+                    ${isHovered || showMobileActions || isExpanded ? 'z-[1000]' : 'z-10'}
+                    ${isOver ? 'scale-110 rotate-1' : ''}
+                `}
+            onClick={(e) => {
+                e.stopPropagation();
                 if (window.matchMedia("(max-width: 768px)").matches && !showMobileActions) {
                     setShowMobileActions(true);
                 } else {
@@ -137,12 +170,22 @@ const PCSeat = ({ pc, cfg, todaySlots, inUse, onAssign, onEdit, onDelete, onMove
         >
             <div
                 className={`w-20 h-24 rounded-xl border-2 flex flex-col items-center justify-between p-2.5 shadow-sm transition-all duration-200
-                    ${inUse ? 'bg-blue-50 border-blue-400 dark:bg-blue-900/20 dark:border-blue-800' : 'bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700'}
-                    ${isOver ? 'border-brand-500 shadow-brand-200 dark:shadow-brand-900/20 ring-4 ring-brand-500/10' : ''}
-                    hover:shadow-lg hover:scale-105 cursor-pointer relative 
-                `}
+                        ${todaySlots.length < 3 ? 'bg-green-50/50 border-green-400 dark:bg-green-900/30 dark:border-green-800' : inUse ? 'bg-blue-50/50 border-blue-400 dark:bg-blue-900/20 dark:border-blue-800' : 'bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700'}
+                        ${isOver ? 'border-blue-950 shadow-blue-200 dark:shadow-blue-900/20 ring-4 ring-blue-950/10' : ''}
+                        ${isExpanded || isHovered ? 'ring-2 ring-blue-950 border-blue-950 shadow-lg shadow-blue-950/10' : ''}
+                        hover:shadow-lg hover:scale-105 cursor-pointer relative 
+                    `}
             >
-                <span className="text-[11px] font-bold text-gray-600 dark:text-gray-300 uppercase tracking-tight truncate max-w-full px-1">{primaryLabel}</span>
+                {/* Status Badge on Card */}
+                <div className="absolute -top-2 -right-2 z-10 scale-75 origin-top-right">
+                    {todaySlots.length >= 5 ? (
+                        <span className="bg-red-500 text-white text-[10px] font-black px-2 py-0.5 rounded-lg uppercase tracking-widest shadow-lg border border-red-600">Full</span>
+                    ) : todaySlots.length >= 3 ? (
+                        <span className="bg-yellow-500 text-white text-[10px] font-black px-2 py-0.5 rounded-lg uppercase tracking-widest shadow-lg border border-yellow-600">Limited</span>
+                    ) : null}
+                </div>
+
+                <span className="text-[11px] font-bold text-gray-700 dark:text-gray-200 uppercase tracking-tight truncate max-w-full px-1">{primaryLabel}</span>
                 <div className={`relative ${cfg.iconColor}`}>
                     <MonitorIcon className="w-10 h-10" />
                 </div>
@@ -162,55 +205,74 @@ const PCSeat = ({ pc, cfg, todaySlots, inUse, onAssign, onEdit, onDelete, onMove
                     })}
                 </div>
 
-                {/* Smart Tooltip: Flipped to bottom for Row A, top for others */}
-                {isHovered && (
+                {/* Premium SaaS Tooltip / Popover - Forced to top-full (below unit) to prevent clipping */}
+                {(isHovered || isExpanded) && (
                     <div
-                        className={`absolute ${pc.row === 'A' ? 'top-full mt-3' : 'bottom-full mb-3'} left-1/2 -translate-x-1/2 w-80 bg-gray-900/95 dark:bg-black/95 backdrop-blur-md text-white text-xs p-5 rounded-2xl z-[510] border border-white/10 ring-1 ring-white/10 pointer-events-auto`}
+                        ref={popoverRef}
+                        className={`absolute top-full mt-3 w-72 bg-[#1E1E2F] backdrop-blur-xl text-white p-0 rounded-xl shadow-2xl z-[510] border border-white/10 overflow-hidden ring-1 ring-white/5 pointer-events-auto animate-in fade-in slide-in-from-top-2 duration-200
+                            ${pc.position === 0 ? 'left-[-1.5rem] translate-x-0' : 'left-1/2 -translate-x-1/2'}
+                        `}
                         onMouseEnter={handleMouseEnter}
+                        onClick={(e) => e.stopPropagation()}
                     >
-                        <div className="flex justify-between items-start mb-3">
-                            <span className="font-black text-brand-400 text-sm tracking-tighter uppercase">{primaryLabel}</span>
-                            <span className={`w-2.5 h-2.5 rounded-full ${cfg.dot} shadow-[0_0_10px_rgba(0,0,0,0.5)]`} />
-                        </div>
-
-                        <p className="text-gray-400 text-[10px] italic mb-4 opacity-80">"{pc.specs || 'Standard Specification'}"</p>
-
-                        {todaySlots.length > 0 && (
-                            <div className="max-h-60 overflow-y-auto no-scrollbar space-y-2.5 mb-4 pr-1">
-                                {todaySlots.map((s, i) => (
-                                    <div key={i} className="flex flex-col gap-1 bg-white/[0.03] hover:bg-white/[0.07] border border-white/5 p-3 rounded-xl transition-colors">
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-brand-500 font-extrabold uppercase text-[9px] tracking-tight">{s.timeSlot}</span>
-                                            <span className="text-white font-black text-[11px]">{s.studentName}</span>
-                                        </div>
-                                        <div className="flex items-center gap-1.5 opacity-60">
-                                            <div className="w-1 h-3 rounded-full bg-brand-500/50" />
-                                            <span className="text-gray-300 text-[10px] truncate italic">{s.purpose}</span>
-                                        </div>
-                                    </div>
-                                ))}
+                        <div className="p-5 space-y-4">
+                            <div>
+                                <h4 className="text-lg font-black tracking-tight flex items-center gap-2">
+                                    {primaryLabel}
+                                    <span className={`w-2 h-2 rounded-full ${pc.status === 'available' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-yellow-500'}`} />
+                                </h4>
+                                <p className="text-gray-400 text-[10px] uppercase font-bold tracking-widest mt-0.5">Standard Specification</p>
                             </div>
-                        )}
 
-                        <div className="flex justify-between items-center text-[11px] font-black pt-3 border-t border-white/10 uppercase tracking-widest opacity-90">
-                            <span className="text-gray-500">{cfg.label}</span>
-                            <span className="text-brand-400">{todaySlots.length} / 5</span>
+                            <div className="space-y-3">
+                                <div className="flex justify-between items-center text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">
+                                    <span>Today's Roster</span>
+                                    <span>{todaySlots.length} / 5</span>
+                                </div>
+
+
+                                <div className="max-h-40 overflow-y-auto no-scrollbar space-y-2">
+                                    {todaySlots.map((s, i) => (
+                                        <div key={i} className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5 hover:bg-white/10 transition-colors">
+                                            <span className="text-blue-400 font-bold text-[10px]">{s.timeSlot}</span>
+                                            <span className="text-white font-medium text-xs">{s.studentName}</span>
+                                        </div>
+                                    ))}
+                                    {todaySlots.length === 0 && (
+                                        <div className="text-center py-4 bg-white/5 rounded-xl border border-dashed border-white/10 text-gray-500 text-[10px] font-bold uppercase">No records today</div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="pt-4 border-t border-white/5 flex gap-2">
+                                <button onClick={(e) => { e.stopPropagation(); onEdit(pc); onToggleExpand(null); }} className="p-2.5 bg-white/5 hover:bg-white/10 text-xs font-bold rounded-lg transition-all flex items-center justify-center">
+                                    <PencilIcon className="w-4 h-4" />
+                                </button>
+                                <button onClick={(e) => { e.stopPropagation(); onDelete(pc._id, pc.row, pc.position); onToggleExpand(null); }} className="p-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-bold rounded-lg transition-all flex items-center justify-center">
+                                    <TrashBinIcon className="w-4 h-4" />
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                )}
-            </div>
 
-            {/* Action Buttons: Flipped for Row A to prevent collision. Shown on hover (desktop) or toggle (mobile) */}
-            {(isHovered || showMobileActions) && (
+                        {/* Arrow Pointer - Forced to top pointing up */}
+                        <div className={`absolute bottom-full -mb-1 rotate-180 border-8 border-transparent border-b-[#1E1E2F] 
+                            ${pc.position === 0 ? 'left-10' : 'left-1/2 -translate-x-1/2'}
+                        `} />
+                    </div>
+                )
+                }
+            </div >
+
+            {showMobileActions && (
                 <div
                     ref={actionRef}
-                    className={`absolute ${pc.row === 'A' ? '-top-10 md:-top-6' : '-bottom-10 md:-bottom-6'} left-1/2 -translate-x-1/2 flex gap-2.5 md:gap-1.5 bg-white dark:bg-gray-800 shadow-2xl md:shadow-xl border border-gray-100 dark:border-gray-700 p-2 md:p-1.5 rounded-2xl md:rounded-xl z-[520] transition-all`}
+                    className="absolute -bottom-10 md:-bottom-6 left-1/2 -translate-x-1/2 flex gap-2.5 md:gap-1.5 bg-white dark:bg-gray-800 shadow-2xl md:shadow-xl border border-gray-100 dark:border-gray-700 p-2 md:p-1.5 rounded-2xl md:rounded-xl z-[520] transition-all"
                     onClick={(e) => e.stopPropagation()}
                 >
                     <button onClick={(e) => { e.stopPropagation(); onComplaint(pc); setShowMobileActions(false); }} className="p-3 md:p-2.5 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 text-yellow-500 rounded-xl md:rounded-lg transition-colors" title="Raise Complaint">
                         <AlertIcon className="w-5 h-5 md:w-4 md:h-4" />
                     </button>
-                    <button onClick={(e) => { e.stopPropagation(); onEdit(pc); setShowMobileActions(false); }} className="p-3 md:p-2.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl md:rounded-lg text-gray-500 transition-colors" title="Edit PC">
+                    <button onClick={(e) => { e.stopPropagation(); onEdit(pc); setShowMobileActions(false); }} className="p-3 md:p-2.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl md:rounded-lg text-gray-600 dark:text-gray-300 transition-colors" title="Edit PC">
                         <PencilIcon className="w-5 h-5 md:w-4 md:h-4" />
                     </button>
                     <button onClick={(e) => { e.stopPropagation(); onDelete(pc._id, pc.row, pc.position); setShowMobileActions(false); }} className="p-3 md:p-2.5 hover:bg-red-50 dark:hover:bg-red-900/20 text-red-400 hover:text-red-500 rounded-xl md:rounded-lg transition-colors" title="Delete PC">
@@ -218,6 +280,166 @@ const PCSeat = ({ pc, cfg, todaySlots, inUse, onAssign, onEdit, onDelete, onMove
                     </button>
                 </div>
             )}
+        </div >
+    );
+};
+
+// ─── Queue Panel ─────────────────────────────
+const QueuePanel = ({
+    queue,
+    onAdd,
+    onRemove,
+    onAssign,
+    onStudentClick,
+    loading,
+    filters,
+    setFilters,
+    show,
+    onToggle,
+    viewMode,
+    setViewMode,
+    historyData,
+    historyLoading
+}) => {
+    if (!show) return (
+        <button
+            onClick={onToggle}
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-40 bg-white dark:bg-gray-800 shadow-lg border border-l-0 border-gray-200 dark:border-gray-700 rounded-r-xl p-2 hover:bg-blue-50 transition-colors"
+        >
+            <PlusIcon className="w-5 h-5 text-blue-950 rotate-45" />
+        </button>
+    );
+
+    const activeCount = viewMode === 'active' ? queue.length : historyData.length;
+    const isLoading = viewMode === 'active' ? loading : historyLoading;
+    const displayData = viewMode === 'active' ? queue : historyData;
+
+    return (
+        <div className="w-80 shrink-0 border-r border-gray-100 dark:border-gray-800 h-full flex flex-col bg-gray-50/30 dark:bg-gray-900/10">
+            <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                <h3 className="font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                    <span className="p-1.5 bg-blue-950 text-white rounded-lg text-xs">
+                        {activeCount}
+                    </span>
+                    {viewMode === 'active' ? 'Student Queue' : 'Queue History'}
+                </h3>
+                <button onClick={onToggle} className="text-gray-400 hover:text-gray-600 p-1">
+                    <XMarkIcon className="w-5 h-5" />
+                </button>
+            </div>
+
+            <div className="px-4 py-2 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50">
+                <div className="flex p-1 bg-gray-200/50 dark:bg-gray-800/50 rounded-xl gap-1">
+                    <button
+                        onClick={() => setViewMode('active')}
+                        className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${viewMode === 'active'
+                            ? 'bg-white dark:bg-gray-700 text-blue-900 shadow-sm'
+                            : 'text-gray-500 hover:text-gray-700'
+                            }`}
+                    >
+                        Waitlist
+                    </button>
+                    <button
+                        onClick={() => setViewMode('history')}
+                        className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${viewMode === 'history'
+                            ? 'bg-white dark:bg-gray-700 text-blue-900 shadow-sm'
+                            : 'text-gray-500 hover:text-gray-700'
+                            }`}
+                    >
+                        History
+                    </button>
+                </div>
+            </div>
+
+            <div className={`p-4 space-y-3 ${viewMode === 'history' ? 'hidden' : ''}`}>
+                <div className="flex gap-2">
+                    <Button size="sm" className="flex-1 !bg-blue-950 hover:!bg-blue-900" onClick={onAdd}>
+                        <PlusIcon className="w-4 h-4 mr-1.5" /> Add Student
+                    </Button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                    <select
+                        className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 text-xs font-medium focus:ring-1 focus:ring-blue-950"
+                        value={filters?.software || ""}
+                        onChange={(e) => setFilters(f => ({ ...f, software: e.target.value }))}
+                    >
+                        <option value="">All Software</option>
+                        <option value="Photoshop">Photoshop</option>
+                        <option value="Illustrator">Illustrator</option>
+                        <option value="Premiere">Premiere</option>
+                    </select>
+                    <select
+                        className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 text-xs font-medium focus:ring-1 focus:ring-blue-950"
+                        value={filters?.slot || ""}
+                        onChange={(e) => setFilters(f => ({ ...f, slot: e.target.value }))}
+                    >
+                        <option value="">All Slots</option>
+                        {TIME_SLOTS.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 pt-3 space-y-3 custom-scrollbar">
+                {isLoading ? (
+                    <div className="py-10 text-center text-gray-400 text-xs animate-pulse">Syncing data...</div>
+                ) : displayData.length === 0 ? (
+                    <div className="py-20 text-center">
+                        <p className="text-gray-400 text-xs">{viewMode === 'active' ? 'Queue is empty' : 'No history found'}</p>
+                    </div>
+                ) : (
+                    displayData.map((item, idx) => (
+                        <div
+                            key={item._id}
+                            onClick={() => onStudentClick && onStudentClick(item)}
+                            className="bg-white dark:bg-gray-800 p-3 rounded-xl border border-gray-100 dark:border-gray-700 shadow-theme-xs hover:border-blue-950/30 transition-all group cursor-pointer"
+                        >
+                            <div className="flex justify-between items-start mb-0">
+                                <div className="flex-1 min-w-0 mr-2">
+                                    <p className="font-bold text-gray-800 dark:text-gray-200 text-sm leading-tight truncate px-1 rounded hover:bg-blue-50 transition-colors">
+                                        {item.studentId?.fullName || item.studentName || "Anonymous"}
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    {viewMode === 'active' ? (
+                                        <>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); onRemove(item._id); }}
+                                                className="p-1 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                                                title="Remove from queue"
+                                            >
+                                                <TrashBinIcon className="w-3.5 h-3.5" />
+                                            </button>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); onAssign(item); }}
+                                                className="p-1 text-gray-300 hover:text-blue-950 opacity-0 group-hover:opacity-100 transition-all"
+                                                title="Complete/Quick Assign"
+                                            >
+                                                <CheckIcon className="w-4 h-4" />
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <div className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${item.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                                            }`}>
+                                            {item.status}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="flex justify-between items-center mt-2">
+                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-widest ring-1 ring-inset ${viewMode === 'active' ? 'bg-yellow-500/10 text-yellow-600 ring-yellow-500/20' : 'bg-gray-100 text-gray-500 ring-gray-200'}`}>
+                                    {item.preferredSlot}
+                                </span>
+                                {viewMode === 'history' && (
+                                    <span className="text-[9px] font-bold text-gray-400">
+                                        {new Date(item.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
         </div>
     );
 };
@@ -240,13 +462,13 @@ const EmptySlotPlaceholder = ({ slot, onInitialize, onRemove, onMovePC }) => {
             <button
                 onClick={() => onInitialize(slot)}
                 className={`w-20 h-24 border-2 border-dashed rounded-xl flex flex-col items-center justify-center transition-all hover:scale-105 active:scale-95
-                    ${isOver ? 'border-brand-500 bg-brand-50/50 dark:bg-brand-500/20 shadow-lg' : 'border-gray-200 dark:border-gray-700 text-gray-400 hover:text-brand-500 hover:border-brand-500'}
+                    ${isOver ? 'border-blue-950 bg-blue-50/50 dark:bg-blue-950/20 shadow-lg' : 'border-gray-400 dark:border-gray-500 text-gray-700 dark:text-gray-300 hover:text-blue-950 hover:border-blue-950'}
                 `}
             >
                 <div className="flex flex-col items-center gap-1.5 pointer-events-none">
-                    <span className="text-[11px] font-bold opacity-40 group-hover:opacity-100 transition-opacity">{seatId}</span>
-                    <PlusIcon className="w-5 h-5 opacity-30 group-hover:opacity-100 transition-opacity" />
-                    <span className="text-[9px] font-bold uppercase tracking-tight opacity-40 group-hover:opacity-100">Add Unit</span>
+                    <span className="text-[11px] font-black opacity-80 group-hover:opacity-100 transition-opacity text-gray-900 dark:text-gray-100">{seatId}</span>
+                    <PlusIcon className="w-5 h-5 opacity-70 group-hover:opacity-100 transition-opacity text-gray-700 dark:text-gray-200" />
+                    <span className="text-[9px] font-black uppercase tracking-tight opacity-80 group-hover:opacity-100 text-gray-800 dark:text-gray-200">Add Unit</span>
                 </div>
             </button>
             <button
@@ -259,7 +481,7 @@ const EmptySlotPlaceholder = ({ slot, onInitialize, onRemove, onMovePC }) => {
     );
 };
 
-const RowContainer = ({ row, pcsInRow, emptySlotsInRow, onMovePC, onQuickAdd, onEditRow, onDeleteRow, renderPC, renderSlot }) => {
+const RowContainer = ({ row, pcsInRow, emptySlotsInRow, onMovePC, onQuickAdd, onEditRow, onDeleteRow, renderPC, renderSlot, hasActiveTooltip, expandedPCId }) => {
     const rowName = row.name;
 
     const pcPositions = new Set(pcsInRow.map(p => p.position));
@@ -272,16 +494,18 @@ const RowContainer = ({ row, pcsInRow, emptySlotsInRow, onMovePC, onQuickAdd, on
 
     return (
         <div
-            className={`relative flex items-center gap-10 px-6 py-2 transition-all duration-300 min-h-[120px] hover:z-[100] group/row`}
+            className={`relative flex items-center gap-2 pl-0 pr-1 py-1 transition-all duration-300 min-h-[110px] 
+            ${pcsInRow.some(p => p._id === expandedPCId) ? 'z-[980]' : hasActiveTooltip ? 'z-[950]' : 'hover:z-[900]'} 
+            group/row`}
         >
-            <div className="sticky left-0 w-24 shrink-0 flex flex-col items-center justify-center bg-white dark:bg-gray-900 z-50 py-4 -ml-6 pl-6 group/rowheader">
-                <span className="text-3xl font-black text-gray-300 dark:text-gray-700 uppercase tracking-tighter leading-none">{rowName}</span>
-                <div className="w-8 h-1 rounded-full bg-gray-100 dark:bg-gray-800 mt-2 opacity-50" />
+            <div className="sticky left-0 w-14 shrink-0 flex flex-col items-center justify-center bg-white dark:bg-gray-900 z-50 py-3 -ml-0 pl-0 group/rowheader">
+                <span className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tighter leading-none">{rowName}</span>
+                <div className="w-8 h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 mt-2" />
 
                 <div className="flex gap-1 mt-3 opacity-0 group-hover/rowheader:opacity-100 transition-opacity">
                     <button
                         onClick={() => onEditRow(row)}
-                        className="p-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-500 hover:text-brand-500 transition-colors"
+                        className="p-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg text-gray-600 dark:text-gray-400 hover:text-blue-950 transition-colors"
                     >
                         <PencilIcon className="w-3 h-3" />
                     </button>
@@ -295,17 +519,17 @@ const RowContainer = ({ row, pcsInRow, emptySlotsInRow, onMovePC, onQuickAdd, on
             </div>
 
             <div className="flex-1">
-                <div className="grid grid-cols-11 gap-x-4 gap-y-12 min-w-max pr-10">
+                <div className="grid grid-cols-11 gap-x-2 gap-y-10 min-w-max pr-1">
                     {allItems.map(item => (
                         item.type === 'pc' ? renderPC(item) : renderSlot(item)
                     ))}
 
                     <button
                         onClick={() => onQuickAdd(rowName)}
-                        className="w-20 h-24 border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-xl flex items-center justify-center text-gray-300 hover:text-brand-400 hover:border-brand-200 dark:hover:border-brand-900 transition-all group shrink-0"
+                        className="w-20 h-24 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-900 transition-all group shrink-0"
                         title={`Add Slot to Section ${rowName}`}
                     >
-                        <PlusIcon className="w-5 h-5 opacity-20 group-hover:opacity-100" />
+                        <PlusIcon className="w-5 h-5 opacity-50 group-hover:opacity-100" />
                     </button>
                 </div>
             </div>
@@ -315,6 +539,7 @@ const RowContainer = ({ row, pcsInRow, emptySlotsInRow, onMovePC, onQuickAdd, on
 
 function ArrangementContent() {
     const { user, selectedBrand } = useAuth();
+    const { socket } = useNotifications();
     const canManageLab = isAnyManager(user) || hasRole(user, 'IT Support');
     const brandId = selectedBrand?._id || selectedBrand?.id;
     const canManageWorkstations = isManager(user, brandId) || hasRole(user, 'IT Support', brandId);
@@ -330,6 +555,8 @@ function ArrangementContent() {
     const [showScheduleModal, setShowScheduleModal] = useState(false);
     const [scheduleForm, setScheduleForm] = useState(emptySchedule);
     const [isQuickAdd, setIsQuickAdd] = useState(false);
+    const [hoveredPCId, setHoveredPCId] = useState(null);
+    const [expandedPCId, setExpandedPCId] = useState(null);
 
     const [showRowModal, setShowRowModal] = useState(false);
     const [rowForm, setRowForm] = useState({ name: '', brands: [] });
@@ -343,19 +570,31 @@ function ArrangementContent() {
     const [labs, setLabs] = useState([]);
     const [selectedLabId, setSelectedLabId] = useState(null);
     const [showLabModal, setShowLabModal] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isSubmittingPC, setIsSubmittingPC] = useState(false);
+    const [isSubmittingSchedule, setIsSubmittingSchedule] = useState(false);
     const [labForm, setLabForm] = useState({ name: '', description: '', location: '', brands: [] });
     const [editingLab, setEditingLab] = useState(null);
     const [labLoading, setLabLoading] = useState(false);
 
-    // Queue State
+    // Lab Lifecycle State
     const [queue, setQueue] = useState([]);
+    const [activeSessions, setActiveSessions] = useState([]);
+    const [showQueuePanel, setShowQueuePanel] = useState(true);
+    const [isQueueLoading, setIsQueueLoading] = useState(false);
+    const [isSessionsLoading, setIsSessionsLoading] = useState(false);
+    const [queueFilters, setQueueFilters] = useState({ software: '', slot: '' });
+    const [queueViewMode, setQueueViewMode] = useState('active'); // 'active' or 'history'
     const [showQueueModal, setShowQueueModal] = useState(false);
-    const [queueForm, setQueueForm] = useState({ studentName: '', purpose: '', batchPreference: 'Early AM' });
-    const [isQueueSyncing, setIsQueueSyncing] = useState(false);
-    const [showQueueHistory, setShowQueueHistory] = useState(false);
-    const [activeSearchSlot, setActiveSearchSlot] = useState(null);
-
-    // Complaint State
+    const [queueForm, setQueueForm] = useState({ studentId: '', preferredSoftware: '', preferredSlot: 'Early AM' });
+    const [activeWaitlistSearch, setActiveWaitlistSearch] = useState(null);
+    const [showHistoryModal, setShowHistoryModal] = useState(false);
+    const [showQueueHistoryModal, setShowQueueHistoryModal] = useState(false);
+    const [queueHistory, setQueueHistory] = useState([]);
+    const [isQueueHistoryLoading, setIsQueueHistoryLoading] = useState(false);
+    const [selectedStudentForHistory, setSelectedStudentForHistory] = useState(null);
+    const [historyLogs, setHistoryLogs] = useState([]);
+    const [isHistoryLoading, setIsHistoryLoading] = useState(false);
     const [showComplaintModal, setShowComplaintModal] = useState(false);
     const [complaintForm, setComplaintForm] = useState(emptyComplaintForm);
     const [savingComplaint, setSavingComplaint] = useState(false);
@@ -376,6 +615,29 @@ function ArrangementContent() {
         }
     }, [selectedLabId, today]);
 
+    useEffect(() => {
+        if (showHistoryModal && selectedLabId) {
+            fetchHistory();
+        }
+    }, [showHistoryModal, selectedLabId, selectedStudentForHistory]);
+
+    // Real-time Updates
+    useEffect(() => {
+        if (!socket || !selectedLabId) return;
+
+        const handleLabUpdate = (payload) => {
+            if (payload.labId === selectedLabId) {
+                console.log("Real-time update received:", payload.type);
+                fetchAll();
+                if (showHistoryModal) fetchHistory();
+                if (queueViewMode === 'history') fetchQueueHistory();
+            }
+        };
+
+        socket.on('lab:update', handleLabUpdate);
+        return () => socket.off('lab:update', handleLabUpdate);
+    }, [socket, selectedLabId, showHistoryModal]);
+
     const fetchLabs = async (isInitial = false) => {
         if (isInitial) setLabLoading(true);
         try {
@@ -389,6 +651,22 @@ function ArrangementContent() {
         }
     };
 
+    const fetchQueueHistory = async () => {
+        if (!selectedLabId) return;
+        setIsQueueHistoryLoading(true);
+        try {
+            const data = await labLifecycleService.getQueue({
+                labId: selectedLabId,
+                status: "completed,cancelled"
+            });
+            setQueueHistory(data || []);
+        } catch (e) {
+            toast.error("Failed to load finished students");
+        } finally {
+            setIsQueueHistoryLoading(false);
+        }
+    };
+
     const normalizeRow = (r) => r?.replace(/Row\s+/i, '').trim().toUpperCase() || 'A';
 
     const fetchAll = async (isInitial = false) => {
@@ -396,16 +674,18 @@ function ArrangementContent() {
         else setRefreshing(true);
 
         try {
-            const [pcData, schedData, rowData, queueData] = await Promise.all([
+            const [pcData, schedData, rowData, queueData, sessionData] = await Promise.all([
                 labService.getPCs(selectedLabId),
                 labService.getSchedules({ date: today, labId: selectedLabId }),
                 labService.getRows(selectedLabId),
-                labService.getQueue(selectedLabId, showQueueHistory) // Pass history toggle
+                labLifecycleService.getQueue({ labId: selectedLabId }),
+                labLifecycleService.getActiveSessions(selectedLabId)
             ]);
             setPCs(pcData.map(p => ({ ...p, row: normalizeRow(p.row) })));
             setSchedules(schedData);
             setRows(rowData);
-            setQueue(queueData);
+            setQueue(queueData || []);
+            setActiveSessions(sessionData || []);
 
             // Inflate emptySlots from rows for rendering
             const inflatedSlots = [];
@@ -419,6 +699,11 @@ function ArrangementContent() {
                 });
             });
             setEmptySlots(inflatedSlots);
+
+            // Auto fetch history if in history mode
+            if (queueViewMode === 'history') {
+                fetchQueueHistory();
+            }
         } catch (e) {
             console.error(e);
         } finally {
@@ -427,8 +712,70 @@ function ArrangementContent() {
         }
     };
 
+    const fetchHistory = async () => {
+        setIsHistoryLoading(true);
+        try {
+            const params = { labId: selectedLabId };
+            if (selectedStudentForHistory) {
+                if (selectedStudentForHistory.studentId?._id || selectedStudentForHistory.studentId) {
+                    params.studentId = selectedStudentForHistory.studentId?._id || selectedStudentForHistory.studentId;
+                } else {
+                    params.studentName = selectedStudentForHistory.studentName;
+                }
+            }
+            const logs = await labLifecycleService.getHistory(params);
+            setHistoryLogs(logs || []);
+        } catch (err) {
+            console.error("Failed to fetch history:", err);
+        } finally {
+            setIsHistoryLoading(false);
+        }
+    };
+
+
+    useEffect(() => {
+        if (queueViewMode === 'history') {
+            fetchQueueHistory();
+        }
+    }, [queueViewMode, selectedLabId]);
+
+    // Student search for Queue Modal
+    const [studentSearch, setStudentSearch] = useState("");
+    const [studentResults, setStudentResults] = useState([]);
+    const [isSearchingStudents, setIsSearchingStudents] = useState(false);
+
+    useEffect(() => {
+        const delayDebounce = setTimeout(async () => {
+            if (studentSearch.length < 2) {
+                setStudentResults([]);
+                return;
+            }
+
+            const currentLab = labs.find(l => l._id === selectedLabId);
+            const labBrands = currentLab?.brands || [];
+
+            setIsSearchingStudents(true);
+            try {
+                const response = await axios.get(`${API}/students/all`, {
+                    params: {
+                        search: studentSearch,
+                        brands: labBrands.join(',')
+                    },
+                    withCredentials: true
+                });
+                setStudentResults((response.data.students || []).slice(0, 10));
+            } catch (err) {
+                console.error("Search failed", err);
+            } finally {
+                setIsSearchingStudents(false);
+            }
+        }, 500);
+        return () => clearTimeout(delayDebounce);
+    }, [studentSearch, selectedLabId, labs]);
+
     const handleSavePC = async (e) => {
         e.preventDefault();
+        setIsSubmittingPC(true);
         const normalizedRow = normalizeRow(pcForm.row);
 
         // Split software string into array before saving
@@ -447,6 +794,8 @@ function ArrangementContent() {
             fetchAll();
         } catch (e) {
             toast.error(e.message || "Action failed");
+        } finally {
+            setIsSubmittingPC(false);
         }
     };
 
@@ -488,10 +837,9 @@ function ArrangementContent() {
                         return p;
                     }));
 
-                    await Promise.all([
-                        labService.updatePC(sourceId, newSourceCoords),
-                        labService.updatePC(targetPC._id, oldSourceCoords)
-                    ]);
+                    // Sequential to avoid race condition on Laboratory document
+                    await labService.updatePC(sourceId, newSourceCoords);
+                    await labService.updatePC(targetPC._id, oldSourceCoords);
                 } else {
                     const newCoords = { row: normalizedTarget, position: targetPos };
                     setPCs(prev => prev.map(p => p._id === sourceId ? { ...p, ...newCoords } : p));
@@ -522,76 +870,113 @@ function ArrangementContent() {
         } catch (e) { }
     };
 
+    const handleOpenComplaint = (pc) => {
+        setComplaintForm({ ...emptyComplaintForm, pcId: pc._id });
+        setShowComplaintModal(true);
+    };
+
+    const handleSaveComplaint = async (e) => {
+        e.preventDefault();
+        if (!complaintForm.pcId || !complaintForm.title?.trim()) return;
+        setSavingComplaint(true);
+        try {
+            await labService.addComplaint(complaintForm);
+            toast.success("Complaint filed successfully");
+            setShowComplaintModal(false);
+            setComplaintForm(emptyComplaintForm);
+        } catch (err) {
+            toast.error(err.message || "Failed to file complaint");
+        } finally {
+            setSavingComplaint(false);
+        }
+    };
+
     const openManageModal = (pc) => {
         // Build slotForms from existing bookings for this PC today
         const existing = pcSchedules(pc._id);
         const forms = {};
         TIME_SLOTS.forEach(slot => {
+            // Find in traditional schedules or active lifecycle sessions
             const match = existing.find(s => s.timeSlot === slot);
+            const sessionMatch = activeSessions.find(s =>
+                s.pcId === pc._id &&
+                s.slot === slot &&
+                (s.status === 'active' || s.status === 'assigned')
+            );
+
+            const effectiveMatch = match || sessionMatch;
+
             forms[slot] = {
-                studentName: match?.studentName || '',
-                purpose: match?.purpose || '',
-                existingId: match?._id || null,
-                queueId: match?.queueItem || null, // Load existing link if present
+                studentName: effectiveMatch?.studentName || effectiveMatch?.studentId?.fullName || '',
+                studentId: effectiveMatch?.studentId?._id || effectiveMatch?.studentId || effectiveMatch?.student || null,
+                purpose: effectiveMatch?.purpose || effectiveMatch?.software || '',
+                existingId: match?._id || null, // Only traditional schedules have existingId for update/delete
+                sessionId: sessionMatch?._id || null, // Track lifecycle session if present
+                queueId: match?.queueItem || match?.queueId || sessionMatch?.queueId || null,
                 toDelete: false,
             };
         });
         setSlotForms(forms);
         setSelectedPC(pc);
-        setScheduleForm({ ...emptySchedule, date: today });
         setShowScheduleModal(true);
     };
 
     const handleUpdateSlots = async (e) => {
         e.preventDefault();
+        setIsSubmittingSchedule(true);
         try {
-            const promises = [];
-
+            // Sequential execution to avoid race conditions on the Laboratory document
             for (const slot of TIME_SLOTS) {
                 const f = slotForms[slot];
                 if (!f) continue;
 
-                if (f.toDelete && f.existingId) {
-                    promises.push(labService.deleteSchedule(f.existingId));
-                } else if (!f.toDelete && f.studentName.trim()) {
-                    // Fallback: If no queueId but name matches a waitlist entry exactly (case-insensitive), auto-link it
-                    let finalQueueId = f.queueId;
-                    if (!finalQueueId) {
-                        const match = queue.find(q =>
-                            q.status === 'waiting' &&
-                            q.studentName.trim().toLowerCase() === f.studentName.trim().toLowerCase()
-                        );
-                        if (match) finalQueueId = match._id;
-                    }
+                if (f.toDelete) {
+                    if (f.existingId) {
+                        await labService.deleteSchedule(f.existingId);
+                    } else if (f.sessionId) {
+                        // For lifecycle sessions (like manual entries from queue), we need a way to delete them and re-queue.
+                        // I'll assume labLifecycleService has or needs a way to handle this.
+                        // But wait, the backend deleteSchedule handles re-queuing! 
+                        // If it's a session but NO schedule, we might need a separate endpoint or just handle it here.
+                        // However, manually entered students FROM QUEUE usually get a Schedule when assigned.
+                        // If they ONLY have a sessionId, it means they might have been assigned differently.
+                        // Let's check how they were assigned.
 
+                        // If they were assigned from waitlist using our search, it adds a schedule.
+                        // So they should have an existingId.
+                        // If they don't, it might be an 'active' session without a persistent schedule object?
+                        // Let's add support for session deletion if no schedule exists.
+                        await labLifecycleService.endSession(f.sessionId, { status: 'cancelled', reQueue: true });
+                    }
+                } else if (!f.toDelete && f.studentName.trim()) {
                     if (!f.existingId) {
-                        // New booking
-                        promises.push(labService.addSchedule({
+                        // New booking - assignment (from queue or direct handled by backend)
+                        await labService.addSchedule({
                             pc: selectedPC._id,
+                            student: f.studentId,
                             studentName: f.studentName.trim(),
                             purpose: f.purpose,
                             date: today,
                             timeSlot: slot,
-                            queueItem: finalQueueId || null
-                        }));
+                            queueId: f.queueId // Pass queueId to backend if assigning from waitlist
+                        });
                     } else {
                         // Update existing booking
-                        promises.push(labService.updateSchedule(f.existingId, {
+                        await labService.updateSchedule(f.existingId, {
+                            student: f.studentId, // Included studentId
                             studentName: f.studentName.trim(),
-                            purpose: f.purpose,
-                            queueItem: finalQueueId || undefined
-                        }));
+                            purpose: f.purpose
+                        });
                     }
                 }
             }
 
-            await Promise.all(promises);
-
-            toast.success('Slots updated!');
             setShowScheduleModal(false);
             fetchAll();
         } catch (e) {
             toast.error(e.message || 'Failed to update slots');
+        } finally {
+            setIsSubmittingSchedule(false);
         }
     };
 
@@ -664,30 +1049,10 @@ function ArrangementContent() {
         }
     };
 
-    const handleAddToQueue = async (e) => {
-        e.preventDefault();
-        if (!selectedLabId) return;
-        try {
-            await labService.addToQueue({ ...queueForm, labId: selectedLabId });
-            setShowQueueModal(false);
-            setQueueForm({ studentName: '', purpose: '', batchPreference: 'Early AM' });
-            fetchAll();
-        } catch (e) {
-            toast.error(e.message || "Failed to add to queue");
-        }
-    };
-
-    const handleRemoveFromQueue = async (id) => {
-        try {
-            await labService.removeFromQueue(id);
-            fetchAll();
-        } catch (e) {
-            toast.error("Failed to remove from queue");
-        }
-    };
 
     const handleSaveLab = async (e) => {
         e.preventDefault();
+        setIsSubmitting(true);
         try {
             if (editingLab) {
                 await labService.updateLab(editingLab._id, labForm);
@@ -701,6 +1066,8 @@ function ArrangementContent() {
             fetchLabs();
         } catch (e) {
             toast.error(e.message || "Failed to save laboratory");
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -760,18 +1127,120 @@ function ArrangementContent() {
         setShowLabModal(true);
     };
 
-    const handleSaveComplaint = async (e) => {
+
+    const handleAddToQueue = async (e) => {
         e.preventDefault();
-        if (!complaintForm.pcId || !complaintForm.title.trim()) return;
-        setSavingComplaint(true);
+        if (!queueForm.studentId && !studentSearch.trim()) return;
+        setIsQueueLoading(true);
         try {
-            await labService.addComplaint(complaintForm);
-            setShowComplaintModal(false);
-            setComplaintForm(emptyComplaintForm);
+            await labLifecycleService.addToQueue({
+                ...queueForm,
+                studentName: studentSearch.trim(),
+                labId: selectedLabId
+            });
+            setShowQueueModal(false);
+            setStudentSearch("");
+            setStudentResults([]);
+            setQueueForm({ studentId: '', preferredSoftware: '', preferredSlot: 'Early AM' });
+            fetchAll();
         } catch (e) {
-            toast.error(e.message || "Failed to raise complaint");
+            toast.error(e.message || "Failed to add to queue");
         } finally {
-            setSavingComplaint(false);
+            setIsQueueLoading(false);
+        }
+    };
+
+    const handleOpenSessionModal = (pc) => {
+        openManageModal(pc);
+    };
+
+    const handleSessionAction = async (action, data = {}) => {
+        setIsSessionsLoading(true);
+        try {
+            // Minimal shell for compatibility or later use
+            console.log(`Action ${action} triggered with data:`, data);
+        } catch (e) {
+            toast.error(e.message);
+        } finally {
+            setIsSessionsLoading(false);
+        }
+    };
+
+    const processQueueAssignment = async (queueItem, pcId, slot) => {
+        setIsSessionsLoading(true);
+        try {
+            await labLifecycleService.assignSession({
+                studentId: queueItem.studentId._id,
+                labId: selectedLabId,
+                pcId,
+                slot,
+                software: queueItem.preferredSoftware,
+                queueId: queueItem._id
+            });
+            fetchAll();
+        } catch (e) {
+            toast.error(e.message || "Failed to assign student");
+        } finally {
+            setIsSessionsLoading(true);
+        }
+    };
+
+    const handleRemoveFromQueue = async (id) => {
+        if (!window.confirm("Remove student from queue?")) return;
+        try {
+            await labLifecycleService.removeFromQueue(id);
+            fetchAll();
+        } catch (e) {
+            toast.error("Failed to remove from queue");
+        }
+    };
+
+    const handleCompleteQueueEntry = async (item) => {
+        console.log("Completing Queue Entry:", { item, activeSessions });
+        // Find if this student has an active or assigned session
+        const studentId = (item.studentId?._id || item.studentId)?.toString();
+        const studentName = item.studentName || item.studentId?.fullName;
+
+        const activeSession = activeSessions.find(s => {
+            const sStudentId = (s.studentId?._id || s.studentId)?.toString();
+            const sStudentName = s.studentName || s.studentId?.fullName;
+
+            if (studentId && sStudentId) {
+                return sStudentId === studentId && (s.status === 'active' || s.status === 'assigned');
+            }
+
+            // Fallback to name matching if IDs are missing (for anonymous/External users)
+            if (!studentId && !sStudentId && studentName && sStudentName) {
+                return sStudentName.toLowerCase() === studentName.toLowerCase() && (s.status === 'active' || s.status === 'assigned');
+            }
+
+            return false;
+        });
+
+        if (activeSession) {
+            if (window.confirm(`Student ${studentName} has an active session on Station ${activeSession.pcNumber || '?'}. End that session?`)) {
+                try {
+                    await labLifecycleService.endSession(activeSession._id, { status: 'completed' });
+                    toast.success("Active session ended");
+                    await fetchAll();
+                } catch (e) {
+                    toast.error("Failed to end active session");
+                    return; // Don't proceed to completion if ending failed
+                }
+            } else {
+                return; // User cancelled
+            }
+        }
+
+        // Mark the queue entry as completed
+        if (window.confirm(`Mark ${studentName} as Completed? This student will be moved to history.`)) {
+            try {
+                await labLifecycleService.removeFromQueue(item._id, { status: 'completed' });
+                toast.success("Student marked as completed");
+                fetchAll();
+            } catch (e) {
+                toast.error("Failed to complete queue entry");
+            }
         }
     };
 
@@ -812,395 +1281,652 @@ function ArrangementContent() {
             />
 
             <div className="space-y-6 relative z-20">
-                <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 border border-gray-100 dark:border-gray-800 shadow-sm relative z-30">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5 p-1 bg-gray-50 dark:bg-gray-900 rounded-xl overflow-x-auto no-scrollbar max-w-full">
-                                {labs.map(lab => (
+                <ComponentCard
+                    bodyClassName="p-0"
+                    title={
+                        <div className="flex items-center gap-2 p-1.5 bg-gray-100/50 dark:bg-gray-900/50 rounded-2xl overflow-x-auto no-scrollbar max-w-full border border-gray-200/50 dark:border-gray-800/50">
+                            {labs.map(lab => (
+                                <div
+                                    key={lab._id}
+                                    className={`group relative flex items-center transition-all duration-300 rounded-xl px-5 py-2.5 min-w-[140px] border-2 cursor-pointer
+                                        ${selectedLabId === lab._id
+                                            ? 'bg-white dark:bg-gray-800 text-blue-950 shadow-theme-md border-blue-950/50 dark:border-blue-950/50'
+                                            : 'bg-transparent text-gray-400 dark:text-gray-500 border-transparent hover:text-gray-600 dark:hover:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-800/30 hover:border-gray-200 dark:hover:border-gray-700'}`}
+                                    onClick={() => setSelectedLabId(lab._id)}
+                                >
                                     <button
-                                        key={lab._id}
-                                        onClick={() => setSelectedLabId(lab._id)}
-                                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all shrink-0 whitespace-nowrap
-                                            ${selectedLabId === lab._id
-                                                ? 'bg-white dark:bg-gray-800 text-brand-500 shadow-sm border border-gray-100 dark:border-gray-700'
-                                                : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
-                                            }`}
+                                        className="text-[11px] font-black uppercase tracking-[0.15em] whitespace-nowrap flex-1 text-left leading-none"
                                     >
                                         {lab.name}
                                     </button>
-                                ))}
-                                <button
-                                    onClick={handleAddLabButtonClick}
-                                    className="p-2 text-gray-400 hover:text-brand-500 transition-colors"
-                                    title="Add New Laboratory"
-                                >
-                                    <PlusIcon className="w-5 h-5" />
-                                </button>
-                            </div>
-                        </div>
 
-                        <div className="flex items-center gap-3 shrink-0">
-                            {canManageLab && selectedLabId && labs.find(l => l._id === selectedLabId) && (
-                                <div className="flex items-center gap-2 pr-4 border-r border-gray-100 dark:border-gray-700">
-                                    <button
-                                        onClick={() => onEditLab(labs.find(l => l._id === selectedLabId))}
-                                        className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-brand-500 hover:bg-brand-50/50 dark:hover:bg-brand-500/1 rounded-xl transition-all"
-                                        title="Edit Laboratory"
-                                    >
-                                        <PencilIcon className="w-5 h-5" />
-                                    </button>
-                                    <button
-                                        onClick={() => handleDeleteLab(selectedLabId)}
-                                        className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-xl transition-all"
-                                        title="Delete Laboratory"
-                                    >
-                                        <TrashBinIcon className="w-5 h-5" />
-                                    </button>
-                                </div>
-                            )}
-                            {canManageWorkstations && (
-                                <Button
-                                    onClick={() => {
-                                        setEditingPC(null);
-                                        setPCForm(emptyPC);
-                                        setIsQuickAdd(false);
-                                        setShowPCModal(true);
-                                    }}
-                                    className="rounded-xl px-5 h-[40px] shadow-lg shadow-brand-500/10 text-xs font-bold uppercase tracking-wider"
-                                    disabled={!selectedLabId}
-                                >
-                                    <PlusIcon className="w-4 h-4 mr-2" />
-                                    New Workstation
-                                </Button>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                <ComponentCard title="" desc="">
-                    <div className="bg-white dark:bg-gray-900/50 rounded-2xl p-8 border border-gray-100 dark:border-gray-800 min-h-[400px] relative z-10">
-                        {/* Lab Header & Queue */}
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 pb-10 border-b border-gray-50 dark:border-gray-800/50">
-                            <div className="space-y-1">
-                                <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                                    <div className="w-2 h-6 bg-brand-500 rounded-full" />
-                                    {labs.find(l => l._id === selectedLabId)?.name || "Laboratory"}
-                                </h3>
-                                <p className="text-sm text-gray-500 dark:text-gray-400 pl-4 border-l-2 border-gray-100 dark:border-gray-800 ml-1">
-                                    {labs.find(l => l._id === selectedLabId)?.location || "Workstation Scheduling"}
-                                </p>
-                            </div>
-
-                            <div className="flex-1 max-w-2xl">
-                                {(() => {
-                                    const globallyAssignedQueueIds = schedules
-                                        .filter(s => s.date.split('T')[0] === today)
-                                        .map(s => s.queueItem)
-                                        .filter(Boolean);
-
-                                    const activeWaitlist = queue.filter(q => q.status === 'waiting' && !globallyAssignedQueueIds.includes(q._id));
-
-                                    return (
-                                        <>
-                                            <div className="flex items-center gap-3">
-                                                <div className="flex -space-x-1.5 invite-avatars">
-                                                    {activeWaitlist.slice(0, 4).map((q, i) => {
-                                                        const colors = [
-                                                            'bg-brand-100 text-brand-600',
-                                                            'bg-purple-100 text-purple-600',
-                                                            'bg-blue-100 text-blue-600',
-                                                            'bg-amber-100 text-amber-600'
-                                                        ];
-                                                        const colorClass = colors[i % colors.length];
-                                                        return (
-                                                            <div
-                                                                key={q._id}
-                                                                className={`w-7 h-7 rounded-full border-2 border-white dark:border-gray-900 ${colorClass} flex items-center justify-center text-[10px] font-bold shadow-sm ring-1 ring-black/5`}
-                                                                title={q.studentName}
-                                                            >
-                                                                {q.studentName.charAt(0)}
-                                                            </div>
-                                                        );
-                                                    })}
-                                                    {activeWaitlist.length > 4 && (
-                                                        <div className="w-7 h-7 rounded-full border-2 border-white dark:border-gray-900 bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-[9px] font-bold text-gray-500 shadow-sm ring-1 ring-black/5">
-                                                            +{activeWaitlist.length - 4}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div className="flex flex-col">
-                                                    <span className="text-[11px] font-black text-gray-900 dark:text-gray-100 leading-tight">
-                                                        {showQueueHistory ? 'Queue History' : 'Live Waitlist'}
-                                                    </span>
-                                                    <span className="text-[9px] font-bold text-brand-500/80 uppercase tracking-tighter">
-                                                        {showQueueHistory ? queue.length : activeWaitlist.length} Students
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex items-center gap-1.5">
+                                    <div className={`flex items-center gap-2 ml-3 transition-all duration-300 ${selectedLabId === lab._id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                                        {canManageLab && (
+                                            <>
                                                 <button
-                                                    onClick={() => {
-                                                        setShowQueueHistory(!showQueueHistory);
-                                                        // Trigger fetch with new history state
-                                                        setTimeout(() => fetchAll(), 0);
-                                                    }}
-                                                    className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition-all ${showQueueHistory
-                                                        ? 'bg-brand-500 text-white shadow-lg shadow-brand-500/20'
-                                                        : 'bg-white dark:bg-gray-800 text-gray-500 border border-gray-100 dark:border-gray-700 hover:bg-gray-50'
-                                                        }`}
+                                                    onClick={(e) => { e.stopPropagation(); onEditLab(lab); }}
+                                                    className="p-1 hover:text-blue-900 transition-colors rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/10"
+                                                    title="Edit Environment"
                                                 >
-                                                    {showQueueHistory ? 'Show Active' : 'History'}
+                                                    <PencilIcon className="w-3.5 h-3.5" />
                                                 </button>
-                                                {!showQueueHistory && (
-                                                    <button
-                                                        onClick={() => setShowQueueModal(true)}
-                                                        className="w-8 h-8 flex items-center justify-center bg-brand-500 text-white rounded-lg hover:scale-105 transition-transform shadow-lg shadow-brand-500/20"
-                                                        title="Add to Waitlist"
-                                                    >
-                                                        <PlusIcon className="w-4 h-4" />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </>
-                                    );
-                                })()}
-                            </div>
-
-                            <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-1 px-1">
-                                {(() => {
-                                    const globallyAssignedQueueIds = schedules
-                                        .filter(s => s.date.split('T')[0] === today)
-                                        .map(s => s.queueItem)
-                                        .filter(Boolean);
-
-                                    const filteredQueue = showQueueHistory
-                                        ? queue.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-                                        : queue.filter(q => q.status === 'waiting' && !globallyAssignedQueueIds.includes(q._id));
-
-                                    if (filteredQueue.length === 0) {
-                                        return (
-                                            <div className="flex items-center gap-2 px-2 py-3 bg-white/40 dark:bg-gray-800/20 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 w-full justify-center">
-                                                <div className="w-1.5 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full animate-pulse" />
-                                                <p className="text-[10px] text-gray-400 font-medium tracking-tight">Waitlist is empty...</p>
-                                            </div>
-                                        );
-                                    }
-
-                                    return filteredQueue.map(item => {
-                                        const statusColors = {
-                                            waiting: 'bg-brand-500',
-                                            assigned: 'bg-blue-500',
-                                            completed: 'bg-green-500',
-                                            cancelled: 'bg-gray-400'
-                                        };
-                                        const statusColor = statusColors[item.status] || 'bg-brand-500';
-
-                                        return (
-                                            <div
-                                                key={item._id}
-                                                className="group relative bg-white dark:bg-gray-800/80 backdrop-blur-sm border border-gray-100 dark:border-gray-700/50 rounded-xl px-3.5 py-2.5 flex items-center gap-3 shrink-0 hover:border-brand-300 dark:hover:border-brand-500/30 hover:shadow-md transition-all duration-300 cursor-default"
-                                            >
-                                                <div className="relative">
-                                                    <div className="w-8 h-8 rounded-lg bg-gray-50 dark:bg-gray-900/50 flex items-center justify-center text-[11px] font-black text-gray-400 group-hover:text-brand-500 transition-colors">
-                                                        {item.studentName.charAt(0)}
-                                                    </div>
-                                                    <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 ${statusColor} border-2 border-white dark:border-gray-800 rounded-full`} title={item.status} />
-                                                </div>
-                                                <div className="space-y-0.5 min-w-0">
-                                                    <p className="text-[11px] font-bold text-gray-900 dark:text-gray-100 truncate max-w-[110px] tracking-tight">{item.studentName}</p>
-                                                    <div className="flex items-center gap-1.5 max-w-[110px]">
-                                                        <span className="text-[9px] text-brand-500 font-black uppercase tracking-tighter shrink-0">{item.batchPreference}</span>
-                                                        <span className="text-[9px] text-gray-400 truncate opacity-70 italic">{item.purpose}</span>
-                                                    </div>
-                                                </div>
-                                                {item.status === 'waiting' && !showQueueHistory && (
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); handleRemoveFromQueue(item._id); }}
-                                                        className="w-6 h-6 flex items-center justify-center rounded-lg bg-red-50 dark:bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-100 dark:hover:bg-red-500/20"
-                                                        title="Remove from Waitlist"
-                                                    >
-                                                        <span className="text-xs">×</span>
-                                                    </button>
-                                                )}
-                                                {showQueueHistory && (
-                                                    <div className="flex flex-col items-end opacity-40 group-hover:opacity-100 transition-opacity pl-2 border-l border-gray-50 dark:border-gray-700">
-                                                        <span className="text-[8px] font-bold text-gray-400 uppercase leading-none tracking-tighter">{item.status}</span>
-                                                        <span className="text-[7px] text-gray-300 dark:text-gray-600 font-medium">
-                                                            {new Date(item.createdAt).toLocaleDateString() === new Date().toLocaleDateString() ? 'Today' : 'Earlier'}
-                                                        </span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        );
-                                    });
-                                })()}
-                            </div>
-                        </div>
-                        {loading ? (
-                            <div className="flex flex-col items-center justify-center py-32 space-y-4">
-                                <div className="size-12 border-4 border-brand-500/20 border-t-brand-500 rounded-full animate-spin" />
-                                <p className="text-gray-400 font-medium animate-pulse">Syncing environment arrangement...</p>
-                            </div>
-                        ) : (visibleRowNames.length === 0) ? (
-                            <div className="text-center py-24 border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-3xl">
-                                <MonitorIcon className="w-16 h-16 mx-auto text-gray-200 dark:text-gray-800 mb-6" />
-                                <p className="text-gray-500 font-semibold mb-2">No workstations mapped yet</p>
-                                <p className="text-gray-400 text-sm mb-8">Start by creating your first section.</p>
-                                <Button variant="primary" size="sm" onClick={handleAddNewRowButtonClick} disabled={!selectedLabId}>
-                                    Create Section A
-                                </Button>
-                            </div>
-                        ) : (
-                            <div className="overflow-x-auto no-scrollbar -mx-8 px-8 pb-32 relative">
-                                {refreshing && (
-                                    <div className="absolute inset-0 z-50 bg-white/40 dark:bg-gray-900/40 backdrop-blur-[1px] flex items-start justify-center pt-20">
-                                        <div className="bg-white dark:bg-gray-800 shadow-xl border border-gray-100 dark:border-gray-700 rounded-full px-4 py-2 flex items-center gap-2 animate-bounce">
-                                            <div className="size-2 bg-brand-500 rounded-full animate-ping" />
-                                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Refreshing...</span>
-                                        </div>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleDeleteLab(lab._id); }}
+                                                    className="p-1 hover:text-red-500 transition-colors rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10"
+                                                    title="Delete Environment"
+                                                >
+                                                    <XMarkIcon className="w-4 h-4" />
+                                                </button>
+                                            </>
+                                        )}
                                     </div>
-                                )}
-                                <div className="space-y-0 min-w-max pt-10">
-                                    {visibleRowNames.map((rowName) => (
-                                        <RowContainer
-                                            key={rowName}
-                                            row={rows.find(r => normalizeRow(r.name) === rowName) || { name: rowName }}
-                                            pcsInRow={rowsMap[rowName] || []}
-                                            emptySlotsInRow={slotsMap[rowName] || []}
-                                            onMovePC={handleMovePC}
-                                            onQuickAdd={handleQuickAddSlot}
-                                            onEditRow={(row) => {
-                                                setRowForm({ name: row.name });
-                                                setEditingRow(row);
-                                                setShowRowModal(true);
-                                            }}
-                                            onDeleteRow={handleDeleteRow}
-                                            renderPC={(pc) => {
-                                                const todaySlots = pcSchedules(pc._id);
-                                                const effectiveStatus = getEffectiveStatus(pc, todaySlots);
-                                                const cfg = STATUS_CONFIG[effectiveStatus] || STATUS_CONFIG.available;
-                                                const inUse = effectiveStatus === 'in-use';
-                                                return (
-                                                    <PCSeat
-                                                        key={pc._id}
-                                                        pc={pc}
-                                                        cfg={cfg}
-                                                        todaySlots={todaySlots}
-                                                        inUse={inUse}
-                                                        onAssign={() => openManageModal(pc)}
-                                                        onEdit={(pc) => {
-                                                            setPCForm({
-                                                                ...pc,
-                                                                softwares: Array.isArray(pc.softwares) ? pc.softwares.join(', ') : (pc.softwares || '')
-                                                            });
-                                                            setEditingPC(pc);
-                                                            setIsQuickAdd(false);
-                                                            setShowPCModal(true);
-                                                        }}
-                                                        onDelete={handleDeletePC}
-                                                        onMovePC={handleMovePC}
-                                                        onComplaint={(pc) => {
-                                                            setComplaintForm({ ...emptyComplaintForm, pcId: pc._id });
-                                                            setShowComplaintModal(true);
-                                                        }}
-                                                    />
-                                                )
-                                            }}
-                                            renderSlot={(slot) => (
-                                                <EmptySlotPlaceholder
-                                                    key={slot._id}
-                                                    slot={slot}
-                                                    onInitialize={handleInitializeSlot}
-                                                    onRemove={handleRemoveSlot}
-                                                    onMovePC={handleMovePC}
-                                                />
-                                            )}
-                                        />
-                                    ))}
-
-                                    {canManageWorkstations && (
-                                        <div className="pt-12 flex justify-center">
-                                            <button
-                                                onClick={handleAddNewRowButtonClick}
-                                                className="flex items-center gap-2.5 px-8 py-4 border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-2xl text-xs font-black text-gray-500 hover:text-brand-600 hover:border-brand-500 hover:bg-brand-50/50 dark:hover:bg-brand-500/1 transition-all uppercase tracking-widest group shadow-sm hover:shadow-md"
-                                            >
-                                                <PlusIcon className="w-4 h-4" />
-                                                Add Section {getNextRowName()}
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="mt-20 pt-10 border-t border-gray-100 dark:border-gray-800 flex flex-wrap justify-center gap-8">
-                            {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
-                                <div key={key} className="flex items-center gap-2.5">
-                                    <span className={`w-2.5 h-2.5 rounded-sm ${cfg.dot} shadow-sm`} />
-                                    <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">{cfg.label}</span>
                                 </div>
                             ))}
+
+                            <div className="flex items-center gap-2 ml-auto pr-2">
+                                {canManageLab && (
+                                    <button
+                                        onClick={handleAddLabButtonClick}
+                                        className="flex items-center justify-center size-10 shrink-0 rounded-xl bg-white dark:bg-gray-800 border-2 border-dashed border-gray-200 dark:border-gray-700 text-gray-400 hover:border-blue-950 hover:text-blue-950 dark:hover:border-blue-950 transition-all shadow-sm"
+                                        title="Add New Lab Environment"
+                                    >
+                                        <PlusIcon className="w-5 h-5" />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    }
+                >
+                    <div className="flex bg-white dark:bg-gray-800 rounded-3xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800 min-h-[600px]">
+                        <QueuePanel
+                            show={showQueuePanel}
+                            onToggle={() => setShowQueuePanel(!showQueuePanel)}
+                            queue={queue}
+                            loading={isQueueLoading}
+                            filters={queueFilters}
+                            setFilters={setQueueFilters}
+                            onAdd={() => setShowQueueModal(true)}
+                            onRemove={handleRemoveFromQueue}
+                            onAssign={handleCompleteQueueEntry}
+                            onStudentClick={(student) => {
+                                setSelectedStudentForHistory(student);
+                                setShowHistoryModal(true);
+                            }}
+                            viewMode={queueViewMode}
+                            setViewMode={setQueueViewMode}
+                            historyData={queueHistory}
+                            historyLoading={isQueueHistoryLoading}
+                        />
+
+                        <div className="flex-1 relative z-10 p-8 pt-6">
+                            {/* Lab Arrangement Grid */}
+                            {loading ? (
+                                <div className="flex flex-col items-center justify-center py-32 space-y-4">
+                                    <div className="size-12 border-4 border-blue-950/20 border-t-blue-950 rounded-full animate-spin" />
+                                    <p className="text-gray-400 font-medium animate-pulse">Syncing environment arrangement...</p>
+                                </div>
+                            ) : (visibleRowNames.length === 0) ? (
+                                <div className="text-center py-24">
+                                    <MonitorIcon className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-700 mb-6" />
+                                    <p className="text-gray-700 dark:text-gray-200 font-semibold mb-2">No workstations mapped yet</p>
+                                    <p className="text-gray-600 dark:text-gray-400 text-sm mb-8">Start by creating your first section.</p>
+                                    <Button className="!bg-blue-950 hover:!bg-blue-900" size="sm" onClick={handleAddNewRowButtonClick} disabled={!selectedLabId}>
+                                        Create Section A
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto no-scrollbar -mx-2 px-2 pb-32 relative">
+                                    {refreshing && (
+                                        <div className="absolute inset-0 z-50 bg-white/40 dark:bg-gray-900/40 backdrop-blur-[1px] flex items-start justify-center pt-20">
+                                            <div className="bg-white dark:bg-gray-800 shadow-xl border border-gray-100 dark:border-gray-700 rounded-full px-4 py-2 flex items-center gap-2 animate-bounce">
+                                                <div className="size-2 bg-brand-500 rounded-full animate-ping" />
+                                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Refreshing...</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="space-y-0 min-w-max pt-4">
+                                        {visibleRowNames.map((rowName, idx) => {
+                                            const pcsInRow = rowsMap[rowName] || [];
+                                            const hasActiveTooltip = pcsInRow.some(p => p._id === expandedPCId || p._id === hoveredPCId);
+                                            return (
+                                                <RowContainer
+                                                    key={rowName}
+                                                    row={rows.find(r => normalizeRow(r.name) === rowName) || { name: rowName }}
+                                                    pcsInRow={pcsInRow}
+                                                    emptySlotsInRow={slotsMap[rowName] || []}
+                                                    hasActiveTooltip={hasActiveTooltip}
+                                                    expandedPCId={expandedPCId}
+                                                    onMovePC={handleMovePC}
+                                                    onQuickAdd={handleQuickAddSlot}
+                                                    onEditRow={(row) => {
+                                                        setRowForm({ name: row.name });
+                                                        setEditingRow(row);
+                                                        setShowRowModal(true);
+                                                    }}
+                                                    onDeleteRow={handleDeleteRow}
+                                                    renderPC={(pc) => {
+                                                        const todaySlots = pcSchedules(pc._id);
+                                                        const effectiveStatus = getEffectiveStatus(pc, todaySlots, activeSessions);
+                                                        const cfg = STATUS_CONFIG[effectiveStatus] || STATUS_CONFIG.available;
+                                                        const inUse = effectiveStatus === 'in-use';
+                                                        return (
+                                                            <PCSeat
+                                                                key={pc._id}
+                                                                pc={pc}
+                                                                cfg={cfg}
+                                                                todaySlots={todaySlots}
+                                                                activeSessions={activeSessions}
+                                                                inUse={inUse}
+                                                                isExpanded={expandedPCId === pc._id}
+                                                                onToggleExpand={setExpandedPCId}
+                                                                hoveredPCId={hoveredPCId}
+                                                                setHoveredPCId={setHoveredPCId}
+                                                                onAssign={() => handleOpenSessionModal(pc)}
+                                                                onEdit={(pc) => {
+                                                                    setPCForm({
+                                                                        ...pc,
+                                                                        softwares: Array.isArray(pc.softwares) ? pc.softwares.join(', ') : (pc.softwares || '')
+                                                                    });
+                                                                    setEditingPC(pc);
+                                                                    setIsQuickAdd(false);
+                                                                    setShowPCModal(true);
+                                                                }}
+                                                                onDelete={handleDeletePC}
+                                                                onMovePC={handleMovePC}
+                                                                onComplaint={(pc) => {
+                                                                    setComplaintForm({ ...emptyComplaintForm, pcId: pc._id });
+                                                                    setShowComplaintModal(true);
+                                                                }}
+                                                            />
+                                                        )
+                                                    }}
+                                                    renderSlot={(slot) => (
+                                                        <EmptySlotPlaceholder
+                                                            key={slot._id}
+                                                            slot={slot}
+                                                            onInitialize={handleInitializeSlot}
+                                                            onRemove={handleRemoveSlot}
+                                                            onMovePC={handleMovePC}
+                                                        />
+                                                    )}
+                                                />
+                                            );
+                                        })}
+
+                                        {canManageWorkstations && (
+                                            <div className="pt-12 flex justify-center">
+                                                <button
+                                                    onClick={handleAddNewRowButtonClick}
+                                                    className="flex items-center gap-2.5 px-8 py-4 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl text-xs font-black text-gray-700 dark:text-gray-200 hover:text-brand-600 hover:border-brand-500 hover:bg-brand-50/50 dark:hover:bg-brand-500/1 transition-all uppercase tracking-widest group shadow-sm hover:shadow-md"
+                                                >
+                                                    <PlusIcon className="w-4 h-4" />
+                                                    Add Section {getNextRowName()}
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="mt-20 pt-10 border-t border-gray-100 dark:border-gray-800 flex flex-wrap justify-center gap-8">
+                                {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
+                                    <div key={key} className="flex items-center gap-2.5">
+                                        <span className={`w-2.5 h-2.5 rounded-sm ${cfg.dot} shadow-sm`} />
+                                        <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">{cfg.label}</span>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </ComponentCard>
             </div>
 
-            {
-                showPCModal && (
-                    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-                        <div className="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-md p-8 shadow-2xl border border-white/10">
-                            <div className="mb-8">
-                                <h2 className="text-xl font-bold text-gray-900 dark:text-white uppercase tracking-tight">
-                                    {editingPC ? 'Edit Workstation' : 'New Workstation'}
-                                </h2>
-                                {isQuickAdd && (
-                                    <p className="text-xs font-bold text-brand-500 mt-2 uppercase tracking-widest">Initializing: Seat {pcForm.row}{pcForm.position + 1}</p>
-                                )}
-                            </div>
+            <Modal isOpen={showPCModal} onClose={() => setShowPCModal(false)} className="max-w-xl p-6">
+                <h2 className="text-xl font-semibold text-gray-800 dark:text-white/90 mb-4">
+                    {editingPC ? 'Edit Workstation' : 'New Workstation'}
+                </h2>
+                {isQuickAdd && (
+                    <p className="text-xs font-bold text-blue-950 mb-6 uppercase tracking-widest">Initializing: Seat {pcForm.row}{pcForm.position + 1}</p>
+                )}
 
-                            <form onSubmit={handleSavePC} className="space-y-5">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Workstation Name</label>
-                                        <input
-                                            required
-                                            value={pcForm.pcNumber}
-                                            onChange={e => setPCForm({ ...pcForm, pcNumber: e.target.value.toLowerCase() })}
-                                            className="w-full bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-700 px-4 py-3 text-sm font-bold outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
-                                            placeholder="e.g. cc-01"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Status</label>
-                                        <select
-                                            value={pcForm.status}
-                                            onChange={e => setPCForm({ ...pcForm, status: e.target.value })}
-                                            className="w-full bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-700 px-4 py-3 text-sm font-bold outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 appearance-none bg-no-repeat bg-[right_1rem_center] bg-select-arrow"
-                                        >
-                                            <option value="available">Working</option>
-                                            <option value="maintenance">Repairing</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Installed Softwares</label>
-                                    <textarea
-                                        value={pcForm.softwares || ''}
-                                        onChange={e => setPCForm({ ...pcForm, softwares: e.target.value })}
-                                        className="w-full bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-700 px-4 py-3 text-sm outline-none h-20 resize-none font-medium"
-                                        placeholder="e.g. AutoCAD, Photoshop, MATLAB"
+                <form onSubmit={handleSavePC} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <Label htmlFor="pcNumber">Workstation Name</Label>
+                            <Input
+                                id="pcNumber"
+                                required
+                                value={pcForm.pcNumber}
+                                onChange={e => setPCForm({ ...pcForm, pcNumber: e.target.value.toUpperCase() })}
+                                placeholder="e.g. cc-01"
+                            />
+                        </div>
+                        <div>
+                            <Label htmlFor="pcStatus">Status</Label>
+                            <select
+                                id="pcStatus"
+                                value={pcForm.status}
+                                onChange={e => setPCForm({ ...pcForm, status: e.target.value })}
+                                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-blue-950 focus:ring-2 focus:ring-blue-950/10 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 shadow-theme-xs outline-none h-[42px]"
+                            >
+                                <option value="available">Working</option>
+                                <option value="maintenance">Repairing</option>
+                                <option value="offline">Offline</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <Label htmlFor="softwares">Installed Softwares</Label>
+                        <textarea
+                            id="softwares"
+                            value={pcForm.softwares || ''}
+                            onChange={e => setPCForm({ ...pcForm, softwares: e.target.value })}
+                            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-blue-950 focus:ring-2 focus:ring-blue-950/10 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 shadow-theme-xs outline-none h-20 resize-none font-medium"
+                            placeholder="e.g. AutoCAD, Photoshop, MATLAB"
+                        />
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1 ml-1 font-medium">Separate software names with commas</p>
+                    </div>
+                    <div>
+                        <Label htmlFor="specs">Hardware Specification</Label>
+                        <textarea
+                            id="specs"
+                            value={pcForm.specs}
+                            onChange={e => setPCForm({ ...pcForm, specs: e.target.value })}
+                            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-blue-950 focus:ring-2 focus:ring-blue-950/10 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 shadow-theme-xs outline-none h-20 resize-none font-medium"
+                            placeholder="e.g. 16GB RAM, RTX 3060, 512GB SSD"
+                        />
+                    </div>
+                    <div className="flex gap-3 justify-end mt-6">
+                        <Button variant="outline" onClick={() => setShowPCModal(false)}>Cancel</Button>
+                        <Button type="submit" className="!bg-blue-950 hover:!bg-blue-900" loading={isSubmittingPC}>
+                            {editingPC ? 'Save Changes' : 'Create Workstation'}
+                        </Button>
+                    </div>
+                </form>
+            </Modal>
+
+            <Modal isOpen={showScheduleModal && !!selectedPC} onClose={() => setShowScheduleModal(false)} className="max-w-2xl p-6">
+                <div className="mb-6">
+                    <h2 className="text-xl font-semibold text-gray-800 dark:text-white/90">Manage Users</h2>
+                    <p className="text-xs font-bold text-blue-950 mt-1 uppercase tracking-widest">
+                        {selectedPC?.pcNumber || `${selectedPC?.row}${selectedPC?.position + 1}`}
+                        {selectedPC?.label ? ` — ${selectedPC.label}` : ''}
+                    </p>
+                </div>
+
+                <div className="grid grid-cols-[120px_1fr_1fr_42px] gap-3 mb-2 px-1">
+                    <span className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Time Slot</span>
+                    <span className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Software</span>
+                    <span className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Student Name</span>
+                    <span />
+                </div>
+
+                <form onSubmit={handleUpdateSlots} className="space-y-2">
+                    {TIME_SLOTS.map(slot => {
+                        const f = slotForms[slot] || {};
+                        const isBooked = !!f.existingId && !f.toDelete;
+                        const isDeleting = f.toDelete;
+                        return (
+                            <div
+                                key={slot}
+                                className={`grid grid-cols-[120px_1fr_1fr_42px] gap-3 items-center p-2 rounded-xl transition-all duration-200 ${isDeleting
+                                    ? 'bg-red-50/50 dark:bg-red-900/10 opacity-50'
+                                    : isBooked
+                                        ? 'bg-blue-50/30 dark:bg-blue-900/10 border border-blue-100/50 dark:border-blue-900/20'
+                                        : 'bg-gray-50/50 dark:bg-gray-900/30 border border-transparent'
+                                    }`}
+                            >
+                                <span className={`text-sm font-semibold pl-1 ${isBooked ? 'text-blue-900 dark:text-blue-300' : 'text-gray-600 dark:text-gray-400'
+                                    }`}>{slot}</span>
+
+                                <select
+                                    value={f.purpose || ''}
+                                    onChange={e => setSlotForms(prev => ({ ...prev, [slot]: { ...prev[slot], purpose: e.target.value } }))}
+                                    disabled={isDeleting}
+                                    className="w-full bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 px-3 h-[42px] text-xs font-medium outline-none focus:border-blue-950 focus:ring-2 focus:ring-blue-950/10 transition-all disabled:opacity-50"
+                                >
+                                    <option value="">— Software —</option>
+                                    {(selectedPC?.softwares || []).map(sw => (
+                                        <option key={sw} value={sw}>{sw}</option>
+                                    ))}
+                                    <option value="General">General</option>
+                                </select>
+
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        placeholder="Student name"
+                                        value={f.studentName || ''}
+                                        onChange={e => {
+                                            const val = e.target.value;
+                                            setSlotForms(prev => ({
+                                                ...prev,
+                                                [slot]: { ...prev[slot], studentName: val, studentId: null, queueId: null }
+                                            }));
+                                            setActiveWaitlistSearch(slot);
+                                        }}
+                                        onFocus={() => setActiveWaitlistSearch(slot)}
+                                        disabled={isDeleting}
+                                        className="w-full bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 px-3 h-[42px] text-xs font-bold outline-none focus:border-blue-950 focus:ring-2 focus:ring-blue-950/10 transition-all disabled:opacity-50"
                                     />
-                                    <p className="text-[10px] text-gray-400 mt-1 ml-1">Separate software names with commas</p>
+                                    {activeWaitlistSearch === slot && f.studentName.length > 0 && !f.studentId && (
+                                        <div className="absolute z-[110] w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl max-h-40 overflow-y-auto no-scrollbar">
+                                            {queue
+                                                .filter(item => {
+                                                    const name = item.studentId?.fullName || item.studentName || "";
+                                                    const id = item.studentId?.studentId || "";
+                                                    const search = f.studentName.toLowerCase();
+                                                    return name.toLowerCase().includes(search) || id.toLowerCase().includes(search);
+                                                })
+                                                .filter(item => {
+                                                    // Filter out students already assigned to this slot anywhere in the lab
+                                                    const isAssigned = activeSessions.some(s => {
+                                                        const sId = s.studentId?._id || s.studentId;
+                                                        const iId = item.studentId?._id || item.studentId;
+                                                        // If we have an ID, compare IDs. If not (manual entry), this check is harder, 
+                                                        // but usually manual entries aren't cross-referenced as strictly.
+                                                        // For now, if we have IDs, we prevent double booking.
+                                                        if (sId && iId) return sId.toString() === iId.toString() && s.slot === slot && (s.status === 'active' || s.status === 'assigned');
+                                                        return false;
+                                                    });
+                                                    return !isAssigned;
+                                                })
+                                                .map(item => (
+                                                    <button
+                                                        key={item._id}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setSlotForms(prev => ({
+                                                                ...prev,
+                                                                [slot]: {
+                                                                    ...prev[slot],
+                                                                    studentName: item.studentId?.fullName || item.studentName,
+                                                                    studentId: item.studentId?._id || item.studentId || null,
+                                                                    queueId: item._id,
+                                                                    purpose: prev[slot].purpose || item.preferredSoftware
+                                                                }
+                                                            }));
+                                                            setActiveWaitlistSearch(null);
+                                                        }}
+                                                        className="w-full text-left px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors border-b border-gray-100 dark:border-gray-700 last:border-0"
+                                                    >
+                                                        <p className="text-[11px] font-bold text-gray-800 dark:text-white/90">
+                                                            {item.studentId?.fullName || item.studentName}
+                                                        </p>
+                                                        <p className="text-[9px] text-gray-500 font-medium">Waitlist: {item.preferredSlot} • {item.preferredSoftware}</p>
+                                                    </button>
+                                                ))
+                                            }
+                                            {queue.filter(item => {
+                                                const name = item.studentId?.fullName || item.studentName || "";
+                                                return name.toLowerCase().includes(f.studentName.toLowerCase());
+                                            }).length === 0 && (
+                                                    <div className="px-4 py-3 text-[10px] text-gray-400 italic">No matches in waitlist</div>
+                                                )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="flex justify-center gap-1">
+                                    {f.existingId ? (
+                                        <button
+                                            type="button"
+                                            onClick={() => setSlotForms(prev => ({ ...prev, [slot]: { ...prev[slot], toDelete: !prev[slot].toDelete } }))}
+                                            className={`p-2 rounded-lg transition-colors ${isDeleting
+                                                ? 'text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-900/20'
+                                                : 'text-red-500 hover:bg-red-100 dark:hover:bg-red-900/20'
+                                                }`}
+                                            title={isDeleting ? "Restore Slot" : "Delete Booking & Re-queue"}
+                                        >
+                                            {isDeleting ? '↩' : <TrashBinIcon className="w-4 h-4" />}
+                                        </button>
+                                    ) : (
+                                        <div className="w-8" />
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+
+                    <div className="flex gap-3 justify-end mt-8">
+                        <Button variant="outline" onClick={() => setShowScheduleModal(false)}>Cancel</Button>
+                        <Button type="submit" className="!bg-blue-950 hover:!bg-blue-900" loading={isSubmittingSchedule}>
+                            Update Changes
+                        </Button>
+                    </div>
+                </form>
+            </Modal>
+
+
+            <Modal isOpen={showRowModal} onClose={() => setShowRowModal(false)} className="max-w-md p-6">
+                <h2 className="text-xl font-semibold text-gray-800 dark:text-white/90 mb-4">
+                    {editingRow ? 'Edit Section' : 'New Section'}
+                </h2>
+
+                <form onSubmit={handleSaveRow} className="space-y-4">
+                    <div>
+                        <Label htmlFor="rowName">Section Name (Letter)</Label>
+                        <Input
+                            id="rowName"
+                            required
+                            value={rowForm.name}
+                            onChange={e => setRowForm({ ...rowForm, name: e.target.value.toUpperCase() })}
+                            placeholder="e.g. A"
+                            maxLength={2}
+                        />
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1 ml-1 font-medium">Use A, B, C for standard naming</p>
+                    </div>
+
+                    <div className="flex gap-3 justify-end mt-6">
+                        <Button variant="outline" onClick={() => setShowRowModal(false)}>Cancel</Button>
+                        <Button type="submit" className="!bg-blue-950 hover:!bg-blue-900">
+                            {editingRow ? 'Save Changes' : 'Create Section'}
+                        </Button>
+                    </div>
+                </form>
+            </Modal>
+
+            <Modal isOpen={showLabModal} onClose={() => setShowLabModal(false)} className="max-w-xl p-6">
+                <h2 className="text-xl font-semibold text-gray-800 dark:text-white/90 mb-4">
+                    {editingLab ? 'Edit Environment' : 'New Environment'}
+                </h2>
+
+                <form onSubmit={handleSaveLab} className="space-y-4">
+                    <div className="space-y-4">
+                        <div>
+                            <Label htmlFor="labName">Laboratory Name</Label>
+                            <Input
+                                id="labName"
+                                required
+                                value={labForm.name}
+                                onChange={e => setLabForm({ ...labForm, name: e.target.value })}
+                                placeholder="e.g. Computing Lab 1"
+                            />
+                        </div>
+
+                        <div>
+                            <Label htmlFor="location">Location details</Label>
+                            <Input
+                                id="location"
+                                value={labForm.location}
+                                onChange={e => setLabForm({ ...labForm, location: e.target.value })}
+                                placeholder="e.g. 3rd Floor, West Wing"
+                            />
+                        </div>
+
+                        <div>
+                            <Label>Permitted Brands</Label>
+                            <div className="grid grid-cols-2 gap-3 max-h-48 overflow-y-auto no-scrollbar pr-1 mt-2">
+                                {(user?.brands || []).map(b => {
+                                    const bId = (b.brand?._id || b.brand || b).toString();
+                                    const bName = b.brand?.name || "Unknown Brand";
+                                    const isSelected = labForm.brands?.includes(bId);
+                                    return (
+                                        <label key={bId} className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all duration-300 group
+                                            ${isSelected
+                                                ? 'border-blue-950/50 bg-blue-950/5 dark:bg-blue-950/10'
+                                                : 'border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900/50'}`}>
+                                            <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all duration-300
+                                                ${isSelected ? 'bg-blue-950 border-blue-950' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 group-hover:border-blue-300'}`}>
+                                                {isSelected && <CheckIcon className="w-3.5 h-3.5 text-white" />}
+                                            </div>
+                                            <span className={`text-[11px] font-bold uppercase tracking-tight transition-colors ${isSelected ? 'text-blue-900 dark:text-blue-300' : 'text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-gray-200'}`}>
+                                                {bName}
+                                            </span>
+                                            <input
+                                                type="checkbox"
+                                                className="hidden"
+                                                checked={isSelected}
+                                                onChange={(e) => {
+                                                    const newBrands = e.target.checked
+                                                        ? [...(labForm.brands || []), bId]
+                                                        : (labForm.brands || []).filter(id => id !== bId);
+                                                    setLabForm({ ...labForm, brands: newBrands });
+                                                }}
+                                            />
+                                        </label>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex gap-3 justify-end mt-6">
+                        <Button variant="outline" onClick={() => setShowLabModal(false)}>
+                            Cancel
+                        </Button>
+                        <Button type="submit" className="!bg-blue-950 hover:!bg-blue-900" loading={isSubmitting}>
+                            {editingLab ? 'Update Environment' : 'Create Environment'}
+                        </Button>
+                    </div>
+                </form>
+            </Modal>
+
+
+            <Modal isOpen={showQueueModal} onClose={() => setShowQueueModal(false)} className="max-w-md p-6">
+                <div className="mb-6">
+                    <h2 className="text-xl font-semibold text-gray-800 dark:text-white/90">Add to Waiting List</h2>
+                    <p className="text-xs font-bold text-blue-950 mt-1 uppercase tracking-widest">Register Student for Lab Session</p>
+                </div>
+
+                <form onSubmit={handleAddToQueue} className="space-y-4">
+                    <div className="relative">
+                        <Label htmlFor="studentSearch">Student Name</Label>
+                        <Input
+                            id="studentSearch"
+                            placeholder="Type student name or ID..."
+                            value={studentSearch}
+                            onChange={(e) => {
+                                setStudentSearch(e.target.value);
+                                if (queueForm.studentId) setQueueForm({ ...queueForm, studentId: '' });
+                            }}
+                            className="pr-10"
+                        />
+                        {isSearchingStudents && (
+                            <div className="absolute right-3 bottom-3">
+                                <div className="size-4 border-2 border-blue-950/20 border-t-blue-950 rounded-full animate-spin" />
+                            </div>
+                        )}
+
+                        {studentResults.length > 0 && (
+                            <div className="absolute z-[100] w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl max-h-48 overflow-y-auto overflow-x-hidden no-scrollbar">
+                                {studentResults.map(s => (
+                                    <button
+                                        key={s._id}
+                                        type="button"
+                                        onClick={() => {
+                                            setQueueForm({ ...queueForm, studentId: s._id });
+                                            setStudentSearch(s.fullName);
+                                            setStudentResults([]);
+                                        }}
+                                        className={`w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors border-b border-gray-100 dark:border-gray-700 last:border-0 
+                                            ${queueForm.studentId === s._id ? 'bg-blue-50/50 dark:bg-blue-950/10' : ''}`}
+                                    >
+                                        <p className="text-sm font-bold text-gray-800 dark:text-white/90">{s.fullName}</p>
+                                        <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">{s.studentId} • {s.coursePreference}</p>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <Label htmlFor="prefSlot">Preferred Slot</Label>
+                            <select
+                                id="prefSlot"
+                                value={queueForm.preferredSlot}
+                                onChange={e => setQueueForm({ ...queueForm, preferredSlot: e.target.value })}
+                                className="w-full h-[42px] rounded-lg border border-gray-300 bg-white px-3 text-sm font-medium focus:border-blue-950 focus:ring-2 focus:ring-blue-950/10 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 outline-none"
+                            >
+                                {TIME_SLOTS.map(slot => <option key={slot} value={slot}>{slot}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <Label htmlFor="prefSW">Software/Purpose</Label>
+                            <Input
+                                id="prefSW"
+                                placeholder="e.g. Photoshop"
+                                value={queueForm.preferredSoftware}
+                                onChange={e => setQueueForm({ ...queueForm, preferredSoftware: e.target.value })}
+                                className="!focus:border-blue-950 !focus:ring-blue-950/10"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex gap-3 justify-end mt-8">
+                        <Button variant="outline" onClick={() => setShowQueueModal(false)}>Cancel</Button>
+                        <Button type="submit" className="!bg-blue-950 hover:!bg-blue-900" loading={isQueueLoading} disabled={!queueForm.studentId && !studentSearch.trim()}>
+                            Add to Queue
+                        </Button>
+                    </div>
+                </form>
+            </Modal>
+
+            {/* Raise Complaint Modal */}
+            {
+                showComplaintModal && (
+                    <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/60 backdrop-blur-md px-4">
+                        <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-md p-8 border border-white/20">
+                            <h3 className="text-xl font-black text-gray-900 dark:text-white mb-8 italic uppercase tracking-tighter flex items-center gap-3">
+                                <AlertIcon className="w-6 h-6 text-yellow-500" />
+                                Issue Reporting
+                            </h3>
+                            <form onSubmit={handleSaveComplaint} className="space-y-6">
+                                <div>
+                                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Workstation</label>
+                                    <div className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl px-5 py-4 text-sm font-bold text-gray-500">
+                                        {pcs.find(p => p._id === complaintForm.pcId)?.pcNumber || 'Selected Workstation'}
+                                    </div>
                                 </div>
                                 <div>
-                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Hardware Specification</label>
-                                    <textarea value={pcForm.specs} onChange={e => setPCForm({ ...pcForm, specs: e.target.value })} className="w-full bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-700 px-4 py-3 text-sm outline-none h-20 resize-none" placeholder="e.g. 16GB RAM, RTX 3060, 512GB SSD" />
+                                    <label className="block text-[10px] font-bold text-gray-600 dark:text-gray-300 uppercase tracking-widest mb-2 ml-1">Issue Headline *</label>
+                                    <input required value={complaintForm.title} onChange={e => setComplaintForm(f => ({ ...f, title: e.target.value }))}
+                                        placeholder="e.g. Hardware Malfunction" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-5 py-4 text-sm font-bold text-gray-800 dark:text-white outline-none focus:border-blue-950 transition-all" />
                                 </div>
-                                <div className="flex gap-4 pt-4">
-                                    <Button variant="outline" className="flex-1 rounded-xl py-3.5" onClick={() => setShowPCModal(false)}>Cancel</Button>
-                                    <Button type="submit" className="flex-1 rounded-xl py-3.5">
-                                        {editingPC ? 'Save Changes' : 'Create Workstation'}
+                                <div>
+                                    <label className="block text-[10px] font-bold text-gray-600 dark:text-gray-300 uppercase tracking-widest mb-3 ml-1">Priority Matrix</label>
+                                    <div className="flex gap-2">
+                                        {['low', 'medium', 'high'].map(p => (
+                                            <button key={p} type="button" onClick={() => setComplaintForm(f => ({ ...f, priority: p }))}
+                                                className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl border transition-all duration-300 ${complaintForm.priority === p
+                                                    ? 'border-blue-950 bg-blue-950 text-white shadow-lg shadow-blue-950/20 scale-105'
+                                                    : 'border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-blue-300'}`}>
+                                                {p}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold text-gray-600 dark:text-gray-300 uppercase tracking-widest mb-2 ml-1">Detailed Log</label>
+                                    <textarea value={complaintForm.description} onChange={e => setComplaintForm(f => ({ ...f, description: e.target.value }))}
+                                        rows={3} placeholder="Describe the technical issue in detail..." className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-5 py-4 text-sm font-medium text-gray-800 dark:text-white outline-none focus:border-blue-950 resize-none transition-all leading-relaxed" />
+                                </div>
+
+                                <div className="flex gap-4 mt-8 pt-4 border-t border-gray-100 dark:border-gray-800">
+                                    <Button variant="outline" className="flex-1" onClick={() => setShowComplaintModal(false)} disabled={savingComplaint}>Abort</Button>
+                                    <Button type="submit" className="flex-1 !bg-blue-950 hover:!bg-blue-900" disabled={savingComplaint || !complaintForm.title.trim()}>
+                                        {savingComplaint ? 'Committing...' : 'Commit Log'}
                                     </Button>
                                 </div>
                             </form>
@@ -1208,398 +1934,133 @@ function ArrangementContent() {
                     </div>
                 )
             }
+            {/* Activity History Modal */}
+            <Modal
+                isOpen={showHistoryModal}
+                onClose={() => {
+                    setShowHistoryModal(false);
+                    setSelectedStudentForHistory(null);
+                }}
+                className="max-w-2xl p-6"
+            >
+                <div className="mb-6 flex items-center justify-between">
+                    <div>
+                        <h2 className="text-xl font-semibold text-gray-800 dark:text-white/90">
+                            {selectedStudentForHistory ? (
+                                <>Activity History: <span className="text-blue-950 font-bold">{selectedStudentForHistory.studentId?.fullName || selectedStudentForHistory.studentName}</span></>
+                            ) : (
+                                "Lab Activity History"
+                            )}
+                        </h2>
+                        <p className="text-xs font-bold text-blue-950 mt-1 uppercase tracking-widest">Real-time Lab Operations Log</p>
+                    </div>
+                    <button
+                        onClick={fetchHistory}
+                        disabled={isHistoryLoading}
+                        className="p-2.5 bg-gray-50 dark:bg-gray-800 text-gray-400 hover:text-blue-950 rounded-xl transition-all disabled:opacity-50 border border-gray-100 dark:border-gray-700 shadow-sm"
+                        title="Refresh Logs"
+                    >
+                        <ArrowPathIcon className={`w-5 h-5 ${isHistoryLoading ? 'animate-spin' : ''}`} />
+                    </button>
+                </div>
 
-            {
-                showScheduleModal && selectedPC && (
-                    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-                        <div className="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-2xl p-8 shadow-2xl border border-white/10">
-                            <div className="mb-8 flex justify-between items-start">
-                                <div>
-                                    <h2 className="text-xl font-bold text-gray-900 dark:text-white uppercase tracking-tight">Manage Users</h2>
-                                    <p className="text-xs font-bold text-brand-500 mt-1.5 uppercase tracking-widest">
-                                        {selectedPC.pcNumber || `${selectedPC.row}${selectedPC.position + 1}`}
-                                        {selectedPC.label ? ` — ${selectedPC.label}` : ''}
-                                    </p>
-                                </div>
-                                <button
-                                    onClick={() => { setShowScheduleModal(false); }}
-                                    className="w-9 h-9 flex items-center justify-center bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full transition-colors text-gray-500 text-lg font-bold"
-                                >
-                                    ×
-                                </button>
-                            </div>
+                <div className="h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                    {isHistoryLoading ? (
+                        <div className="h-full flex flex-col items-center justify-center space-y-4">
+                            <div className="w-12 h-12 border-4 border-blue-950/20 border-t-blue-950 rounded-full animate-spin" />
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest animate-pulse">Retrieving Logs...</p>
+                        </div>
+                    ) : historyLogs.length === 0 ? (
+                        <div className="h-full flex flex-col items-center justify-center text-center space-y-3 opacity-50">
+                            <ClockIcon className="w-12 h-12 text-gray-300" />
+                            <p className="text-sm font-medium text-gray-500 uppercase tracking-tight">No activity recorded yet</p>
+                        </div>
+                    ) : (
+                        <div className="relative border-l-2 border-gray-100 dark:border-gray-800 ml-3 pl-8 space-y-8">
+                            {historyLogs.map((log, idx) => {
+                                const date = new Date(log.createdAt);
+                                const actionType = log.action.split('_')[2] || 'EVENT';
 
-                            <div className="grid grid-cols-[120px_1fr_1fr_32px] gap-3 mb-2 px-1">
-                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Time Slot</span>
-                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Software</span>
-                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Student Name</span>
-                                <span />
-                            </div>
+                                const getActionStyles = (action) => {
+                                    if (action === 'LAB_QUEUE_ADD') {
+                                        return {
+                                            dot: 'bg-red-500',
+                                            border: 'border-red-500/50',
+                                            badge: 'text-red-500 bg-red-500/10',
+                                            text: 'text-red-500 dark:text-red-400'
+                                        };
+                                    }
+                                    if (action === 'LAB_QUEUE_REMOVE' || action === 'LAB_SCHEDULE_REQUEUE') {
+                                        return {
+                                            dot: 'bg-amber-500',
+                                            border: 'border-amber-500/50',
+                                            badge: 'text-amber-500 bg-red-600/10',
+                                            text: 'text-amber-500 dark:text-red-500'
+                                        };
+                                    }
+                                    if (action.includes('ASSIGN') || action.includes('SYNC') || action.includes('START') || action.includes('TRANSFER')) {
+                                        return {
+                                            dot: 'bg-yellow-500',
+                                            border: 'border-yellow-500/50',
+                                            badge: 'text-yellow-500 bg-orange-500/10',
+                                            text: 'text-yellow-500 dark:text-orange-400'
+                                        };
+                                    }
+                                    if (action === 'LAB_SESSION_END') {
+                                        return {
+                                            dot: 'bg-green-500',
+                                            border: 'border-green-500/50',
+                                            badge: 'text-green-500 bg-green-500/10',
+                                            text: 'text-green-500 dark:text-green-400'
+                                        };
+                                    }
+                                    return {
+                                        dot: 'bg-gray-500',
+                                        border: 'border-gray-500/50',
+                                        badge: 'text-gray-500 bg-gray-500/10',
+                                        text: 'text-gray-600 dark:text-gray-400'
+                                    };
+                                };
 
-                            {(() => {
-                                const currentlyAssignedQueueIds = Object.values(slotForms).map(f => f.queueId).filter(Boolean);
+                                const styles = getActionStyles(log.action);
 
                                 return (
-                                    <form onSubmit={handleUpdateSlots} className="space-y-2.5">
-                                        {TIME_SLOTS.map(slot => {
-                                            const f = slotForms[slot] || {};
-                                            const isBooked = !!f.existingId && !f.toDelete;
-                                            const isDeleting = f.toDelete;
-                                            return (
-                                                <div
-                                                    key={slot}
-                                                    className={`grid grid-cols-[120px_1fr_1fr_32px] gap-3 items-center p-2 rounded-xl transition-colors ${isDeleting
-                                                        ? 'bg-red-50 dark:bg-red-900/10 opacity-50'
-                                                        : isBooked
-                                                            ? 'bg-blue-50 dark:bg-blue-900/10'
-                                                            : 'bg-gray-50 dark:bg-gray-900/50'
-                                                        }`}
-                                                >
-                                                    <span className={`text-sm font-bold ${isBooked ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'
-                                                        }`}>{slot}</span>
-
-                                                    <select
-                                                        value={f.purpose || ''}
-                                                        onChange={e => setSlotForms(prev => ({ ...prev, [slot]: { ...prev[slot], purpose: e.target.value } }))}
-                                                        disabled={isDeleting}
-                                                        className="w-full bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm outline-none font-medium appearance-none disabled:opacity-50"
-                                                    >
-                                                        <option value="">— Software —</option>
-                                                        {(selectedPC?.softwares || []).map(sw => (
-                                                            <option key={sw} value={sw}>{sw}</option>
-                                                        ))}
-                                                    </select>
-
-                                                    <div className="relative">
-                                                        <input
-                                                            type="text"
-                                                            placeholder="Student name"
-                                                            value={f.studentName || ''}
-                                                            onFocus={() => setActiveSearchSlot(slot)}
-                                                            onBlur={() => setTimeout(() => setActiveSearchSlot(null), 200)}
-                                                            onChange={e => {
-                                                                const val = e.target.value;
-                                                                setSlotForms(prev => ({
-                                                                    ...prev,
-                                                                    [slot]: { ...prev[slot], studentName: val, queueId: null }
-                                                                }));
-                                                            }}
-                                                            disabled={isDeleting}
-                                                            className="w-full bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm outline-none font-medium disabled:opacity-50 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 transition-all"
-                                                        />
-
-                                                        {activeSearchSlot === slot && f.studentName && f.studentName.length > 0 && !f.queueId && (
-                                                            <div className="absolute z-[1100] top-full mt-1.5 left-0 right-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl border border-gray-100 dark:border-gray-700 rounded-xl shadow-2xl shadow-black/10 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                                                                {queue
-                                                                    .filter(q =>
-                                                                        q.status === 'waiting' &&
-                                                                        !currentlyAssignedQueueIds.includes(q._id) &&
-                                                                        q.studentName.toLowerCase().includes(f.studentName.toLowerCase())
-                                                                    )
-                                                                    .slice(0, 5)
-                                                                    .map(q => (
-                                                                        <button
-                                                                            key={q._id}
-                                                                            type="button"
-                                                                            onClick={() => {
-                                                                                setSlotForms(prev => ({
-                                                                                    ...prev,
-                                                                                    [slot]: {
-                                                                                        ...prev[slot],
-                                                                                        studentName: q.studentName,
-                                                                                        purpose: q.purpose,
-                                                                                        queueId: q._id
-                                                                                    }
-                                                                                }));
-                                                                                setActiveSearchSlot(null);
-                                                                            }}
-                                                                            className="w-full text-left px-3.5 py-2.5 hover:bg-brand-50 dark:hover:bg-brand-500/10 flex items-center justify-between group transition-colors border-b last:border-0 border-gray-50 dark:border-gray-700/50"
-                                                                        >
-                                                                            <div className="min-w-0">
-                                                                                <p className="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">{q.studentName}</p>
-                                                                                <p className="text-[9px] text-gray-400 font-medium truncate opacity-70 group-hover:text-brand-500/80 transition-colors uppercase tracking-tight">{q.batchPreference} • {q.purpose || 'General Use'}</p>
-                                                                            </div>
-                                                                            <div className="w-5 h-5 rounded-full bg-brand-50 dark:bg-brand-500/5 flex items-center justify-center text-[10px] text-brand-500 font-black scale-0 group-hover:scale-100 transition-transform">
-                                                                                +
-                                                                            </div>
-                                                                        </button>
-                                                                    ))}
-                                                                {queue.filter(q => q.status === 'waiting' && !currentlyAssignedQueueIds.includes(q._id) && q.studentName.toLowerCase().includes(f.studentName.toLowerCase())).length === 0 && (
-                                                                    <div className="px-3.5 py-3 text-center">
-                                                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest italic">No matches in waitlist</p>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                    </div>
-
-                                                    {f.existingId ? (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setSlotForms(prev => ({ ...prev, [slot]: { ...prev[slot], toDelete: !prev[slot].toDelete } }))}
-                                                            className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold transition-colors ${isDeleting
-                                                                ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 hover:bg-gray-300'
-                                                                : 'bg-red-100 dark:bg-red-900/20 text-red-500 hover:bg-red-200'
-                                                                }`}
-                                                        >
-                                                            {isDeleting ? '↩' : '×'}
-                                                        </button>
-                                                    ) : <span />}
-                                                </div>
-                                            );
-                                        })}
-
-                                        {/* Waitlist Integration in Modal */}
-                                        {queue.filter(q => q.status === 'waiting' && !currentlyAssignedQueueIds.includes(q._id)).length > 0 && (
-                                            <div className="mt-8 p-6 bg-gray-50/80 dark:bg-gray-900/40 rounded-3xl border border-gray-100 dark:border-gray-800/60 backdrop-blur-sm">
-                                                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-5 flex items-center gap-2.5">
-                                                    <div className="w-1.5 h-3.5 bg-brand-500 rounded-full shadow-[0_0_8px_rgba(var(--color-brand-500),0.4)]" />
-                                                    Assign from Waitlist
-                                                </h4>
-                                                <div className="grid grid-cols-2 gap-2.5">
-                                                    {queue
-                                                        .filter(q => q.status === 'waiting' && !currentlyAssignedQueueIds.includes(q._id))
-                                                        .map(q => (
-                                                            <button
-                                                                key={q._id}
-                                                                type="button"
-                                                                onClick={() => {
-                                                                    const nextEmptySlot = TIME_SLOTS.find(s => !slotForms[s]?.studentName);
-                                                                    if (nextEmptySlot) {
-                                                                        setSlotForms(prev => ({
-                                                                            ...prev,
-                                                                            [nextEmptySlot]: {
-                                                                                ...prev[nextEmptySlot],
-                                                                                studentName: q.studentName,
-                                                                                purpose: q.purpose,
-                                                                                queueId: q._id
-                                                                            }
-                                                                        }));
-                                                                    }
-                                                                }}
-                                                                className="group text-left px-4 py-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl hover:border-brand-400 dark:hover:border-brand-500/30 hover:shadow-lg hover:shadow-brand-500/5 transition-all duration-300 relative overflow-hidden"
-                                                            >
-                                                                <div className="absolute top-0 right-0 w-16 h-16 bg-brand-500/5 rounded-full -mr-8 -mt-8 group-hover:bg-brand-500/10 transition-colors" />
-                                                                <p className="text-xs font-bold text-gray-900 dark:text-gray-100 mb-0.5 truncate relative z-10">{q.studentName}</p>
-                                                                <div className="flex items-center gap-2 relative z-10">
-                                                                    <span className="text-[9px] font-black text-brand-500 uppercase tracking-tighter shrink-0">{q.batchPreference}</span>
-                                                                    <span className="text-[9px] text-gray-400 truncate italic opacity-80">{q.purpose}</span>
-                                                                </div>
-                                                            </button>
-                                                        ))}
-                                                </div>
-                                                <p className="mt-4 text-[9px] text-gray-400 font-medium italic text-center opacity-60">Waitlisted students will be auto-filled into available time slots.</p>
-                                            </div>
-                                        )}
-
-                                        <div className="flex justify-end pt-4 border-t border-gray-100 dark:border-gray-800 mt-4">
-                                            <Button type="submit" className="px-10 rounded-xl py-3">Update</Button>
+                                    <div key={log._id} className="relative group">
+                                        {/* Dot on line */}
+                                        <div className={`absolute -left-[41px] top-1.5 w-6 h-6 rounded-full bg-white dark:bg-gray-900 border-2 ${styles.border} group-hover:border-blue-950 transition-colors flex items-center justify-center shadow-sm`}>
+                                            <div className={`w-2 h-2 rounded-full ${styles.dot}`} />
                                         </div>
-                                    </form>
-                                );
-                            })()}
-                        </div>
-                    </div>
-                )
-            }
 
-            {/* Student Queue Modal */}
-            {showQueueModal && (
-                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-                    <div className="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-md p-8 shadow-2xl border border-white/10">
-                        <div className="mb-8 flex justify-between items-start">
-                            <h2 className="text-xl font-bold text-gray-900 dark:text-white uppercase tracking-tight">Waitlist Student</h2>
-                            <button onClick={() => setShowQueueModal(false)} className="text-gray-400 hover:text-gray-600 transition-all text-xl font-bold">×</button>
-                        </div>
-                        <form onSubmit={handleAddToQueue} className="space-y-6">
-                            <div>
-                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Student Name</label>
-                                <input
-                                    required
-                                    value={queueForm.studentName}
-                                    onChange={e => setQueueForm({ ...queueForm, studentName: e.target.value })}
-                                    className="w-full bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-700 px-4 py-3 text-sm font-bold outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
-                                    placeholder="Enter full name..."
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Purpose / Software</label>
-                                <input
-                                    value={queueForm.purpose}
-                                    onChange={e => setQueueForm({ ...queueForm, purpose: e.target.value })}
-                                    className="w-full bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-700 px-4 py-3 text-sm font-bold outline-none"
-                                    placeholder="e.g. Photoshop Research"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Time Slot Preference</label>
-                                <select
-                                    value={queueForm.batchPreference}
-                                    onChange={e => setQueueForm({ ...queueForm, batchPreference: e.target.value })}
-                                    className="w-full bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-700 px-4 py-3 text-sm font-bold outline-none"
-                                >
-                                    {["Early AM", "Late AM", "Midday", "Early PM", "Late PM"].map(p => (
-                                        <option key={p} value={p}>{p}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="flex gap-4 pt-4">
-                                <Button variant="outline" className="flex-1 rounded-xl py-3.5" onClick={() => setShowQueueModal(false)}>Cancel</Button>
-                                <Button type="submit" className="flex-1 rounded-xl py-3.5">Add to Waitlist</Button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {
-                showRowModal && (
-                    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-                        <div className="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-md p-8 shadow-2xl border border-white/10">
-                            <div className="mb-8">
-                                <h2 className="text-xl font-bold text-gray-900 dark:text-white uppercase tracking-tight">
-                                    {editingRow ? 'Edit Section' : 'New Section'}
-                                </h2>
-                            </div>
-                            <form onSubmit={handleSaveRow} className="space-y-6">
-                                <div>
-                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Section Name (Letter)</label>
-                                    <input
-                                        required
-                                        value={rowForm.name}
-                                        onChange={e => setRowForm({ ...rowForm, name: e.target.value.toUpperCase() })}
-                                        className="w-full bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-700 px-4 py-3 text-sm font-bold outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
-                                        placeholder="e.g. A"
-                                        maxLength={2}
-                                    />
-                                </div>
-                                <div className="flex gap-4 pt-4">
-                                    <Button variant="outline" className="flex-1 rounded-xl py-3.5" onClick={() => setShowRowModal(false)}>Cancel</Button>
-                                    <Button type="submit" className="flex-1 rounded-xl py-3.5">Save Section</Button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                )
-            }
-
-            {
-                showLabModal && (
-                    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
-                        <div className="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-md p-8 shadow-2xl border border-white/10">
-                            <div className="mb-8">
-                                <h2 className="text-xl font-bold text-gray-900 dark:text-white uppercase tracking-tight">
-                                    {editingLab ? 'Edit Laboratory' : 'New Laboratory'}
-                                </h2>
-                            </div>
-                            <form onSubmit={handleSaveLab} className="space-y-6">
-                                <div>
-                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Laboratory Name</label>
-                                    <input
-                                        required
-                                        value={labForm.name}
-                                        onChange={e => setLabForm({ ...labForm, name: e.target.value })}
-                                        className="w-full bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-700 px-4 py-3 text-sm font-bold outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
-                                        placeholder="e.g. Computing Lab 1"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Location / Description</label>
-                                    <input
-                                        value={labForm.location}
-                                        onChange={e => setLabForm({ ...labForm, location: e.target.value })}
-                                        className="w-full bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-700 px-4 py-3 text-sm font-bold outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
-                                        placeholder="e.g. 3rd Floor, West Wing"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-1">Associated Brands</label>
-                                    <div className="grid grid-cols-2 gap-2 bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700 max-h-40 overflow-y-auto">
-                                        {(user?.brands || []).map(b => {
-                                            const bId = (b.brand?._id || b.brand || b).toString();
-                                            const bName = b.brand?.name || "Unknown Brand";
-                                            const isSelected = labForm.brands?.includes(bId);
-                                            return (
-                                                <label key={bId} className="flex items-center gap-2 cursor-pointer group">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={isSelected}
-                                                        onChange={(e) => {
-                                                            const newBrands = e.target.checked
-                                                                ? [...(labForm.brands || []), bId]
-                                                                : (labForm.brands || []).filter(id => id !== bId);
-                                                            setLabForm({ ...labForm, brands: newBrands });
-                                                        }}
-                                                        className="w-4 h-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
-                                                    />
-                                                    <span className={`text-xs font-bold transition-colors ${isSelected ? 'text-brand-500' : 'text-gray-500 group-hover:text-gray-700 dark:group-hover:text-gray-300'}`}>
-                                                        {bName}
-                                                    </span>
-                                                </label>
-                                            );
-                                        })}
+                                        <div>
+                                            <div className="flex items-baseline gap-3 mb-1">
+                                                <span className={`text-[9px] font-black uppercase tracking-widest ${styles.badge} px-2 py-0.5 rounded-md`}>
+                                                    {actionType}
+                                                </span>
+                                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">
+                                                    {date.toLocaleDateString()} • {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                            </div>
+                                            <p className={`text-sm font-bold ${styles.text} leading-snug`}>
+                                                {log.description}
+                                            </p>
+                                            <div className="mt-2 flex items-center gap-2">
+                                                <div className="size-5 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-[8px] font-black text-gray-500 uppercase">
+                                                    {log.userId?.fullName?.charAt(0) || 'A'}
+                                                </div>
+                                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
+                                                    By {log.userId?.fullName || 'System Admin'}
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="flex gap-4 pt-4">
-                                    <Button variant="outline" className="flex-1 rounded-xl py-3.5" onClick={() => setShowLabModal(false)}>Cancel</Button>
-                                    <Button type="submit" className="flex-1 rounded-xl py-3.5">Save Laboratory</Button>
-                                </div>
-                            </form>
+                                );
+                            })}
                         </div>
-                    </div>
-                )
-            }
-
-            {/* Raise Complaint Modal */}
-            {showComplaintModal && (
-                <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/60 backdrop-blur-md px-4">
-                    <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-md p-8 border border-white/20">
-                        <h3 className="text-xl font-black text-gray-900 dark:text-white mb-8 italic uppercase tracking-tighter flex items-center gap-3">
-                            <AlertIcon className="w-6 h-6 text-yellow-500" />
-                            Issue Reporting
-                        </h3>
-                        <form onSubmit={handleSaveComplaint} className="space-y-6">
-                            <div>
-                                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Workstation</label>
-                                <div className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700 rounded-xl px-5 py-4 text-sm font-bold text-gray-500">
-                                    {pcs.find(p => p._id === complaintForm.pcId)?.pcNumber || 'Selected Workstation'}
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Issue Headline *</label>
-                                <input required value={complaintForm.title} onChange={e => setComplaintForm(f => ({ ...f, title: e.target.value }))}
-                                    placeholder="e.g. Hardware Malfunction" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-5 py-4 text-sm font-bold text-gray-800 dark:text-white outline-none focus:border-brand-500 transition-all" />
-                            </div>
-                            <div>
-                                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 ml-1">Priority Matrix</label>
-                                <div className="flex gap-2">
-                                    {['low', 'medium', 'high'].map(p => (
-                                        <button key={p} type="button" onClick={() => setComplaintForm(f => ({ ...f, priority: p }))}
-                                            className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl border transition-all duration-300 ${complaintForm.priority === p
-                                                ? 'border-brand-500 bg-brand-500 text-white shadow-lg shadow-brand-500/20 scale-105'
-                                                : 'border-gray-200 dark:border-gray-700 text-gray-400 hover:border-brand-300'}`}>
-                                            {p}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Detailed Log</label>
-                                <textarea value={complaintForm.description} onChange={e => setComplaintForm(f => ({ ...f, description: e.target.value }))}
-                                    rows={3} placeholder="Describe the technical issue in detail..." className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-5 py-4 text-sm font-medium text-gray-800 dark:text-white outline-none focus:border-brand-500 resize-none transition-all leading-relaxed" />
-                            </div>
-
-                            <div className="flex gap-4 mt-8 pt-4 border-t border-gray-100 dark:border-gray-800">
-                                <Button variant="outline" className="flex-1" onClick={() => setShowComplaintModal(false)} disabled={savingComplaint}>Abort</Button>
-                                <Button type="submit" className="flex-1" disabled={savingComplaint || !complaintForm.title.trim()}>
-                                    {savingComplaint ? 'Committing...' : 'Commit Log'}
-                                </Button>
-                            </div>
-                        </form>
-                    </div>
+                    )}
                 </div>
-            )}
-        </div>
+            </Modal>
+
+        </div >
     );
 }
 

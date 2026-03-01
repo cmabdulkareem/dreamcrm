@@ -17,7 +17,7 @@ import { AuthContext } from "../../context/AuthContext";
 import { isManager } from "../../utils/roleHelpers";
 
 const CourseManagement = () => {
-  const { user } = useContext(AuthContext);
+  const { user, selectedBrand } = useContext(AuthContext);
   const hasAccess = isManager(user);
   const [activeTab, setActiveTab] = useState("courses");
 
@@ -48,17 +48,29 @@ const CourseManagement = () => {
     isActive: true
   });
 
+  // Refetch when global selectedBrand changes
   useEffect(() => {
-    fetchCourses();
-    fetchCategories();
-  }, []);
+    if (selectedBrand?._id) {
+      fetchCourses();
+      fetchCategories();
+    } else {
+      setCourses([]);
+      setCategories([]);
+      setLoading(false);
+      setLoadingCategories(false);
+    }
+  }, [selectedBrand]);
+
 
   const fetchCourses = async () => {
     try {
       setLoading(true);
       const response = await axios.get(
         `${API}/courses/all`,
-        { withCredentials: true }
+        {
+          withCredentials: true,
+          headers: { 'x-brand-id': selectedBrand?._id }
+        }
       );
       setCourses(response.data.courses);
       setLoading(false);
@@ -73,7 +85,10 @@ const CourseManagement = () => {
       setLoadingCategories(true);
       const response = await axios.get(
         `${API}/course-categories/all`,
-        { withCredentials: true }
+        {
+          withCredentials: true,
+          headers: { 'x-brand-id': selectedBrand?._id }
+        }
       );
       setCategories(response.data.categories);
       setLoadingCategories(false);
@@ -106,12 +121,21 @@ const CourseManagement = () => {
       return;
     }
 
+    const brandId = selectedBrand?._id;
+    if (!brandId) {
+      toast.error("Please select a brand from the top switcher");
+      return;
+    }
+
     try {
       if (editingCourse) {
         const response = await axios.put(
           `${API}/courses/update/${editingCourse._id}`,
           formData,
-          { withCredentials: true }
+          {
+            withCredentials: true,
+            headers: { 'x-brand-id': brandId }
+          }
         );
         setCourses(prev => prev.map(course =>
           course._id === editingCourse._id ? response.data.course : course
@@ -120,8 +144,11 @@ const CourseManagement = () => {
       } else {
         const response = await axios.post(
           `${API}/courses/create`,
-          formData,
-          { withCredentials: true }
+          { ...formData },
+          {
+            withCredentials: true,
+            headers: { 'x-brand-id': brandId }
+          }
         );
         setCourses(prev => [...prev, response.data.course]);
         toast.success("Course added successfully");
@@ -168,7 +195,10 @@ const CourseManagement = () => {
     try {
       await axios.delete(
         `${API}/courses/delete/${id}`,
-        { withCredentials: true }
+        {
+          withCredentials: true,
+          headers: { 'x-brand-id': selectedBrand?._id }
+        }
       );
       setCourses(prev => prev.filter(course => course._id !== id));
       toast.success("Course deleted successfully");
@@ -183,7 +213,7 @@ const CourseManagement = () => {
       const response = await axios.patch(
         `${API}/courses/toggle-status/${id}`,
         {},
-        { withCredentials: true }
+        { withCredentials: true, headers: { 'x-brand-id': selectedBrand?._id } }
       );
       setCourses(prev => prev.map(course =>
         course._id === id ? response.data.course : course
@@ -211,12 +241,21 @@ const CourseManagement = () => {
       return;
     }
 
+    const brandId = selectedBrand?._id;
+    if (!brandId) {
+      toast.error("Please select a brand from the top switcher");
+      return;
+    }
+
     try {
       if (editingCategory) {
         const response = await axios.put(
           `${API}/course-categories/update/${editingCategory._id}`,
           categoryFormData,
-          { withCredentials: true }
+          {
+            withCredentials: true,
+            headers: { 'x-brand-id': brandId }
+          }
         );
         setCategories(prev => prev.map(cat =>
           cat._id === editingCategory._id ? response.data.category : cat
@@ -225,8 +264,11 @@ const CourseManagement = () => {
       } else {
         const response = await axios.post(
           `${API}/course-categories/create`,
-          categoryFormData,
-          { withCredentials: true }
+          { ...categoryFormData }, // Use categoryFormData directly
+          {
+            withCredentials: true,
+            headers: { 'x-brand-id': brandId }
+          }
         );
         setCategories(prev => [...prev, response.data.category]);
         toast.success("Category added successfully");
@@ -263,7 +305,10 @@ const CourseManagement = () => {
     try {
       await axios.delete(
         `${API}/course-categories/delete/${id}`,
-        { withCredentials: true }
+        {
+          withCredentials: true,
+          headers: { 'x-brand-id': selectedBrand?._id }
+        }
       );
       setCategories(prev => prev.filter(cat => cat._id !== id));
       toast.success("Category deleted successfully");
@@ -278,7 +323,7 @@ const CourseManagement = () => {
       const response = await axios.patch(
         `${API}/course-categories/toggle-status/${id}`,
         {},
-        { withCredentials: true }
+        { withCredentials: true, headers: { 'x-brand-id': selectedBrand?._id } }
       );
       setCategories(prev => prev.map(cat =>
         cat._id === id ? response.data.category : cat
@@ -348,17 +393,31 @@ const CourseManagement = () => {
           </button>
         </div>
 
-        <div className="flex justify-end">
-          {activeTab === 'courses' ? (
-            <Button variant="primary" onClick={() => setShowModal(true)}>
-              Add New Course
-            </Button>
-          ) : (
-            <Button variant="primary" onClick={() => setShowCategoryModal(true)}>
-              Add New Category
-            </Button>
-          )}
+        {/* Stats / Controls Row */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div>
+              <p className="text-sm text-gray-500">
+                Brand: <span className="font-semibold text-gray-700 dark:text-white/90">{selectedBrand?.name || "None selected"}</span>
+              </p>
+              <p className="text-sm text-gray-500">
+                Total Courses: {courses.length}
+              </p>
+            </div>
+          </div>
+          <div className="flex justify-end">
+            {activeTab === 'courses' ? (
+              <Button variant="primary" onClick={() => setShowModal(true)}>
+                Add New Course
+              </Button>
+            ) : (
+              <Button variant="primary" onClick={() => setShowCategoryModal(true)}>
+                Add New Category
+              </Button>
+            )}
+          </div>
         </div>
+
 
         <ComponentCard title={activeTab === 'courses' ? "Course List" : "Category List"}>
           {activeTab === 'courses' ? (

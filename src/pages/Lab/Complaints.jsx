@@ -87,6 +87,7 @@ export default function Complaints() {
                     <Button
                         size="sm"
                         onClick={() => { setForm(emptyForm); setShowModal(true); }}
+                        className="!bg-blue-950 hover:!bg-blue-900"
                         startIcon={<PlusIcon className="w-4 h-4" />}
                     >
                         Raise Complaint
@@ -100,12 +101,12 @@ export default function Complaints() {
                             key={tab}
                             onClick={() => setActiveTab(tab)}
                             className={`px-5 py-2 text-xs font-bold rounded-lg capitalize transition-all duration-200 flex items-center gap-2 ${activeTab === tab
-                                ? 'bg-white dark:bg-gray-800 text-brand-600 dark:text-brand-400 shadow-sm border border-gray-100 dark:border-gray-700'
+                                ? 'bg-white dark:bg-gray-800 text-blue-900 shadow-sm border border-gray-100 dark:border-gray-700'
                                 : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-500'
                                 }`}
                         >
                             {tab === 'all' ? 'All Logs' : tab.replace('-', ' ')}
-                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md ${activeTab === tab ? 'bg-brand-500 text-white shadow-lg' : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>
+                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md ${activeTab === tab ? 'bg-blue-950 text-white shadow-lg' : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>
                                 {counts[tab]}
                             </span>
                         </button>
@@ -127,14 +128,14 @@ export default function Complaints() {
                                     <div className="flex items-start justify-between gap-6">
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 flex-wrap mb-2">
-                                                <span className="font-bold text-gray-800 dark:text-white group-hover:text-brand-500 transition-colors uppercase tracking-tight">{c.title}</span>
+                                                <span className="font-bold text-gray-800 dark:text-white group-hover:text-blue-900 transition-colors uppercase tracking-tight">{c.title}</span>
                                                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest ${pCfg.color}`}>{pCfg.label}</span>
                                                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest ${c.status === 'open' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30' : c.status === 'in-progress' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30' : 'bg-green-100 text-green-700 dark:bg-green-900/30'}`}>
                                                     {c.status}
                                                 </span>
                                             </div>
                                             <div className="flex items-center gap-3 text-xs font-bold text-gray-400 uppercase tracking-tighter mb-3">
-                                                <span className="text-brand-500 bg-brand-50 dark:bg-brand-500/10 px-2 py-0.5 rounded-md">{c.pc?.pcNumber}</span>
+                                                <span className="text-blue-950 bg-blue-50 dark:bg-blue-950/20 px-2 py-0.5 rounded-md">{c.pc?.pcNumber}</span>
                                                 {c.pc?.label && <span className="text-gray-500">{c.pc.label}</span>}
                                                 <span className="w-1 h-1 bg-gray-300 rounded-full" />
                                                 <span className="font-medium lowercase tracking-normal italic opacity-60">Raised by {c.raisedBy?.fullName || 'Anonymous'}</span>
@@ -155,7 +156,7 @@ export default function Complaints() {
                                                     <select
                                                         value={c.status}
                                                         onChange={e => changeStatus(c._id, e.target.value)}
-                                                        className="text-[10px] font-black uppercase tracking-widest border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2 bg-gray-50 dark:bg-gray-900 text-gray-600 dark:text-gray-400 cursor-pointer appearance-none focus:border-brand-500 transition-all pr-10"
+                                                        className="text-[10px] font-black uppercase tracking-widest border border-gray-200 dark:border-gray-700 rounded-lg px-4 py-2 bg-gray-50 dark:bg-gray-900 text-gray-600 dark:text-gray-400 cursor-pointer appearance-none focus:border-blue-950 transition-all pr-10"
                                                     >
                                                         <option value="open">Open Case</option>
                                                         <option value="in-progress">In Progress</option>
@@ -189,7 +190,7 @@ export default function Complaints() {
                                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Workstation Assignment *</label>
                                 <div className="relative group/select">
                                     <select required value={form.pcId} onChange={e => setForm(f => ({ ...f, pcId: e.target.value }))}
-                                        className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-5 py-4 text-sm font-bold text-gray-800 dark:text-white outline-none focus:border-brand-500 appearance-none transition-all pr-12">
+                                        className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-5 py-4 text-sm font-bold text-gray-800 dark:text-white outline-none focus:border-blue-950 appearance-none transition-all pr-12">
                                         <option value="">Select Target PC</option>
                                         {pcs.map(pc => <option key={pc._id} value={pc._id}>{pc.pcNumber}{pc.label ? ` · ${pc.label}` : ''}</option>)}
                                     </select>
@@ -201,7 +202,7 @@ export default function Complaints() {
                             <div>
                                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Issue Headline *</label>
                                 <input required value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                                    placeholder="e.g. Hardware Malfunction" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-5 py-4 text-sm font-bold text-gray-800 dark:text-white outline-none focus:border-brand-500 transition-all font-mono" />
+                                    placeholder="e.g. Hardware Malfunction" className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-5 py-4 text-sm font-bold text-gray-800 dark:text-white outline-none focus:border-blue-950 transition-all font-mono" />
                             </div>
                             <div>
                                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 ml-1">Priority Matrix</label>
@@ -209,8 +210,8 @@ export default function Complaints() {
                                     {['low', 'medium', 'high'].map(p => (
                                         <button key={p} type="button" onClick={() => setForm(f => ({ ...f, priority: p }))}
                                             className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl border transition-all duration-300 ${form.priority === p
-                                                ? 'border-brand-500 bg-brand-500 text-white shadow-lg shadow-brand-500/20 scale-105'
-                                                : 'border-gray-200 dark:border-gray-700 text-gray-400 hover:border-brand-300'}`}>
+                                                ? 'border-blue-950 bg-blue-950 text-white shadow-lg shadow-blue-950/20 scale-105'
+                                                : 'border-gray-200 dark:border-gray-700 text-gray-400 hover:border-blue-300'}`}>
                                             {p}
                                         </button>
                                     ))}
@@ -219,12 +220,12 @@ export default function Complaints() {
                             <div>
                                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Detailed Log</label>
                                 <textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                                    rows={3} placeholder="Describe the technical issue in detail..." className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-5 py-4 text-sm font-medium text-gray-800 dark:text-white outline-none focus:border-brand-500 resize-none transition-all leading-relaxed" />
+                                    rows={3} placeholder="Describe the technical issue in detail..." className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-5 py-4 text-sm font-medium text-gray-800 dark:text-white outline-none focus:border-blue-950 resize-none transition-all leading-relaxed" />
                             </div>
 
                             <div className="flex gap-4 mt-8 pt-4 border-t border-gray-100 dark:border-gray-800">
                                 <Button variant="outline" className="flex-1" onClick={() => setShowModal(false)} disabled={saving}>Abort</Button>
-                                <Button type="submit" className="flex-1" disabled={saving || !form.pc || !form.title.trim()} loading={saving}>
+                                <Button type="submit" className="flex-1 !bg-blue-950 hover:!bg-blue-900" disabled={saving || !form.pcId || !form.title.trim()} loading={saving}>
                                     Commit Log
                                 </Button>
                             </div>

@@ -20,7 +20,7 @@ import API from '../../config/api';
 import { AuthContext } from '../../context/AuthContext';
 import { isOwner, isManager } from '../../utils/roleHelpers';
 import Select from '../../components/form/Select';
-import { CloseIcon, DownloadIcon, FileIcon, ChevronDownIcon, ChevronUpIcon, PencilIcon, TrashBinIcon, CalenderIcon } from '../../icons';
+import { CloseIcon, DownloadIcon, FileIcon, ChevronDownIcon, ChevronUpIcon, PencilIcon, TrashBinIcon, CalendarIcon } from '../../icons';
 import { countries, callListStatusOptions } from '../../data/DataSets';
 
 const SearchIcon = ({ className }) => (
@@ -759,7 +759,7 @@ export default function CallList() {
                                 className={`h-10 w-10 !p-0 !rounded-full bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:border-slate-400 text-gray-600 dark:text-gray-400 transition-all ${showCalendar ? 'ring-2 ring-brand-500 border-brand-500' : ''}`}
                                 title="Filter by Date"
                             >
-                                <CalenderIcon className="size-6" />
+                                <CalendarIcon className="size-6" />
                             </Button>
 
                             {showCalendar && (
