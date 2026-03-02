@@ -1,1 +1,0 @@
-import{j as e}from"./index-Cx8OUONG.js";function s(){return e.jsxs("div",{className:"text-center py-20",children:[e.jsx("h2",{className:"text-xl font-semibold text-gray-900",children:"Requests"}),e.jsx("p",{className:"text-gray-500 mt-2",children:"Feature coming soon. You will be able to raise leave requests and support tickets here."})]})}export{s as default};
