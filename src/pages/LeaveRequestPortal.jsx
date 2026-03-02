@@ -126,184 +126,181 @@ const LeaveRequestPortal = () => {
   };
 
   return (
-    <>
-      <PageMeta title="Leave Request Portal - CRM" />
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <PageMeta title="Leave Request Portal - CDC Insights" />
+      <div className="min-h-screen bg-gray-50/50 dark:bg-gray-900/50 py-12">
         <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto">
-            <ComponentCard title="Leave Request Portal">
+          <div className="">
+            <div className="rounded-3xl border border-gray-200/60 bg-white/80 dark:bg-white/[0.03] backdrop-blur-xl px-10 py-12 dark:border-gray-800 shadow-2xl shadow-gray-200/20 dark:shadow-none">
               {submittedTicket ? (
                 <div className="text-center py-8">
-                  <div className="mb-6">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 dark:bg-green-900 mb-4">
-                      <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  <div className="mb-10">
+                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-100 dark:bg-green-900/30 mb-6">
+                      <svg className="w-10 h-10 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                       </svg>
                     </div>
-                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                      Leave Request Submitted Successfully!
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-400 mb-6">
-                      Your leave request has been submitted. Please save your ticket number for future reference.
+                    <h2 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tighter mb-3">
+                      Request Submitted!
+                    </h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 font-medium max-w-sm mx-auto">
+                      Your leave request has been logged. Please save your ticket number for status tracking.
                     </p>
                   </div>
 
-                  <div className="bg-brand-50 dark:bg-brand-500/20 border-2 border-brand-200 dark:border-brand-800 rounded-lg p-6 mb-6">
-                    <p className="text-sm text-brand-800 dark:text-brand-200 mb-2">Your Ticket Number</p>
-                    <p className="text-3xl font-bold text-brand-500 dark:text-brand-400 font-mono tracking-wider">
+                  <div className="bg-blue-50/50 dark:bg-blue-900/10 border-2 border-dashed border-blue-200 dark:border-blue-800/50 rounded-2xl p-8 mb-10">
+                    <p className="text-[11px] font-black uppercase tracking-widest text-blue-500 dark:text-blue-400 mb-3">Your Ticket Number</p>
+                    <p className="text-4xl font-black text-blue-950 dark:text-white font-mono tracking-[0.2em]">
                       {submittedTicket}
                     </p>
                   </div>
 
-                  <div className="space-y-4">
-                    <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
-                      <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                        <strong>Important:</strong> Please save this ticket number. You can use it to check the status of your leave request.
-                      </p>
-                    </div>
-
-                    <div className="flex gap-4 justify-center">
-                      <a
-                        href={`/leave-status-check?ticket=${submittedTicket}`}
-                        className="px-6 py-2 bg-brand-500 text-white rounded-md hover:bg-brand-600"
-                      >
-                        Check Status Now
-                      </a>
-                      <button
-                        onClick={handleNewRequest}
-                        className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
-                      >
-                        Submit Another Request
-                      </button>
-                    </div>
+                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                    <a
+                      href={`/leave-status-check?ticket=${submittedTicket}`}
+                      className="px-10 py-4 bg-blue-950 text-white text-xs font-black uppercase tracking-widest rounded-2xl hover:bg-blue-900 shadow-xl shadow-blue-950/20 active:scale-95 transition-all"
+                    >
+                      Check Status Now
+                    </a>
+                    <button
+                      onClick={handleNewRequest}
+                      className="px-10 py-4 border border-gray-200 dark:border-gray-700 rounded-2xl text-xs font-black uppercase tracking-widest text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 transition-all"
+                    >
+                      New Request
+                    </button>
                   </div>
                 </div>
               ) : (
                 <>
-                  <p className="text-gray-600 dark:text-gray-300 mb-6">
-                    Please fill out the form below to submit your leave request. All fields marked with * are required.
-                  </p>
+                  <div className="mb-12 text-left">
+                    <h1 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tighter leading-none">
+                      Leave Request Portal
+                    </h1>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-3 font-medium">
+                      Please provide your details below to submit a formal leave request.
+                    </p>
+                  </div>
 
-                  <form onSubmit={handleSubmit}>
-                    <div className="space-y-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="employeeName">Employee Name *</Label>
-                          <InputField
-                            type="text"
-                            id="employeeName"
-                            name="employeeName"
-                            value={formData.employeeName}
-                            onChange={handleInputChange}
-                            required
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="employeeId">Employee ID *</Label>
-                          <InputField
-                            type="text"
-                            id="employeeId"
-                            name="employeeId"
-                            value={formData.employeeId}
-                            onChange={handleInputChange}
-                            required
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="leaveType">Leave Type *</Label>
-                          <Select
-                            options={[
-                              { value: "casual", label: "Casual Leave" },
-                              { value: "sick", label: "Sick Leave" },
-                              { value: "annual", label: "Annual Leave" },
-                              { value: "maternity", label: "Maternity Leave" },
-                              { value: "paternity", label: "Paternity Leave" }
-                            ]}
-                            value={formData.leaveType}
-                            onChange={(value) => handleSelectChange('leaveType', value)}
-                          />
-                        </div>
-                        <div></div> {/* Empty div for spacing */}
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="startDate">Start Date *</Label>
-                          <InputField
-                            type="date"
-                            id="startDate"
-                            name="startDate"
-                            value={formData.startDate}
-                            onChange={handleInputChange}
-                            required
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="endDate">End Date *</Label>
-                          <InputField
-                            type="date"
-                            id="endDate"
-                            name="endDate"
-                            value={formData.endDate}
-                            onChange={handleInputChange}
-                            required
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label htmlFor="reason">Reason for Leave *</Label>
-                        <textarea
-                          id="reason"
-                          name="reason"
-                          value={formData.reason}
+                  <form onSubmit={handleSubmit} className="space-y-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="space-y-2.5">
+                        <Label htmlFor="employeeName" className="text-[11px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">Full Name *</Label>
+                        <InputField
+                          type="text"
+                          id="employeeName"
+                          name="employeeName"
+                          value={formData.employeeName}
                           onChange={handleInputChange}
-                          rows="4"
-                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-hidden focus:ring-3 focus:ring-brand-500/20 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 bg-transparent text-gray-800 focus:border-brand-300 dark:border-gray-700 dark:focus:border-brand-800 rounded-lg shadow-theme-xs"
+                          placeholder="Enter your full name"
                           required
-                        ></textarea>
+                        />
                       </div>
+                      <div className="space-y-2.5">
+                        <Label htmlFor="employeeId" className="text-[11px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">Employee ID *</Label>
+                        <InputField
+                          type="text"
+                          id="employeeId"
+                          name="employeeId"
+                          value={formData.employeeId}
+                          onChange={handleInputChange}
+                          placeholder="e.g. EMP123"
+                          required
+                        />
+                      </div>
+                    </div>
 
-                      <div className="flex justify-end space-x-3 pt-4">
-                        <button
-                          type="reset"
-                          onClick={resetForm}
-                          className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
-                        >
-                          Reset
-                        </button>
-                        <button
-                          type="submit"
-                          className="px-4 py-2 bg-brand-500 text-white rounded-md hover:bg-brand-600"
-                        >
-                          Submit Request
-                        </button>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="space-y-2.5">
+                        <Label htmlFor="leaveType" className="text-[11px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">Type of Leave *</Label>
+                        <Select
+                          options={[
+                            { value: "casual", label: "Casual Leave" },
+                            { value: "sick", label: "Sick Leave" },
+                            { value: "annual", label: "Annual Leave" },
+                            { value: "maternity", label: "Maternity Leave" },
+                            { value: "paternity", label: "Paternity Leave" }
+                          ]}
+                          value={formData.leaveType}
+                          onChange={(value) => handleSelectChange('leaveType', value)}
+                        />
                       </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="space-y-2.5">
+                        <Label htmlFor="startDate" className="text-[11px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">Start Date *</Label>
+                        <InputField
+                          type="date"
+                          id="startDate"
+                          name="startDate"
+                          value={formData.startDate}
+                          onChange={handleInputChange}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2.5">
+                        <Label htmlFor="endDate" className="text-[11px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">End Date *</Label>
+                        <InputField
+                          type="date"
+                          id="endDate"
+                          name="endDate"
+                          value={formData.endDate}
+                          onChange={handleInputChange}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2.5">
+                      <Label htmlFor="reason" className="text-[11px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">Reason for Request *</Label>
+                      <textarea
+                        id="reason"
+                        name="reason"
+                        value={formData.reason}
+                        onChange={handleInputChange}
+                        rows="5"
+                        className="w-full px-5 py-4 bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-gray-800 rounded-2xl text-gray-800 dark:text-white/90 placeholder:text-gray-400 focus:outline-hidden focus:ring-4 focus:ring-blue-950/5 focus:border-blue-950 dark:focus:border-blue-800 transition-all resize-none shadow-theme-xs font-medium"
+                        placeholder="Briefly explain your reason for leave..."
+                        required
+                      ></textarea>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row items-center justify-end gap-4 pt-8 border-t border-gray-100 dark:border-gray-800">
+                      <button
+                        type="reset"
+                        onClick={resetForm}
+                        className="w-full sm:w-auto px-8 py-3 text-xs font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors"
+                      >
+                        Reset Form
+                      </button>
+                      <button
+                        type="submit"
+                        className="w-full sm:w-auto px-12 py-4 bg-blue-950 text-white text-xs font-black uppercase tracking-widest rounded-2xl hover:bg-blue-900 shadow-2xl shadow-blue-950/20 active:scale-95 transition-all"
+                      >
+                        Submit Request
+                      </button>
                     </div>
                   </form>
 
-                  <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <div className="mt-10 p-6 bg-gray-50 dark:bg-white/5 rounded-2xl border border-gray-100 dark:border-gray-800 text-center sm:text-left">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
                       Already submitted a request?{' '}
                       <a
                         href="/leave-status-check"
-                        className="text-brand-500 dark:text-brand-400 hover:underline"
+                        className="text-blue-950 dark:text-blue-400 font-black hover:underline underline-offset-4 ml-1"
                       >
-                        Check your leave status
+                        Check your status
                       </a>
                     </p>
                   </div>
                 </>
               )}
-            </ComponentCard>
+            </div>
           </div>
         </div>
       </div>
       <ToastContainer position="top-center" className="!z-[999999]" style={{ zIndex: 999999 }} />
-    </>
+    </div>
   );
 };
 

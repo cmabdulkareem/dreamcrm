@@ -2,7 +2,6 @@ import React, { useState, useContext } from 'react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import axios from 'axios';
-import ComponentCard from '../../components/common/ComponentCard';
 import PageMeta from '../../components/common/PageMeta';
 import InputField from '../../components/form/input/InputField';
 import Label from '../../components/form/Label';
@@ -83,7 +82,7 @@ const ApplyLeave = () => {
             setLoading(true);
             const leaveData = {
                 employeeName: user.fullName || 'Unknown',
-                employeeCode: user.employeeCode || 'N/A', // Use correct key
+                employeeCode: user.employeeCode || 'N/A',
                 leaveType: formData.leaveType,
                 startDate: startDate.toISOString(),
                 endDate: endDate.toISOString(),
@@ -94,138 +93,128 @@ const ApplyLeave = () => {
                 timeout: 10000
             });
 
-            if (response.data && response.data.message) {
-                toast.success(response.data.message || 'Leave request submitted successfully!');
-            } else {
-                toast.success('Leave request submitted successfully!');
-            }
-
+            toast.success(response.data?.message || 'Leave request submitted successfully!');
             resetForm();
         } catch (error) {
             console.error('Error submitting leave request:', error);
-
-            if (error.response) {
-                // Server responded with error status
-                const errorMessage = error.response.data?.message ||
-                    (error.response.data?.errors ? error.response.data.errors.join(', ') : 'Failed to submit leave request');
-                toast.error(errorMessage);
-            } else if (error.request) {
-                // Request was made but no response received
-                toast.error('Network error. Please check your connection.');
-            } else {
-                // Something else happened
-                toast.error('Failed to submit leave request. Please try again.');
-            }
+            const msg = error.response?.data?.message || 'Failed to submit leave request';
+            toast.error(msg);
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <>
-            <PageMeta title="Apply for Leave - CRM" />
-            <div className="max-w-3xl mx-auto">
-                <ComponentCard title="Apply for Leave">
-                    <p className="text-gray-600 dark:text-gray-300 mb-6">
-                        Fill out the form below to submit a new leave request.
-                    </p>
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <PageMeta title="Apply for Leave - CDC Insights" />
+            <ToastContainer position="top-center" className="!z-[999999]" style={{ zIndex: 999999 }} />
 
-                    <form onSubmit={handleSubmit}>
-                        <div className="space-y-6">
-
-                            {/* Employee Details (Auto-filled) */}
-
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <Label htmlFor="leaveType">Leave Type *</Label>
-                                    <Select
-                                        options={[
-                                            { value: "casual", label: "Casual Leave" },
-                                            { value: "sick", label: "Sick Leave" },
-                                            { value: "annual", label: "Annual Leave" },
-                                            { value: "maternity", label: "Maternity Leave" },
-                                            { value: "paternity", label: "Paternity Leave" }
-                                        ]}
-                                        value={formData.leaveType}
-                                        onChange={(value) => handleSelectChange('leaveType', value)}
-                                    />
-                                </div>
-                                <div></div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <Label htmlFor="startDate">Start Date *</Label>
-                                    <InputField
-                                        type="date"
-                                        id="startDate"
-                                        name="startDate"
-                                        value={formData.startDate}
-                                        onChange={handleInputChange}
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <Label htmlFor="endDate">End Date *</Label>
-                                    <InputField
-                                        type="date"
-                                        id="endDate"
-                                        name="endDate"
-                                        value={formData.endDate}
-                                        onChange={handleInputChange}
-                                        required
-                                    />
-                                </div>
-                            </div>
-
-                            <div>
-                                <Label htmlFor="reason">Reason for Leave *</Label>
-                                <textarea
-                                    id="reason"
-                                    name="reason"
-                                    value={formData.reason}
-                                    onChange={handleInputChange}
-                                    rows="4"
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-hidden focus:ring-3 focus:ring-blue-950/10 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30 bg-transparent text-gray-800 focus:border-blue-950 dark:border-gray-700 dark:focus:border-blue-800 rounded-lg shadow-theme-xs"
-                                    required
-                                ></textarea>
-                            </div>
-
-                            <div className="flex justify-end space-x-3 pt-4">
-                                <button
-                                    type="reset"
-                                    onClick={resetForm}
-                                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600"
-                                >
-                                    Reset
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="px-4 py-2 bg-blue-950 text-white rounded-md hover:bg-blue-900 disabled:opacity-50 transition-colors"
-                                >
-                                    {loading ? 'Submitting...' : 'Submit Request'}
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-
-                    <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                            Want to check your leave usage?{' '}
-                            <Link
-                                to="/leave-management/my-leaves"
-                                className="text-blue-950 dark:text-blue-400 hover:underline"
-                            >
-                                View My Leaves
-                            </Link>
+            <div className="">
+                <div className="rounded-2xl border border-gray-200/60 bg-white/80 dark:bg-white/[0.03] backdrop-blur-xl px-8 py-10 dark:border-gray-800 shadow-xl shadow-gray-200/20 dark:shadow-none">
+                    <div className="mb-10 text-left">
+                        <h2 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tighter">Apply for Leave</h2>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 font-medium">
+                            Submit your leave request below. HR will review it shortly.
                         </p>
                     </div>
-                </ComponentCard>
+
+                    <form onSubmit={handleSubmit} className="space-y-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="space-y-2.5">
+                                <Label htmlFor="leaveType" className="text-[11px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">Leave Type *</Label>
+                                <Select
+                                    options={[
+                                        { value: "casual", label: "Casual Leave" },
+                                        { value: "sick", label: "Sick Leave" },
+                                        { value: "annual", label: "Annual Leave" },
+                                        { value: "maternity", label: "Maternity Leave" },
+                                        { value: "paternity", label: "Paternity Leave" }
+                                    ]}
+                                    value={formData.leaveType}
+                                    onChange={(value) => handleSelectChange('leaveType', value)}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="space-y-2.5">
+                                <Label htmlFor="startDate" className="text-[11px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">Start Date *</Label>
+                                <InputField
+                                    type="date"
+                                    id="startDate"
+                                    name="startDate"
+                                    value={formData.startDate}
+                                    onChange={handleInputChange}
+                                    required
+                                />
+                            </div>
+                            <div className="space-y-2.5">
+                                <Label htmlFor="endDate" className="text-[11px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">End Date *</Label>
+                                <InputField
+                                    type="date"
+                                    id="endDate"
+                                    name="endDate"
+                                    value={formData.endDate}
+                                    onChange={handleInputChange}
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2.5">
+                            <Label htmlFor="reason" className="text-[11px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">Reason for Leave *</Label>
+                            <textarea
+                                id="reason"
+                                name="reason"
+                                value={formData.reason}
+                                onChange={handleInputChange}
+                                rows="5"
+                                className="w-full px-5 py-4 bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-gray-800 rounded-2xl text-gray-800 dark:text-white/90 placeholder:text-gray-400 focus:outline-hidden focus:ring-4 focus:ring-blue-950/5 focus:border-blue-950 dark:focus:border-blue-800 transition-all resize-none shadow-theme-xs font-medium"
+                                placeholder="Please provide a brief reason for your leave request..."
+                                required
+                            ></textarea>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row items-center justify-end gap-4 pt-8 border-t border-gray-100 dark:border-gray-800">
+                            <button
+                                type="reset"
+                                onClick={resetForm}
+                                className="w-full sm:w-auto px-8 py-3 text-xs font-black uppercase tracking-widest text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors"
+                            >
+                                Reset Form
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="w-full sm:w-auto px-10 py-3.5 bg-blue-950 text-white text-xs font-black uppercase tracking-widest rounded-2xl hover:bg-blue-900 shadow-2xl shadow-blue-950/20 active:scale-95 disabled:opacity-50 disabled:active:scale-100 transition-all flex items-center justify-center gap-3"
+                            >
+                                {loading ? (
+                                    <>
+                                        <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        Processing...
+                                    </>
+                                ) : 'Submit Request'}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div className="mt-8 text-center">
+                    <p className="text-xs text-gray-400 font-medium">
+                        Need to review your previous requests?{' '}
+                        <Link
+                            to="/hr/leave-management/my-leaves"
+                            className="text-blue-950 dark:text-blue-400 font-bold hover:underline underline-offset-4 ml-1"
+                        >
+                            Visit My History
+                        </Link>
+                    </p>
+                </div>
             </div>
-            <ToastContainer position="top-center" className="!z-[999999]" style={{ zIndex: 999999 }} />
-        </>
+        </div>
     );
 };
 

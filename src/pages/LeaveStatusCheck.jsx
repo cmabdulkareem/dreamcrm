@@ -115,18 +115,23 @@ const LeaveStatusCheck = () => {
   return (
     <>
       <PageMeta title="Check Leave Status - CRM" />
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-12">
+      <div className="min-h-screen bg-gray-50/50 dark:bg-gray-900/50 py-12">
         <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto">
-            <ComponentCard title="Check Leave Request Status">
-              <p className="text-gray-600 dark:text-gray-300 mb-6">
-                Enter your ticket number to check the status of your leave request.
-              </p>
+          <div className="">
+            <div className="rounded-3xl border border-gray-200/60 bg-white/80 dark:bg-white/[0.03] backdrop-blur-xl px-10 py-12 dark:border-gray-800 shadow-2xl shadow-gray-200/20 dark:shadow-none">
+              <div className="mb-12 text-left">
+                <h1 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tighter leading-none">
+                  Check Leave Status
+                </h1>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-3 font-medium">
+                  Enter your ticket number to check the status of your leave request.
+                </p>
+              </div>
 
-              <form onSubmit={handleSubmit} className="mb-6">
-                <div className="flex gap-4">
-                  <div className="flex-1">
-                    <Label htmlFor="ticketNumber">Ticket Number</Label>
+              <form onSubmit={handleSubmit} className="mb-12">
+                <div className="flex flex-col sm:flex-row gap-6">
+                  <div className="flex-1 space-y-2.5">
+                    <Label htmlFor="ticketNumber" className="text-[11px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">Ticket Number *</Label>
                     <InputField
                       type="text"
                       id="ticketNumber"
@@ -142,54 +147,64 @@ const LeaveStatusCheck = () => {
                     <button
                       type="submit"
                       disabled={loading}
-                      className="px-6 py-2.5 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full sm:w-auto px-10 py-3.5 bg-blue-950 text-white text-xs font-black uppercase tracking-widest rounded-2xl hover:bg-blue-900 shadow-2xl shadow-blue-950/20 active:scale-95 disabled:opacity-50 disabled:active:scale-100 transition-all flex items-center justify-center gap-3"
                     >
-                      {loading ? 'Checking...' : 'Check Status'}
+                      {loading ? (
+                        <>
+                          <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Checking...
+                        </>
+                      ) : 'Check Status'}
                     </button>
                   </div>
                 </div>
               </form>
 
               {leave && (
-                <div className="mt-6 p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                <div className="mt-12 p-8 bg-gray-50/50 dark:bg-white/5 rounded-3xl border border-gray-100 dark:border-gray-800 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <h3 className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tighter mb-8 border-b border-gray-100 dark:border-gray-800 pb-4">
                     Leave Request Details
                   </h3>
 
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Ticket Number</p>
-                        <p className="text-base font-medium text-gray-900 dark:text-white">{leave.ticketNumber}</p>
+                  <div className="space-y-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="space-y-1.5">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">Ticket Number</p>
+                        <p className="text-lg font-bold text-blue-950 dark:text-white font-mono tracking-tight">{leave.ticketNumber}</p>
                       </div>
-                      <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Status</p>
-                        <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getStatusColor(leave.status)}`}>
-                          {getStatusLabel(leave.status)}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Employee Name</p>
-                        <p className="text-base font-medium text-gray-900 dark:text-white">{leave.employeeName}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Employee ID</p>
-                        <p className="text-base font-medium text-gray-900 dark:text-white">{leave.employeeId}</p>
+                      <div className="space-y-1.5">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">Status</p>
+                        <div>
+                          <span className={`inline-flex px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-full shadow-sm ${getStatusColor(leave.status)}`}>
+                            {getStatusLabel(leave.status)}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
-                    <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Leave Type</p>
-                      <p className="text-base font-medium text-gray-900 dark:text-white capitalize">{leave.leaveType}</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="space-y-1.5">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">Employee Name</p>
+                        <p className="text-base font-bold text-gray-800 dark:text-white/90">{leave.employeeName}</p>
+                      </div>
+                      <div className="space-y-1.5">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">Employee ID</p>
+                        <p className="text-base font-bold text-gray-800 dark:text-white/90">{leave.employeeId}</p>
+                      </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Start Date</p>
-                        <p className="text-base font-medium text-gray-900 dark:text-white">
+                    <div className="space-y-1.5">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">Leave Type</p>
+                      <p className="text-base font-bold text-gray-800 dark:text-white/90 capitalize">{leave.leaveType} Leave</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="space-y-1.5">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">Start Date</p>
+                        <p className="text-base font-bold text-gray-800 dark:text-white/90">
                           {new Date(leave.startDate).toLocaleDateString('en-US', {
                             year: 'numeric',
                             month: 'long',
@@ -197,9 +212,9 @@ const LeaveStatusCheck = () => {
                           })}
                         </p>
                       </div>
-                      <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">End Date</p>
-                        <p className="text-base font-medium text-gray-900 dark:text-white">
+                      <div className="space-y-1.5">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">End Date</p>
+                        <p className="text-base font-bold text-gray-800 dark:text-white/90">
                           {new Date(leave.endDate).toLocaleDateString('en-US', {
                             year: 'numeric',
                             month: 'long',
@@ -209,15 +224,17 @@ const LeaveStatusCheck = () => {
                       </div>
                     </div>
 
-                    <div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">Reason</p>
-                      <p className="text-base text-gray-900 dark:text-white">{leave.reason}</p>
+                    <div className="space-y-1.5">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">Reason</p>
+                      <div className="p-5 bg-white dark:bg-black/20 border border-gray-100 dark:border-gray-800 rounded-2xl">
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 leading-relaxed italic">"{leave.reason}"</p>
+                      </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                      <div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">Submitted On</p>
-                        <p className="text-base text-gray-900 dark:text-white">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-8 border-t border-gray-100 dark:border-gray-800">
+                      <div className="space-y-1.5">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">Submitted On</p>
+                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
                           {new Date(leave.createdAt).toLocaleDateString('en-US', {
                             year: 'numeric',
                             month: 'long',
@@ -228,9 +245,9 @@ const LeaveStatusCheck = () => {
                         </p>
                       </div>
                       {leave.updatedAt && leave.updatedAt !== leave.createdAt && (
-                        <div>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">Last Updated</p>
-                          <p className="text-base text-gray-900 dark:text-white">
+                        <div className="space-y-1.5 text-right sm:text-left">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">Last Updated</p>
+                          <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
                             {new Date(leave.updatedAt).toLocaleDateString('en-US', {
                               year: 'numeric',
                               month: 'long',
@@ -246,18 +263,18 @@ const LeaveStatusCheck = () => {
                 </div>
               )}
 
-              <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                <p className="text-sm text-blue-800 dark:text-blue-200">
+              <div className="mt-12 p-6 bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-800/50 text-center sm:text-left">
+                <p className="text-sm text-blue-800/80 dark:text-blue-300 font-medium">
                   <strong>Note:</strong> Don't have a ticket number?{' '}
                   <a
                     href="/leave-request"
-                    className="underline hover:text-blue-600 dark:hover:text-blue-300"
+                    className="text-blue-950 dark:text-blue-400 font-black hover:underline underline-offset-4 ml-1"
                   >
                     Submit a new leave request
                   </a>
                 </p>
               </div>
-            </ComponentCard>
+            </div>
           </div>
         </div>
       </div>

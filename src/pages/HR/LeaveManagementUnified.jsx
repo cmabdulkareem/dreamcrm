@@ -26,68 +26,63 @@ const LeaveManagementUnified = () => {
         if (path.includes('apply')) return 'apply';
         if (path.includes('my-leaves')) return 'my-leaves';
 
-        // Default based on role
         if (hasRole(user, 'HR', brandId) || hasRole(user, 'Owner', brandId)) return 'approvals';
         return 'apply';
     };
 
     const [activeTab, setActiveTab] = useState(getInitialTab());
 
-    // Role-based visibility for "Approvals" tab
     const canManageLeaves = hasRole(user, 'HR', brandId) || hasRole(user, 'Owner', brandId);
 
     const tabs = [
-        { id: 'apply', label: 'Apply Leave', icon: null },
-        { id: 'my-leaves', label: 'My Leaves', icon: null },
-        ...(canManageLeaves ? [{ id: 'approvals', label: 'Leave Approvals', icon: null }] : []),
+        ...(canManageLeaves ? [{ id: 'approvals', label: 'Leave Approvals' }] : []),
+        { id: 'my-leaves', label: 'My History' },
+        { id: 'apply', label: 'Apply for Leave' },
     ];
 
     const renderTabContent = () => {
         switch (activeTab) {
-            case 'apply':
-                return <ApplyLeave />;
-            case 'my-leaves':
-                return <MyLeaves />;
-            case 'approvals':
-                return <ManageLeaves />;
-            default:
-                return <ApplyLeave />;
+            case 'apply': return <ApplyLeave />;
+            case 'my-leaves': return <MyLeaves />;
+            case 'approvals': return <ManageLeaves />;
+            default: return <ApplyLeave />;
         }
     };
 
     return (
-        <div className="min-h-screen bg-gray-50/50 dark:bg-gray-900/50">
+        <div className="space-y-6">
             <PageMeta title="Leave Management - CDC Insights" />
             <PageBreadCrumb
                 items={[
                     { name: 'Dashboard', path: '/' },
-                    { name: 'EMS', path: '/hr' },
                     { name: 'Leave Management' },
                 ]}
             />
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="flex flex-col gap-8">
                 {/* Header Section */}
-                <div className="mb-8">
-                    <h1 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tighter">
-                        Leave Management
-                    </h1>
-                    <p className="text-gray-500 dark:text-gray-400 mt-1">
-                        Track, apply, and manage employee leave requests in one place.
-                    </p>
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                    <div>
+                        <h1 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tighter leading-none">
+                            Leave Management
+                        </h1>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 font-medium">
+                            Efficiently track, apply, and approve employee leave requests.
+                        </p>
+                    </div>
                 </div>
 
-                {/* Tab Navigation */}
-                <div className="flex flex-wrap gap-2 mb-8 bg-white dark:bg-gray-800 p-1.5 rounded-2xl shadow-theme-xs border border-gray-100 dark:border-gray-700 w-fit">
+                {/* Tab Navigation - Premium Pill Style */}
+                <div className="flex flex-wrap gap-1 p-1.5 bg-gray-100/80 dark:bg-white/[0.03] border border-gray-200/50 dark:border-gray-800 rounded-2xl w-fit shadow-sm">
                     {tabs.map((tab) => (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
                             className={`
-                                px-6 py-2.5 text-xs font-black uppercase tracking-widest rounded-xl transition-all duration-300
+                                px-6 py-2.5 text-[11px] font-black uppercase tracking-widest rounded-xl transition-all duration-300
                                 ${activeTab === tab.id
-                                    ? 'bg-blue-950 text-white shadow-xl shadow-blue-900/20 scale-105'
-                                    : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-700'
+                                    ? 'bg-blue-950 text-white shadow-lg shadow-blue-950/20 active:scale-95'
+                                    : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/5'
                                 }
                             `}
                         >
@@ -96,13 +91,13 @@ const LeaveManagementUnified = () => {
                     ))}
                 </div>
 
-                {/* Content Area */}
-                <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                {/* Content Area with smooth transition */}
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out">
                     {renderTabContent()}
                 </div>
             </div>
 
-            <ToastContainer position="top-right" />
+            <ToastContainer position="top-right" autoClose={3000} />
         </div>
     );
 };
