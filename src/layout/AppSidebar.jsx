@@ -251,6 +251,24 @@ const AppSidebar = () => {
           if (hiddenForCounsellor.includes(nav.name)) return null;
         }
 
+        if (nav.name === "EMS") {
+          const isOwnerRole = hasRole(user, "Owner", brandId);
+          const isHRRole = hasRole(user, "HR", brandId);
+
+          if (!isOwnerRole && !isHRRole) {
+            const filteredSubItems = nav.subItems.filter(
+              (sub) => sub.name === "Leave Management"
+            );
+
+            if (filteredSubItems.length === 0) return null;
+
+            nav = {
+              ...nav,
+              subItems: filteredSubItems,
+            };
+          }
+        }
+
         // Restricted items for IT Support
         if (
           hasRole(user, "IT Support", brandId) &&
