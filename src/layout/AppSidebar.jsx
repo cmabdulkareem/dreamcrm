@@ -252,7 +252,7 @@ const AppSidebar = () => {
         }
 
         // Restricted items for IT Support
-        if (hasRole(user, "IT Support", brandId)) {
+if (hasRole(user, "IT Support", brandId) && !hasManagerAccess) {
           const allowedForIT = ["Computer Lab", "Settings"];
           if (!allowedForIT.includes(nav.name)) return null;
         }
@@ -387,7 +387,7 @@ const AppSidebar = () => {
                     }
 
                     // RESTRICTION: IT Support only sees Edit Profile under Settings
-                    if (hasRole(user, "IT Support", brandId)) {
+                    if (hasRole(user, "IT Support", brandId) && !hasManagerAccess) {
                       if (nav.name === "Settings" && subItem.name !== "Edit Profile") {
                         return null;
                       }
