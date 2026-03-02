@@ -258,7 +258,7 @@ if (hasRole(user, "IT Support", brandId) && !hasManagerAccess) {
         }
 
         // Restricted items for Academic Coordinator
-        if (hasRole(user, "Academic Coordinator", brandId)) {
+        if (hasRole(user, "Academic Coordinator", brandId) && !hasManagerAccess) {
           // AC ONLY needs Student Management, Settings, Lead Management and Leave Management (will filter subitems below)
           const allowedForAC = ["Student Management", "Settings", "Leave Management", "Lead Management"];
           if (!allowedForAC.includes(nav.name)) return null;
@@ -394,7 +394,7 @@ if (hasRole(user, "IT Support", brandId) && !hasManagerAccess) {
                     }
 
                     // RESTRICTION: Academic Coordinator only sees Batch Management, Edit Profile, Cold Call list and personal Leave Management
-                    if (hasRole(user, "Academic Coordinator", brandId)) {
+                    if (hasRole(user, "Academic Coordinator", brandId) && !hasManagerAccess) {
                       const allowedSubItemsAC = ["Batch Management", "Edit Profile", "Leave Management", "Cold Call list", "Birthday Calendar", "New Lead", "Manage Leads"];
                       if (!allowedSubItemsAC.includes(subItem.name)) {
                         return null;
