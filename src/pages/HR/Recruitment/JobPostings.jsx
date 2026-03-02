@@ -83,7 +83,7 @@ const JobPostings = () => {
                                                     {job.status}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{job.applicants}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{job.applications?.length ?? 0}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                 <Link to={`/hr/recruitment/jobs/${job.id}/edit`} className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-3 inline-block">
                                                     <PencilIcon className="w-5 h-5" />

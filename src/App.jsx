@@ -28,7 +28,6 @@ import UserProfiles from "./pages/UserProfiles";
 // Lazy load other components
 const AppLayout = lazy(() => import("./layout/AppLayout"));
 const Dashboard = lazy(() => import("./pages/Dashboard/LeadsOverview"));
-const EcommerceDashboard = lazy(() => import("./pages/Dashboard/RevenewOverview"));
 const Calendar = lazy(() => import("./pages/Calendar"));
 const EmailInbox = lazy(() => import("./pages/Email/EmailInbox"));
 const Databases = lazy(() => import("./pages/Marketing/Databases"));
@@ -36,15 +35,14 @@ const Promotional = lazy(() => import("./pages/Marketing/Promotional"));
 
 // HR Module
 const HRDashboard = lazy(() => import("./pages/HR/HRDashboard"));
-const EmployeeList = lazy(() => import("./pages/HR/EmployeeList"));
-const EmployeeForm = lazy(() => import("./pages/HR/EmployeeForm"));
 const JobPostings = lazy(() => import('./pages/HR/Recruitment/JobPostings'));
 const JobForm = lazy(() => import('./pages/HR/Recruitment/JobForm'));
 const CandidateList = lazy(() => import('./pages/HR/Recruitment/CandidateList'));
+const AgreementBuilder = lazy(() => import('./pages/HR/AgreementBuilder'));
 const ManageEvents = lazy(() => import("./pages/EventManagement/ManageEvents"));
 const CreateEvent = lazy(() => import("./pages/EventManagement/CreateEvent"));
 const EventRegistrations = lazy(() => import("./pages/EventManagement/EventRegistrations"));
-const LeaveManagement = lazy(() => import("./pages/LeaveManagement"));
+const LeaveManagementUnified = lazy(() => import("./pages/HR/LeaveManagementUnified"));
 const NewLead = lazy(() => import("./pages/LeadManagement/NewLead"));
 const ManageLeads = lazy(() => import("./pages/LeadManagement/ManageLeads"));
 const CallList = lazy(() => import("./pages/LeadManagement/CallList"));
@@ -66,8 +64,6 @@ const BarChart = lazy(() => import("./pages/Charts/BarChart"));
 const EventRegistration = lazy(() => import("./pages/EventRegistration"));
 const LeaveRequestPortal = lazy(() => import("./pages/LeaveRequestPortal"));
 const LeaveStatusCheck = lazy(() => import("./pages/LeaveStatusCheck"));
-const ApplyLeave = lazy(() => import("./pages/LeaveManagement/ApplyLeave"));
-const MyLeaves = lazy(() => import("./pages/LeaveManagement/MyLeaves"));
 const CollectPayment = lazy(() => import("./pages/Finance/CollectPayment"));
 const InvoiceList = lazy(() => import("./pages/Finance/InvoiceList"));
 const InvoiceGenerator = lazy(() => import("./pages/Finance/InvoiceGenerator"));
@@ -94,6 +90,7 @@ const StudentProfile = lazy(() => import("./pages/StudentPortal/StudentProfile")
 const StudentRequests = lazy(() => import("./pages/StudentPortal/StudentRequests"));
 const ChangePassword = lazy(() => import("./pages/StudentPortal/ChangePassword"));
 const PublicJobApply = lazy(() => import("./pages/HR/Recruitment/PublicJobApply"));
+const OnboardingAcceptance = lazy(() => import("./pages/Public/OnboardingAcceptance"));
 
 import PageMeta from "./components/common/PageMeta";
 
@@ -129,7 +126,6 @@ function App() {
                   <Route path="/settings/campaigns" element={<ProtectedRoutes requireManager={true}><CampaignSettings /></ProtectedRoutes>} />
                   <Route path="/settings/contact-points" element={<ProtectedRoutes requireManager={true}><ContactPointSettings /></ProtectedRoutes>} />
                   <Route path="/settings/courses" element={<ProtectedRoutes requireManager={true}><CourseManagement /></ProtectedRoutes>} />
-                  <Route path="/settings/users" element={<ProtectedRoutes requireAdmin={true}><UserManagement /></ProtectedRoutes>} />
                   <Route path="/settings/brands" element={<ProtectedRoutes requireAdmin={true}><BrandManagement /></ProtectedRoutes>} />
                   <Route path="/settings/announcements" element={<ProtectedRoutes requireAdmin={true}><AnnouncementManagement /></ProtectedRoutes>} />
                   <Route path="/settings/backup" element={<ProtectedRoutes requireManager={true}><AppBackup /></ProtectedRoutes>} />
@@ -145,13 +141,6 @@ function App() {
                   <Route path="/events" element={<ProtectedRoutes requireManager={true}><ManageEvents /></ProtectedRoutes>} />
                   <Route path="/events/create" element={<ProtectedRoutes requireManager={true}><CreateEvent /></ProtectedRoutes>} />
                   <Route path="/events/:id/registrations" element={<ProtectedRoutes requireManager={true}><EventRegistrations /></ProtectedRoutes>} />
-                  {/* Leave Management */}
-                  <Route path="/leave-management">
-                    <Route index element={<ProtectedRoutes><LeaveManagement /></ProtectedRoutes>} />
-                    <Route path="apply" element={<ProtectedRoutes><ApplyLeave /></ProtectedRoutes>} />
-                    <Route path="my-leaves" element={<ProtectedRoutes><MyLeaves /></ProtectedRoutes>} />
-                    <Route path="requests" element={<ProtectedRoutes><LeaveManagement /></ProtectedRoutes>} />
-                  </Route>
                   {/* Forms */}
                   <Route path="/new-lead" element={<ProtectedRoutes><NewLead /></ProtectedRoutes>} />
                   <Route path="/lead-management" element={<ProtectedRoutes><ManageLeads /></ProtectedRoutes>} />
@@ -182,12 +171,13 @@ function App() {
                   {/* HR Module Routes */}
                   <Route path="/hr">
                     <Route index element={<ProtectedRoutes allowedRoles={[...HR_ROLES, ...MANAGER_ROLES]}><Suspense fallback={<LoadingSpinner />}><HRDashboard /></Suspense></ProtectedRoutes>} />
-                    <Route path="employees" element={<ProtectedRoutes allowedRoles={[...HR_ROLES, ...MANAGER_ROLES]}><Suspense fallback={<LoadingSpinner />}><EmployeeList /></Suspense></ProtectedRoutes>} />
-                    <Route path="employees/new" element={<ProtectedRoutes allowedRoles={[...HR_ROLES, ...MANAGER_ROLES]}><Suspense fallback={<LoadingSpinner />}><EmployeeForm /></Suspense></ProtectedRoutes>} />
+                    <Route path="users" element={<ProtectedRoutes requireAdmin={true}><UserManagement /></ProtectedRoutes>} />
                     <Route path="recruitment/jobs" element={<ProtectedRoutes allowedRoles={[...HR_ROLES, ...MANAGER_ROLES]}><Suspense fallback={<LoadingSpinner />}><JobPostings /></Suspense></ProtectedRoutes>} />
                     <Route path="recruitment/jobs/new" element={<ProtectedRoutes allowedRoles={[...HR_ROLES, ...MANAGER_ROLES]}><Suspense fallback={<LoadingSpinner />}><JobForm /></Suspense></ProtectedRoutes>} />
                     <Route path="recruitment/jobs/:id/edit" element={<ProtectedRoutes allowedRoles={[...HR_ROLES, ...MANAGER_ROLES]}><Suspense fallback={<LoadingSpinner />}><JobForm /></Suspense></ProtectedRoutes>} />
                     <Route path="recruitment/candidates" element={<ProtectedRoutes allowedRoles={[...HR_ROLES, ...MANAGER_ROLES]}><Suspense fallback={<LoadingSpinner />}><CandidateList /></Suspense></ProtectedRoutes>} />
+                    <Route path="agreements" element={<ProtectedRoutes allowedRoles={[...HR_ROLES, ...MANAGER_ROLES]}><Suspense fallback={<LoadingSpinner />}><AgreementBuilder /></Suspense></ProtectedRoutes>} />
+                    <Route path="leaves" element={<ProtectedRoutes><Suspense fallback={<LoadingSpinner />}><LeaveManagementUnified /></Suspense></ProtectedRoutes>} />
                     <Route path="payroll" element={<ProtectedRoutes allowedRoles={[...HR_ROLES, ...MANAGER_ROLES]}><div className="p-6">Payroll Module Coming Soon</div></ProtectedRoutes>} />
                   </Route>
 
@@ -216,6 +206,7 @@ function App() {
                 <Route path="/event-registration/:link" element={<EventRegistration />} />
                 <Route path="/public/attendance/:shareToken" element={<PublicAttendance />} />
                 <Route path="/jobs/apply/:id" element={<Suspense fallback={<LoadingSpinner />}><PublicJobApply /></Suspense>} />
+                <Route path="/onboarding/:token" element={<Suspense fallback={<LoadingSpinner />}><OnboardingAcceptance /></Suspense>} />
 
                 {/* Student Portal Routes */}
                 <Route path="/student/signup" element={<Suspense fallback={<LoadingSpinner />}><StudentSignup /></Suspense>} />

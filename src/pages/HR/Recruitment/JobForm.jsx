@@ -127,7 +127,7 @@ const JobForm = ({ jobId, onClose, onSuccess }) => {
                         id="title"
                         value={formData.title}
                         onChange={handleChange}
-                        placeholder="e.g. Senior React Developer"
+                        placeholder="e.g. Marketing Executive"
                         required
                     />
                 </div>
@@ -136,12 +136,20 @@ const JobForm = ({ jobId, onClose, onSuccess }) => {
                     <Label htmlFor="department">Department</Label>
                     <Select
                         options={[
-                            { value: 'Engineering', label: 'Engineering' },
+                            { value: 'Counsellor', label: 'Academic Counsellor' },
+                            { value: 'Trainer_Mentor', label: 'Trainer / Mentor' },
                             { value: 'Marketing', label: 'Marketing' },
-                            { value: 'Design', label: 'Design' },
-                            { value: 'Sales', label: 'Sales' },
-                            { value: 'HR', label: 'Human Resources' },
-                            { value: 'Finance', label: 'Finance' },
+                            { value: 'Accounts', label: 'Accounts' },
+                            { value: 'Front_Office', label: 'Front Office / Reception' },
+                            { value: 'Administration', label: 'Administration' },
+                            { value: 'Operations', label: 'Operations' },
+                            { value: 'Technical_Support', label: 'Technical Support' },
+                            { value: 'Academic_Coordinator', label: 'Academic Coordinator' },
+                            { value: 'Placement_Officer', label: 'Placement Officer' },
+                            { value: 'Business_Development', label: 'Business Development' },
+                            { value: 'Management', label: 'Management' },
+                            { value: 'HR_Manager', label: 'HR Manager' },
+                            { value: 'Others', label: 'Others' },
                         ]}
                         value={formData.department}
                         onChange={(value) => handleSelectChange('department', value)}

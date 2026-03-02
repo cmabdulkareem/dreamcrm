@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import PageMeta from '../../../components/common/PageMeta';
 import PageBreadCrumb from '../../../components/common/PageBreadCrumb';
+import AddCandidateModal from './AddCandidateModal';
 import LoadingSpinner from '../../../components/common/LoadingSpinner';
 import Badge from '../../../components/ui/badge/Badge';
 import Button from '../../../components/ui/button/Button';
@@ -10,28 +11,33 @@ import { hrService } from '../../../services/hrService';
 import { toast } from 'react-toastify';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
+import axios from 'axios';
+import API from '../../../config/api';
+
 import {
-    ChevronDown,
-    Briefcase,
-    Users,
     FileText,
     Calendar,
-    Mail,
     ExternalLink,
+    ChevronDown,
     User,
     Plus,
     Pencil,
     Trash2,
     Copy,
-    ArrowUpRight,
     History,
-    CheckCircle2,
     Clock,
     UserCircle,
-    MoreVertical,
-    Star,
     MapPin,
-    XCircle
+    CheckCircle2,
+    MoreVertical,
+    XCircle,
+    X,
+    Eye,
+    Mail,
+    Phone,
+    Briefcase,
+    Printer,
+    FileCheck,
 } from 'lucide-react';
 
 const ItemTypes = {
@@ -39,7 +45,7 @@ const ItemTypes = {
 };
 
 // --- DRAGGABLE APPLICANT CARD ---
-const DraggableApplicantCard = ({ app, onViewHistory, onDrop }) => {
+const DraggableApplicantCard = ({ app, onViewHistory, onDrop, onSchedule, onOpenDetails, onDelete }) => {
     const [{ isDragging }, drag] = useDrag(() => ({
         type: ItemTypes.APPLICANT,
         item: { id: app._id, currentStatus: app.status || 'Pending', jobId: app.jobId?._id || app.jobId },
@@ -49,9 +55,9 @@ const DraggableApplicantCard = ({ app, onViewHistory, onDrop }) => {
     }), [app]);
 
     // Metadata Fallbacks
-    const experience = app.experience || '3+ Yrs';
+    const experience = app.experience || '1+ Yr';
     const jobTitle = app.jobId?.title || 'Position';
-    const location = app.location || 'Remote';
+    const source = app.source || 'Online'; // 'Online' | 'Manual'
     const appliedDate = new Date(app.appliedDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 
     return (
@@ -79,55 +85,58 @@ const DraggableApplicantCard = ({ app, onViewHistory, onDrop }) => {
                     <div className="text-[10px] text-gray-500 font-bold uppercase tracking-tight truncate leading-none">
                         {jobTitle}
                     </div>
-                    <div className="flex items-center gap-2.5 text-[11px] text-brand-500 font-black uppercase tracking-widest whitespace-nowrap overflow-hidden">
-                        <span className="flex items-center gap-1"><Briefcase className="size-2.5 opacity-40 shrink-0" /> {experience}</span>
+                    <div className="flex items-center gap-2.5 text-[11px] font-black uppercase tracking-widest whitespace-nowrap overflow-hidden">
+                        <span className="flex items-center gap-1 text-brand-500"><Briefcase className="size-2.5 opacity-40 shrink-0" /> {experience}</span>
                         <span className="opacity-20 flex-shrink-0">•</span>
-                        <span className="flex items-center gap-1"><MapPin className="size-2.5 opacity-40 shrink-0" /> {location}</span>
+                        <span className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-black tracking-widest border ${source === 'Manual'
+                            ? 'bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-500/10 dark:border-amber-500/20'
+                            : 'bg-sky-50 text-sky-600 border-sky-200 dark:bg-sky-500/10 dark:border-sky-500/20'
+                            }`}>
+                            {source === 'Manual' ? 'OFFLINE' : 'ONLINE'}
+                        </span>
                         <span className="opacity-20 flex-shrink-0">•</span>
-                        <span className="flex items-center gap-1 truncate"><Calendar className="size-2.5 opacity-40 shrink-0" /> {appliedDate}</span>
+                        <span className="flex items-center gap-1 text-gray-500"><Calendar className="size-2.5 opacity-40 shrink-0" /> {appliedDate}</span>
                     </div>
                 </div>
             </div>
 
-            {/* Hover Action Bar */}
-            <div className="absolute inset-x-0 -bottom-1 flex items-center justify-center gap-2 opacity-0 group-hover/card:opacity-100 group-hover/card:bottom-2 transition-all duration-200 pointer-events-none">
-                <div className="flex items-center bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-700 shadow-xl rounded-full px-2 py-1.5 pointer-events-auto divide-x divide-gray-100 dark:divide-gray-800">
+            {/* Hover Action Bar - Full Overlay */}
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/card:opacity-100 bg-white/40 dark:bg-gray-900/40 backdrop-blur-[2px] rounded-[12px] transition-all duration-300 pointer-events-none z-10">
+                <div className="flex items-center bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-700 shadow-2xl rounded-full p-1.5 pointer-events-auto scale-90 group-hover/card:scale-100 transition-all duration-300 divide-x divide-gray-100 dark:divide-gray-800">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onOpenDetails(app); }}
+                        className="p-2.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 first:rounded-l-full transition-all duration-200"
+                        title="View Full Application"
+                    >
+                        <Eye className="size-5" strokeWidth={2} />
+                    </button>
                     <button
                         onClick={(e) => { e.stopPropagation(); onViewHistory(app); }}
-                        className="px-2.5 text-gray-400 hover:text-brand-500 transition-colors"
+                        className="p-2.5 text-gray-500 hover:text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-all duration-200"
                         title="View History"
                     >
-                        <History className="size-4" />
+                        <History className="size-5" strokeWidth={2} />
                     </button>
                     <button
-                        onClick={(e) => { e.stopPropagation(); toast.info('Schedule'); }}
-                        className="px-2.5 text-gray-400 hover:text-blue-500 transition-colors"
-                        title="Schedule"
+                        onClick={(e) => { e.stopPropagation(); onDelete(app._id); }}
+                        className="p-2.5 text-gray-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-500/10 last:rounded-r-full transition-all duration-200"
+                        title="Remove Applicant"
                     >
-                        <Clock className="size-4" />
-                    </button>
-                    <button
-                        onClick={(e) => { e.stopPropagation(); toast.info('Drag to move'); }}
-                        className="px-2.5 text-gray-400 hover:text-purple-500 transition-colors"
-                        title="Move"
-                    >
-                        <ArrowUpRight className="size-4" />
-                    </button>
-                    <button
-                        onClick={(e) => { e.stopPropagation(); onDrop(app._id, 'Rejected'); }}
-                        className="px-2.5 text-gray-400 hover:text-rose-500 transition-colors"
-                        title="Reject"
-                    >
-                        <XCircle className="size-4" />
+                        <XCircle className="size-5" strokeWidth={2} />
                     </button>
                 </div>
             </div>
+            {app.interviewDate && app.status === 'Interviewed' && (
+                <div className="absolute -top-2 -right-2 bg-blue-600 text-white text-[9px] font-black px-2 py-1 rounded-lg shadow-lg border-2 border-white dark:border-gray-800 animate-pulse">
+                    INT: {new Date(app.interviewDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                </div>
+            )}
         </div>
     );
 };
 
 // --- DROPPABLE STAGE COLUMN ---
-const DroppableStageColumn = ({ stage, apps, onDrop, onViewHistory }) => {
+const DroppableStageColumn = ({ stage, apps, onDrop, onViewHistory, onSchedule, onOpenDetails, onDelete }) => {
     const [{ isOver, canDrop }, drop] = useDrop(() => ({
         accept: ItemTypes.APPLICANT,
         drop: (item) => onDrop(item.id, stage.name),
@@ -166,6 +175,9 @@ const DroppableStageColumn = ({ stage, apps, onDrop, onViewHistory }) => {
                             app={app}
                             onViewHistory={onViewHistory}
                             onDrop={onDrop}
+                            onSchedule={onSchedule}
+                            onOpenDetails={onOpenDetails}
+                            onDelete={onDelete}
                         />
                     ))
                 )}
@@ -179,8 +191,194 @@ const DroppableStageColumn = ({ stage, apps, onDrop, onViewHistory }) => {
     );
 };
 
-// --- APPLICATION HISTORY MODAL ---
-const ApplicationHistoryModal = ({ app, isOpen, onClose }) => {
+// --- APPLICATION DETAILS MODAL ---
+const ApplicationDetailsModal = ({ app, isOpen, onClose }) => {
+    if (!app) return null;
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} className="max-w-2xl">
+            <div className="p-8">
+                <div className="flex items-center justify-between mb-8 pb-6 border-b border-gray-100 dark:border-gray-800">
+                    <div className="flex items-center gap-4">
+                        <div className="size-14 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600 border border-indigo-100 dark:border-indigo-500/20 shadow-sm">
+                            <UserCircle className="size-8" />
+                        </div>
+                        <div>
+                            <h3 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{app.fullName}</h3>
+                            <div className="flex items-center gap-3 mt-1">
+                                <Badge variant="secondary" color="primary" className="text-[10px] px-2 py-0.5">
+                                    {app.status || 'Pending'}
+                                </Badge>
+                                <span className="text-[11px] text-gray-400 font-medium">• Applied: {new Date(app.appliedDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                    <div className="space-y-6">
+                        <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">Contact Details</label>
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+                                    <Mail className="size-4 opacity-50" />
+                                    <span className="text-sm font-medium">{app.email || 'No email provided'}</span>
+                                </div>
+                                <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+                                    <Phone className="size-4 opacity-50" />
+                                    <span className="text-sm font-medium">{app.phone}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">Position</label>
+                            <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+                                <Briefcase className="size-4 opacity-50" />
+                                <span className="text-sm font-bold">{app.jobId?.title || 'Position'}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-6">
+                        <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">Documents</label>
+                            {app.resumeUrl ? (
+                                <a
+                                    href={app.resumeUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-500/5 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-500/20 rounded-xl text-xs font-bold hover:bg-indigo-600 hover:text-white transition-all group"
+                                >
+                                    <FileText className="size-4" />
+                                    View Resume
+                                    <ExternalLink className="size-3 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                                </a>
+                            ) : (
+                                <div className="flex items-center gap-2 text-gray-400 italic text-xs py-2">
+                                    <FileText className="size-4 opacity-50" />
+                                    No resume attached
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                {app.coverLetter && (
+                    <div className="bg-gray-50 dark:bg-white/[0.02] border border-gray-100 dark:border-gray-800 rounded-3xl p-6">
+                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-3">Cover Letter / Notes</label>
+                        <div className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-wrap italic">
+                            "{app.coverLetter}"
+                        </div>
+                    </div>
+                )}
+            </div>
+        </Modal>
+    );
+};
+const SignedAgreementModal = ({ app, isOpen, onClose }) => {
+    if (!app || !app.agreementSigned) return null;
+
+    const handlePrint = () => {
+        window.print();
+    };
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} className="max-w-4xl !p-0">
+            <div className="flex flex-col h-[90vh] bg-white dark:bg-gray-900 overflow-hidden rounded-3xl">
+                {/* Header */}
+                <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-white/5 sticky top-0 z-10 no-print">
+                    <div className="flex items-center gap-4">
+                        <div className="size-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 border border-emerald-500/20 shadow-sm">
+                            <FileCheck className="size-6" />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">Signed Agreement</h3>
+                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{app.fullName} • Signed on {new Date(app.signedAt).toLocaleDateString()}</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <Button onClick={handlePrint} variant="outline" className="!rounded-xl text-xs font-bold gap-2 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200 transition-all">
+                            <Printer className="size-4" />
+                            Print / PDF
+                        </Button>
+                        <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                            <X className="size-6" />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 overflow-y-auto p-10 sm:p-16 print:p-0">
+                    <div className="max-w-3xl mx-auto space-y-12 agreement-document">
+                        <header className="text-center border-b-2 border-gray-100 dark:border-gray-800 pb-12 mb-12">
+                            <div className="inline-block px-4 py-1.5 bg-blue-900 text-white text-[10px] font-black uppercase tracking-[0.3em] rounded-full mb-6">Official Document</div>
+                            <h1 className="text-4xl font-black text-gray-900 dark:text-white mb-4 tracking-tighter uppercase">Employment Agreement</h1>
+                            <div className="text-gray-500 font-medium text-sm">
+                                This agreement is entered into between <strong className="text-gray-900 dark:text-white">CDC International</strong> and <strong className="text-gray-900 dark:text-white">{app.fullName}</strong>.
+                            </div>
+                        </header>
+
+                        {app.signedContent?.map((section, idx) => (
+                            <section key={idx} className="space-y-4">
+                                <h2 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight flex items-center gap-3">
+                                    <span className="text-blue-600 font-black">{(idx + 1).toString().padStart(2, '0')}.</span>
+                                    {section.title}
+                                </h2>
+                                <div
+                                    className="text-gray-600 dark:text-gray-400 leading-relaxed text-[15px] prose dark:prose-invert max-w-none"
+                                    dangerouslySetInnerHTML={{ __html: section.content }}
+                                />
+                            </section>
+                        ))}
+
+                        <div className="mt-20 pt-12 border-t-2 border-gray-100 dark:border-gray-800 grid grid-cols-1 sm:grid-cols-2 gap-12">
+                            <div className="space-y-6">
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Candidate Signature</p>
+                                    <div className="h-16 flex items-end border-b border-gray-200 dark:border-gray-700 pb-2">
+                                        <span className="text-2xl font-medium italic text-blue-900 dark:text-blue-400 font-serif">{app.signatureName || app.fullName}</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Date of Signing</p>
+                                    <p className="text-sm font-bold text-gray-900 dark:text-white">{new Date(app.signedAt).toLocaleString()}</p>
+                                </div>
+                            </div>
+                            <div className="space-y-6 opacity-30">
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Company Seal</p>
+                                    <div className="h-16 flex items-center border-b border-gray-200 dark:border-gray-700">
+                                        <div className="size-12 rounded-full border-2 border-dashed border-gray-400" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Verified By System</p>
+                                    <p className="text-sm font-bold text-gray-900 dark:text-white">CDC-Insights-AutoFlow</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="text-center pt-10 no-print">
+                            <p className="text-[10px] text-gray-400 font-medium">Digital Document Hash: {app._id?.substring(0, 12).toUpperCase()}...{app.onboardingToken?.substring(0, 8).toUpperCase()}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <style dangerouslySetInnerHTML={{
+                __html: `
+                @media print {
+                    .no-print { display: none !important; }
+                    body { background: white !important; }
+                    .agreement-document { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
+                }
+            `}} />
+        </Modal>
+    );
+};
+
+const ApplicationHistoryModal = ({ app, isOpen, onClose, onViewAgreement }) => {
     if (!app) return null;
 
     const history = [...(app.history || [])].reverse();
@@ -260,6 +458,18 @@ const ApplicationHistoryModal = ({ app, isOpen, onClose }) => {
                                                 {log.remark}
                                             </p>
 
+                                            {(log.remark?.includes('Agreement signed') || (log.status === 'Hired' && app.agreementSigned)) && (
+                                                <div className="mb-4">
+                                                    <button
+                                                        onClick={() => onViewAgreement(app)}
+                                                        className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/20 rounded-xl text-xs font-bold hover:bg-emerald-600 hover:text-white transition-all shadow-sm"
+                                                    >
+                                                        <FileCheck className="size-4" />
+                                                        View Signed Copy
+                                                    </button>
+                                                </div>
+                                            )}
+
                                             <div className="flex items-center gap-2.5 pt-2 border-t border-gray-50 dark:border-gray-800/50">
                                                 <div className="size-7 rounded-full bg-slate-100 dark:bg-gray-800 flex items-center justify-center text-[10px] font-black text-slate-500 border border-slate-200 dark:border-gray-700">
                                                     {log.updatedBy?.fullName?.charAt(0) || 'S'}
@@ -307,6 +517,456 @@ const ApplicationHistoryModal = ({ app, isOpen, onClose }) => {
     );
 };
 
+// --- CUSTOM DATE TIME PICKER ---
+const CustomDateTimePicker = ({ value, onChange }) => {
+    const [viewDate, setViewDate] = useState(new Date());
+    const [isOpen, setIsOpen] = useState(false);
+
+    const formatLocalISO = (date) => {
+        const pad = (n) => n.toString().padStart(2, '0');
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    };
+
+    // Parse current value correctly (treating it as local)
+    const selectedDate = value ? new Date(value) : null;
+
+    const daysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
+    const firstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
+
+    const year = viewDate.getFullYear();
+    const month = viewDate.getMonth();
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+    const handlePrevMonth = (e) => { e.preventDefault(); setViewDate(new Date(year, month - 1)); };
+    const handleNextMonth = (e) => { e.preventDefault(); setViewDate(new Date(year, month + 1)); };
+
+    const handleDateSelect = (day) => {
+        const newDate = new Date(year, month, day);
+        if (selectedDate) {
+            newDate.setHours(selectedDate.getHours());
+            newDate.setMinutes(selectedDate.getMinutes());
+        } else {
+            newDate.setHours(9);
+            newDate.setMinutes(0);
+        }
+        onChange(formatLocalISO(newDate));
+    };
+
+    const handleTimeChange = (type, val) => {
+        const newDate = selectedDate ? new Date(selectedDate) : new Date();
+        if (type === 'h') newDate.setHours(parseInt(val));
+        else newDate.setMinutes(parseInt(val));
+        onChange(formatLocalISO(newDate));
+    };
+
+    const days = [];
+    const totalDays = daysInMonth(year, month);
+    const offset = firstDayOfMonth(year, month);
+
+    for (let i = 0; i < offset; i++) days.push(null);
+    for (let i = 1; i <= totalDays; i++) days.push(i);
+
+    const hours = Array.from({ length: 24 }, (_, i) => i);
+    const minutes = Array.from({ length: 12 }, (_, i) => i * 5);
+
+    return (
+        <div className="relative">
+            <div
+                onClick={() => setIsOpen(!isOpen)}
+                className="w-full h-12 px-4 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl text-sm font-medium flex items-center justify-between cursor-pointer hover:border-blue-500/50 transition-all dark:text-white group"
+            >
+                <div className="flex items-center gap-3">
+                    <Calendar className="size-4 text-blue-600" />
+                    {selectedDate ? (
+                        <span className="font-bold">
+                            {selectedDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            <span className="mx-2 text-gray-300 dark:text-gray-600">|</span>
+                            <span className="text-blue-600 dark:text-blue-400">
+                                {selectedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
+                            </span>
+                        </span>
+                    ) : (
+                        <span className="text-gray-400">Select interview window</span>
+                    )}
+                </div>
+                <ChevronDown className={`size-4 text-gray-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+            </div>
+
+            {isOpen && (
+                <div className="absolute z-50 mt-3 p-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl shadow-2xl w-[460px] left-1/2 -translate-x-1/2 sm:translate-x-0 sm:left-0 overflow-hidden animate-in fade-in zoom-in slide-in-from-top-2 duration-200">
+                    <div className="flex">
+                        {/* Calendar Section (Hero) */}
+                        <div className="flex-1 p-6">
+                            <div className="flex items-center justify-between mb-6 px-1">
+                                <h4 className="text-sm font-black dark:text-white uppercase tracking-tighter">{monthNames[month]} {year}</h4>
+                                <div className="flex gap-2">
+                                    <button onClick={handlePrevMonth} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"><ChevronDown className="size-4 rotate-90" /></button>
+                                    <button onClick={handleNextMonth} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"><ChevronDown className="size-4 -rotate-90" /></button>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-7 gap-1 mb-3">
+                                {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map((d, i) => (
+                                    <div key={i} className="text-center text-[10px] font-black text-gray-400 tracking-widest">{d}</div>
+                                ))}
+                            </div>
+
+                            <div className="grid grid-cols-7 gap-1">
+                                {days.map((d, i) => (
+                                    <div
+                                        key={i}
+                                        onClick={() => d && handleDateSelect(d)}
+                                        className={`
+                                            h-10 flex items-center justify-center text-xs rounded-xl cursor-pointer transition-all
+                                            ${!d ? 'pointer-events-none' : 'hover:bg-blue-50 dark:hover:bg-blue-900/40 hover:text-blue-600 font-bold'}
+                                            ${selectedDate && selectedDate.getDate() === d && selectedDate.getMonth() === month && selectedDate.getFullYear() === year ? 'bg-blue-600 text-white font-black scale-105 shadow-xl shadow-blue-500/20' : 'dark:text-gray-400 font-medium'}
+                                        `}
+                                    >
+                                        {d}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Custom Time Selector (Compact but clear) */}
+                        <div className="w-32 border-l border-gray-100 dark:border-gray-800 flex flex-col relative bg-gray-50/50 dark:bg-gray-800/20">
+                            <div className="text-[10px] font-black text-gray-400 uppercase text-center py-4 tracking-tighter border-b border-gray-100 dark:border-gray-800">Time Window</div>
+
+                            {/* AM/PM Toggle (Integrated) */}
+                            <div className="flex p-2 gap-1 bg-white/50 dark:bg-gray-900/30 border-b border-gray-100 dark:border-gray-800">
+                                {['AM', 'PM'].map(period => {
+                                    const isPM = selectedDate ? selectedDate.getHours() >= 12 : false;
+                                    const isActive = (period === 'PM') === isPM;
+                                    return (
+                                        <button
+                                            key={period}
+                                            type="button"
+                                            onClick={() => {
+                                                const newDate = selectedDate ? new Date(selectedDate) : new Date();
+                                                let h = newDate.getHours();
+                                                if (period === 'PM' && h < 12) h += 12;
+                                                if (period === 'AM' && h >= 12) h -= 12;
+                                                newDate.setHours(h);
+                                                onChange(formatLocalISO(newDate));
+                                            }}
+                                            className={`
+                                                flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all
+                                                ${isActive ? 'bg-blue-950 text-white shadow-lg' : 'text-gray-400 hover:bg-white dark:hover:bg-gray-800'}
+                                            `}
+                                        >
+                                            {period}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            <div className="flex-1 flex flex-col justify-center min-h-[220px]">
+                                <div className="flex gap-1 px-1 relative h-[160px] overflow-hidden">
+                                    {/* Subtle selection highlight */}
+                                    <div className="absolute top-1/2 -translate-y-1/2 left-1 right-1 h-9 bg-blue-50/80 dark:bg-blue-900/40 rounded-xl pointer-events-none z-0 border border-blue-200 dark:border-blue-700" />
+
+                                    {/* Hours (1-12) */}
+                                    <div className="flex-1 overflow-y-auto custom-scrollbar scroll-smooth h-full py-[62px] z-10 pr-1">
+                                        {Array.from({ length: 12 }, (_, i) => i + 1).map(h => {
+                                            const isSelected = selectedDate && (selectedDate.getHours() % 12 || 12) === h;
+                                            return (
+                                                <div
+                                                    key={h}
+                                                    onClick={() => {
+                                                        const newDate = selectedDate ? new Date(selectedDate) : new Date();
+                                                        const isPM = newDate.getHours() >= 12;
+                                                        let newHour = h;
+                                                        if (isPM && h < 12) newHour += 12;
+                                                        if (!isPM && h === 12) newHour = 0;
+                                                        newDate.setHours(newHour);
+                                                        onChange(formatLocalISO(newDate));
+                                                    }}
+                                                    className={`
+                                                        text-xs h-9 flex items-center justify-center rounded-lg cursor-pointer transition-all
+                                                        ${isSelected ? 'text-blue-600 dark:text-blue-400 font-black scale-110' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 font-bold'}
+                                                    `}
+                                                >
+                                                    {h.toString().padStart(2, '0')}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+
+                                    <div className="text-gray-300 dark:text-gray-700 font-black self-center text-xs pb-1 z-10">:</div>
+
+                                    {/* Minutes */}
+                                    <div className="flex-1 overflow-y-auto custom-scrollbar scroll-smooth h-full py-[62px] z-10 pr-1">
+                                        {minutes.map(m => (
+                                            <div
+                                                key={m}
+                                                onClick={() => handleTimeChange('m', m)}
+                                                className={`
+                                                    text-xs h-9 flex items-center justify-center rounded-lg cursor-pointer transition-all
+                                                    ${selectedDate && selectedDate.getMinutes() === m ? 'text-blue-600 dark:text-blue-400 font-black scale-110' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 font-bold'}
+                                                `}
+                                            >
+                                                {m.toString().padStart(2, '0')}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="p-4 bg-white dark:bg-gray-900 flex gap-4 border-t border-gray-100 dark:border-gray-800 shadow-inner">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                const now = new Date();
+                                now.setMinutes(Math.round(now.getMinutes() / 5) * 5);
+                                onChange(formatLocalISO(now));
+                            }}
+                            className="px-6 py-2.5 text-[10px] font-black uppercase text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-2xl transition-all"
+                        >
+                            Reset
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setIsOpen(false)}
+                            className="flex-1 py-2.5 bg-blue-600 hover:bg-black text-white text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-blue-500/10 active:scale-95 hover:scale-[1.02]"
+                        >
+                            Confirm Interview Slot
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// --- SCHEDULE INTERVIEW MODAL ---
+const ScheduleInterviewModal = ({ app, isOpen, onClose, onSuccess }) => {
+    const [formData, setFormData] = useState({
+        schedule: '',
+        remark: ''
+    });
+    const [submitting, setSubmitting] = useState(false);
+
+    if (!app) return null;
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setSubmitting(true);
+        try {
+            const [date, time] = formData.schedule.split('T');
+            const submissionData = {
+                interviewDate: date,
+                interviewTime: time,
+                remark: formData.remark
+            };
+            await hrService.scheduleInterview(app._id, submissionData);
+            toast.success('Interview scheduled successfully');
+            onSuccess();
+            onClose();
+        } catch (error) {
+            console.error('Error scheduling interview:', error);
+            toast.error('Failed to schedule interview');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} className="max-w-md">
+            <div className="p-6">
+                <h3 className="text-xl font-black text-gray-900 dark:text-white tracking-tight mb-6 flex items-center gap-2">
+                    <Calendar className="size-5 text-blue-600" />
+                    Schedule Interview
+                </h3>
+                <div className="bg-blue-50/50 dark:bg-blue-500/5 p-4 rounded-2xl border border-blue-100 dark:border-blue-900/30 mb-6">
+                    <div className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1">Candidate</div>
+                    <div className="text-sm font-bold text-gray-900 dark:text-white">{app.fullName}</div>
+                    <div className="text-[11px] text-gray-500 font-medium">{app.jobId?.title}</div>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-5">
+                    <div>
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                            <Clock className="size-3" /> Interview Date & Time
+                        </label>
+                        <CustomDateTimePicker
+                            value={formData.schedule}
+                            onChange={(val) => setFormData({ ...formData, schedule: val })}
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                            <FileText className="size-3" /> Interview Notes
+                        </label>
+                        <textarea
+                            value={formData.remark}
+                            onChange={(e) => setFormData({ ...formData, remark: e.target.value })}
+                            placeholder="Add interview details (e.g., link, room number)"
+                            className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 h-28 resize-none transition-all dark:text-white"
+                        />
+                    </div>
+                    <div className="pt-2 flex gap-3">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={onClose}
+                            className="flex-1 font-bold !rounded-2xl text-xs uppercase tracking-widest h-12"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="submit"
+                            loading={submitting}
+                            disabled={!formData.schedule}
+                            className="flex-1 bg-blue-950 hover:bg-black font-bold !rounded-2xl text-xs uppercase tracking-widest text-white shadow-xl shadow-blue-500/10 h-12 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Confirm Schedule
+                        </Button>
+                    </div>
+                </form>
+            </div>
+        </Modal>
+    );
+};
+
+// --- SELECT AGREEMENT MODAL ---
+const SelectAgreementModal = ({ app, isOpen, onClose, onSuccess }) => {
+    const [templates, setTemplates] = useState([]);
+    const [selectedTemplate, setSelectedTemplate] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
+
+    useEffect(() => {
+        if (isOpen && app) {
+            const fetchTemplates = async () => {
+                setLoading(true);
+                try {
+                    const response = await axios.get(`${API}/hr/agreements`, { withCredentials: true });
+                    console.log('Fetched agreement templates for selection:', response.data);
+                    setTemplates(response.data);
+                    // Pre-select active template if exists
+                    const active = response.data.find(t => t.isActive);
+                    if (active) setSelectedTemplate(active._id);
+                    else if (response.data.length > 0) setSelectedTemplate(response.data[0]._id);
+                } catch (error) {
+                    console.error('Error fetching templates:', error);
+                    toast.error('Failed to load agreement templates');
+                } finally {
+                    setLoading(false);
+                }
+            };
+            fetchTemplates();
+        }
+    }, [isOpen, app]);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!selectedTemplate) return toast.error('Please select an agreement template');
+
+        setSubmitting(true);
+        try {
+            await hrService.updateApplicationStatus(app._id, 'Hired', 'Offer Sent with Selected Agreement', false, selectedTemplate);
+            toast.success('Candidate moved to Offer stage and onboarding email sent.');
+            onSuccess();
+            onClose();
+        } catch (error) {
+            console.error('Error sending offer:', error);
+            toast.error(error.message || 'Failed to send offer');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    if (!app) return null;
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} className="max-w-md">
+            <div className="p-6">
+                <h3 className="text-xl font-black text-gray-900 dark:text-white tracking-tight mb-6 flex items-center gap-2">
+                    <FileText className="size-5 text-emerald-600" />
+                    Select Onboarding Agreement
+                </h3>
+                <div className="bg-emerald-50/50 dark:bg-emerald-500/5 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 mb-6">
+                    <div className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Send Offer To</div>
+                    <div className="text-sm font-bold text-gray-900 dark:text-white">{app.fullName}</div>
+                    <div className="text-[11px] text-gray-500 font-medium">{app.jobId?.title || 'Position'}</div>
+                </div>
+
+                {loading ? (
+                    <div className="py-10 flex justify-center"><LoadingSpinner /></div>
+                ) : templates.length === 0 ? (
+                    <div className="text-center py-8">
+                        <p className="text-sm text-gray-500 mb-4">No agreement templates found.</p>
+                        <Button onClick={onClose} variant="outline" className="w-full font-bold !rounded-2xl text-xs uppercase tracking-widest">Cancel</Button>
+                    </div>
+                ) : (
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        <div className="space-y-3">
+                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Choose Template</label>
+                            <div className="space-y-2 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
+                                {templates.map((template) => (
+                                    <label
+                                        key={template._id}
+                                        className={`
+                                            relative flex items-center p-4 rounded-2xl border-2 cursor-pointer transition-all
+                                            ${selectedTemplate === template._id
+                                                ? 'border-emerald-500 bg-emerald-50/30 dark:bg-emerald-500/10'
+                                                : 'border-gray-100 dark:border-gray-800 hover:border-emerald-200'
+                                            }
+                                        `}
+                                    >
+                                        <input
+                                            type="radio"
+                                            name="template"
+                                            value={template._id}
+                                            checked={selectedTemplate === template._id}
+                                            onChange={() => setSelectedTemplate(template._id)}
+                                            className="hidden"
+                                        />
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-sm font-bold text-gray-900 dark:text-white">{template.name}</span>
+                                                {template.isActive && (
+                                                    <span className="text-[8px] font-black uppercase tracking-tighter bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded-full">Active</span>
+                                                )}
+                                            </div>
+                                            <div className="text-[10px] text-gray-400 mt-0.5">{template.sections?.length || 0} Sections</div>
+                                        </div>
+                                        {selectedTemplate === template._id && (
+                                            <div className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center text-white shadow-lg animate-in zoom-in-50 duration-200">
+                                                <CheckCircle2 className="size-3" />
+                                            </div>
+                                        )}
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="pt-2 flex gap-3">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={onClose}
+                                className="flex-1 font-bold !rounded-2xl text-xs uppercase tracking-widest h-12"
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                loading={submitting}
+                                className="flex-1 bg-emerald-600 hover:bg-black font-bold !rounded-2xl text-xs uppercase tracking-widest text-white shadow-xl shadow-emerald-500/10 h-12"
+                            >
+                                Send Offer
+                            </Button>
+                        </div>
+                    </form>
+                )}
+            </div>
+        </Modal>
+    );
+};
+
 // --- MAIN CANDIDATE LIST COMPONENT ---
 const CandidateList = () => {
     const [jobs, setJobs] = useState([]);
@@ -318,7 +978,13 @@ const CandidateList = () => {
     const [isJobModalOpen, setIsJobModalOpen] = useState(false);
     const [editingJobId, setEditingJobId] = useState(null);
     const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+    const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+    const [isAgreementModalOpen, setIsAgreementModalOpen] = useState(false);
+    const [isAgreementSignedModalOpen, setIsAgreementSignedModalOpen] = useState(false);
+    const [isAddCandidateModalOpen, setIsAddCandidateModalOpen] = useState(false);
+    const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
     const [selectedApplicant, setSelectedApplicant] = useState(null);
+    const [activeJobForCandidate, setActiveJobForCandidate] = useState(null);
 
     const fetchData = async () => {
         try {
@@ -371,6 +1037,9 @@ const CandidateList = () => {
             brand: job.brand,
             department: job.department,
             status: job.status,
+            type: job.type,
+            postedDate: job.postedDate,
+            postedBy: typeof job.postedBy === 'object' ? job.postedBy?.fullName : (job.postedBy || null),
             apps: applications.filter(app => (app.jobId?._id || app.jobId) === jobId)
         };
         return groups;
@@ -419,14 +1088,42 @@ const CandidateList = () => {
     };
 
     const handleDrop = async (applicantId, newStatus) => {
+        const applicant = applications.find(a => a._id === applicantId);
+
+        // If moving to Interviewed stage, open the scheduling modal instead of direct drop
+        if (newStatus === 'Interviewed' && applicant) {
+            handleOpenSchedule(applicant);
+            return;
+        }
+
+        // If moving to Hired (Offer) stage, open the agreement selection modal
+        if (newStatus === 'Hired' && applicant) {
+            setSelectedApplicant(applicant);
+            setIsAgreementModalOpen(true);
+            return;
+        }
+
+        // Check if moving AWAY from Interviewed status (or just clearing schedule) while having an interview scheduled
+        if (applicant && applicant.interviewDate && newStatus !== 'Interviewed') {
+            const confirmCancel = window.confirm(
+                `Moving ${applicant.fullName} to ${newStatus} will cancel the scheduled interview on ${new Date(applicant.interviewDate).toLocaleDateString()}. Proceed?`
+            );
+            if (!confirmCancel) return;
+        }
+
+        const isClearingInterview = applicant && applicant.interviewDate && newStatus !== 'Interviewed';
+
         try {
             // Optimistic update
             setApplications(prev => prev.map(app =>
-                app._id === applicantId ? { ...app, status: newStatus } : app
+                app._id === applicantId ? {
+                    ...app,
+                    status: newStatus,
+                    ...(isClearingInterview ? { interviewDate: null, interviewTime: null } : {})
+                } : app
             ));
 
-            await hrService.updateApplicationStatus(applicantId, newStatus);
-            toast.success(`Candidate moved to ${newStatus}`);
+            await hrService.updateApplicationStatus(applicantId, newStatus, null, isClearingInterview);
             // Re-fetch to get updated history
             fetchData();
         } catch (error) {
@@ -436,9 +1133,50 @@ const CandidateList = () => {
         }
     };
 
+    const handleDeleteApplicant = async (applicantId) => {
+        const applicant = applications.find(a => a._id === applicantId);
+        if (!applicant) return;
+
+        // If already Rejected → permanently delete
+        if (applicant.status === 'Rejected') {
+            if (!window.confirm(`Permanently remove ${applicant.fullName}? This cannot be undone.`)) return;
+            try {
+                setApplications(prev => prev.filter(a => a._id !== applicantId));
+                await hrService.deleteApplication(applicantId);
+                toast.success('Applicant permanently removed.');
+            } catch (error) {
+                console.error('Failed to delete applicant:', error);
+                toast.error('Failed to remove applicant');
+                fetchData();
+            }
+        } else {
+            // Otherwise move to Rejected stage
+            try {
+                setApplications(prev => prev.map(a =>
+                    a._id === applicantId ? { ...a, status: 'Rejected' } : a
+                ));
+                await hrService.updateApplicationStatus(applicantId, 'Rejected', 'Rejected by HR');
+            } catch (error) {
+                console.error('Failed to reject applicant:', error);
+                toast.error('Failed to reject applicant');
+                fetchData();
+            }
+        }
+    };
+
     const handleViewHistory = (app) => {
         setSelectedApplicant(app);
         setIsHistoryModalOpen(true);
+    };
+
+    const handleOpenSchedule = (app) => {
+        setSelectedApplicant(app);
+        setIsScheduleModalOpen(true);
+    };
+
+    const handleOpenDetails = (app) => {
+        setSelectedApplicant(app);
+        setIsDetailsModalOpen(true);
     };
 
     if (loading && jobs.length === 0) return (
@@ -519,10 +1257,47 @@ const CandidateList = () => {
                                                     <h3 className="text-base font-semibold text-gray-800 dark:text-white/90 truncate pr-4">
                                                         {group.title}
                                                     </h3>
+                                                    <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                                                        <span className="text-[10px] text-gray-400 font-medium flex items-center gap-1">
+                                                            <Briefcase className="size-3 opacity-60" /> {group.type || 'Full-time'}
+                                                        </span>
+                                                        <span className="text-gray-200 dark:text-gray-700">|</span>
+                                                        <span className="text-[10px] text-gray-400 font-medium flex items-center gap-1">
+                                                            <Calendar className="size-3 opacity-60" />
+                                                            Posted {group.postedDate ? new Date(group.postedDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}
+                                                        </span>
+                                                        {group.postedBy && (
+                                                            <>
+                                                                <span className="text-gray-200 dark:text-gray-700">|</span>
+                                                                <span className="text-[10px] text-gray-400 font-medium">
+                                                                    By {group.postedBy}
+                                                                </span>
+                                                            </>
+                                                        )}
+                                                        {!group.postedBy && group.department && (
+                                                            <>
+                                                                <span className="text-gray-200 dark:text-gray-700">|</span>
+                                                                <span className="text-[10px] text-gray-400 font-medium">
+                                                                    {group.department}
+                                                                </span>
+                                                            </>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
 
                                             <div className="flex items-center gap-2 pr-4 border-r border-gray-100 dark:border-gray-800 mr-4 opacity-0 group-hover/accordion:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setActiveJobForCandidate(group);
+                                                        setIsAddCandidateModalOpen(true);
+                                                    }}
+                                                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                                    title="Add Manual Candidate"
+                                                >
+                                                    <Plus className="size-4" />
+                                                </button>
                                                 <button
                                                     onClick={(e) => handleCopyLink(e, group.id)}
                                                     className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-all"
@@ -564,6 +1339,9 @@ const CandidateList = () => {
                                                                 apps={stageApps}
                                                                 onDrop={handleDrop}
                                                                 onViewHistory={handleViewHistory}
+                                                                onSchedule={handleOpenSchedule}
+                                                                onOpenDetails={handleOpenDetails}
+                                                                onDelete={handleDeleteApplicant}
                                                             />
                                                         );
                                                     })}
@@ -598,6 +1376,47 @@ const CandidateList = () => {
                     app={selectedApplicant}
                     isOpen={isHistoryModalOpen}
                     onClose={() => setIsHistoryModalOpen(false)}
+                    onViewAgreement={(app) => {
+                        setSelectedApplicant(app);
+                        setIsAgreementSignedModalOpen(true);
+                    }}
+                />
+
+                <SignedAgreementModal
+                    app={selectedApplicant}
+                    isOpen={isAgreementSignedModalOpen}
+                    onClose={() => setIsAgreementSignedModalOpen(false)}
+                />
+
+                <ApplicationDetailsModal
+                    app={selectedApplicant}
+                    isOpen={isDetailsModalOpen}
+                    onClose={() => setIsDetailsModalOpen(false)}
+                />
+
+                <ScheduleInterviewModal
+                    app={selectedApplicant}
+                    isOpen={isScheduleModalOpen}
+                    onClose={() => setIsScheduleModalOpen(false)}
+                    onSuccess={fetchData}
+                />
+
+                <SelectAgreementModal
+                    app={selectedApplicant}
+                    isOpen={isAgreementModalOpen}
+                    onClose={() => setIsAgreementModalOpen(false)}
+                    onSuccess={fetchData}
+                />
+
+                <AddCandidateModal
+                    isOpen={isAddCandidateModalOpen}
+                    onClose={() => {
+                        setIsAddCandidateModalOpen(false);
+                        setActiveJobForCandidate(null);
+                    }}
+                    jobId={activeJobForCandidate?.id}
+                    jobTitle={activeJobForCandidate?.title}
+                    onSuccess={fetchData}
                 />
             </div>
         </DndProvider>

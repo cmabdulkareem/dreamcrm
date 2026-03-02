@@ -515,6 +515,9 @@ export const getAllUsers = async (req, res) => {
       brands: user.brands || [], // Include brand information
       avatar: user.avatar ? `${getBaseUrl(req)}${user.avatar}` : null,
       accountStatus: user.accountStatus,
+      statusChangedAt: user.statusChangedAt,
+      suspendedAt: user.suspendedAt,
+      deactivatedAt: user.deactivatedAt,
       // Added missing employee fields
       employeeCode: user.employeeCode,
       department: user.department,
@@ -761,7 +764,19 @@ export const updateUser = async (req, res) => {
       if (company !== undefined) user.company = company;
 
       // Update account status (admin only)
-      if (accountStatus !== undefined) user.accountStatus = accountStatus;
+      if (accountStatus !== undefined) {
+        user.accountStatus = accountStatus;
+        // Stamp the date when status changes to Suspended or Deactivated
+        if (accountStatus === 'Suspended') {
+          user.suspendedAt = new Date();
+          user.statusChangedAt = new Date();
+        } else if (accountStatus === 'Deactivated') {
+          user.deactivatedAt = new Date();
+          user.statusChangedAt = new Date();
+        } else {
+          user.statusChangedAt = null; // Clear when re-activated or set to Pending
+        }
+      }
 
       // Only admins can update admin status
       if (isAdminValue !== undefined) user.isAdmin = isAdminValue;
@@ -833,6 +848,9 @@ export const updateUser = async (req, res) => {
       department: user.department,
       designation: user.designation,
       accountStatus: user.accountStatus,
+      statusChangedAt: user.statusChangedAt,
+      suspendedAt: user.suspendedAt,
+      deactivatedAt: user.deactivatedAt,
       instagram: user.instagram,
       location: user.location,
       gender: user.gender,
@@ -897,6 +915,15 @@ export const assignRoles = async (req, res) => {
     // Update account status if provided
     if (accountStatus !== undefined) {
       user.accountStatus = accountStatus;
+      if (accountStatus === 'Suspended') {
+        user.suspendedAt = new Date();
+        user.statusChangedAt = new Date();
+      } else if (accountStatus === 'Deactivated') {
+        user.deactivatedAt = new Date();
+        user.statusChangedAt = new Date();
+      } else {
+        user.statusChangedAt = null;
+      }
     }
 
     // Update brands if provided

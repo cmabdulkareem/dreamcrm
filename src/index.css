@@ -18,6 +18,21 @@
     --color-brand-950: 34 34 34;
   }
 
+  .ems-theme {
+    --color-brand-25: 242 247 255;
+    --color-brand-50: 237 242 255;
+    --color-brand-100: 219 229 255;
+    --color-brand-200: 189 207 255;
+    --color-brand-300: 144 172 255;
+    --color-brand-400: 92 129 255;
+    --color-brand-500: 30 58 138;
+    --color-brand-600: 23 46 112;
+    --color-brand-700: 18 36 87;
+    --color-brand-800: 13 26 62;
+    --color-brand-900: 8 16 38;
+    --color-brand-950: 4 8 19;
+  }
+
   html {
     zoom: 90%;
     overflow-x: hidden;

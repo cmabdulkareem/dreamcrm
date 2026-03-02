@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import LoadingSpinner from "../components/common/LoadingSpinner";
 import { SidebarProvider, useSidebar } from "../context/SidebarContext";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import AppHeader from "./AppHeader";
 import Backdrop from "./Backdrop";
 import AppSidebar from "./AppSidebar";
@@ -12,6 +12,8 @@ import "react-toastify/dist/ReactToastify.css";
 
 const LayoutContent = () => {
   const { isExpanded, isHovered, isMobileOpen } = useSidebar();
+  const location = useLocation();
+  const isHR = location.pathname.startsWith("/hr");
 
   return (
     <div className="min-h-screen xl:flex">
@@ -24,7 +26,7 @@ const LayoutContent = () => {
           } ${isMobileOpen ? "ml-0" : ""}`}
       >
         <AppHeader />
-        <div className="flex-1 p-4 md:p-6 w-full max-w-full">
+        <div className={`flex-1 p-4 md:p-6 w-full max-w-full ${isHR ? "ems-theme" : ""}`}>
           <Suspense fallback={<LoadingSpinner />}>
             <Outlet />
           </Suspense>

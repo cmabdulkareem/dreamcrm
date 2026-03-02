@@ -25,7 +25,7 @@ const TinyEditor = ({
     const formats = [
         'header',
         'bold', 'italic', 'underline', 'strike',
-        'list', 'bullet',
+        'list',
         'link', 'color', 'background'
     ];
 

@@ -4,7 +4,6 @@ import { toast, ToastContainer } from "react-toastify";
 
 import PageBreadcrumb from "../../components/common/PageBreadCrumb.jsx";
 import PageMeta from "../../components/common/PageMeta.jsx";
-import ComponentCard from "../../components/common/ComponentCard.jsx";
 import Badge from "../../components/ui/badge/Badge.jsx";
 import Button from "../../components/ui/button/Button.jsx";
 import Label from "../../components/form/Label.jsx";
@@ -14,6 +13,8 @@ import MultiSelect from "../../components/form/MultiSelect";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import { AuthContext } from "../../context/AuthContext";
 import { isAdmin } from "../../utils/roleHelpers";
+import { Table, TableBody, TableCell, TableHeader, TableRow } from "../../components/ui/table";
+import { PencilIcon, TrashBinIcon } from "../../icons";
 import {
   User,
   Briefcase,
@@ -451,178 +452,191 @@ const UserManagement = () => {
       <PageBreadcrumb pageTitle="User Management" />
 
       {/* User List Table */}
-      <div className="space-y-6">
-        <ComponentCard title="User List">
-          {loading ? (
-            <LoadingSpinner />
-          ) : (
-            <div className="space-y-4">
-              {/* Filters UI */}
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
-                <div>
-                  <Label>Search Users</Label>
-                  <Input
-                    type="text"
-                    placeholder="Search name, email..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label>Department</Label>
-                  <Select
-                    options={[{ value: "all", label: "All Depts" }, ...departmentOptions]}
-                    value={departmentFilter}
-                    onChange={(val) => setDepartmentFilter(val)}
-                  />
-                </div>
-                <div>
-                  <Label>Status</Label>
-                  <Select
-                    options={[{ value: "all", label: "All Statuses" }, ...accountStatusOptions]}
-                    value={statusFilter}
-                    onChange={(val) => setStatusFilter(val)}
-                  />
-                </div>
-                <div className="flex items-end">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setSearchTerm("");
-                      setRoleFilter("all");
-                      setDepartmentFilter("all");
-                      setStatusFilter("all");
-                    }}
-                    className="w-full"
-                  >
-                    Reset
-                  </Button>
-                </div>
-              </div>
+      <div className="rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6">
+        <div className="mb-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pb-5 border-b border-gray-100 dark:border-gray-800">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">Employee Roles</h3>
+              <p className="text-xs text-gray-400 mt-0.5">Total: {filteredUsers.length} users</p>
+            </div>
+          </div>
 
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                  <thead className="bg-gray-50 dark:bg-gray-800">
-                    <tr>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                      >
-                        User
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                      >
-                        Assigned Brands
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                      >
-                        Joined Date
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                      >
-                        Account Status
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                      >
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {filteredUsers.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan="6"
-                          className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400"
-                        >
-                          No users found matching your criteria.
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredUsers.map((user) => (
-                        <tr
-                          key={user.id}
-                          className="hover:bg-gray-50 dark:hover:bg-gray-700"
-                        >
-                          <td className="py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="ml-4">
-                                <div className="text-sm font-medium text-gray-900 dark:text:white dark:text-white">
-                                  {user.fullName}
-                                </div>
-                                <div className="text-xs text-gray-500 dark:text-gray-400">
-                                  {user.designation || "No designation"}
-                                </div>
-                                <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                                  {user.email}
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="text-sm text-gray-900 dark:text-white">
-                              {getBrandNames(user.brands)}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900 dark:text-white">
-                              {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
-                            </div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">
-                              {user.createdAt ? new Date(user.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <Badge
-                              size="sm"
-                              color={
-                                user.accountStatus === "Active"
-                                  ? "success"
-                                  : user.accountStatus === "Pending"
-                                    ? "warning"
-                                    : "error"
-                              }
-                            >
-                              {user.accountStatus}
-                            </Badge>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <button
-                              onClick={() => handleUpdateUser(user)}
-                              className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-3"
-                            >
-                              Update
-                            </button>
-                            <button
-                              onClick={() => handleAssignRoles(user)}
-                              className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 mr-3"
-                            >
-                              Assign Roles
-                            </button>
-                            <button
-                              onClick={() => handleDeleteUser(user)}
-                              className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                            >
-                              Delete
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+          {/* Stats Pills + Filters Row */}
+          <div className="flex flex-wrap items-center justify-between gap-4 mt-5">
+            <div className="flex flex-wrap items-center gap-3 text-xs">
+              <div className="flex items-center gap-3 px-4 py-2 bg-slate-50/50 dark:bg-white/5 rounded-full border border-slate-200/50 dark:border-white/10 h-10 shadow-sm">
+                <span className="font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest text-[9px]">Total:</span>
+                <span className="font-black text-brand-600 dark:text-brand-400 text-[15px] tabular-nums leading-none">{users.length}</span>
+              </div>
+              <div className="flex items-center gap-3 bg-gray-50/50 dark:bg-gray-800/50 px-4 py-2 rounded-full border border-gray-100 dark:border-gray-800 h-10 shadow-sm">
+                <span className="font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest text-[9px]">Active:</span>
+                <span className="font-black text-green-600 dark:text-green-400 text-[15px] tabular-nums leading-none">{users.filter(u => u.accountStatus === 'Active').length}</span>
+              </div>
+              <div className="flex items-center gap-3 bg-gray-50/50 dark:bg-gray-800/50 px-4 py-2 rounded-full border border-gray-100 dark:border-gray-800 h-10 shadow-sm">
+                <span className="font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest text-[9px]">Pending:</span>
+                <span className="font-black text-yellow-600 dark:text-yellow-400 text-[15px] tabular-nums leading-none">{users.filter(u => u.accountStatus === 'Pending').length}</span>
+              </div>
+              <div className="flex items-center gap-3 bg-gray-50/50 dark:bg-gray-800/50 px-4 py-2 rounded-full border border-gray-100 dark:border-gray-800 h-10 shadow-sm">
+                <span className="font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest text-[9px]">Suspended:</span>
+                <span className="font-black text-orange-600 dark:text-orange-400 text-[15px] tabular-nums leading-none">{users.filter(u => u.accountStatus === 'Suspended').length}</span>
+              </div>
+              <div className="flex items-center gap-3 bg-gray-50/50 dark:bg-gray-800/50 px-4 py-2 rounded-full border border-gray-100 dark:border-gray-800 h-10 shadow-sm">
+                <span className="font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest text-[9px]">Deactivated:</span>
+                <span className="font-black text-red-600 dark:text-red-400 text-[15px] tabular-nums leading-none">{users.filter(u => u.accountStatus === 'Deactivated').length}</span>
               </div>
             </div>
-          )}
-        </ComponentCard>
+
+            {/* Filters */}
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                type="text"
+                placeholder="Search name, email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="h-10 pl-4 pr-4 rounded-full border border-gray-200 bg-gray-50 dark:bg-gray-800 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all w-44"
+              />
+              <div className="w-36">
+                <Select
+                  options={[{ value: "all", label: "All Depts" }, ...departmentOptions]}
+                  value={departmentFilter}
+                  onChange={(val) => setDepartmentFilter(val)}
+                />
+              </div>
+              <div className="w-36">
+                <Select
+                  options={[{ value: "all", label: "All Statuses" }, ...accountStatusOptions]}
+                  value={statusFilter}
+                  onChange={(val) => setStatusFilter(val)}
+                />
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSearchTerm("");
+                  setRoleFilter("all");
+                  setDepartmentFilter("all");
+                  setStatusFilter("all");
+                }}
+                className="h-10 px-4 !rounded-full border-gray-200 dark:border-gray-700 text-gray-500 text-xs"
+              >
+                Reset
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {loading ? (
+          <LoadingSpinner />
+        ) : (
+          <div className="overflow-auto rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm mt-2 custom-scrollbar">
+            <Table className="min-w-full border-collapse">
+              <TableHeader className="sticky top-0 z-20 bg-gray-50 dark:bg-gray-900 shadow-[0_1px_0_0_rgba(0,0,0,0.05)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.05)] border-b border-gray-100 dark:border-gray-800">
+                <TableRow>
+                  <TableCell isHeader className="py-4 pl-8 pr-5 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit">User</TableCell>
+                  <TableCell isHeader className="py-4 px-5 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit border-l border-gray-100 dark:border-gray-800/50">Assigned Brands & Roles</TableCell>
+                  <TableCell isHeader className="py-4 px-5 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit border-l border-gray-100 dark:border-gray-800/50">Joined Date</TableCell>
+                  <TableCell isHeader className="py-4 px-5 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit border-l border-gray-100 dark:border-gray-800/50">Status</TableCell>
+                  <TableCell isHeader className="py-4 px-5 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit border-l border-gray-100 dark:border-gray-800/50">Suspended / Deactivated</TableCell>
+                  <TableCell isHeader className="py-4 px-5 font-bold text-gray-700 text-end text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit border-l border-gray-100 dark:border-gray-800/50">Actions</TableCell>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
+                {filteredUsers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-12 text-center text-sm text-gray-400 dark:text-gray-500">
+                      No users found matching your criteria.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredUsers.map((user) => (
+                    <TableRow
+                      key={user.id}
+                      className="group transition-all hover:bg-slate-50/80 dark:hover:bg-white/5 odd:bg-transparent even:bg-gray-50/30 dark:even:bg-white/[0.01] border-b border-gray-100 dark:border-gray-800/50 last:border-0"
+                    >
+                      <TableCell className="py-4 pl-8 pr-5 whitespace-nowrap">
+                        <div className="flex flex-col min-w-0">
+                          <p className="font-semibold text-gray-800 dark:text-white/90 text-theme-sm truncate">{user.fullName}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{user.designation || "No designation"}</p>
+                          <p className="text-xs font-semibold text-blue-600 dark:text-blue-500 truncate">{user.email}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-5 py-4 border-l border-gray-100 dark:border-gray-800/50">
+                        <div className="text-sm text-gray-700 dark:text-gray-300">{getBrandNames(user.brands)}</div>
+                      </TableCell>
+                      <TableCell className="px-5 py-4 whitespace-nowrap border-l border-gray-100 dark:border-gray-800/50">
+                        <div className="text-sm text-gray-700 dark:text-gray-300">{user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}</div>
+                        <div className="text-xs text-gray-400 dark:text-gray-500">{user.createdAt ? new Date(user.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</div>
+                      </TableCell>
+                      <TableCell className="px-5 py-4 whitespace-nowrap border-l border-gray-100 dark:border-gray-800/50">
+                        <Badge
+                          size="sm"
+                          color={
+                            user.accountStatus === "Active"
+                              ? "success"
+                              : user.accountStatus === "Pending"
+                                ? "warning"
+                                : "error"
+                          }
+                        >
+                          {user.accountStatus}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="px-5 py-4 whitespace-nowrap border-l border-gray-100 dark:border-gray-800/50">
+                        {user.accountStatus === 'Suspended' && user.suspendedAt ? (
+                          <>
+                            <div className="text-sm font-medium text-orange-600 dark:text-orange-400">
+                              {new Date(user.suspendedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            </div>
+                            <div className="text-xs text-gray-400 dark:text-gray-500">
+                              {new Date(user.suspendedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                          </>
+                        ) : user.accountStatus === 'Deactivated' && user.deactivatedAt ? (
+                          <>
+                            <div className="text-sm font-medium text-red-600 dark:text-red-400">
+                              {new Date(user.deactivatedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            </div>
+                            <div className="text-xs text-gray-400 dark:text-gray-500">
+                              {new Date(user.deactivatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                          </>
+                        ) : (
+                          <span className="text-xs text-gray-300 dark:text-gray-600">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="px-5 py-4 whitespace-nowrap text-end border-l border-gray-100 dark:border-gray-800/50">
+                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => handleUpdateUser(user)}
+                            className="p-2 text-gray-500 hover:text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-900/30 rounded-lg transition-colors"
+                            title="Edit User"
+                          >
+                            <PencilIcon className="size-4" />
+                          </button>
+                          <button
+                            onClick={() => handleAssignRoles(user)}
+                            className="p-2 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg transition-colors text-xs font-semibold"
+                            title="Assign Roles"
+                          >
+                            <Shield size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteUser(user)}
+                            className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                            title="Delete User"
+                          >
+                            <TrashBinIcon className="size-4" />
+                          </button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        )}
       </div>
 
       {/* Assign Roles / Update Modal */}

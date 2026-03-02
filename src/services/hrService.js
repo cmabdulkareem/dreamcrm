@@ -176,6 +176,17 @@ export const hrService = {
         }
     },
 
+    addManualCandidate: async (id, data) => {
+        try {
+            const response = await axios.post(`${API}/hr/jobs/${id}/candidates`, data, { withCredentials: true });
+            toast.success('Candidate added successfully!');
+            return response.data;
+        } catch (error) {
+            console.error("Failed to add manual candidate", error);
+            throw new Error(error.response?.data?.message || "Failed to add candidate");
+        }
+    },
+
     getJobApplications: async (id) => {
         try {
             const response = await axios.get(`${API}/hr/jobs/${id}/applications`, { withCredentials: true });
@@ -198,13 +209,33 @@ export const hrService = {
         }
     },
 
-    updateApplicationStatus: async (id, status, remark) => {
+    updateApplicationStatus: async (id, status, remark, clearInterview = false, templateId = null) => {
         try {
-            const response = await axios.patch(`${API}/hr/applications/${id}/status`, { status, remark }, { withCredentials: true });
+            const response = await axios.patch(`${API}/hr/applications/${id}/status`, { status, remark, clearInterview, templateId }, { withCredentials: true });
             return response.data;
         } catch (error) {
             console.error("Failed to update application status", error);
             throw new Error(error.response?.data?.message || "Failed to update status");
+        }
+    },
+
+    scheduleInterview: async (id, data) => {
+        try {
+            const response = await axios.patch(`${API}/hr/applications/${id}/schedule`, data, { withCredentials: true });
+            return response.data;
+        } catch (error) {
+            console.error("Failed to schedule interview", error);
+            throw new Error(error.response?.data?.message || "Failed to schedule interview");
+        }
+    },
+
+    deleteApplication: async (id) => {
+        try {
+            const response = await axios.delete(`${API}/hr/applications/${id}`, { withCredentials: true });
+            return response.data;
+        } catch (error) {
+            console.error("Failed to delete application", error);
+            throw new Error(error.response?.data?.message || "Failed to delete application");
         }
     }
 };

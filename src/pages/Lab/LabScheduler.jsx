@@ -12,6 +12,16 @@ import { labService } from '../../services/labService';
 import { labLifecycleService } from '../../services/labLifecycleService';
 import { PencilIcon, TrashBinIcon, AlertIcon, UserIcon } from '../../icons';
 import { XMarkIcon, CheckIcon, PlusIcon, ClockIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
+import {
+    History,
+    Clock,
+    Plus,
+    RefreshCw,
+    ShieldCheck,
+    AlertTriangle,
+    ArrowRightLeft,
+    Power
+} from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../context/AuthContext';
 import { isManager, isAnyManager, isAdmin as checkAdmin, hasRole } from '../../utils/roleHelpers';
@@ -1941,122 +1951,131 @@ function ArrangementContent() {
                     setShowHistoryModal(false);
                     setSelectedStudentForHistory(null);
                 }}
-                className="max-w-2xl p-6"
+                className="max-w-2xl !p-0"
             >
-                <div className="mb-6 flex items-center justify-between">
-                    <div>
-                        <h2 className="text-xl font-semibold text-gray-800 dark:text-white/90">
-                            {selectedStudentForHistory ? (
-                                <>Activity History: <span className="text-blue-950 font-bold">{selectedStudentForHistory.studentId?.fullName || selectedStudentForHistory.studentName}</span></>
-                            ) : (
-                                "Lab Activity History"
-                            )}
-                        </h2>
-                        <p className="text-xs font-bold text-blue-950 mt-1 uppercase tracking-widest">Real-time Lab Operations Log</p>
-                    </div>
-                    <button
-                        onClick={fetchHistory}
-                        disabled={isHistoryLoading}
-                        className="p-2.5 bg-gray-50 dark:bg-gray-800 text-gray-400 hover:text-blue-950 rounded-xl transition-all disabled:opacity-50 border border-gray-100 dark:border-gray-700 shadow-sm"
-                        title="Refresh Logs"
-                    >
-                        <ArrowPathIcon className={`w-5 h-5 ${isHistoryLoading ? 'animate-spin' : ''}`} />
-                    </button>
-                </div>
-
-                <div className="h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-                    {isHistoryLoading ? (
-                        <div className="h-full flex flex-col items-center justify-center space-y-4">
-                            <div className="w-12 h-12 border-4 border-blue-950/20 border-t-blue-950 rounded-full animate-spin" />
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest animate-pulse">Retrieving Logs...</p>
-                        </div>
-                    ) : historyLogs.length === 0 ? (
-                        <div className="h-full flex flex-col items-center justify-center text-center space-y-3 opacity-50">
-                            <ClockIcon className="w-12 h-12 text-gray-300" />
-                            <p className="text-sm font-medium text-gray-500 uppercase tracking-tight">No activity recorded yet</p>
-                        </div>
-                    ) : (
-                        <div className="relative border-l-2 border-gray-100 dark:border-gray-800 ml-3 pl-8 space-y-8">
-                            {historyLogs.map((log, idx) => {
-                                const date = new Date(log.createdAt);
-                                const actionType = log.action.split('_')[2] || 'EVENT';
-
-                                const getActionStyles = (action) => {
-                                    if (action === 'LAB_QUEUE_ADD') {
-                                        return {
-                                            dot: 'bg-red-500',
-                                            border: 'border-red-500/50',
-                                            badge: 'text-red-500 bg-red-500/10',
-                                            text: 'text-red-500 dark:text-red-400'
-                                        };
-                                    }
-                                    if (action === 'LAB_QUEUE_REMOVE' || action === 'LAB_SCHEDULE_REQUEUE') {
-                                        return {
-                                            dot: 'bg-amber-500',
-                                            border: 'border-amber-500/50',
-                                            badge: 'text-amber-500 bg-red-600/10',
-                                            text: 'text-amber-500 dark:text-red-500'
-                                        };
-                                    }
-                                    if (action.includes('ASSIGN') || action.includes('SYNC') || action.includes('START') || action.includes('TRANSFER')) {
-                                        return {
-                                            dot: 'bg-yellow-500',
-                                            border: 'border-yellow-500/50',
-                                            badge: 'text-yellow-500 bg-orange-500/10',
-                                            text: 'text-yellow-500 dark:text-orange-400'
-                                        };
-                                    }
-                                    if (action === 'LAB_SESSION_END') {
-                                        return {
-                                            dot: 'bg-green-500',
-                                            border: 'border-green-500/50',
-                                            badge: 'text-green-500 bg-green-500/10',
-                                            text: 'text-green-500 dark:text-green-400'
-                                        };
-                                    }
-                                    return {
-                                        dot: 'bg-gray-500',
-                                        border: 'border-gray-500/50',
-                                        badge: 'text-gray-500 bg-gray-500/10',
-                                        text: 'text-gray-600 dark:text-gray-400'
-                                    };
-                                };
-
-                                const styles = getActionStyles(log.action);
-
-                                return (
-                                    <div key={log._id} className="relative group">
-                                        {/* Dot on line */}
-                                        <div className={`absolute -left-[41px] top-1.5 w-6 h-6 rounded-full bg-white dark:bg-gray-900 border-2 ${styles.border} group-hover:border-blue-950 transition-colors flex items-center justify-center shadow-sm`}>
-                                            <div className={`w-2 h-2 rounded-full ${styles.dot}`} />
-                                        </div>
-
-                                        <div>
-                                            <div className="flex items-baseline gap-3 mb-1">
-                                                <span className={`text-[9px] font-black uppercase tracking-widest ${styles.badge} px-2 py-0.5 rounded-md`}>
-                                                    {actionType}
-                                                </span>
-                                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">
-                                                    {date.toLocaleDateString()} • {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                </span>
-                                            </div>
-                                            <p className={`text-sm font-bold ${styles.text} leading-snug`}>
-                                                {log.description}
-                                            </p>
-                                            <div className="mt-2 flex items-center gap-2">
-                                                <div className="size-5 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-[8px] font-black text-gray-500 uppercase">
-                                                    {log.userId?.fullName?.charAt(0) || 'A'}
-                                                </div>
-                                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
-                                                    By {log.userId?.fullName || 'System Admin'}
-                                                </span>
-                                            </div>
-                                        </div>
+                <div className="flex flex-col h-[70vh] max-h-[700px]">
+                    {/* Header */}
+                    <div className="p-6 border-b border-gray-100 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md sticky top-0 z-30">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="size-12 rounded-2xl bg-blue-950/10 flex items-center justify-center text-blue-950 border border-blue-950/20 shadow-sm">
+                                    <History className="size-6" />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">
+                                        {selectedStudentForHistory ? (
+                                            <>{selectedStudentForHistory.studentId?.fullName || selectedStudentForHistory.studentName}</>
+                                        ) : (
+                                            "Lab Activity"
+                                        )}
+                                    </h3>
+                                    <div className="flex items-center gap-2 mt-0.5">
+                                        <span className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em]">Operations Log</span>
+                                        <span className="size-1 bg-gray-300 rounded-full" />
+                                        <span className="text-[10px] text-blue-950 font-black uppercase tracking-widest">Real-time History</span>
                                     </div>
-                                );
-                            })}
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={fetchHistory}
+                                    disabled={isHistoryLoading}
+                                    className="p-2 text-gray-400 hover:text-blue-950 transition-colors disabled:opacity-50"
+                                    title="Refresh Logs"
+                                >
+                                    <RefreshCw className={`size-5 ${isHistoryLoading ? 'animate-spin' : ''}`} />
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setShowHistoryModal(false);
+                                        setSelectedStudentForHistory(null);
+                                    }}
+                                    className="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                                >
+                                    <Plus className="size-6 rotate-45" />
+                                </button>
+                            </div>
                         </div>
-                    )}
+                    </div>
+
+                    {/* Scrollable Timeline */}
+                    <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+                        {isHistoryLoading && historyLogs.length === 0 ? (
+                            <div className="h-full flex flex-col items-center justify-center space-y-4">
+                                <div className="size-10 border-4 border-blue-950/20 border-t-blue-950 rounded-full animate-spin" />
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest animate-pulse">Syncing logs...</p>
+                            </div>
+                        ) : historyLogs.length === 0 ? (
+                            <div className="h-full flex flex-col items-center justify-center text-center space-y-3 py-20 opacity-30">
+                                <Clock className="size-12" />
+                                <p className="text-sm font-bold uppercase tracking-widest">No activity recorded yet</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-6 relative before:absolute before:left-[17px] before:top-2 before:bottom-2 before:w-[2px] before:bg-gradient-to-b before:from-blue-950/50 before:via-gray-100 dark:before:via-gray-800 before:to-transparent">
+                                {historyLogs.map((log, idx) => {
+                                    const isLatest = idx === 0;
+                                    const date = new Date(log.createdAt);
+
+                                    const getLogConfig = (action) => {
+                                        if (action === 'LAB_QUEUE_ADD') return { color: 'rose', icon: Plus };
+                                        if (action === 'LAB_QUEUE_REMOVE' || action === 'LAB_SCHEDULE_REQUEUE') return { color: 'amber', icon: AlertTriangle };
+                                        if (action.includes('ASSIGN') || action.includes('START')) return { color: 'blue', icon: ShieldCheck };
+                                        if (action === 'LAB_SESSION_END') return { color: 'emerald', icon: Power };
+                                        if (action.includes('TRANSFER')) return { color: 'indigo', icon: ArrowRightLeft };
+                                        return { color: 'gray', icon: History };
+                                    };
+
+                                    const config = getLogConfig(log.action);
+                                    const colorMap = {
+                                        rose: 'bg-rose-500 text-rose-500',
+                                        amber: 'bg-amber-500 text-amber-500',
+                                        blue: 'bg-blue-600 text-blue-600',
+                                        emerald: 'bg-emerald-500 text-emerald-500',
+                                        indigo: 'bg-indigo-500 text-indigo-500',
+                                        gray: 'bg-gray-500 text-gray-500'
+                                    };
+
+                                    const Icon = config.icon;
+
+                                    return (
+                                        <div key={log._id} className={`relative pl-12 transition-all duration-300 ${isLatest ? 'opacity-100' : 'opacity-80 group'}`}>
+                                            {/* Dot on line */}
+                                            <div className={`absolute left-0 top-1.5 size-9 rounded-full border-4 border-white dark:border-gray-950 flex items-center justify-center z-10 shadow-sm transition-all ${isLatest
+                                                    ? `${colorMap[config.color].split(' ')[0]} scale-110 shadow-lg shadow-${config.color}-500/20`
+                                                    : 'bg-gray-100 dark:bg-gray-800'
+                                                }`}>
+                                                <Icon className={`size-3.5 ${isLatest ? 'text-white font-bold' : 'text-gray-400'}`} />
+                                            </div>
+
+                                            <div className={`bg-white dark:bg-white/[0.02] border border-gray-100 dark:border-gray-800 rounded-2xl p-4 transition-all hover:bg-gray-50 dark:hover:bg-white/[0.04] hover:shadow-theme-sm ${isLatest ? 'ring-1 ring-blue-950/5' : ''}`}>
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${colorMap[config.color].split(' ')[1]} bg-${config.color}-500/10`}>
+                                                            {log.action.split('_').slice(2).join(' ')}
+                                                        </span>
+                                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">
+                                                            {date.toLocaleDateString()} • {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <p className="text-sm font-bold text-gray-800 dark:text-gray-200 leading-snug">
+                                                    {log.description}
+                                                </p>
+                                                <div className="mt-3 pt-3 border-t border-gray-100/50 dark:border-gray-800/50 flex items-center gap-2">
+                                                    <div className="size-5 rounded-full bg-blue-950/10 flex items-center justify-center text-[8px] font-black text-blue-950 uppercase">
+                                                        {log.userId?.fullName?.charAt(0) || 'A'}
+                                                    </div>
+                                                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
+                                                        Managed By {log.userId?.fullName || 'System Admin'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </Modal>
 

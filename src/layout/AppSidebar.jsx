@@ -59,14 +59,10 @@ const navItems = [
     icon: <UserCircleIcon />,
     subItems: [
       { name: "Dashboard", path: "/hr", pro: false },
-      { name: "Employees", path: "/hr/employees", pro: false },
-      // Recruitment Sub-section (flattened for now or handling nested? Sidebar supports 1 level deep usually. Let's flatten "Recruitment" into direct subitems or a separate top level? 
-      // User asked for "HR Portal" menu. Let's keep it under HR if possible.
-      // The sidebar component supports 1 level of subItems based on code reading.
-      // So we will add them as Flat Booking style: "Recruitment: Jobs", etc. or just "Jobs", "Candidates".
-      // Let's try to group them logically or just list them.
+      { name: "Employee Roles", path: "/hr/users", pro: false },
       { name: "Recruitment & Candidates", path: "/hr/recruitment/candidates", pro: false },
-      { name: "Leave Requests", path: "/leave-management/requests", pro: false },
+      { name: "Agreement Builder", path: "/hr/agreements", pro: false },
+      { name: "Leave Management", path: "/hr/leaves", pro: false },
       { name: "Payroll", path: "/hr/payroll", pro: false },
     ]
   },
@@ -101,15 +97,6 @@ const navItems = [
       { name: "Manage Events", path: "/events", pro: false }
     ]
   },
-  {
-    icon: <GroupIcon />,
-    name: "Leave Management",
-    subItems: [
-      { name: "Apply Leave", path: "/leave-management/apply", pro: false },
-      { name: "My Leaves", path: "/leave-management/my-leaves", pro: false },
-      { name: "Manage Leaves", path: "/leave-management", pro: false },
-    ]
-  },
   { icon: <MailIcon />, name: "Email", path: "/email" },
   {
     name: "Marketing",
@@ -120,31 +107,6 @@ const navItems = [
       { name: "404 Error", path: "/error-404", pro: false },
     ],
   },
-];
-
-const othersItems = [
-  // {
-  //   icon: <PieChartIcon />,
-  //   name: "Charts",
-  //   subItems: [
-  //     { name: "Line Chart", path: "/line-chart", pro: false },
-  //     { name: "Bar Chart", path: "/bar-chart", pro: false },
-  //   ],
-  // },
-  { icon: <ShootingStarIcon />, name: "Marketing Materials", path: "/marketing-materials" },
-  { icon: <ShootingStarIcon />, name: "Course Curriculum", path: "/course-curriculum" },
-  {
-    icon: <BoxCubeIcon />,
-    name: "UI Elements",
-    subItems: [
-      { name: "Alerts", path: "/alerts", pro: false },
-      { name: "Avatar", path: "/avatars", pro: false },
-      { name: "Badge", path: "/badge", pro: false },
-      { name: "Buttons", path: "/buttons", pro: false },
-      { name: "Images", path: "/images", pro: false },
-      { name: "Videos", path: "/videos", pro: false },
-    ],
-  }
 ];
 
 const settingsItems = [
@@ -158,7 +120,6 @@ const settingsItems = [
       { name: "Campaigns", path: "/settings/campaigns", pro: false },
       { name: "Contact Points", path: "/settings/contact-points", pro: false },
       { name: "Course Management", path: "/settings/courses", pro: false },
-      { name: "User Management", path: "/settings/users", pro: false },
       { name: "Brand Management", path: "/settings/brands", pro: false },
       { name: "Announcements", path: "/settings/announcements", pro: false },
       { name: "App Backup", path: "/settings/backup", pro: false }
@@ -181,24 +142,29 @@ const AppSidebar = () => {
   );
 
   useEffect(() => {
-    let submenuMatched = false;
-    ["main", "others", "settings"].forEach((menuType) => {
-      const items = menuType === "main" ? navItems : menuType === "settings" ? settingsItems : othersItems;
-      items.forEach((nav, index) => {
-        if (nav.subItems) {
-          nav.subItems.forEach((subItem) => {
-            if (isActive(subItem.path)) {
-              setOpenSubmenu({ type: menuType, index });
-              submenuMatched = true;
-            }
-          });
-        }
-      });
-      if (submenuMatched) return;
-    });
+    let found = false;
 
-    if (!submenuMatched) setOpenSubmenu(null);
-  }, [location, isActive]);
+    const menuGroups = [
+      { type: "main", items: navItems },
+      { type: "settings", items: settingsItems },
+    ];
+
+    for (const group of menuGroups) {
+      const index = group.items.findIndex(nav =>
+        nav.subItems?.some(sub => isActive(sub.path))
+      );
+
+      if (index !== -1) {
+        setOpenSubmenu({ type: group.type, index });
+        found = true;
+        break;
+      }
+    }
+
+    if (!found) {
+      setOpenSubmenu(null);
+    }
+  }, [location.pathname, isActive]);
 
   useEffect(() => {
     if (openSubmenu !== null) {
@@ -310,16 +276,6 @@ const AppSidebar = () => {
             "UI Elements"
           ];
           if (hiddenForAccountant.includes(nav.name)) return null;
-        }
-
-        // Special handling for Leave Management sub-items
-        if (nav.name === "Leave Management" && nav.subItems) {
-          // This filter logic is complex because we are iterating parents here.
-          // The subitem filtering happens in the rendering of subitems below.
-          // However, if a user has access to NO subitems, we probably shouldn't show the parent?
-          // But 'Apply Leave' and 'My Leaves' are usually available to everyone.
-          // 'Manage Leaves' is restricted.
-          // So the parent 'Leave Management' is valid for everyone.
         }
 
         // Special handling for Finance (hide for non-accountants/non-managers)
@@ -439,7 +395,7 @@ const AppSidebar = () => {
 
                     // RESTRICTION: Academic Coordinator only sees Batch Management, Edit Profile, Cold Call list and personal Leave Management
                     if (hasRole(user, "Academic Coordinator", brandId)) {
-                      const allowedSubItemsAC = ["Batch Management", "Edit Profile", "Apply Leave", "My Leaves", "Cold Call list", "Birthday Calendar", "New Lead", "Manage Leads"];
+                      const allowedSubItemsAC = ["Batch Management", "Edit Profile", "Leave Management", "Cold Call list", "Birthday Calendar", "New Lead", "Manage Leads"];
                       if (!allowedSubItemsAC.includes(subItem.name)) {
                         return null;
                       }
@@ -468,8 +424,7 @@ const AppSidebar = () => {
                         "Cold Call list",
                         "Reports",
                         "Leads & Conversions",
-                        "Apply Leave",
-                        "My Leaves",
+                        "Leave Management",
                         "Create Event",
                         "Manage Events",
                         "Edit Profile"
@@ -585,15 +540,6 @@ const AppSidebar = () => {
                 ) : <MoreDotIcon className="size-6" />}
               </h2>
               {renderMenuItems(navItems, "main")}
-            </div>
-            <div className="">
-              <h2
-                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
-                  }`}
-              >
-                {isExpanded || isHovered || isMobileOpen ? "Downloads" : <MoreDotIcon />}
-              </h2>
-              {renderMenuItems(othersItems, "others")}
             </div>
             <div className="">
               <h2

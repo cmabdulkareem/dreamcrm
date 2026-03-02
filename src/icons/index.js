@@ -2,6 +2,7 @@ import { ReactComponent as PlusIcon } from "./plus.svg?react";
 import { ReactComponent as CloseIcon } from "./close.svg?react";
 import { ReactComponent as BoxIcon } from "./box.svg?react";
 import { ReactComponent as CheckCircleIcon } from "./check-circle.svg?react";
+import { ReactComponent as CheckIcon } from "./check-line.svg?react";
 import { ReactComponent as AlertIcon } from "./alert.svg?react";
 import { ReactComponent as InfoIcon } from "./info.svg?react";
 import { ReactComponent as ErrorIcon } from "./info-error.svg?react";
@@ -32,6 +33,7 @@ import { ReactComponent as MoreDotIcon } from "./horizontal-dots.svg?react";
 import { ReactComponent as PencilIcon } from "./pencil.svg?react";
 import { ReactComponent as RefreshIcon } from "./refresh.svg?react";
 import { ReactComponent as TrashBinIcon } from "./trash.svg?react";
+import { ReactComponent as TrashIcon } from "./trash.svg?react";
 import { ReactComponent as BoxCubeIcon } from "./box-cube.svg?react";
 import { ReactComponent as ListIcon } from "./list.svg?react";
 import { ReactComponent as PageIcon } from "./page.svg?react";
@@ -54,6 +56,7 @@ export {
   CloseIcon,
   BoxIcon,
   CheckCircleIcon,
+  CheckIcon,
   AlertIcon,
   InfoIcon,
   ErrorIcon,
@@ -83,6 +86,7 @@ export {
   PencilIcon,
   RefreshIcon,
   TrashBinIcon,
+  TrashIcon,
   BoxCubeIcon,
   ListIcon,
   PageIcon,

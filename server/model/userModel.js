@@ -32,6 +32,9 @@ const userSchema = new mongoose.Schema(
     },
     consent: { type: Boolean, required: true },
     accountStatus: { type: String, enum: ["Pending", "Active", "Suspended", "Deactivated"], default: "Pending" },
+    statusChangedAt: { type: Date, default: null }, // Tracks when status was last changed (Suspended/Deactivated)
+    suspendedAt: { type: Date, default: null },
+    deactivatedAt: { type: Date, default: null },
     isAdmin: { type: Boolean, default: false },
     mustChangePassword: { type: Boolean, default: false }, // Force password change flag
 
