@@ -252,7 +252,11 @@ const AppSidebar = () => {
         }
 
         // Restricted items for IT Support
-if (hasRole(user, "IT Support", brandId) && !hasManagerAccess) {
+        if (
+          hasRole(user, "IT Support", brandId) &&
+          !hasManagerAccess &&
+          !hasRole(user, "Instructor", brandId)
+        ) {
           const allowedForIT = ["Computer Lab", "Settings"];
           if (!allowedForIT.includes(nav.name)) return null;
         }
@@ -387,7 +391,11 @@ if (hasRole(user, "IT Support", brandId) && !hasManagerAccess) {
                     }
 
                     // RESTRICTION: IT Support only sees Edit Profile under Settings
-                    if (hasRole(user, "IT Support", brandId) && !hasManagerAccess) {
+                    if (
+                      hasRole(user, "IT Support", brandId) &&
+                      !hasManagerAccess &&
+                      !hasRole(user, "Instructor", brandId)
+                    ) {
                       if (nav.name === "Settings" && subItem.name !== "Edit Profile") {
                         return null;
                       }
