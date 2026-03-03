@@ -326,27 +326,21 @@ export default function EcommerceMetrics() {
   );
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5 md:gap-6 items-stretch">
+    <div className="grid grid-cols-2 gap-4 lg:grid-cols-5 md:gap-6 items-stretch">
       {/* Leads this Month */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6 h-full flex flex-col">
+      <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03] md:p-5 h-full flex flex-col">
         <div className="flex items-center justify-between">
-          <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-xl dark:bg-blue-900/30">
+          <div className="flex items-center justify-center w-12 h-12 bg-green-100 rounded-xl dark:bg-green-900/30">
             <GroupIcon className="text-blue-600 size-6 dark:text-blue-400" />
           </div>
-          {!loading && metrics.leadsGrowth !== 0 && (
-            <Badge color={metrics.leadsGrowth >= 0 ? "success" : "error"}>
-              {metrics.leadsGrowth >= 0 ? <ArrowUpIcon /> : <ArrowDownIcon />}
-              {Math.abs(metrics.leadsGrowth)}%
-            </Badge>
-          )}
         </div>
-        <div className="mt-5 flex-grow">
-          <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap block">Leads this month</span>
+        <div className="mt-4 flex-grow">
+          <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap block">Leads</span>
           <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-            {loading ? <LoadingSpinner className="h-6" size="h-4 w-4" /> : metrics.currentMonthLeads}
+            {loading ? <LoadingSpinner className="h-6" size="h-4 w-4" /> : metrics.totalLeads}
           </h4>
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-            {metrics.totalLeads} in FY
+          <p className="mt-1 font-semibold text-xs text-gray-400 dark:text-gray-400 whitespace-nowrap">
+            {metrics.currentMonthLeads} this month
           </p>
         </div>
       </div>
@@ -359,12 +353,12 @@ export default function EcommerceMetrics() {
           </div>
         </div>
         <div className="mt-4 flex-grow">
-          <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap block">Conv THIS MONTH</span>
+          <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap block">Conversions</span>
           <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-            {loading ? <LoadingSpinner className="h-6" size="h-4 w-4" /> : metrics.currentMonthConvertedLeads}
+            {loading ? <LoadingSpinner className="h-6" size="h-4 w-4" /> : metrics.convertedLeads}
           </h4>
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-            {metrics.convertedLeads} in FY
+          <p className="mt-1 text-xs font-semibold text-gray-400 dark:text-gray-400 whitespace-nowrap">
+            {metrics.currentMonthConvertedLeads} this month
           </p>
         </div>
       </div>
@@ -375,44 +369,32 @@ export default function EcommerceMetrics() {
           <div className="flex items-center justify-center w-12 h-12 bg-emerald-100 rounded-xl dark:bg-emerald-900/30">
             <DollarLineIcon className="text-emerald-600 size-6 dark:text-emerald-400" />
           </div>
-          {!loading && metrics.collectionGrowth !== 0 && (
-            <Badge color={metrics.collectionGrowth >= 0 ? "success" : "error"}>
-              {metrics.collectionGrowth >= 0 ? <ArrowUpIcon /> : <ArrowDownIcon />}
-              {Math.abs(metrics.collectionGrowth)}%
-            </Badge>
-          )}
         </div>
         <div className="mt-4 flex-grow">
-          <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap block">Collec.. this month</span>
+          <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap block">Collections</span>
           <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-            {loading ? <LoadingSpinner className="h-6" size="h-4 w-4" /> : formatCurrency(metrics.currentMonthCollection)}
+            {loading ? <LoadingSpinner className="h-6" size="h-4 w-4" /> : formatCurrency(metrics.financialYearCollection)}
           </h4>
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-            {formatCurrency(metrics.financialYearCollection)} in FY
+          <p className="mt-1 text-xs font-semibold text-gray-400 dark:text-gray-400 whitespace-nowrap">
+            {formatCurrency(metrics.currentMonthCollection)} this month
           </p>
         </div>
       </div>
 
       {/* Revenue this month */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03] md:p-5 h-full flex flex-col">
+      <div className="hidden lg:flex rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03] md:p-5 h-full flex-col">
         <div className="flex items-center justify-between">
           <div className="flex items-center justify-center w-12 h-12 bg-purple-100 rounded-xl dark:bg-purple-900/30">
             <DollarLineIcon className="text-purple-600 size-6 dark:text-purple-400" />
           </div>
-          {!loading && metrics.revenueGrowth !== 0 && (
-            <Badge color={metrics.revenueGrowth >= 0 ? "success" : "error"}>
-              {metrics.revenueGrowth >= 0 ? <ArrowUpIcon /> : <ArrowDownIcon />}
-              {Math.abs(metrics.revenueGrowth)}%
-            </Badge>
-          )}
         </div>
         <div className="mt-4 flex-grow">
-          <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap block">Revenue this month</span>
+          <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap block">Revenue</span>
           <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-            {loading ? <LoadingSpinner className="h-6" size="h-4 w-4" /> : formatCurrency(metrics.currentMonthRevenue)}
+            {loading ? <LoadingSpinner className="h-6" size="h-4 w-4" /> : formatCurrency(metrics.financialYearRevenue)}
           </h4>
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-            {formatCurrency(metrics.financialYearRevenue)} in FY
+          <p className="mt-1 text-xs font-semibold text-gray-400 dark:text-gray-400 whitespace-nowrap">
+            {formatCurrency(metrics.currentMonthRevenue)} this month
           </p>
         </div>
       </div>
@@ -423,19 +405,13 @@ export default function EcommerceMetrics() {
           <div className="flex items-center justify-center w-12 h-12 bg-orange-100 rounded-xl dark:bg-orange-900/30">
             <BoxIconLine className="text-orange-600 size-6 dark:text-orange-400" />
           </div>
-          {!loading && metrics.studentsGrowth !== 0 && (
-            <Badge color={metrics.studentsGrowth >= 0 ? "success" : "error"}>
-              {metrics.studentsGrowth >= 0 ? <ArrowUpIcon /> : <ArrowDownIcon />}
-              {Math.abs(metrics.studentsGrowth)}%
-            </Badge>
-          )}
         </div>
-        <div className="mt-5 flex-grow">
+        <div className="mt-3 flex-grow">
           <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap block">Active students</span>
           <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
             {loading ? <LoadingSpinner className="h-6" size="h-4 w-4" /> : metrics.totalStudents}
           </h4>
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+          <p className="mt-1 text-xs font-semibold text-gray-400 dark:text-gray-400 whitespace-nowrap">
             {metrics.currentMonthStudents} new this month
           </p>
         </div>

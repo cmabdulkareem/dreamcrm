@@ -28,15 +28,16 @@ export default function LeadStatusBreakdown() {
       const students = studentsRes.data.students || [];
 
       // Status mapping with colors
+      // Status mapping with premium colors
       const statusMap = {
-        new: { label: "New Lead", color: "#FFA500" },
-        contacted: { label: "Contacted", color: "#3B82F6" },
-        qualified: { label: "Qualified", color: "#10B981" },
-        negotiation: { label: "Negotiation", color: "#8B5CF6" },
-        converted: { label: "Converted", color: "#059669" },
-        callBackLater: { label: "Call Back", color: "#F59E0B" },
-        notInterested: { label: "Not Interested", color: "#EF4444" },
-        lost: { label: "Lost", color: "#DC2626" }
+        new: { label: "New Lead", color: "#4F46E5" }, // Indigo
+        contacted: { label: "Contacted", color: "#0EA5E9" }, // Sky
+        qualified: { label: "Qualified", color: "#10B981" }, // Emerald
+        negotiation: { label: "Negotiation", color: "#8B5CF6" }, // Violet
+        converted: { label: "Converted", color: "#059669" }, // Green
+        callBackLater: { label: "Call Back", color: "#F59E0B" }, // Amber
+        notInterested: { label: "Not Interested", color: "#94A3B8" }, // Slate
+        lost: { label: "Lost", color: "#E11D48" } // Rose
       };
 
       // Count leads by status
@@ -82,6 +83,7 @@ export default function LeadStatusBreakdown() {
       fontFamily: "Outfit, sans-serif",
       type: "donut",
       height: 300,
+      toolbar: { show: false },
     },
     labels: statusData.categories,
     legend: {
@@ -90,31 +92,43 @@ export default function LeadStatusBreakdown() {
       horizontalAlign: "center",
       fontFamily: "Outfit",
       fontSize: "12px",
+      markers: { radius: 12, size: 6 },
+      itemMargin: { horizontal: 10, vertical: 5 },
+    },
+    stroke: {
+      show: true,
+      width: 2,
+      colors: ["#fff"],
     },
     plotOptions: {
       pie: {
         donut: {
-          size: "70%",
+          size: "75%",
           labels: {
             show: true,
             name: {
               show: true,
-              fontSize: "14px",
-              fontWeight: 600,
+              fontSize: "12px",
+              fontWeight: 500,
+              offsetY: -10,
+              color: "#64748B",
             },
             value: {
               show: true,
-              fontSize: "16px",
+              fontSize: "24px",
               fontWeight: 700,
+              offsetY: 10,
+              color: "#1E293B",
               formatter: function (val) {
                 return val;
               },
             },
             total: {
               show: true,
-              label: "Total Leads",
-              fontSize: "14px",
+              label: "TOTAL LEADS",
+              fontSize: "11px",
               fontWeight: 600,
+              color: "#94A3B8",
               formatter: function (w) {
                 return w.globals.seriesTotals.reduce((a, b) => a + b, 0);
               },
@@ -124,21 +138,37 @@ export default function LeadStatusBreakdown() {
       },
     },
     dataLabels: {
-      enabled: true,
-      formatter: function (val, opts) {
-        const total = opts.w.globals.seriesTotals.reduce((a, b) => a + b, 0);
-        const percentage = ((val / total) * 100).toFixed(1);
-        return percentage + '%';
+      enabled: false, // Disabled to prevent overlapping on small slices
+    },
+    states: {
+      hover: {
+        filter: { type: "none" },
       },
     },
     tooltip: {
-      y: {
-        formatter: function (val, opts) {
-          const total = opts.w.globals.seriesTotals.reduce((a, b) => a + b, 0);
-          const percentage = ((val / total) * 100).toFixed(1);
-          return `${val} leads (${percentage}%)`;
-        },
-      },
+      enabled: true,
+      custom: function ({ series, seriesIndex, dataPointIndex, w }) {
+        const value = series[seriesIndex];
+        const label = w.globals.labels[seriesIndex];
+        const color = w.globals.colors[seriesIndex];
+        const total = series.reduce((a, b) => a + b, 0);
+        const percentage = ((value / total) * 100).toFixed(1);
+
+        return `
+          <div className="p-3 bg-white dark:bg-gray-800 shadow-xl border border-gray-100 dark:border-gray-700 rounded-xl min-w-[140px]">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="w-2 h-2 rounded-full" style="background-color: ${color}"></span>
+              <span className="text-xs font-semibold text-gray-800 dark:text-white">${label}</span>
+            </div>
+            <div className="text-sm font-bold text-gray-900 dark:text-white/90">
+              ${value} <span className="text-xs font-normal text-gray-500 ml-1">leads</span>
+            </div>
+            <div className="mt-1 text-[10px] text-gray-400 font-medium">
+              ${percentage}% of total distribution
+            </div>
+          </div>
+        `;
+      }
     },
   };
 

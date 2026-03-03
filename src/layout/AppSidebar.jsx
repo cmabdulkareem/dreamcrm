@@ -20,7 +20,8 @@ import {
   MailIcon,
   CalendarIcon,
   PlusIcon,
-  GroupIcon
+  GroupIcon,
+  MonitorIcon
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import SidebarWidget from "./SidebarWidget";
@@ -67,8 +68,8 @@ const navItems = [
     ]
   },
   {
-    name: "Computer Lab",
-    icon: <BoxCubeIcon />,
+    name: "Lab Management",
+    icon: <MonitorIcon />,
     subItems: [
       { name: "Lab Scheduler", path: "/compute-lab/scheduler", pro: false },
       { name: "Softwares", path: "/compute-lab/softwares", pro: false },
@@ -213,8 +214,8 @@ const AppSidebar = () => {
       "Dashboard",
       "Leads & Conversions",
       "App Backup",
-      // Compute Lab (global - no brand needed)
-      "Compute Lab",
+      // Lab Management (global - no brand needed)
+      "Lab Management",
       "Lab Scheduler",
       "Softwares",
       "Complaints",
@@ -275,7 +276,7 @@ const AppSidebar = () => {
           !hasManagerAccess &&
           !hasRole(user, "Instructor", brandId)
         ) {
-          const allowedForIT = ["Computer Lab", "Settings"];
+          const allowedForIT = ["Lab Management", "Settings"];
           if (!allowedForIT.includes(nav.name)) return null;
         }
 
@@ -305,9 +306,9 @@ const AppSidebar = () => {
           return null;
         }
 
-        // Compute Lab: only show to allowed roles + admins
+        // Lab Management: only show to allowed roles + admins
         const computeLabRoles = ['Owner', 'Brand Manager', 'Academic Coordinator', 'Instructor', 'Lab Assistant', 'IT Support'];
-        if (nav.name === "Compute Lab" && !user?.isAdmin && !computeLabRoles.some(r => hasRole(user, r, brandId) || hasRole(user, r))) {
+        if (nav.name === "Lab Management" && !user?.isAdmin && !computeLabRoles.some(r => hasRole(user, r, brandId) || hasRole(user, r))) {
           return null;
         }
 

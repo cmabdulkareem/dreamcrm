@@ -249,7 +249,7 @@ export default function MonthlyTarget() {
   return (
     <>
       <div className="rounded-2xl border border-gray-200 bg-gray-100 dark:border-gray-800 dark:bg-white/[0.03]">
-        <div className="px-5 pt-5 bg-white shadow-default rounded-2xl pb-11 dark:bg-gray-900 sm:px-6 sm:pt-6">
+        <div className="px-5 pt-5 bg-white shadow-default rounded-2xl pb-6 dark:bg-gray-900 sm:px-6 sm:pt-6 h-full flex flex-col">
           <div className="flex justify-between">
             <div>
               <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
@@ -276,13 +276,13 @@ export default function MonthlyTarget() {
             </div>
           </div>
 
-          <div className="relative">
+          <div className="relative flex-grow flex items-center justify-center">
             {loading ? (
-              <LoadingSpinner className="h-[330px]" />
+              <LoadingSpinner className="h-[310px]" />
             ) : (
               <>
-                <div className="max-h-[330px]" id="chartDarkStyle">
-                  <Chart options={options} series={series} type="radialBar" height={330} />
+                <div className="w-full" id="chartDarkStyle">
+                  <Chart options={options} series={series} type="radialBar" height={310} />
                 </div>
 
                 {metrics.revenueGrowth !== 0 && (

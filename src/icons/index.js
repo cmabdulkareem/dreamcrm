@@ -49,6 +49,7 @@ import { ReactComponent as PaperAirplaneIcon } from "./paper-airplane.svg?react"
 import { ReactComponent as RupeeIcon } from "./rupee.svg?react";
 import { ReactComponent as VerticalDotsIcon } from "./moredot.svg?react";
 import { ReactComponent as CopyIcon } from "./copy.svg?react";
+import { ReactComponent as MonitorIcon } from "./monitor.svg?react";
 
 
 export {
@@ -102,4 +103,5 @@ export {
   PaperAirplaneIcon,
   RupeeIcon,
   VerticalDotsIcon,
+  MonitorIcon,
 };

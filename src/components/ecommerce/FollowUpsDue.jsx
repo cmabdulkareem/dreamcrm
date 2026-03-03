@@ -161,7 +161,7 @@ export default function FollowUpsDue() {
   };
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white px-5 pt-5 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6 sm:pt-6">
+    <div className="rounded-2xl border border-gray-200 bg-white px-5 pt-5 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6 sm:pt-6 h-full flex flex-col">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
@@ -183,7 +183,7 @@ export default function FollowUpsDue() {
       {loading ? (
         <LoadingSpinner className="py-20" />
       ) : (
-        <div className="max-h-[500px] overflow-y-auto custom-scrollbar">
+        <div className="flex-grow max-h-[320px] overflow-y-auto custom-scrollbar">
           {followUps.overdue.length > 0 && renderFollowUpList(
             "Overdue",
             followUps.overdue,
