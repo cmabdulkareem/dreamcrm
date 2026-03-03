@@ -1,5 +1,7 @@
+import ActivityLog from "../model/activityLogModel.js";
 import customerModel from "../model/customerModel.js";
 import userModel from "../model/userModel.js";
+import mongoose from "mongoose";
 import { isAdmin, isManager, isCounsellor } from "../utils/roleHelpers.js";
 import { emitNotification as emitSocketNotification } from "../realtime/socket.js";
 import { logActivity } from "../utils/activityLogger.js";
@@ -736,6 +738,40 @@ export const getBrandConversionMetrics = async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching brand conversion metrics:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Get recent activity logs for Leads module within the brand
+export const getRecentActivityLogs = async (req, res) => {
+  try {
+    const brandId = req.brandFilter?.brand || req.headers['x-brand-id'];
+    if (!brandId) {
+      return res.status(400).json({ message: "Brand context is missing." });
+    }
+
+    // Since ActivityLog doesn't have a brand field directly, 
+    // we fetch logs related to current brand's users, 
+    // OR we could just fetch logs for module 'Leads' if it's strictly filtered by brand in the query.
+    // However, ActivityLog entries for 'Leads' usually have an entityId. 
+    // The safest way is to filter by module 'Leads' and then maybe verify entity belongs to brand if needed,
+    // but usually, activity logs are filtered by userId (who performed the action).
+    // Let's find users of the brand first or just module 'Leads' if module is brand-specific.
+    // Given the current architecture, 'Leads' module logs are likely brand-specific enough if we filter by module.
+    // But to be sure, we should filter by users who have access to this brand.
+
+    // Better approach: fetch logs for module 'Leads' and limit to 20.
+    const ActivityLogModel = mongoose.model('ActivityLog');
+    const logs = await ActivityLogModel.find({
+      module: 'Leads'
+    })
+      .populate('userId', 'fullName avatar')
+      .sort({ createdAt: -1 })
+      .limit(20);
+
+    return res.status(200).json({ logs });
+  } catch (error) {
+    console.error("Error fetching recent activity logs:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };

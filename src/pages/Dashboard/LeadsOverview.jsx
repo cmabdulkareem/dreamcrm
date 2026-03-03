@@ -7,6 +7,7 @@ import DemographicCard from "../../components/ecommerce/DemographicCard";
 import LeadStatusBreakdown from "../../components/ecommerce/LeadStatusBreakdown";
 import FollowUpsDue from "../../components/ecommerce/FollowUpsDue";
 import LeaderboardCard from "../../components/ecommerce/LeaderboardCard";
+import ActivityTimeline from "../../components/ecommerce/ActivityTimeline";
 import PageMeta from "../../components/common/PageMeta";
 
 export default function Home() {
@@ -27,39 +28,49 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Key Metrics - 4 columns */}
-        <EcommerceMetrics />
+        {/* Unified Dashboard Grid */}
+        <div className="grid grid-cols-12 gap-6 items-start">
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-12 gap-4 md:gap-6">
-          {/* Left Column - Charts & detailed lists */}
-          <div className="col-span-12 space-y-6 xl:col-span-8">
-            {/* Monthly Revenue Chart */}
-            <MonthlySalesChart />
+          {/* TOP SECTION: Metrics & Chart (Left) + Timeline (Right) - MASTER ALIGNMENT */}
+          <div className="col-span-12 grid grid-cols-12 gap-6 items-stretch">
+            {/* Left Block: Metrics + Monthly Sales Chart (Defines Row Height) */}
+            <div className="col-span-12 xl:col-span-8 flex flex-col gap-6">
+              <EcommerceMetrics />
+              <MonthlySalesChart />
+            </div>
 
-            {/* Lead vs Conversion Chart */}
-            <StatisticsChart />
+            {/* Right Block: Activity Timeline (Follows Height, Clips Content) */}
+            <div className="col-span-12 xl:col-span-4 relative">
+              <div className="absolute inset-0">
+                <ActivityTimeline />
+              </div>
+            </div>
+          </div>
 
-            {/* Follow-ups Due - moved here to balance height */}
+          {/* MIDDLE SECTION: Stats Chart (Left) + Achievement (Right) - HEIGHT SYNCED */}
+          <div className="col-span-12 grid grid-cols-12 gap-6 items-stretch">
+            <div className="col-span-12 xl:col-span-8">
+              <StatisticsChart />
+            </div>
+
+            <div className="col-span-12 xl:col-span-4">
+              <MonthlyTarget />
+            </div>
+          </div>
+
+          {/* FOLLOW UPS: Left Column */}
+          <div className="col-span-12 xl:col-span-8">
             <FollowUpsDue />
           </div>
 
-          {/* Right Column - Targets, Leaderboard & Stats */}
-          <div className="col-span-12 space-y-6 xl:col-span-4">
-            {/* Monthly Target */}
-            <MonthlyTarget />
-
-            {/* Leaderboard */}
+          {/* SMALL STAT CARDS: Tertiary Area */}
+          <div className="col-span-12 grid grid-cols-1 md:grid-cols-3 gap-6">
             <LeaderboardCard />
-
-            {/* Lead Status Breakdown */}
             <LeadStatusBreakdown />
-
-            {/* Demographics */}
             <DemographicCard />
           </div>
 
-          {/* Recent Leads - Full Width */}
+          {/* RECENT LEADS: Full Width Bottom */}
           <div className="col-span-12">
             <LeadOverview />
           </div>

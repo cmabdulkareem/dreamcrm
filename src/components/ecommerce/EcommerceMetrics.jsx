@@ -304,7 +304,7 @@ export default function EcommerceMetrics() {
   );
 
   const mergedLeadsBackContent = (
-    <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6 flex flex-col justify-center items-center h-full text-center">
+    <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03] md:p-5 flex flex-col justify-center items-center h-full text-center">
       <div className="mb-4">
         <span className="text-xs font-semibold text-gray-500 uppercase tracking-widest block">Brand Wide Statistics</span>
       </div>
@@ -326,17 +326,51 @@ export default function EcommerceMetrics() {
   );
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 md:gap-6 items-stretch">
-      {/* Merged Leads & Conversion */}
-      <div className="h-full">
-        <FlipCard
-          frontContent={mergedLeadsFrontContent}
-          backContent={mergedLeadsBackContent}
-        />
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5 md:gap-6 items-stretch">
+      {/* Leads this Month */}
+      <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6 h-full flex flex-col">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-xl dark:bg-blue-900/30">
+            <GroupIcon className="text-blue-600 size-6 dark:text-blue-400" />
+          </div>
+          {!loading && metrics.leadsGrowth !== 0 && (
+            <Badge color={metrics.leadsGrowth >= 0 ? "success" : "error"}>
+              {metrics.leadsGrowth >= 0 ? <ArrowUpIcon /> : <ArrowDownIcon />}
+              {Math.abs(metrics.leadsGrowth)}%
+            </Badge>
+          )}
+        </div>
+        <div className="mt-5 flex-grow">
+          <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap block">Leads this month</span>
+          <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
+            {loading ? <LoadingSpinner className="h-6" size="h-4 w-4" /> : metrics.currentMonthLeads}
+          </h4>
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+            {metrics.totalLeads} in FY
+          </p>
+        </div>
       </div>
 
-      {/* Total Collection */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6 h-full flex flex-col">
+      {/* Conv THIS MONTH */}
+      <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03] md:p-5 h-full flex flex-col">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center justify-center w-12 h-12 bg-green-100 rounded-xl dark:bg-green-900/30">
+            <ShootingStarIcon className="text-green-600 size-6 dark:text-green-400" />
+          </div>
+        </div>
+        <div className="mt-4 flex-grow">
+          <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap block">Conv THIS MONTH</span>
+          <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
+            {loading ? <LoadingSpinner className="h-6" size="h-4 w-4" /> : metrics.currentMonthConvertedLeads}
+          </h4>
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+            {metrics.convertedLeads} in FY
+          </p>
+        </div>
+      </div>
+
+      {/* Collec.. this month */}
+      <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03] md:p-5 h-full flex flex-col">
         <div className="flex items-center justify-between">
           <div className="flex items-center justify-center w-12 h-12 bg-emerald-100 rounded-xl dark:bg-emerald-900/30">
             <DollarLineIcon className="text-emerald-600 size-6 dark:text-emerald-400" />
@@ -348,19 +382,19 @@ export default function EcommerceMetrics() {
             </Badge>
           )}
         </div>
-        <div className="mt-5 flex-grow">
-          <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap block">Total Collection</span>
+        <div className="mt-4 flex-grow">
+          <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap block">Collec.. this month</span>
           <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-            {loading ? <LoadingSpinner className="h-6" size="h-4 w-4" /> : formatCurrency(metrics.financialYearCollection)}
+            {loading ? <LoadingSpinner className="h-6" size="h-4 w-4" /> : formatCurrency(metrics.currentMonthCollection)}
           </h4>
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-            {formatCurrency(metrics.currentMonthCollection)} this month
+            {formatCurrency(metrics.financialYearCollection)} in FY
           </p>
         </div>
       </div>
 
-      {/* FY Revenue / Sales */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6 h-full flex flex-col">
+      {/* Revenue this month */}
+      <div className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-white/[0.03] md:p-5 h-full flex flex-col">
         <div className="flex items-center justify-between">
           <div className="flex items-center justify-center w-12 h-12 bg-purple-100 rounded-xl dark:bg-purple-900/30">
             <DollarLineIcon className="text-purple-600 size-6 dark:text-purple-400" />
@@ -372,18 +406,18 @@ export default function EcommerceMetrics() {
             </Badge>
           )}
         </div>
-        <div className="mt-5 flex-grow">
-          <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap block">Total Revenue</span>
+        <div className="mt-4 flex-grow">
+          <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap block">Revenue this month</span>
           <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
-            {loading ? <LoadingSpinner className="h-6" size="h-4 w-4" /> : formatCurrency(metrics.financialYearRevenue)}
+            {loading ? <LoadingSpinner className="h-6" size="h-4 w-4" /> : formatCurrency(metrics.currentMonthRevenue)}
           </h4>
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-            {formatCurrency(metrics.currentMonthRevenue)} this month
+            {formatCurrency(metrics.financialYearRevenue)} in FY
           </p>
         </div>
       </div>
 
-      {/* Active Students */}
+      {/* Active students */}
       <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6 h-full flex flex-col">
         <div className="flex items-center justify-between">
           <div className="flex items-center justify-center w-12 h-12 bg-orange-100 rounded-xl dark:bg-orange-900/30">
@@ -397,12 +431,12 @@ export default function EcommerceMetrics() {
           )}
         </div>
         <div className="mt-5 flex-grow">
-          <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap block">Active Students</span>
+          <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap block">Active students</span>
           <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
             {loading ? <LoadingSpinner className="h-6" size="h-4 w-4" /> : metrics.totalStudents}
           </h4>
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-            {metrics.currentMonthStudents} enrolled this month
+            {metrics.currentMonthStudents} new this month
           </p>
         </div>
       </div>

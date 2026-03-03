@@ -334,22 +334,6 @@ export default function MonthlyTarget() {
           </div>
         </div>
 
-        {/* Upcoming Months Targets */}
-        {targets.length > 0 && (
-          <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-800">
-            <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Upcoming Months Targets</h4>
-            <div className="grid grid-cols-2 gap-3">
-              {targets.slice(1, 4).map((target, index) => (
-                <div key={`${target.year}-${target.month}`} className="text-center">
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{monthNames[target.month]} {target.year}</p>
-                  <p className="text-sm font-semibold text-gray-800 dark:text-white/90">
-                    {target.targetRevenue ? formatCurrency(target.targetRevenue) : "Not set"}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Edit Targets Modal */}
