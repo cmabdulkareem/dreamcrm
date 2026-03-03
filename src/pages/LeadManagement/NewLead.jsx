@@ -60,13 +60,12 @@ export default function FormElements() {
   const [leadRemarks, setLeadRemarks] = useState("");
   const [followUpDate, setFollowUpDate] = useState("");
   const [leadPotential, setLeadPotential] = useState(""); // Added state for lead potential
-    const [error, setError] = useState(false);
+  const [error, setError] = useState(false);
   const [phoneExists, setPhoneExists] = useState(false);
   const [checkingPhone, setCheckingPhone] = useState(false);
   const [campaignOptions, setCampaignOptions] = useState([]);
   const [contactPointOptions, setContactPointOptions] = useState([]);
   const [courseOptions, setCourseOptions] = useState([]); // Dynamic course options
-  const [brands, setBrands] = useState([]); // Brand options
   const { selectedBrand: globalSelectedBrand } = useContext(AuthContext);
   const [selectedBrand, setSelectedBrand] = useState(globalSelectedBrand?._id || "");
 
@@ -98,16 +97,12 @@ export default function FormElements() {
       // Clear the session storage after using it
       sessionStorage.removeItem('prefillLeadData');
     }
-
-    fetchBrands();
   }, []);
 
   // Update selectedBrand when global selection changes
   useEffect(() => {
-    if (globalSelectedBrand?._id && !selectedBrand) {
-      setSelectedBrand(globalSelectedBrand._id);
-    }
-  }, [globalSelectedBrand, selectedBrand]);
+    setSelectedBrand(globalSelectedBrand?._id || globalSelectedBrand?.id || "");
+  }, [globalSelectedBrand]);
 
   // Refetch dropdowns when selectedBrand changes
   useEffect(() => {
@@ -121,15 +116,6 @@ export default function FormElements() {
       setCourseOptions([]);
     }
   }, [selectedBrand]);
-
-  const fetchBrands = async () => {
-    try {
-      const response = await axios.get(`${API}/brands`, { withCredentials: true });
-      setBrands(response.data.brands || []);
-    } catch (error) {
-      console.error("Error fetching brands:", error);
-    }
-  };
 
   const fetchCourseCategories = async () => {
     try {
@@ -615,6 +601,13 @@ export default function FormElements() {
       />
       <PageBreadcrumb pageTitle="New Enquiry" />
 
+      {!selectedBrand && (
+        <div className="mb-6 p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 rounded-lg">
+          <p className="font-bold">Brand Required</p>
+          <p>Please select a specific brand from the top menu to enable lead creation.</p>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
           {/* ... existing form content ... */}
@@ -622,7 +615,7 @@ export default function FormElements() {
             <ComponentCard title="Basic Details">
               <div className="space-y-6">
                 <div className="flex flex-col md:flex-row gap-4">
-                  <div className="w-full md:w-1/3">
+                  <div className="w-full md:w-1/2">
                     <Label htmlFor="firstName" required={true}>Full Name</Label>
                     <Input
                       type="text"
@@ -633,17 +626,7 @@ export default function FormElements() {
                       hint={validationErrors.fullName}
                     />
                   </div>
-                  <div className="w-full md:w-1/3">
-                    <Label>Brand *</Label>
-                    <Select
-                      options={brands.map(b => ({ value: b._id, label: `${b.name} (${b.code})` }))}
-                      value={selectedBrand}
-                      placeholder="Select Brand"
-                      onChange={setSelectedBrand}
-                      error={!!validationErrors.selectedBrand}
-                    />
-                  </div>
-                  <div className="w-full md:w-1/3">
+                  <div className="w-full md:w-1/2">
                     <Label>Email</Label>
                     <Input
                       type="email"
