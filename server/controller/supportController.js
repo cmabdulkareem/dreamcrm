@@ -6,18 +6,11 @@ import { emitNotification } from '../realtime/socket.js';
 export const createSupportRequest = async (req, res) => {
     try {
         const { title, description, type, priority } = req.body;
-        const brandId = req.headers['x-brand-id'];
-
-        if (!brandId) {
-            return res.status(400).json({ message: "Brand ID is required." });
-        }
-
         const newRequest = new Support({
             title,
             description,
             type,
             priority,
-            brand: brandId,
             createdBy: req.user.id
         });
 
@@ -58,20 +51,9 @@ export const createSupportRequest = async (req, res) => {
 // Get all requests for the brand (with role-based filtering if needed)
 export const getAllSupportRequests = async (req, res) => {
     try {
-        let brandFilter = req.brandFilter || {};
-
-        // Developer sees everything across all brands
-        if (isDeveloper(req.user)) {
-            brandFilter = {};
-        }
-
-        // All users see all requests within their brand (developer sees global)
-        let query = { ...brandFilter };
-
-        const requests = await Support.find(query)
+        const requests = await Support.find({})
             .populate('createdBy', 'fullName')
             .populate('responses.sender', 'fullName')
-            .populate('brand', 'name') // Populate brand name for developer view
             .sort({ createdAt: -1 });
 
         res.status(200).json(requests);
@@ -92,7 +74,7 @@ export const updateSupportStatus = async (req, res) => {
         }
 
         const request = await Support.findOneAndUpdate(
-            { _id: id, ...req.brandFilter },
+            { _id: id },
             { status },
             { new: true }
         ).populate('createdBy', 'fullName');
@@ -138,7 +120,7 @@ export const addSupportResponse = async (req, res) => {
         const { id } = req.params;
         const { message } = req.body;
 
-        const request = await Support.findOne({ _id: id, ...req.brandFilter });
+        const request = await Support.findOne({ _id: id });
         if (!request) {
             return res.status(404).json({ message: "Request not found." });
         }
@@ -188,12 +170,7 @@ export const toggleUpvote = async (req, res) => {
         const { id } = req.params;
         const userId = req.user.id;
 
-        let brandFilter = req.brandFilter || {};
-        if (isDeveloper(req.user)) {
-            brandFilter = {};
-        }
-
-        const request = await Support.findOne({ _id: id, ...brandFilter });
+        const request = await Support.findOne({ _id: id });
         if (!request) {
             return res.status(404).json({ message: "Request not found." });
         }

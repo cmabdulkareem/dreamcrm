@@ -250,7 +250,6 @@ const SupportDashboard = () => {
                                 <div className="flex items-center gap-4 mt-2">
                                     <p className="text-sm text-gray-500 dark:text-gray-400">
                                         Submitted by <span className="font-semibold text-gray-700 dark:text-gray-200">{selectedRequest.createdBy?.fullName}</span>
-                                        {isDev && selectedRequest.brand && <span className="ml-2">• Brand: <span className="font-semibold text-brand-500">{selectedRequest.brand.name}</span></span>}
                                     </p>
                                     <button
                                         onClick={(e) => handleUpvote(selectedRequest._id, e)}

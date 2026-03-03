@@ -12,7 +12,6 @@ import { applyBrandFilter } from '../middleware/brandMiddleware.js';
 const router = express.Router();
 
 router.use(verifyToken);
-router.use(applyBrandFilter);
 
 router.post('/', createSupportRequest);
 router.get('/', getAllSupportRequests);

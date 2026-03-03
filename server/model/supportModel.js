@@ -44,7 +44,7 @@ const supportSchema = new mongoose.Schema({
     brand: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Brand',
-        required: true
+        required: false
     },
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
