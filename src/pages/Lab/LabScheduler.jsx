@@ -325,7 +325,7 @@ const QueuePanel = ({
     const displayData = viewMode === 'active' ? queue : historyData;
 
     return (
-        <div className="w-80 shrink-0 border-r border-gray-100 dark:border-gray-800 h-full flex flex-col bg-gray-50/30 dark:bg-gray-900/10">
+        <div className="w-full lg:w-80 shrink-0 border-b lg:border-r lg:border-b-0 border-gray-100 dark:border-gray-800 h-full flex flex-col bg-gray-50/30 dark:bg-gray-900/10">
             <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
                 <h3 className="font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
                     <span className="p-1.5 bg-blue-950 text-white rounded-lg text-xs">
@@ -1347,7 +1347,7 @@ function ArrangementContent() {
                         </div>
                     }
                 >
-                    <div className="flex bg-white dark:bg-gray-800 rounded-3xl overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800 min-h-[600px]">
+                    <div className="flex flex-col lg:flex-row bg-white dark:bg-gray-800 rounded-3xl lg:overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800 min-h-[600px]">
                         <QueuePanel
                             show={showQueuePanel}
                             onToggle={() => setShowQueuePanel(!showQueuePanel)}
@@ -1368,7 +1368,7 @@ function ArrangementContent() {
                             historyLoading={isQueueHistoryLoading}
                         />
 
-                        <div className="flex-1 relative z-10 p-8 pt-6">
+                        <div className="flex-1 relative z-10 p-4 md:p-8 pt-6 min-w-0">
                             {/* Lab Arrangement Grid */}
                             {loading ? (
                                 <div className="flex flex-col items-center justify-center py-32 space-y-4">
@@ -1385,7 +1385,7 @@ function ArrangementContent() {
                                     </Button>
                                 </div>
                             ) : (
-                                <div className="overflow-x-auto no-scrollbar -mx-2 px-2 pb-32 relative">
+                                <div className="overflow-x-auto no-scrollbar -mx-2 px-2 pb-32 relative touch-pan-x">
                                     {refreshing && (
                                         <div className="absolute inset-0 z-50 bg-white/40 dark:bg-gray-900/40 backdrop-blur-[1px] flex items-start justify-center pt-20">
                                             <div className="bg-white dark:bg-gray-800 shadow-xl border border-gray-100 dark:border-gray-700 rounded-full px-4 py-2 flex items-center gap-2 animate-bounce">
@@ -2041,8 +2041,8 @@ function ArrangementContent() {
                                         <div key={log._id} className={`relative pl-12 transition-all duration-300 ${isLatest ? 'opacity-100' : 'opacity-80 group'}`}>
                                             {/* Dot on line */}
                                             <div className={`absolute left-0 top-1.5 size-9 rounded-full border-4 border-white dark:border-gray-950 flex items-center justify-center z-10 shadow-sm transition-all ${isLatest
-                                                    ? `${colorMap[config.color].split(' ')[0]} scale-110 shadow-lg shadow-${config.color}-500/20`
-                                                    : 'bg-gray-100 dark:bg-gray-800'
+                                                ? `${colorMap[config.color].split(' ')[0]} scale-110 shadow-lg shadow-${config.color}-500/20`
+                                                : 'bg-gray-100 dark:bg-gray-800'
                                                 }`}>
                                                 <Icon className={`size-3.5 ${isLatest ? 'text-white font-bold' : 'text-gray-400'}`} />
                                             </div>
