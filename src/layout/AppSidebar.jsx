@@ -115,9 +115,6 @@ const settingsItems = [
     icon: <SettingsIcon />,
     name: "Settings",
     subItems: [
-      // { name: "Sign In", path: "/signin", pro: false },
-      // { name: "Sign Up", path: "/signup", pro: false },
-      { name: "Edit Profile", path: "/profile", pro: false },
       { name: "Campaigns", path: "/settings/campaigns", pro: false },
       { name: "Contact Points", path: "/settings/contact-points", pro: false },
       { name: "Course Management", path: "/settings/courses", pro: false },
