@@ -35,11 +35,20 @@
 
   html {
     zoom: 90%;
-    overflow-x: hidden;
+    min-height: 111.11vh !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background-color: rgb(17 24 39) !important;
+    /* gray-900 */
   }
 
   body {
-    overflow-x: hidden;
+    min-height: 111.11vh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background-color: rgb(17 24 39) !important;
+    /* gray-900 */
   }
 
   /* Fallback for browsers not supporting zoom (like Firefox) */
@@ -180,7 +189,7 @@
   }
 
   .jvectormap-region.jvectormap-element {
-    @apply !fill-gray-300 hover: !fill-brand-500 dark:fill-gray-700 hover:dark: !fill-gray-600;
+    @apply !fill-gray-300 hover:!fill-brand-500 dark:fill-gray-700 hover:dark:!fill-gray-600;
   }
 
   .jvectormap-marker.jvectormap-element {
@@ -208,7 +217,7 @@
 
   .stocks-slider-outer .swiper-button-next,
   .stocks-slider-outer .swiper-button-prev {
-    @apply static !mt-0 h-8 w-9 rounded-full border border-gray-200 !text-gray-700 transition hover:bg-gray-100 hover:dark:bg-white/[0.05] dark:border-white/[0.03] dark:bg-gray-800 dark:text-gray-400 hover:dark: !text-white/90;
+    @apply static !mt-0 h-8 w-9 rounded-full border border-gray-200 !text-gray-700 transition hover:bg-gray-100 hover:dark:bg-white/[0.05] dark:border-white/[0.03] dark:bg-gray-800 dark:text-gray-400 hover:dark:!text-white/90;
   }
 
   .stocks-slider-outer .swiper-button-next.swiper-button-disabled,
@@ -302,7 +311,7 @@
   }
 
   .flatpickr-day {
-    @apply !flex !items-center !text-theme-sm !font-medium !text-gray-800 dark:text-white/90 hover:dark: !border-gray-300 hover:dark: !bg-gray-900;
+    @apply !flex !items-center !text-theme-sm !font-medium !text-gray-800 dark:text-white/90 hover:dark:!border-gray-300 hover:dark:!bg-gray-900;
   }
 
   .flatpickr-day.nextMonthDay,
@@ -415,7 +424,7 @@
   .flatpickr-months .flatpickr-next-month svg,
   .flatpickr-months .flatpickr-prev-month,
   .flatpickr-months .flatpickr-next-month {
-    @apply hover: !fill-none;
+    @apply hover:!fill-none;
   }
 
   .flatpickr-months .flatpickr-prev-month:hover svg,
@@ -454,7 +463,7 @@
   }
 
   .fc-button-group .fc-button {
-    @apply flex h-10 w-10 items-center justify-center !rounded-lg border border-gray-200 bg-transparent hover:border-gray-200 hover:bg-gray-50 focus:shadow-none active: !border-gray-200 active: !bg-transparent active: !shadow-none dark:border-gray-800 hover:dark:border-gray-800 hover:dark:bg-gray-900 active:dark:border-gray-800;
+    @apply flex h-10 w-10 items-center justify-center !rounded-lg border border-gray-200 bg-transparent hover:border-gray-200 hover:bg-gray-50 focus:shadow-none active:!border-gray-200 active:!bg-transparent active:!shadow-none dark:border-gray-800 hover:dark:border-gray-800 hover:dark:bg-gray-900 active:dark:border-gray-800;
   }
 
   .fc-button-group .fc-button.fc-prev-button:before {
@@ -480,7 +489,7 @@
   }
 
   .fc-addEventButton-button {
-    @apply !rounded-lg !border-0 !bg-brand-500 !px-4 !py-2.5 !text-sm !font-medium hover: !bg-brand-600 focus: !shadow-none;
+    @apply !rounded-lg !border-0 !bg-brand-500 !px-4 !py-2.5 !text-sm !font-medium hover:!bg-brand-600 focus:!shadow-none;
   }
 
   .fc-toolbar-title {
@@ -492,7 +501,7 @@
   }
 
   .fc-header-toolbar.fc-toolbar .fc-toolbar-chunk:last-child .fc-button {
-    @apply !h-auto !w-auto rounded-md !border-0 bg-transparent !px-5 !py-2 text-sm font-medium text-gray-500 hover:text-gray-700 focus: !shadow-none dark:text-gray-400;
+    @apply !h-auto !w-auto rounded-md !border-0 bg-transparent !px-5 !py-2 text-sm font-medium text-gray-500 hover:text-gray-700 focus:!shadow-none dark:text-gray-400;
   }
 
   .fc-header-toolbar.fc-toolbar .fc-toolbar-chunk:last-child .fc-button.fc-button-active {
@@ -642,6 +651,14 @@
 }
 
 @layer utilities {
+  .min-h-screen {
+    min-height: 111.11vh !important;
+  }
+
+  .h-screen {
+    height: 111.11vh !important;
+  }
+
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }

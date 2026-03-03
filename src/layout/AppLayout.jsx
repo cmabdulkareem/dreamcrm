@@ -16,7 +16,7 @@ const LayoutContent = () => {
   const isHR = location.pathname.startsWith("/hr");
 
   return (
-    <div className="min-h-screen xl:flex">
+    <div className="min-h-screen xl:flex bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white/90">
       <div>
         <AppSidebar />
         <Backdrop />
@@ -26,7 +26,7 @@ const LayoutContent = () => {
           } ${isMobileOpen ? "ml-0" : ""}`}
       >
         <AppHeader />
-        <div className={`flex-1 p-4 md:p-6 w-full max-w-full ${isHR ? "ems-theme" : ""}`}>
+        <div className={`flex-1 p-4 md:p-6 pb-20 md:pb-24 w-full max-w-full ${isHR ? "ems-theme" : ""}`}>
           <Suspense fallback={<LoadingSpinner />}>
             <Outlet />
           </Suspense>
