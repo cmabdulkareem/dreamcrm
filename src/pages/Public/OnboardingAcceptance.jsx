@@ -16,13 +16,17 @@ const OnboardingAcceptance = () => {
     const [submitting, setSubmitting] = useState(false);
     const [signed, setSigned] = useState(false);
     const [signatureName, setSignatureName] = useState('');
-    const [isAgreed, setIsAgreed] = useState(false);
+    const [currentStep, setCurrentStep] = useState(0);
+    const [agreedSteps, setAgreedSteps] = useState([]);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
                 const response = await axios.get(`${API}/hr/public/onboarding/${token}`);
                 setData(response.data);
+                if (response.data.templates) {
+                    setAgreedSteps(new Array(response.data.templates.length).fill(false));
+                }
             } catch (error) {
                 console.error('Error fetching onboarding data:', error);
                 toast.error(error.response?.data?.message || 'Invalid or expired onboarding link.');
@@ -35,7 +39,19 @@ const OnboardingAcceptance = () => {
 
     const btnSubmit = async (e) => {
         e.preventDefault();
-        if (!isAgreed) return toast.error('Please agree to the terms after reviewing all sections.');
+        const templates = data.templates || [];
+        const isLastStep = currentStep === templates.length - 1;
+
+        if (!agreedSteps[currentStep]) {
+            return toast.error('Please agree to the terms of this section before proceeding.');
+        }
+
+        if (!isLastStep) {
+            setCurrentStep(prev => prev + 1);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+        }
+
         if (signatureName.trim().toLowerCase() !== data.fullName.toLowerCase()) {
             return toast.error(`Please type your full name exactly as "${data.fullName}" to sign.`);
         }
@@ -111,6 +127,19 @@ const OnboardingAcceptance = () => {
                         <h1 className="text-3xl sm:text-4xl font-black text-gray-900 tracking-tight leading-tight">
                             Employment Agreement
                         </h1>
+                        <div className="mt-2 flex items-center gap-2">
+                            <div className="flex -space-x-2">
+                                {data.templates?.map((_, idx) => (
+                                    <div
+                                        key={idx}
+                                        className={`w-3 h-3 rounded-full border-2 border-white ${idx <= currentStep ? 'bg-blue-600' : 'bg-gray-200'}`}
+                                    />
+                                ))}
+                            </div>
+                            <span className="text-xs font-bold text-gray-400 uppercase tracking-tighter ml-2">
+                                Agreement {currentStep + 1} of {data.templates?.length}
+                            </span>
+                        </div>
                         <div className="mt-4 flex flex-wrap items-center gap-4">
                             <div className="flex items-center gap-2 text-gray-500">
                                 <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold text-xs">{data.fullName.charAt(0)}</div>
@@ -122,17 +151,15 @@ const OnboardingAcceptance = () => {
                     </header>
 
                     <div className="space-y-12">
-                        {data.templates?.map((template, tIdx) => (
-                            <div key={tIdx} className="space-y-8">
-                                {data.templates.length > 1 && (
-                                    <div className="border-b-2 border-blue-900 pb-2 mb-6">
-                                        <h2 className="text-2xl font-black text-blue-900 uppercase tracking-tight">
-                                            {template.name}
-                                        </h2>
-                                    </div>
-                                )}
-                                {template.sections?.map((section, idx) => (
-                                    <section key={`${tIdx}-${idx}`} className="onboarding-section">
+                        {data.templates && data.templates[currentStep] && (
+                            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                <div className="border-b-2 border-blue-900 pb-2 mb-6">
+                                    <h2 className="text-2xl font-black text-blue-900 uppercase tracking-tight">
+                                        {data.templates[currentStep].name}
+                                    </h2>
+                                </div>
+                                {data.templates[currentStep].sections?.map((section, idx) => (
+                                    <section key={`${currentStep}-${idx}`} className="onboarding-section">
                                         <h2 className="text-xl font-black text-gray-900 mb-4 flex items-center gap-3">
                                             <span className="text-blue-600/20 text-4xl font-black tabular-nums transition-colors selection:bg-blue-200">
                                                 {(idx + 1).toString().padStart(2, '0')}
@@ -140,13 +167,14 @@ const OnboardingAcceptance = () => {
                                             {section.title}
                                         </h2>
                                         <div
-                                            className="prose prose-blue max-w-none text-gray-600 leading-relaxed ql-editor p-0"
+                                            className="prose prose-blue max-w-none text-gray-600 leading-relaxed ql-editor p-0 break-words overflow-hidden"
+                                            style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
                                             dangerouslySetInnerHTML={{ __html: section.content }}
                                         />
                                     </section>
                                 ))}
                             </div>
-                        ))}
+                        )}
                     </div>
                 </div>
 
@@ -158,35 +186,50 @@ const OnboardingAcceptance = () => {
                             <input
                                 type="checkbox"
                                 id="agree-check"
-                                checked={isAgreed}
-                                onChange={(e) => setIsAgreed(e.target.checked)}
+                                checked={agreedSteps[currentStep] || false}
+                                onChange={(e) => {
+                                    const newAgreed = [...agreedSteps];
+                                    newAgreed[currentStep] = e.target.checked;
+                                    setAgreedSteps(newAgreed);
+                                }}
                                 className="mt-1.5 w-5 h-5 rounded border-gray-300 text-blue-900 focus:ring-blue-900"
                             />
                             <label htmlFor="agree-check" className="text-sm text-gray-700 leading-relaxed cursor-pointer">
-                                I have read, understood, and agree to abide by the terms and conditions set forth in this employment agreement. I understand that my typed name below constitutes a legal and binding digital signature.
+                                I have read, understood, and agree to abide by the terms and conditions set forth in this <strong>{data.templates?.[currentStep]?.name || 'agreement'}</strong>. {currentStep === (data.templates?.length || 0) - 1 ? 'I understand that my typed name below constitutes a legal and binding digital signature.' : ''}
                             </label>
                         </div>
 
-                        <div>
-                            <Label htmlFor="sig-name">Type your full name to sign *</Label>
-                            <InputField
-                                id="sig-name"
-                                placeholder={data.fullName}
-                                value={signatureName}
-                                onChange={(e) => setSignatureName(e.target.value)}
-                                className="text-lg font-medium py-4 italic"
-                                required
-                            />
-                            <p className="mt-2 text-xs text-gray-500">Please match the name as shown in the header.</p>
-                        </div>
+                        {currentStep === (data.templates?.length || 0) - 1 && (
+                            <div className="animate-in zoom-in-95 duration-300">
+                                <Label htmlFor="sig-name">Type your full name to sign *</Label>
+                                <InputField
+                                    id="sig-name"
+                                    placeholder={data.fullName}
+                                    value={signatureName}
+                                    onChange={(e) => setSignatureName(e.target.value)}
+                                    className="text-lg font-medium py-4 italic"
+                                    required
+                                />
+                                <p className="mt-2 text-xs text-gray-500">Please match the name as shown in the header.</p>
+                            </div>
+                        )}
 
-                        <div className="pt-4">
+                        <div className="pt-4 flex gap-4">
+                            {currentStep > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={() => setCurrentStep(prev => prev - 1)}
+                                    className="flex-1 py-5 bg-gray-100 text-gray-600 rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-gray-200 transition-all border border-gray-200"
+                                >
+                                    Previous
+                                </button>
+                            )}
                             <button
                                 type="submit"
                                 disabled={submitting}
-                                className="w-full py-5 bg-blue-950 text-white rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-blue-900 transition-all shadow-xl shadow-blue-950/20 disabled:opacity-70 group"
+                                className={`flex-[2] py-5 bg-blue-950 text-white rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-blue-900 transition-all shadow-xl shadow-blue-950/20 disabled:opacity-70 group`}
                             >
-                                {submitting ? 'Processing Signature...' : 'Sign & Accept Offer'}
+                                {submitting ? 'Processing Signature...' : (currentStep === (data.templates?.length || 0) - 1 ? 'Sign & Accept Offer' : 'Next Agreement')}
                                 {!submitting && (
                                     <svg className="w-5 h-5 inline-block ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
