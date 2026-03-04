@@ -833,7 +833,7 @@ const ScheduleInterviewModal = ({ app, isOpen, onClose, onSuccess }) => {
 // --- SELECT AGREEMENT MODAL ---
 const SelectAgreementModal = ({ app, isOpen, onClose, onSuccess }) => {
     const [templates, setTemplates] = useState([]);
-    const [selectedTemplate, setSelectedTemplate] = useState('');
+    const [selectedTemplates, setSelectedTemplates] = useState([]);
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
 
@@ -847,8 +847,8 @@ const SelectAgreementModal = ({ app, isOpen, onClose, onSuccess }) => {
                     setTemplates(response.data);
                     // Pre-select active template if exists
                     const active = response.data.find(t => t.isActive);
-                    if (active) setSelectedTemplate(active._id);
-                    else if (response.data.length > 0) setSelectedTemplate(response.data[0]._id);
+                    if (active) setSelectedTemplates([active._id]);
+                    else if (response.data.length > 0) setSelectedTemplates([response.data[0]._id]);
                 } catch (error) {
                     console.error('Error fetching templates:', error);
                     toast.error('Failed to load agreement templates');
@@ -862,11 +862,11 @@ const SelectAgreementModal = ({ app, isOpen, onClose, onSuccess }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!selectedTemplate) return toast.error('Please select an agreement template');
+        if (selectedTemplates.length === 0) return toast.error('Please select at least one agreement template');
 
         setSubmitting(true);
         try {
-            await hrService.updateApplicationStatus(app._id, 'Hired', 'Offer Sent with Selected Agreement', false, selectedTemplate);
+            await hrService.updateApplicationStatus(app._id, 'Hired', 'Offer Sent with Selected Agreements', false, selectedTemplates);
             toast.success('Candidate moved to Offer stage and onboarding email sent.');
             onSuccess();
             onClose();
@@ -910,18 +910,24 @@ const SelectAgreementModal = ({ app, isOpen, onClose, onSuccess }) => {
                                         key={template._id}
                                         className={`
                                             relative flex items-center p-4 rounded-2xl border-2 cursor-pointer transition-all
-                                            ${selectedTemplate === template._id
+                                            ${selectedTemplates.includes(template._id)
                                                 ? 'border-emerald-500 bg-emerald-50/30 dark:bg-emerald-500/10'
                                                 : 'border-gray-100 dark:border-gray-800 hover:border-emerald-200'
                                             }
                                         `}
                                     >
                                         <input
-                                            type="radio"
+                                            type="checkbox"
                                             name="template"
                                             value={template._id}
-                                            checked={selectedTemplate === template._id}
-                                            onChange={() => setSelectedTemplate(template._id)}
+                                            checked={selectedTemplates.includes(template._id)}
+                                            onChange={() => {
+                                                setSelectedTemplates(prev =>
+                                                    prev.includes(template._id)
+                                                        ? prev.filter(id => id !== template._id)
+                                                        : [...prev, template._id]
+                                                );
+                                            }}
                                             className="hidden"
                                         />
                                         <div className="flex-1">
@@ -933,7 +939,7 @@ const SelectAgreementModal = ({ app, isOpen, onClose, onSuccess }) => {
                                             </div>
                                             <div className="text-[10px] text-gray-400 mt-0.5">{template.sections?.length || 0} Sections</div>
                                         </div>
-                                        {selectedTemplate === template._id && (
+                                        {selectedTemplates.includes(template._id) && (
                                             <div className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center text-white shadow-lg animate-in zoom-in-50 duration-200">
                                                 <CheckCircle2 className="size-3" />
                                             </div>

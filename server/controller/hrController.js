@@ -372,7 +372,7 @@ export const hrController = {
     updateApplicationStatus: async (req, res) => {
         try {
             const { id } = req.params;
-            const { status, remark, clearInterview, templateId } = req.body;
+            const { status, remark, clearInterview, templateIds } = req.body;
             const userId = req.user?.id;
 
             const job = await Job.findOne({ "applications._id": id });
@@ -402,15 +402,17 @@ export const hrController = {
                 console.log(`🚀 Triggering onboarding for ${application.fullName} (${application.email})`);
                 application.onboardingToken = crypto.randomBytes(32).toString('hex');
 
-                if (templateId) {
-                    application.agreementTemplate = templateId;
+                if (templateIds && Array.isArray(templateIds) && templateIds.length > 0) {
+                    application.agreementTemplates = templateIds;
+                } else if (templateIds && !Array.isArray(templateIds)) {
+                    // Fallback for single ID string
+                    application.agreementTemplates = [templateIds];
                 } else {
                     const activeTemplate = await AgreementTemplate.findOne({
                         isActive: true
                     });
-
                     if (activeTemplate) {
-                        application.agreementTemplate = activeTemplate._id;
+                        application.agreementTemplates = [activeTemplate._id];
                     }
                 }
 
@@ -532,7 +534,7 @@ export const hrController = {
         try {
             const { token } = req.params;
             const job = await Job.findOne({ "applications.onboardingToken": token })
-                .populate('applications.agreementTemplate');
+                .populate('applications.agreementTemplates');
 
             if (!job) {
                 return res.status(404).json({ message: 'Onboarding link is invalid or has expired.' });
@@ -547,7 +549,7 @@ export const hrController = {
             res.json({
                 fullName: application.fullName,
                 jobTitle: job.title,
-                template: application.agreementTemplate
+                templates: application.agreementTemplates
             });
         } catch (error) {
             res.status(500).json({ message: error.message });
@@ -560,7 +562,7 @@ export const hrController = {
             const { signatureName } = req.body;
 
             const job = await Job.findOne({ "applications.onboardingToken": token })
-                .populate('applications.agreementTemplate');
+                .populate('applications.agreementTemplates');
 
             if (!job) {
                 return res.status(404).json({ message: 'Onboarding link is invalid.' });
@@ -572,11 +574,19 @@ export const hrController = {
                 return res.status(400).json({ message: 'Agreement already signed.' });
             }
 
-            // Snapshot the signed content
-            application.signedContent = application.agreementTemplate.sections.map(s => ({
-                title: s.title,
-                content: s.content
-            }));
+            // Snapshot the signed content from all templates
+            let allSections = [];
+            application.agreementTemplates.forEach(template => {
+                if (template && template.sections) {
+                    template.sections.forEach(s => {
+                        allSections.push({
+                            title: s.title,
+                            content: s.content
+                        });
+                    });
+                }
+            });
+            application.signedContent = allSections;
 
             application.agreementSigned = true;
             application.signatureName = signatureName;

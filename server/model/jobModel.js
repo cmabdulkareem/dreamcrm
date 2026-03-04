@@ -51,11 +51,10 @@ const applicationSchema = new mongoose.Schema({
         type: String,
         default: null
     },
-    agreementTemplate: {
+    agreementTemplates: [{
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'AgreementTemplate',
-        default: null
-    },
+        ref: 'AgreementTemplate'
+    }],
     agreementSigned: {
         type: Boolean,
         default: false

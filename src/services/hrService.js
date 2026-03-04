@@ -209,9 +209,9 @@ export const hrService = {
         }
     },
 
-    updateApplicationStatus: async (id, status, remark, clearInterview = false, templateId = null) => {
+    updateApplicationStatus: async (id, status, remark, clearInterview = false, templateIds = null) => {
         try {
-            const response = await axios.patch(`${API}/hr/applications/${id}/status`, { status, remark, clearInterview, templateId }, { withCredentials: true });
+            const response = await axios.patch(`${API}/hr/applications/${id}/status`, { status, remark, clearInterview, templateIds }, { withCredentials: true });
             return response.data;
         } catch (error) {
             console.error("Failed to update application status", error);

@@ -122,17 +122,30 @@ const OnboardingAcceptance = () => {
                     </header>
 
                     <div className="space-y-12">
-                        {data.template?.sections?.map((section, idx) => (
-                            <section key={idx} className="onboarding-section">
-                                <h2 className="text-xl font-black text-gray-900 mb-4 flex items-center gap-3">
-                                    <span className="text-blue-600/20 text-4xl font-black tabular-nums transition-colors selection:bg-blue-200">{(idx + 1).toString().padStart(2, '0')}</span>
-                                    {section.title}
-                                </h2>
-                                <div
-                                    className="prose prose-blue max-w-none text-gray-600 leading-relaxed ql-editor p-0"
-                                    dangerouslySetInnerHTML={{ __html: section.content }}
-                                />
-                            </section>
+                        {data.templates?.map((template, tIdx) => (
+                            <div key={tIdx} className="space-y-8">
+                                {data.templates.length > 1 && (
+                                    <div className="border-b-2 border-blue-900 pb-2 mb-6">
+                                        <h2 className="text-2xl font-black text-blue-900 uppercase tracking-tight">
+                                            {template.name}
+                                        </h2>
+                                    </div>
+                                )}
+                                {template.sections?.map((section, idx) => (
+                                    <section key={`${tIdx}-${idx}`} className="onboarding-section">
+                                        <h2 className="text-xl font-black text-gray-900 mb-4 flex items-center gap-3">
+                                            <span className="text-blue-600/20 text-4xl font-black tabular-nums transition-colors selection:bg-blue-200">
+                                                {(idx + 1).toString().padStart(2, '0')}
+                                            </span>
+                                            {section.title}
+                                        </h2>
+                                        <div
+                                            className="prose prose-blue max-w-none text-gray-600 leading-relaxed ql-editor p-0"
+                                            dangerouslySetInnerHTML={{ __html: section.content }}
+                                        />
+                                    </section>
+                                ))}
+                            </div>
                         ))}
                     </div>
                 </div>
