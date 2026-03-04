@@ -71,6 +71,10 @@ const applicationSchema = new mongoose.Schema({
         type: String,
         default: null
     },
+    signingIp: {
+        type: String,
+        default: null
+    },
     history: [{
         status: String,
         remark: String,

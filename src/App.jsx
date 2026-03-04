@@ -91,6 +91,7 @@ const StudentRequests = lazy(() => import("./pages/StudentPortal/StudentRequests
 const ChangePassword = lazy(() => import("./pages/StudentPortal/ChangePassword"));
 const PublicJobApply = lazy(() => import("./pages/HR/Recruitment/PublicJobApply"));
 const OnboardingAcceptance = lazy(() => import("./pages/Public/OnboardingAcceptance"));
+const AgreementVerification = lazy(() => import("./pages/Public/AgreementVerification"));
 
 import PageMeta from "./components/common/PageMeta";
 
@@ -207,6 +208,7 @@ function App() {
                 <Route path="/public/attendance/:shareToken" element={<PublicAttendance />} />
                 <Route path="/jobs/apply/:id" element={<Suspense fallback={<LoadingSpinner />}><PublicJobApply /></Suspense>} />
                 <Route path="/onboarding/:token" element={<Suspense fallback={<LoadingSpinner />}><OnboardingAcceptance /></Suspense>} />
+                <Route path="/agreement/verify/:id" element={<Suspense fallback={<LoadingSpinner />}><AgreementVerification /></Suspense>} />
 
                 {/* Student Portal Routes */}
                 <Route path="/student/signup" element={<Suspense fallback={<LoadingSpinner />}><StudentSignup /></Suspense>} />

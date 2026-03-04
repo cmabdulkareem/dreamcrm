@@ -3,8 +3,12 @@ import User from '../model/userModel.js';
 import Leave from '../model/leaveModel.js';
 import AgreementTemplate from '../model/agreementTemplateModel.js';
 import emailService from '../utils/emailService.js';
+import { generatePdfFromHtml } from "../utils/pdfGenerator.js";
+import QRCode from 'qrcode';
 import crypto from 'crypto';
 import { getFrontendUrl } from '../utils/urlHelper.js';
+import fs from 'fs';
+import path from 'path';
 
 export const hrController = {
     // Stats
@@ -110,24 +114,24 @@ export const hrController = {
                     .sort((a, b) => b.appliedDate - a.appliedDate)
                     .slice(0, 10)
                     .map(app => ({
-                        id: `app-${app._id}`,
+                        id: `app - ${app._id} `,
                         type: 'application',
                         title: 'New Application',
                         description: `${app.fullName} applied for ${app.jobId?.title || 'a position'}`,
                         time: app.appliedDate
                     })),
                 ...recentJoines.map(user => ({
-                    id: `user-${user._id}`,
+                    id: `user - ${user._id} `,
                     type: 'hire',
                     title: 'New Employee',
-                    description: `${user.fullName} joined as ${user.designation || 'Staff'}`,
+                    description: `${user.fullName} joined as ${user.designation || 'Staff'} `,
                     time: user.createdAt
                 })),
                 ...allStatusUpdates.map(update => ({
-                    id: `upd-${update.appId}-${update.historyIdx}`,
+                    id: `upd - ${update.appId} -${update.historyIdx} `,
                     type: 'status',
                     title: 'Status Updated',
-                    description: `${update.fullName}'s application moved to ${update.status}`,
+                    description: `${update.fullName} 's application moved to ${update.status}`,
                     time: update.time
                 }))
             ]
@@ -591,6 +595,7 @@ export const hrController = {
             application.agreementSigned = true;
             application.signatureName = signatureName;
             application.signedAt = new Date();
+            application.signingIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 
             // Add to history
             application.history.push({
@@ -602,6 +607,401 @@ export const hrController = {
             await job.save();
 
             res.json({ message: 'Agreement signed successfully! Welcome to the team.' });
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    },
+
+    getSignedAgreementPublic: async (req, res) => {
+        try {
+            const { token } = req.params;
+            const job = await Job.findOne({ "applications.onboardingToken": token });
+
+            if (!job) {
+                return res.status(404).json({ message: 'Link is invalid or has expired.' });
+            }
+
+            const application = job.applications.find(app => app.onboardingToken === token);
+
+            if (!application.agreementSigned) {
+                return res.status(400).json({ message: 'Agreement has not been signed yet.' });
+            }
+
+            res.json({
+                fullName: application.fullName,
+                jobTitle: job.title,
+                signedContent: application.signedContent,
+                signatureName: application.signatureName,
+                signedAt: application.signedAt,
+                appId: application._id,
+                onboardingToken: application.onboardingToken
+            });
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    },
+
+    downloadSignedAgreementPdf: async (req, res) => {
+        try {
+            const { token, appId } = req.query;
+            let application, job;
+
+            if (token) {
+                job = await Job.findOne({ "applications.onboardingToken": token });
+                if (job) {
+                    application = job.applications.find(app => app.onboardingToken === token);
+                }
+            } else if (appId) {
+                job = await Job.findOne({ "applications._id": appId });
+                if (job) {
+                    application = job.applications.id(appId);
+                }
+            }
+
+            if (!application || !application.agreementSigned) {
+                return res.status(404).json({ message: 'Agreement not found or not signed.' });
+            }
+
+            // Load logo
+            let logoBase64 = '';
+            try {
+                const logoPath = path.resolve('..', 'public', 'images', 'logo', 'logo.svg');
+                if (fs.existsSync(logoPath)) {
+                    logoBase64 = fs.readFileSync(logoPath).toString('base64');
+                }
+            } catch (err) {
+                console.error('Logo loading error:', err);
+            }
+
+            // Generate QR code for verification
+            const verifyUrl = `${getFrontendUrl(req)}/agreement/verify/${application._id || token}`;
+            const qrCodeDataUrl = await QRCode.toDataURL(verifyUrl, {
+                margin: 0,
+                scale: 8,
+                color: {
+                    dark: '#1e3a8a',
+                    light: '#ffffff'
+                }
+            });
+
+            const docId = (token || appId).toUpperCase();
+
+            // Header template for all pages
+            const headerTemplate = `
+                <div style="font-family: 'Inter', sans-serif; width: 100%; border-bottom: 0.5px solid #eee; margin: 0 15mm; padding: 5mm 0; display: flex; justify-content: space-between; align-items: center; font-size: 8px; color: #9ca3af; -webkit-print-color-adjust: exact;">
+                    <div style="text-transform: uppercase; letter-spacing: 1px;">CDC International • Agreement</div>
+                    <div style="font-weight: 700;">ID: ${docId}</div>
+                </div>
+            `;
+
+            // Footer template for all pages
+            const footerTemplate = `
+                <div style="font-family: 'Inter', sans-serif; width: 100%; border-top: 0.5px solid #eee; margin: 0 15mm; padding: 5mm 0; display: flex; justify-content: space-between; align-items: center; font-size: 8px; color: #9ca3af; -webkit-print-color-adjust: exact;">
+                    <div>CERTIFIED DIGITAL RECORD</div>
+                    <div>Page <span class="pageNumber"></span> of <span class="totalPages"></span></div>
+                </div>
+            `;
+
+            const htmlContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <style>
+                    @page {
+                        size: A4;
+                        margin: 25mm 15mm 25mm 15mm;
+                    }
+                    body {
+                        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                        margin: 0;
+                        padding: 0;
+                        background: #fff;
+                        color: #1a1a1b;
+                        line-height: 1.4; /* Tighter line height for better density */
+                        -webkit-print-color-adjust: exact;
+                    }
+                    .document-wrapper {
+                        width: 100%;
+                        position: relative;
+                    }
+                    /* Watermark that repeats on every page via fixed position */
+                    .watermark {
+                        position: fixed;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%) rotate(-35deg);
+                        font-size: 110px;
+                        font-weight: 900;
+                        color: rgba(0, 0, 0, 0.02); /* Slightly more visible but still subtle */
+                        white-space: nowrap;
+                        z-index: -1;
+                        pointer-events: none;
+                        text-transform: uppercase;
+                        letter-spacing: 12px;
+                    }
+                    header {
+                        text-align: center;
+                        margin-bottom: 30px;
+                        position: relative;
+                        z-index: 1;
+                    }
+                    .logo-container {
+                        margin-bottom: 15px;
+                    }
+                    .logo-container img {
+                        height: 80px;
+                        width: auto;
+                    }
+                    .doc-title {
+                        font-size: 24px;
+                        font-weight: 900;
+                        text-transform: uppercase;
+                        letter-spacing: -0.5px;
+                        margin: 0 0 8px 0;
+                        color: #111;
+                    }
+                    .meta-info {
+                        font-size: 12px;
+                        color: #4b5563;
+                        max-width: 90%;
+                        margin: 0 auto;
+                    }
+                    .meta-info strong {
+                        color: #111;
+                    }
+                    .divider {
+                        height: 0.5px;
+                        background: #e5e7eb;
+                        width: 100%;
+                        margin: 20px 0 30px 0;
+                    }
+                    .section {
+                        margin-bottom: 20px; /* Reduced for better density */
+                        page-break-inside: auto; /* Allow sections to break if needed */
+                    }
+                    .section-header {
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        margin-bottom: 10px;
+                        break-after: avoid; /* Don't leave header alone at bottom of page */
+                    }
+                    .section-num {
+                        font-size: 11px;
+                        font-weight: 800;
+                        color: #2563eb;
+                        background: #eff6ff;
+                        padding: 3px 6px;
+                        border-radius: 3px;
+                        flex-shrink: 0;
+                    }
+                    .section-title {
+                        font-size: 14px;
+                        font-weight: 800;
+                        text-transform: uppercase;
+                        color: #111;
+                        letter-spacing: 0.5px;
+                        margin: 0;
+                    }
+                    .section-body {
+                        font-size: 12.5px;
+                        color: #374151;
+                        text-align: left;
+                    }
+                    .section-body h3 {
+                        font-size: 13px;
+                        font-weight: 700;
+                        margin: 12px 0 6px 0;
+                        color: #111;
+                    }
+                    .section-body p {
+                        margin: 0 0 8px 0;
+                    }
+                    .section-body ul, .section-body ol {
+                        padding-left: 15px;
+                        margin: 6px 0;
+                    }
+                    .section-body li {
+                        margin-bottom: 3px;
+                    }
+                    .signature-area-wrapper {
+                        margin-top: 40px;
+                        page-break-inside: avoid; /* Keep signature block together */
+                    }
+                    .signature-section {
+                        padding-top: 25px;
+                        border-top: 1px solid #eee;
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 40px;
+                    }
+                    .sig-label {
+                        font-size: 8px;
+                        font-weight: 800;
+                        color: #9ca3af;
+                        text-transform: uppercase;
+                        letter-spacing: 1px;
+                        margin-bottom: 15px;
+                    }
+                    .sig-line {
+                        font-family: 'Georgia', serif;
+                        font-size: 20px;
+                        font-style: italic;
+                        color: #00085a;
+                        padding: 5px 0;
+                        border-bottom: 1px solid #111;
+                        margin-bottom: 8px;
+                        min-height: 35px;
+                    }
+                    .sig-details {
+                        font-size: 9px;
+                        color: #4b5563;
+                        line-height: 1.4;
+                    }
+                    .verification-badge {
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 4px;
+                        padding: 4px 8px;
+                        background: #f0fdf4;
+                        color: #166534;
+                        border: 1px solid #bbf7d0;
+                        border-radius: 4px;
+                        font-size: 8px;
+                        font-weight: 700;
+                        margin-top: 6px;
+                    }
+                    .doc-id-small {
+                        font-family: 'Courier New', Courier, monospace;
+                        font-size: 8px;
+                        color: #9ca3af;
+                        margin-top: 8px;
+                    }
+                    footer {
+                        margin-top: 40px;
+                        text-align: center;
+                        font-size: 8px;
+                        color: #9ca3af;
+                        text-transform: uppercase;
+                        letter-spacing: 1px;
+                        padding-top: 15px;
+                        border-top: 0.5px solid #f3f4f6;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="document-wrapper">
+                    <div class="watermark">CDC INTERNATIONAL</div>
+                    <header>
+                        <div class="logo-container">
+                            ${logoBase64 ? `<img src="data:image/svg+xml;base64,${logoBase64}" alt="Company Logo" />` : '<div class="badge">Official System Record</div>'}
+                        </div>
+                        <h1 class="doc-title">Employment Agreement</h1>
+                        <div class="meta-info">
+                            This agreement is concluded between <strong>CDC International</strong> and <strong>${application.fullName}</strong>.
+                        </div>
+                    </header>
+
+                    <div class="divider"></div>
+
+                    <div class="content">
+                        ${application.signedContent.map((section, idx) => `
+                            <div class="section">
+                                <div class="section-header">
+                                    <span class="section-num">${(idx + 1).toString().padStart(2, '0')}</span>
+                                    <h2 class="section-title">${section.title}</h2>
+                                </div>
+                                <div class="section-body">
+                                    ${section.content}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <div class="signature-area-wrapper">
+                        <div class="signature-section">
+                            <div class="sig-placeholder">
+                                <div class="sig-label">Candidate Signature</div>
+                                <div class="sig-line">${application.signatureName}</div>
+                                <div class="sig-details">
+                                    <strong>Date Signed:</strong> ${new Date(application.signedAt).toLocaleString()}<br/>
+                                    <strong>Legal Name:</strong> ${application.fullName}
+                                </div>
+                            </div>
+                            <div class="sig-placeholder" style="text-align: right;">
+                                <div class="sig-label">Digital Attestation</div>
+                                <div class="qr-container" style="margin-bottom: 8px;">
+                                    <img src="${qrCodeDataUrl}" style="width: 70px; height: 70px; border: 1px solid #e5e7eb; padding: 4px; border-radius: 4px;" />
+                                </div>
+                                <div class="verification-badge">
+                                    <svg width="8" height="8" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                                    Authenticity Verified
+                                </div>
+                                <div class="doc-id-small">
+                                    <strong>REF:</strong> ${docId}
+                                </div>
+                            </div>
+                        </div>
+                        <footer>
+                            &copy; ${new Date().getFullYear()} CDC International • Human Resources Division • Confidential Record
+                        </footer>
+                    </div>
+                </div>
+            </body>
+            </html>
+            `;
+
+            const pdfBuffer = await generatePdfFromHtml(htmlContent, {
+                headerTemplate,
+                footerTemplate,
+                marginTop: '25mm',
+                marginBottom: '25mm'
+            });
+
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `attachment; filename=Agreement_${application.fullName.replace(/\s+/g, '_')}.pdf`);
+            res.send(pdfBuffer);
+
+        } catch (error) {
+            console.error('PDF Download Error:', error);
+            res.status(500).json({ message: error.message });
+        }
+    },
+
+    verifyAgreementSignature: async (req, res) => {
+        try {
+            const { id } = req.params;
+            let application, job;
+
+            // Try finding by application ID or token
+            job = await Job.findOne({
+                $or: [
+                    { "applications._id": id },
+                    { "applications.onboardingToken": id }
+                ]
+            });
+
+            if (!job) {
+                return res.status(404).json({ message: 'Agreement record not found.' });
+            }
+
+            application = job.applications.id(id) || job.applications.find(app => app.onboardingToken === id);
+
+            if (!application || !application.agreementSigned) {
+                return res.status(404).json({ message: 'Agreement not found or not signed.' });
+            }
+
+            res.json({
+                valid: true,
+                issuer: "CDC International Human Resources",
+                issuedTo: application.fullName,
+                date: application.signedAt,
+                ipAddress: application.signingIp || "Not captured",
+                signatureName: application.signatureName,
+                documentId: (application._id || id).toString().toUpperCase(),
+                jobTitle: job.title
+            });
         } catch (error) {
             res.status(500).json({ message: error.message });
         }

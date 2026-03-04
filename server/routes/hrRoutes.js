@@ -38,5 +38,12 @@ router.post('/jobs/apply', hrController.applyForJob);
 // Public Onboarding
 router.get('/public/onboarding/:token', hrController.getOnboardingAgreement);
 router.post('/public/onboarding/:token/sign', hrController.signOnboardingAgreement);
+router.get('/public/agreement/download', hrController.downloadSignedAgreementPdf);
+
+// HR PDF Download (Protected)
+router.get('/agreement/download', hrController.downloadSignedAgreementPdf);
+
+// Verification
+router.get('/agreement/verify/:id', hrController.verifyAgreementSignature);
 
 export default router;

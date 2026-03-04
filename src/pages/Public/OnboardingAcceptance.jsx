@@ -18,6 +18,7 @@ const OnboardingAcceptance = () => {
     const [signatureName, setSignatureName] = useState('');
     const [currentStep, setCurrentStep] = useState(0);
     const [agreedSteps, setAgreedSteps] = useState([]);
+    const [generating, setGenerating] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -36,6 +37,31 @@ const OnboardingAcceptance = () => {
         };
         fetchData();
     }, [token]);
+
+    const handleDownload = async () => {
+        try {
+            setGenerating(true);
+            const response = await axios.get(`${API}/hr/public/agreement/download?token=${token}`, {
+                responseType: 'blob'
+            });
+
+            // Create a blob URL and trigger download
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `Agreement_${data.fullName.replace(/\s+/g, '_')}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+
+            toast.success('Agreement downloaded successfully!');
+        } catch (error) {
+            console.error('PDF Download Error:', error);
+            toast.error('Failed to download PDF.');
+        } finally {
+            setGenerating(false);
+        }
+    };
 
     const btnSubmit = async (e) => {
         e.preventDefault();
@@ -58,7 +84,20 @@ const OnboardingAcceptance = () => {
 
         try {
             setSubmitting(true);
-            await axios.post(`${API}/hr/public/onboarding/${token}/sign`, { signatureName });
+            // Sign agreement and get back the signed content for the preview
+            const response = await axios.post(`${API}/hr/public/onboarding/${token}/sign`, { signatureName });
+
+            setData(prev => ({
+                ...prev,
+                agreementSigned: true,
+                signedContent: response.data.signedContent || prev.templates?.map(t => ({
+                    title: t.name,
+                    content: t.sections.map(s => `<h3>${s.title}</h3>${s.content}`).join('')
+                })),
+                signatureName: signatureName,
+                signedAt: new Date().toISOString()
+            }));
+
             setSigned(true);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch (error) {
@@ -86,24 +125,46 @@ const OnboardingAcceptance = () => {
         );
     }
 
-    if (signed) {
+    if (signed || data.agreementSigned) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-                <PageMeta title="Agreement Signed - CDC Insights" />
-                <div className="bg-white p-10 rounded-3xl shadow-2xl max-w-lg w-full text-center border border-gray-100 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 right-0 h-2 bg-green-500"></div>
-                    <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                <PageMeta title="Agreement Signed - Welcome" />
+                <div className="bg-white p-10 rounded-3xl shadow-2xl max-w-lg w-full text-center border border-gray-100 relative overflow-hidden group">
+                    <div className="absolute top-0 left-0 right-0 h-2 bg-[#ffd215]"></div>
+
+                    {/* Logo Section */}
+                    <div className="mb-10 flex justify-center">
+                        <img src="/images/logo/logo.svg" alt="Company Logo" className="h-12 w-auto" />
+                    </div>
+
+                    <div className="w-20 h-20 bg-[#f0f2ff] text-[#00085a] rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-white shadow-lg">
                         <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
                         </svg>
                     </div>
-                    <h2 className="text-3xl font-black text-gray-900 mb-4 tracking-tight uppercase">Welcome Aboard!</h2>
+                    <h2 className="text-3xl font-black text-[#00085a] mb-4 tracking-tight uppercase">Welcome Aboard!</h2>
                     <p className="text-gray-600 mb-8 leading-relaxed">
                         Thank you, <strong>{data.fullName}</strong>. You have successfully signed your employment agreement for the <strong>{data.jobTitle}</strong> position.
-                        Our HR team has been notified, and they will contact you shortly with your joining details and system credentials.
+                        You can now download a copy of your signed agreement below.
                     </p>
-                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 text-sm text-gray-500">
-                        A copy of your signed agreement has been archived in our records.
+
+                    <button
+                        onClick={handleDownload}
+                        disabled={generating}
+                        className="w-full flex items-center justify-center gap-3 px-8 py-5 bg-[#00085a] text-white rounded-2xl font-black uppercase tracking-widest text-sm hover:bg-black transition-all shadow-xl shadow-[#00085a]/20 disabled:opacity-70 mb-6 group"
+                    >
+                        {generating ? (
+                            <LoadingSpinner className="!w-5 !h-5 !border-white" />
+                        ) : (
+                            <svg className="w-5 h-5 group-hover:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                        )}
+                        {generating ? 'Generating PDF...' : 'Download Signed Agreement'}
+                    </button>
+
+                    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 text-sm font-medium text-gray-500 leading-relaxed">
+                        You can close this window after downloading. Our HR team will contact you shortly with joining details.
                     </div>
                 </div>
             </div>
@@ -246,6 +307,18 @@ const OnboardingAcceptance = () => {
                     </p>
                 </div>
             </div>
+
+            <style dangerouslySetInnerHTML={{
+                __html: `
+                .pdf-title-fix { letter-spacing: 0.5px !important; word-spacing: 2px !important; }
+                .pdf-content-fix { text-align: left !important; letter-spacing: 0.1px !important; word-spacing: 1px !important; line-height: 1.6 !important; }
+                .pdf-content-fix * { letter-spacing: 0.1px !important; word-spacing: 1px !important; }
+                #pdf-render-container { background: white !important; }
+                @media print {
+                    .no-print { display: none !important; }
+                    body { background: white !important; }
+                }
+            `}} />
             <ToastContainer position="top-right" />
         </div>
     );

@@ -27,7 +27,7 @@ const sendPasswordResetEmail = async (user, resetUrl) => {
     console.log('Sending password reset email via Brevo to:', user.email);
 
     const sendSmtpEmail = new brevo.SendSmtpEmail();
-    sendSmtpEmail.sender = { email: process.env.EMAIL_FROM, name: 'CDC Insights' };
+    sendSmtpEmail.sender = { email: process.env.EMAIL_FROM, name: 'CDC International' };
     sendSmtpEmail.to = [{ email: user.email, name: user.fullName }];
     sendSmtpEmail.subject = 'Password Reset Request';
     sendSmtpEmail.htmlContent = `
@@ -79,12 +79,12 @@ const sendPasswordResetEmail = async (user, resetUrl) => {
 const sendWelcomeEmail = async (user) => {
   try {
     const sendSmtpEmail = new brevo.SendSmtpEmail();
-    sendSmtpEmail.sender = { email: process.env.EMAIL_FROM, name: 'CDC Insights' };
+    sendSmtpEmail.sender = { email: process.env.EMAIL_FROM, name: 'CDC International' };
     sendSmtpEmail.to = [{ email: user.email, name: user.fullName }];
     sendSmtpEmail.subject = 'Welcome to Our CRM System!';
     sendSmtpEmail.htmlContent = `
       <div style="font-family: Arial; max-width: 600px; margin: auto; background: #fff;">
-        <div style="background: #1e3a8a; padding: 25px; text-align: center; color: white;">
+        <div style="background: #00085a; padding: 25px; text-align: center; color: white;">
           <h2>Welcome to Our CRM</h2>
         </div>
 
@@ -124,7 +124,7 @@ const sendNewUserNotification = async (user, adminEmails) => {
     if (!adminEmails?.length) return;
 
     const sendSmtpEmail = new brevo.SendSmtpEmail();
-    sendSmtpEmail.sender = { email: process.env.EMAIL_FROM, name: 'CDC Insights' };
+    sendSmtpEmail.sender = { email: process.env.EMAIL_FROM, name: 'CDC International' };
     sendSmtpEmail.to = adminEmails.map(email => ({ email }));
     sendSmtpEmail.subject = 'New User Registration';
     sendSmtpEmail.htmlContent = `
@@ -210,9 +210,9 @@ const sendStudentCredentialsEmail = async (user, password) => {
 const sendInterviewInviteEmail = async (application, job, notes) => {
   try {
     const sendSmtpEmail = new brevo.SendSmtpEmail();
-    sendSmtpEmail.sender = { email: process.env.EMAIL_FROM, name: 'CDC Insights' };
+    sendSmtpEmail.sender = { email: process.env.EMAIL_FROM, name: 'CDC International' };
     sendSmtpEmail.to = [{ email: application.email, name: application.fullName }];
-    sendSmtpEmail.subject = `Interview Invitation: ${job.title} - CDC Insights`;
+    sendSmtpEmail.subject = `Interview Invitation: ${job.title} - CDC International`;
 
     const formattedDate = new Date(application.interviewDate).toLocaleDateString('en-US', {
       weekday: 'long',
@@ -223,17 +223,17 @@ const sendInterviewInviteEmail = async (application, job, notes) => {
 
     sendSmtpEmail.htmlContent = `
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
-        <div style="background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); padding: 40px 20px; text-align: center; color: white;">
+        <div style="background: #00085a; padding: 40px 20px; text-align: center; color: white; border-bottom: 4px solid #ffd215;">
           <h1 style="margin: 0; font-size: 24px; font-weight: 800; text-transform: uppercase; letter-spacing: -0.5px;">Interview Invitation</h1>
-          <p style="margin: 10px 0 0 0; opacity: 0.9; font-size: 16px;">We're excited to meet you!</span></p>
+          <p style="margin: 10px 0 0 0; opacity: 0.9; font-size: 16px;">We're excited to meet you!</p>
         </div>
 
         <div style="padding: 40px 30px;">
           <h3 style="color: #1e293b; margin-top: 0;">Hello ${application.fullName},</h3>
-          <p style="color: #475569; line-height: 1.6;">Thank you for your interest in the <strong>${job.title}</strong> position at <strong>CDC Insights</strong>. We have reviewed your application and would like to invite you for an interview.</p>
+          <p style="color: #475569; line-height: 1.6;">Thank you for your interest in the <strong>${job.title}</strong> position at <strong>CDC International</strong>. We have reviewed your application and would like to invite you for an interview.</p>
 
-          <div style="background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 12px; padding: 25px; margin: 30px 0;">
-            <h4 style="margin: 0 0 15px 0; color: #1e3a8a; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Interview Schedule</h4>
+          <div style="background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 12px; padding: 25px; margin: 30px 0; border-left: 4px solid #00085a;">
+            <h4 style="margin: 0 0 15px 0; color: #00085a; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Interview Schedule</h4>
             <table style="width: 100%; border-collapse: collapse;">
               <tr>
                 <td style="padding: 8px 0; color: #64748b; width: 100px;"><strong>Date:</strong></td>
@@ -255,12 +255,12 @@ const sendInterviewInviteEmail = async (application, job, notes) => {
           <p style="color: #475569; line-height: 1.6;">Please confirm your availability for this slot. If you need to reschedule, kindly let us know at your earliest convenience.</p>
           
           <div style="text-align: center; margin-top: 40px;">
-            <div style="display: inline-block; padding: 12px 30px; background: #1e3a8a; color: white; border-radius: 8px; font-weight: 700; text-decoration: none;">Please be on time</div>
+            <div style="display: inline-block; padding: 12px 30px; background: #00085a; color: white; border-radius: 8px; font-weight: 700; text-decoration: none;">Please be on time</div>
           </div>
         </div>
 
         <div style="background: #f1f5f9; padding: 25px; text-align: center; color: #64748b; font-size: 12px;">
-          <p style="margin: 0;">&copy; ${new Date().getFullYear()} CDC Insights. All rights reserved.</p>
+          <p style="margin: 0;">&copy; ${new Date().getFullYear()} CDC International. All rights reserved.</p>
           <p style="margin: 5px 0 0 0;">This is an automated notification from our Recruitment Portal.</p>
         </div>
       </div>
@@ -285,29 +285,29 @@ const sendOnboardingInviteEmail = async (application, token, baseUrl = null) => 
     const onboardingUrl = `${baseUrl || process.env.CLIENT_URL || 'http://localhost:5173'}/onboarding/${token}`;
 
     const sendSmtpEmail = new brevo.SendSmtpEmail();
-    sendSmtpEmail.sender = { email: process.env.EMAIL_FROM, name: 'CDC Insights' };
+    sendSmtpEmail.sender = { email: process.env.EMAIL_FROM, name: 'CDC International' };
     sendSmtpEmail.to = [{ email: application.email, name: application.fullName }];
-    sendSmtpEmail.subject = `Job Offer & Onboarding: CDC Insights`;
+    sendSmtpEmail.subject = `Job Offer & Onboarding: CDC International`;
 
     sendSmtpEmail.htmlContent = `
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
-        <div style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); padding: 40px 20px; text-align: center; color: white;">
+        <div style="background: #00085a; padding: 40px 20px; text-align: center; color: white; border-bottom: 4px solid #ffd215;">
           <h1 style="margin: 0; font-size: 24px; font-weight: 800; text-transform: uppercase; letter-spacing: -0.5px;">Congratulations!</h1>
-          <p style="margin: 10px 0 0 0; opacity: 0.9; font-size: 16px;">We're pleased to offer you a position at CDC Insights</p>
+          <p style="margin: 10px 0 0 0; opacity: 0.9; font-size: 16px;">We're pleased to offer you a position at CDC International</p>
         </div>
 
         <div style="padding: 40px 30px;">
           <h3 style="color: #1e293b; margin-top: 0;">Hello ${application.fullName},</h3>
           <p style="color: #475569; line-height: 1.6;">It is our pleasure to extend an offer of employment to you! We were very impressed with your background and are excited to have you join our team.</p>
 
-          <div style="background: #f0fdf4; border: 1px solid #dcfce7; border-radius: 12px; padding: 25px; margin: 30px 0;">
-            <h4 style="margin: 0 0 10px 0; color: #059669; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Next Steps</h4>
-            <p style="margin: 0; color: #065f46; font-size: 14px; line-height: 1.5;">To proceed with your onboarding, please review and digitally sign the employment agreement through our secure portal.</p>
+          <div style="background: #fffcf0; border: 1px solid #fff3c4; border-radius: 12px; padding: 25px; margin: 30px 0; border-left: 4px solid #00085a;">
+            <h4 style="margin: 0 0 10px 0; color: #00085a; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Next Steps</h4>
+            <p style="margin: 0; color: #1e293b; font-size: 14px; line-height: 1.5;">To proceed with your onboarding, please review and digitally sign the employment agreement through our secure portal.</p>
           </div>
 
           <div style="text-align: center; margin-top: 35px; margin-bottom: 35px;">
             <a href="${onboardingUrl}" 
-               style="display: inline-block; padding: 14px 35px; background: #059669; color: white; border-radius: 10px; font-weight: 700; text-decoration: none; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+               style="display: inline-block; padding: 14px 35px; background: #00085a; color: white; border-radius: 10px; font-weight: 700; text-decoration: none; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
               Review & Sign Agreement
             </a>
           </div>
@@ -316,7 +316,7 @@ const sendOnboardingInviteEmail = async (application, token, baseUrl = null) => 
         </div>
 
         <div style="background: #f1f5f9; padding: 25px; text-align: center; color: #64748b; font-size: 12px;">
-          <p style="margin: 0;">&copy; ${new Date().getFullYear()} CDC Insights. All rights reserved.</p>
+          <p style="margin: 0;">&copy; ${new Date().getFullYear()} CDC International. All rights reserved.</p>
           <p style="margin: 5px 0 0 0;">This is an automated notification from our HR Onboarding System.</p>
         </div>
       </div>
@@ -331,6 +331,55 @@ const sendOnboardingInviteEmail = async (application, token, baseUrl = null) => 
 };
 
 /* ============================================
+   7. AGREEMENT CONFIRMATION EMAIL
+ ============================================ */
+const sendAgreementConfirmationEmail = async (application, token, baseUrl = null) => {
+  try {
+    const downloadUrl = `${baseUrl || process.env.CLIENT_URL || 'http://localhost:5173'}/agreement/${token}/download`;
+
+    const sendSmtpEmail = new brevo.SendSmtpEmail();
+    sendSmtpEmail.sender = { email: process.env.EMAIL_FROM, name: 'CDC International' };
+    sendSmtpEmail.to = [{ email: application.email, name: application.fullName }];
+    sendSmtpEmail.subject = `Agreement Signed - Welcome Aboard!`;
+
+    sendSmtpEmail.htmlContent = `
+      <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden;">
+        <div style="background: #00085a; padding: 40px 20px; text-align: center; color: white; border-bottom: 4px solid #ffd215;">
+          <h1 style="margin: 0; font-size: 24px; font-weight: 800; text-transform: uppercase; letter-spacing: -0.5px;">Welcome to CDC International</h1>
+          <p style="margin: 10px 0 0 0; opacity: 0.9; font-size: 16px;">Your agreement has been successfully signed</p>
+        </div>
+
+        <div style="padding: 40px 30px;">
+          <h3 style="color: #1e293b; margin-top: 0;">Hello ${application.fullName},</h3>
+          <p style="color: #475569; line-height: 1.6;">Congratulations! Your signed employment agreement has been received and archived.</p>
+          
+          <p style="color: #475569; line-height: 1.6;">You can download a copy of your signed agreement for your records by clicking the button below:</p>
+
+          <div style="text-align: center; margin: 35px 0;">
+            <a href="${downloadUrl}" 
+               style="display: inline-block; padding: 14px 35px; background: #00085a; color: white; border-radius: 10px; font-weight: 700; text-decoration: none; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+              Download Signed Agreement
+            </a>
+          </div>
+
+          <p style="color: #475569; font-size: 14px; line-height: 1.6;">Our HR team will be in touch with you shortly regarding the next steps in your joining process.</p>
+        </div>
+
+        <div style="background: #f1f5f9; padding: 25px; text-align: center; color: #64748b; font-size: 12px;">
+          <p style="margin: 0;">&copy; ${new Date().getFullYear()} CDC International. All rights reserved.</p>
+        </div>
+      </div>
+    `;
+
+    await apiInstance.sendTransacEmail(sendSmtpEmail);
+    console.log(`✅ Agreement confirmation sent to ${application.email}`);
+
+  } catch (error) {
+    console.error('❌ Error sending agreement confirmation:', error.message);
+  }
+};
+
+/* ============================================
    EXPORTS
 ============================================ */
 export default {
@@ -339,5 +388,6 @@ export default {
   sendPasswordResetEmail,
   sendStudentCredentialsEmail,
   sendInterviewInviteEmail,
-  sendOnboardingInviteEmail
+  sendOnboardingInviteEmail,
+  sendAgreementConfirmationEmail
 };

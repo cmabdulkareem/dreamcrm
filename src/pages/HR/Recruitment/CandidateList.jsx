@@ -38,6 +38,8 @@ import {
     Briefcase,
     Printer,
     FileCheck,
+    Download,
+    ShieldCheck,
 } from 'lucide-react';
 
 const ItemTypes = {
@@ -277,90 +279,140 @@ const ApplicationDetailsModal = ({ app, isOpen, onClose }) => {
     );
 };
 const SignedAgreementModal = ({ app, isOpen, onClose }) => {
+    const [generating, setGenerating] = useState(false);
+
     if (!app || !app.agreementSigned) return null;
 
-    const handlePrint = () => {
-        window.print();
+    const handleDownload = async () => {
+        try {
+            setGenerating(true);
+            const response = await axios.get(`${API}/hr/agreement/download?appId=${app._id}`, {
+                responseType: 'blob'
+            });
+
+            // Create a blob URL and trigger download
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `Signed_Agreement_${app.fullName.replace(/\s+/g, '_')}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+
+            toast.success('Agreement downloaded successfully!');
+        } catch (error) {
+            console.error('PDF Download Error:', error);
+            toast.error('Failed to download PDF.');
+        } finally {
+            setGenerating(false);
+        }
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} className="max-w-4xl !p-0">
-            <div className="flex flex-col h-[90vh] bg-white dark:bg-gray-900 overflow-hidden rounded-3xl">
+        <Modal isOpen={isOpen} onClose={onClose} className="max-w-5xl !p-0">
+            <div className="flex flex-col h-[90vh] bg-gray-100 dark:bg-gray-950 overflow-hidden rounded-3xl">
                 {/* Header */}
-                <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-white/5 sticky top-0 z-10 no-print">
+                <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-white dark:bg-gray-900 sticky top-0 z-20 no-print">
                     <div className="flex items-center gap-4">
-                        <div className="size-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 border border-emerald-500/20 shadow-sm">
+                        <div className="size-11 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 border border-emerald-500/20">
                             <FileCheck className="size-6" />
                         </div>
                         <div>
-                            <h3 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">Signed Agreement</h3>
-                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{app.fullName} • Signed on {new Date(app.signedAt).toLocaleDateString()}</p>
+                            <h3 className="text-lg font-black text-gray-900 dark:text-white tracking-tight leading-tight">Agreement Viewer</h3>
+                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{app.fullName} • Signed {new Date(app.signedAt).toLocaleDateString()}</p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <Button onClick={handlePrint} variant="outline" className="!rounded-xl text-xs font-bold gap-2 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200 transition-all">
-                            <Printer className="size-4" />
-                            Print / PDF
-                        </Button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => window.print()}
+                            className="p-2.5 text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-gray-800 rounded-xl transition-all"
+                            title="Print Agreement"
+                        >
+                            <Printer className="size-5" />
+                        </button>
+                        <button
+                            onClick={handleDownload}
+                            disabled={generating}
+                            className={`flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-[11px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50`}
+                        >
+                            {generating ? '...' : <Download className="size-4" />}
+                            {generating ? 'Generating' : 'Download PDF'}
+                        </button>
+                        <div className="w-px h-8 bg-gray-100 dark:bg-gray-800 mx-2" />
                         <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
-                            <X className="size-6" />
+                            <Plus className="size-6 rotate-45" />
                         </button>
                     </div>
                 </div>
 
-                {/* Content */}
-                <div className="flex-1 overflow-y-auto p-10 sm:p-16 print:p-0">
-                    <div className="max-w-3xl mx-auto space-y-12 agreement-document">
-                        <header className="text-center border-b-2 border-gray-100 dark:border-gray-800 pb-12 mb-12">
-                            <div className="inline-block px-4 py-1.5 bg-blue-900 text-white text-[10px] font-black uppercase tracking-[0.3em] rounded-full mb-6">Official Document</div>
-                            <h1 className="text-4xl font-black text-gray-900 dark:text-white mb-4 tracking-tighter uppercase">Employment Agreement</h1>
-                            <div className="text-gray-500 font-medium text-sm">
-                                This agreement is entered into between <strong className="text-gray-900 dark:text-white">CDC International</strong> and <strong className="text-gray-900 dark:text-white">{app.fullName}</strong>.
+                {/* Content - Scrollable area */}
+                <div className="flex-1 overflow-y-auto p-8 sm:p-12 scrollbar-hide bg-gray-100/50 dark:bg-gray-950/50">
+                    {/* A4 Paper Simulation (Visual Reference Only) */}
+                    <div className="mx-auto flex justify-center">
+                        <div
+                            className="bg-white text-gray-900 shadow-2xl w-full max-w-[794px] min-h-[1123px] p-[60px] sm:p-[80px] relative overflow-hidden flex flex-col"
+                        >
+                            {/* Watermark */}
+                            <div className="absolute inset-0 flex items-center justify-center opacity-[0.02] pointer-events-none select-none rotate-[-45deg] z-0">
+                                <h2 className="text-[100px] font-bold tracking-tighter uppercase">CDC INTERNATIONAL</h2>
                             </div>
-                        </header>
 
-                        {app.signedContent?.map((section, idx) => (
-                            <section key={idx} className="space-y-4">
-                                <h2 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight flex items-center gap-3">
-                                    <span className="text-blue-600 font-black">{(idx + 1).toString().padStart(2, '0')}.</span>
-                                    {section.title}
-                                </h2>
-                                <div
-                                    className="text-gray-600 dark:text-gray-400 leading-relaxed text-[15px] prose dark:prose-invert max-w-none"
-                                    dangerouslySetInnerHTML={{ __html: section.content }}
-                                />
-                            </section>
-                        ))}
+                            <div className="relative z-10 space-y-10">
+                                <header className="text-center border-b-2 border-gray-100 pb-10 mb-10">
+                                    <div className="inline-block px-4 py-1.5 bg-blue-900 text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-full mb-6 italic">Official System Record</div>
+                                    <h1 className="text-3xl font-bold text-gray-900 mb-4 uppercase">Employment Agreement</h1>
+                                    <div className="text-gray-500 font-medium text-sm">
+                                        This agreement is digitally signed and concluded between <strong className="text-gray-900">CDC International</strong> and <strong className="text-gray-900">{app.fullName}</strong>.
+                                    </div>
+                                </header>
 
-                        <div className="mt-20 pt-12 border-t-2 border-gray-100 dark:border-gray-800 grid grid-cols-1 sm:grid-cols-2 gap-12">
-                            <div className="space-y-6">
-                                <div className="space-y-1">
-                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Candidate Signature</p>
-                                    <div className="h-16 flex items-end border-b border-gray-200 dark:border-gray-700 pb-2">
-                                        <span className="text-2xl font-medium italic text-blue-900 dark:text-blue-400 font-serif">{app.signatureName || app.fullName}</span>
+                                {app.signedContent?.map((section, idx) => (
+                                    <section key={idx} className="space-y-3">
+                                        <h2 className="text-base font-bold text-gray-900 uppercase flex items-center gap-3">
+                                            <span className="text-blue-600 font-bold">{(idx + 1).toString().padStart(2, '0')}.</span>
+                                            {section.title}
+                                        </h2>
+                                        <div
+                                            className="text-gray-600 leading-relaxed text-[15px] prose prose-sm max-w-none text-left ql-editor p-0"
+                                            dangerouslySetInnerHTML={{ __html: section.content }}
+                                        />
+                                    </section>
+                                ))}
+
+                                <div className="mt-20 pt-10 border-t-2 border-gray-100 grid grid-cols-2 gap-12">
+                                    <div className="space-y-6">
+                                        <div className="space-y-1">
+                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Candidate Signature</p>
+                                            <div className="h-14 flex items-end border-b border-gray-200 pb-2">
+                                                <span className="text-xl font-medium italic text-blue-900 font-serif">{app.signatureName}</span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Date of Signing</p>
+                                            <p className="text-xs font-bold text-gray-900">{new Date(app.signedAt).toLocaleString()}</p>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-6">
+                                        <div className="space-y-1">
+                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Digital Attestation</p>
+                                            <div className="h-14 flex items-center border-b border-gray-200 gap-3">
+                                                <div className="w-5 h-5 rounded-full border border-emerald-500 flex items-center justify-center text-emerald-600">
+                                                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                                                </div>
+                                                <span className="text-[9px] font-black text-gray-900">VERIFIED BY CDC AUTH</span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Document ID</p>
+                                            <p dangerouslySetInnerHTML={{ __html: app._id }} className="text-[8px] font-mono text-gray-900 break-all"></p>
+                                        </div>
                                     </div>
                                 </div>
-                                <div>
-                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Date of Signing</p>
-                                    <p className="text-sm font-bold text-gray-900 dark:text-white">{new Date(app.signedAt).toLocaleString()}</p>
-                                </div>
                             </div>
-                            <div className="space-y-6 opacity-30">
-                                <div className="space-y-1">
-                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Company Seal</p>
-                                    <div className="h-16 flex items-center border-b border-gray-200 dark:border-gray-700">
-                                        <div className="size-12 rounded-full border-2 border-dashed border-gray-400" />
-                                    </div>
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Verified By System</p>
-                                    <p className="text-sm font-bold text-gray-900 dark:text-white">CDC-Insights-AutoFlow</p>
-                                </div>
-                            </div>
-                        </div>
 
-                        <div className="text-center pt-10 no-print">
-                            <p className="text-[10px] text-gray-400 font-medium">Digital Document Hash: {app._id?.substring(0, 12).toUpperCase()}...{app.onboardingToken?.substring(0, 8).toUpperCase()}</p>
+                            <footer className="mt-auto pt-20 text-center opacity-30 pb-4">
+                                <p className="text-[8px] font-bold tracking-widest uppercase">&copy; {new Date().getFullYear()} CDC International • Human Resources Division • Electronic Record</p>
+                            </footer>
                         </div>
                     </div>
                 </div>
@@ -371,8 +423,9 @@ const SignedAgreementModal = ({ app, isOpen, onClose }) => {
                 @media print {
                     .no-print { display: none !important; }
                     body { background: white !important; }
-                    .agreement-document { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
+                    .modal-container { box-shadow: none !important; border: none !important; }
                 }
+                .ql-editor p { margin-bottom: 0px !important; }
             `}} />
         </Modal>
     );
