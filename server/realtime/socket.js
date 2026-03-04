@@ -106,19 +106,19 @@ export function emitNotification({ recipients, brandId, notification }) {
 		recipients.forEach(userId => {
 			const uid = normalizeId(userId);
 			if (uid) {
-				ioInstance.to(`user:${uid}`).emit('notification', notification)
+				ioInstance.to(`user:${uid}`).emit('notification', { ...notification, brandId })
 			}
 		})
 	}
 
 	// 2. Notify Admins/Owners (Global)
-	ioInstance.to('room:admin').emit('notification', notification)
+	ioInstance.to('room:admin').emit('notification', { ...notification, brandId })
 
 	// 3. Notify Brand Managers (Scoped)
 	if (brandId) {
 		const bId = normalizeId(brandId);
 		if (bId) {
-			ioInstance.to(`brand:${bId}`).emit('notification', notification)
+			ioInstance.to(`brand:${bId}`).emit('notification', { ...notification, brandId })
 		}
 	}
 }

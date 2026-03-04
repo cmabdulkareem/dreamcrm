@@ -109,6 +109,15 @@ export const NotificationProvider = ({ children }) => {
 
 
   const addNotification = (notification) => {
+    // Brand Filtering: Only add if notification is for current brand or user is in All Brands view
+    const currentBrandId = selectedBrand?._id || selectedBrand?.id;
+    const notificationBrandId = notification.brandId;
+
+    if (currentBrandId && notificationBrandId && currentBrandId !== notificationBrandId) {
+      // Notification is for a different brand, skip it
+      return;
+    }
+
     // If notification comes from backend, it might have an ID.
     // Use it to deduplicate.
     const newId = notification.id || Date.now() + Math.random();

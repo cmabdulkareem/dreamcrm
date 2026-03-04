@@ -12,7 +12,7 @@ export const logActivity = async (userId, action, module, options = {}) => {
     try {
         if (!userId) return;
 
-        const { entityId, description, metadata } = options;
+        const { entityId, description, metadata, brandId } = options;
 
         const log = new ActivityLog({
             userId,
@@ -20,6 +20,7 @@ export const logActivity = async (userId, action, module, options = {}) => {
             module,
             entityId,
             description,
+            brand: brandId,
             metadata
         });
 

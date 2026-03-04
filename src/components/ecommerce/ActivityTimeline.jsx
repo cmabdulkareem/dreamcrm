@@ -41,7 +41,7 @@ const ActivityTimeline = ({ className = "" }) => {
                     </div>
                     <div>
                         <h3 className="text-base font-bold text-gray-900 dark:text-white tracking-tight">Lead Activities</h3>
-                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Across the brand</p>
+                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Recent Activities</p>
                     </div>
                 </div>
             </div>

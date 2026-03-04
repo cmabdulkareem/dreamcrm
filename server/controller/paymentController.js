@@ -76,7 +76,8 @@ export const createPayment = async (req, res) => {
         // Log activity
         await logActivity(req.user.id, 'CREATE', 'Finance', {
             entityId: newPayment._id,
-            description: `Recorded payment of ₹${amount} for ${studentId ? 'student' : 'lead'}`
+            description: `Recorded payment of ₹${amount} for ${studentId ? 'student' : 'lead'}`,
+            brandId: targetBrandId
         });
 
         // Notification Logic

@@ -763,18 +763,41 @@ export default function CallList() {
                             </Button>
 
                             {showCalendar && (
-                                <div className="absolute right-0 top-full mt-2 z-[50] w-72 shadow-2xl animate-in fade-in slide-in-from-top-2">
-                                    <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-3">
-                                        <RangeDatePicker
-                                            value={dateRange}
-                                            onChange={(dates) => {
-                                                setDateRange(dates);
-                                                setPage(1);
-                                            }}
-                                            placeholder="Filter dates"
-                                        />
+                                <>
+                                    {/* Mobile Backdrop */}
+                                    <div
+                                        className="fixed inset-0 z-[45] bg-black/20 backdrop-blur-sm sm:hidden"
+                                        onClick={() => setShowCalendar(false)}
+                                    />
+                                    <div className="absolute right-0 top-full mt-2 z-[50] w-72 sm:w-80 shadow-2xl animate-in fade-in slide-in-from-top-2 max-sm:fixed max-sm:top-1/2 max-sm:left-1/2 max-sm:-translate-x-1/2 max-sm:-translate-y-1/2 max-sm:w-[calc(100%-32px)] max-sm:max-w-[320px]">
+                                        <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-3 shadow-2xl">
+                                            <div className="flex items-center justify-between mb-2 sm:hidden">
+                                                <span className="text-sm font-bold text-gray-700 dark:text-gray-300">Select Date Range</span>
+                                                <button onClick={() => setShowCalendar(false)} className="text-gray-400 hover:text-gray-600">
+                                                    <CloseIcon className="size-5" />
+                                                </button>
+                                            </div>
+                                            <RangeDatePicker
+                                                value={dateRange}
+                                                onChange={(dates) => {
+                                                    setDateRange(dates);
+                                                    setPage(1);
+                                                    // On mobile, close after selection if it's a full range or just keep it open for now
+                                                }}
+                                                placeholder="Filter dates"
+                                            />
+                                            <div className="mt-3 sm:hidden">
+                                                <Button
+                                                    size="sm"
+                                                    className="w-full"
+                                                    onClick={() => setShowCalendar(false)}
+                                                >
+                                                    Apply Filter
+                                                </Button>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
+                                </>
                             )}
                         </div>
 

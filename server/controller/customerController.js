@@ -165,7 +165,8 @@ export const createCustomer = async (req, res) => {
     // Log activity
     await logActivity(req.user.id, 'CREATE', 'Leads', {
       entityId: newCustomer._id,
-      description: `Created lead: ${newCustomer.fullName}`
+      description: `Created lead: ${newCustomer.fullName}`,
+      brandId: newCustomer.brand
     });
 
 
@@ -397,7 +398,8 @@ export const updateCustomer = async (req, res) => {
     // Log activity
     await logActivity(req.user.id, 'UPDATE', 'Leads', {
       entityId: customer._id,
-      description: `Updated lead: ${customer.fullName}`
+      description: `Updated lead: ${customer.fullName}`,
+      brandId: customer.brand
     });
 
     return res.status(200).json({
@@ -481,7 +483,8 @@ export const addRemark = async (req, res) => {
     // Log activity
     await logActivity(req.user.id, 'REMARK', 'Leads', {
       entityId: customer._id,
-      description: `Added remark to lead: ${customer.fullName}`
+      description: `Added remark to lead: ${customer.fullName}`,
+      brandId: customer.brand
     });
 
     return res.status(200).json({
@@ -760,10 +763,11 @@ export const getRecentActivityLogs = async (req, res) => {
     // Given the current architecture, 'Leads' module logs are likely brand-specific enough if we filter by module.
     // But to be sure, we should filter by users who have access to this brand.
 
-    // Better approach: fetch logs for module 'Leads' and limit to 20.
+    // Filter logs by the current brand
     const ActivityLogModel = mongoose.model('ActivityLog');
     const logs = await ActivityLogModel.find({
-      module: 'Leads'
+      module: 'Leads',
+      brand: brandId
     })
       .populate('userId', 'fullName avatar')
       .sort({ createdAt: -1 })

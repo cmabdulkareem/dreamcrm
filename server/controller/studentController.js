@@ -203,7 +203,8 @@ export const createStudent = async (req, res) => {
     // Log activity
     await logActivity(req.user.id, 'CREATE', 'Students', {
       entityId: newStudent._id,
-      description: `Created student: ${newStudent.fullName}`
+      description: `Created student: ${newStudent.fullName}`,
+      brandId: newStudent.brand
     });
 
     return res.status(201).json({
@@ -533,7 +534,8 @@ export const updateStudent = async (req, res) => {
     // Log activity
     await logActivity(req.user.id, 'UPDATE', 'Students', {
       entityId: student._id,
-      description: `Updated student: ${student.fullName}`
+      description: `Updated student: ${student.fullName}`,
+      brandId: student.brand
     });
 
     return res.status(200).json({

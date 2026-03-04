@@ -25,6 +25,12 @@ const activityLogSchema = new mongoose.Schema({
         type: String,
         required: false
     },
+    brand: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Brand',
+        required: false,
+        index: true
+    },
     metadata: {
         type: Object,
         required: false
