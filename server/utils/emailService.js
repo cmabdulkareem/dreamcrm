@@ -280,9 +280,9 @@ const sendInterviewInviteEmail = async (application, job, notes) => {
 /* ============================================
    6. ONBOARDING INVITATION EMAIL
 ============================================ */
-const sendOnboardingInviteEmail = async (application, token) => {
+const sendOnboardingInviteEmail = async (application, token, baseUrl = null) => {
   try {
-    const onboardingUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/onboarding/${token}`;
+    const onboardingUrl = `${baseUrl || process.env.CLIENT_URL || 'http://localhost:5173'}/onboarding/${token}`;
 
     const sendSmtpEmail = new brevo.SendSmtpEmail();
     sendSmtpEmail.sender = { email: process.env.EMAIL_FROM, name: 'CDC Insights' };

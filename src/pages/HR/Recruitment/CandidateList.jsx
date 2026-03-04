@@ -145,7 +145,7 @@ const DroppableStageColumn = ({ stage, apps, onDrop, onViewHistory, onSchedule, 
             isOver: !!monitor.isOver(),
             canDrop: !!monitor.canDrop(),
         }),
-    }), [stage.name]);
+    }), [stage.name, onDrop]);
 
     return (
         <div
@@ -1087,7 +1087,7 @@ const CandidateList = () => {
         });
     };
 
-    const handleDrop = async (applicantId, newStatus) => {
+    const handleDrop = React.useCallback(async (applicantId, newStatus) => {
         const applicant = applications.find(a => a._id === applicantId);
 
         // If moving to Interviewed stage, open the scheduling modal instead of direct drop
@@ -1131,7 +1131,7 @@ const CandidateList = () => {
             toast.error('Failed to move candidate');
             fetchData(); // Rollback
         }
-    };
+    }, [applications, fetchData]);
 
     const handleDeleteApplicant = async (applicantId) => {
         const applicant = applications.find(a => a._id === applicantId);
