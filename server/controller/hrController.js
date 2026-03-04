@@ -4,6 +4,7 @@ import Leave from '../model/leaveModel.js';
 import AgreementTemplate from '../model/agreementTemplateModel.js';
 import emailService from '../utils/emailService.js';
 import crypto from 'crypto';
+import { getFrontendUrl } from '../utils/urlHelper.js';
 
 export const hrController = {
     // Stats
@@ -416,7 +417,7 @@ export const hrController = {
                 await job.save();
 
                 if (application.email) {
-                    emailService.sendOnboardingInviteEmail(application, application.onboardingToken);
+                    emailService.sendOnboardingInviteEmail(application, application.onboardingToken, getFrontendUrl(req));
                 }
             }
 

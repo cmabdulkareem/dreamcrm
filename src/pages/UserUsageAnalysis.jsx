@@ -79,8 +79,8 @@ const UserUsageAnalysis = () => {
         return "text-red-500";
     };
 
-    const getRiskBadge = (risk) => {
-        switch (risk) {
+    const getTrendBadge = (trend) => {
+        switch (trend) {
             case 'High': return "bg-red-100 text-red-700 ring-1 ring-red-400/30";
             case 'Medium': return "bg-orange-100 text-orange-700 ring-1 ring-orange-400/30";
             default: return "bg-gray-100 text-gray-700 ring-1 ring-gray-400/30";
@@ -126,9 +126,9 @@ const UserUsageAnalysis = () => {
                                         <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${getStatusBadge(user.usageStatus)}`}>
                                             {user.usageStatus}
                                         </span>
-                                        {user.churnRisk !== 'Low' && (
-                                            <span className={`mt-2 px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${getRiskBadge(user.churnRisk)}`}>
-                                                Risk: {user.churnRisk}
+                                        {user.churnTrend !== 'Low' && (
+                                            <span className={`mt-2 px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${getTrendBadge(user.churnTrend)}`}>
+                                                Trend: {user.churnTrend}
                                             </span>
                                         )}
                                     </div>

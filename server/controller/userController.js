@@ -1307,12 +1307,12 @@ export const getUserUsageStats = async (req, res) => {
       if (effectiveDaysSinceAction > 14) usageStatus = 'Dormant';
       else if (effectiveDaysSinceAction > 7) usageStatus = 'Inactive';
 
-      // Churn Risk
-      let churnRisk = 'Low';
+      // Churn Trend
+      let churnTrend = 'Low';
       const actionsPrevPeriod = totalActions30d - totalActions7d;
       // If activity in last 7 days is significantly lower than average of previous 23 days
-      if (totalActions30d > 5 && totalActions7d < (actionsPrevPeriod / 3)) churnRisk = 'High';
-      else if (totalActions30d > 5 && totalActions7d < (actionsPrevPeriod / 2)) churnRisk = 'Medium';
+      if (totalActions30d > 5 && totalActions7d < (actionsPrevPeriod / 3)) churnTrend = 'High';
+      else if (totalActions30d > 5 && totalActions7d < (actionsPrevPeriod / 2)) churnTrend = 'Medium';
 
       return {
         id: user._id,
@@ -1326,7 +1326,7 @@ export const getUserUsageStats = async (req, res) => {
         daysSinceLastActivity,
         engagementScore,
         usageStatus,
-        churnRisk,
+        churnTrend,
         isOnline,
         totalActions30d,
         totalActions7d,
