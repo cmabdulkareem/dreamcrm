@@ -719,7 +719,7 @@ export const hrController = {
                         background: #fff;
                         color: #1a1a1b;
                         font-size: 11pt;
-                        line-height: 1.4;
+                        line-height: 1.5;
                         -webkit-print-color-adjust: exact;
                     }
                     .document-wrapper {
@@ -778,7 +778,8 @@ export const hrController = {
                         margin: 20px 0 30px 0;
                     }
                     .section {
-                        margin-bottom: 20px; /* Reduced for better density */
+                        margin-top: 20px;
+                        margin-bottom: 20px;
                         page-break-inside: auto; /* Allow sections to break if needed */
                     }
                     .section-header {
@@ -799,7 +800,7 @@ export const hrController = {
                     }
                     .section-title {
                         font-size: 14pt;
-                        font-weight: 800;
+                        font-weight: 700;
                         text-transform: uppercase;
                         color: #111;
                         letter-spacing: 0.5px;
@@ -809,7 +810,7 @@ export const hrController = {
                         font-size: 11pt;
                         color: #374151;
                         text-align: left;
-                        line-height: 1.4;
+                        line-height: 1.5;
                     }
                     .section-body h3 {
                         font-size: 13pt;
