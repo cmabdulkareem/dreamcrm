@@ -718,7 +718,8 @@ export const hrController = {
                         padding: 0;
                         background: #fff;
                         color: #1a1a1b;
-                        line-height: 1.4; /* Tighter line height for better density */
+                        font-size: 11pt;
+                        line-height: 1.4;
                         -webkit-print-color-adjust: exact;
                     }
                     .document-wrapper {
@@ -754,7 +755,7 @@ export const hrController = {
                         width: auto;
                     }
                     .doc-title {
-                        font-size: 24px;
+                        font-size: 18pt;
                         font-weight: 900;
                         text-transform: uppercase;
                         letter-spacing: -0.5px;
@@ -762,7 +763,7 @@ export const hrController = {
                         color: #111;
                     }
                     .meta-info {
-                        font-size: 12px;
+                        font-size: 11pt;
                         color: #4b5563;
                         max-width: 90%;
                         margin: 0 auto;
@@ -797,7 +798,7 @@ export const hrController = {
                         flex-shrink: 0;
                     }
                     .section-title {
-                        font-size: 14px;
+                        font-size: 14pt;
                         font-weight: 800;
                         text-transform: uppercase;
                         color: #111;
@@ -805,12 +806,13 @@ export const hrController = {
                         margin: 0;
                     }
                     .section-body {
-                        font-size: 12.5px;
+                        font-size: 11pt;
                         color: #374151;
                         text-align: left;
+                        line-height: 1.4;
                     }
                     .section-body h3 {
-                        font-size: 13px;
+                        font-size: 13pt;
                         font-weight: 700;
                         margin: 12px 0 6px 0;
                         color: #111;
