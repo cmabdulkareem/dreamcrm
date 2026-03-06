@@ -449,11 +449,11 @@ const AgreementBuilder = () => {
                                             </div>
                                             <div>
                                                 <Label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2 block">Content Body</Label>
-                                                <div className="rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden bg-gray-50/30 dark:bg-gray-800/30">
+                                                <div className="rounded-xl border border-gray-100 dark:border-gray-700 overflow-visible bg-gray-50/30 dark:bg-gray-800/30">
                                                     <TinyEditor
                                                         value={section.content}
                                                         onChange={(content) => handleSectionChange(index, 'content', content)}
-                                                        height={250}
+                                                        height={500}
                                                     />
                                                 </div>
                                             </div>

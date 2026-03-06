@@ -17,7 +17,7 @@ const TinyEditor = ({
     value,
     onChange,
     placeholder = "Start typing...",
-    height = 300,
+    height = 500,
     disabled = false
 }) => {
     const { theme } = useTheme();
@@ -113,72 +113,45 @@ const TinyEditor = ({
                         </button>
 
                         {dropdownOpen && (
-                            <>
-                                {/* Backdrop */}
-                                <div
-                                    style={{ position: 'fixed', inset: 0, zIndex: 9998 }}
-                                    onMouseDown={() => setDropdownOpen(false)}
-                                />
-                                {/* Dropdown panel */}
-                                <div
-                                    style={{
-                                        position: 'absolute',
-                                        top: 'calc(100% + 6px)',
-                                        right: 0,
-                                        minWidth: '210px',
-                                        background: theme === 'dark' ? '#111827' : '#ffffff',
-                                        border: `1px solid ${theme === 'dark' ? '#374151' : '#e5e7eb'}`,
-                                        borderRadius: '12px',
-                                        boxShadow: '0 10px 40px rgba(0,0,0,0.12)',
-                                        zIndex: 9999,
-                                        overflow: 'hidden',
-                                    }}
-                                >
-                                    <div
-                                        style={{
-                                            padding: '8px 12px',
-                                            borderBottom: `1px solid ${theme === 'dark' ? '#1f2937' : '#f3f4f6'}`,
-                                            background: theme === 'dark' ? '#0f172a' : '#f9fafb',
-                                        }}
-                                    >
-                                        <span style={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#9ca3af' }}>
-                                            Available Variables
-                                        </span>
-                                    </div>
+                            <div
+                                style={{
+                                    position: 'absolute',
+                                    top: 'calc(100% + 5px)',
+                                    right: 0,
+                                    width: '220px',
+                                    background: '#fff',
+                                    border: '1px solid #e2e8f0',
+                                    borderRadius: '12px',
+                                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                                    padding: '8px',
+                                    zIndex: 200,
+                                    maxHeight: '300px',
+                                    overflowY: 'auto'
+                                }}
+                            >
+                                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2 pb-2 border-b border-gray-50 mb-2">
+                                    Available Variables
+                                </div>
+                                <div className="space-y-1">
                                     {VARIABLES.map((v) => (
                                         <button
                                             key={v.value}
                                             type="button"
                                             onMouseDown={(e) => {
                                                 e.preventDefault();
+                                                e.stopPropagation();
                                                 insertVariable(v.value);
                                             }}
-                                            style={{
-                                                display: 'flex',
-                                                width: '100%',
-                                                alignItems: 'center',
-                                                justifyContent: 'space-between',
-                                                padding: '10px 14px',
-                                                background: 'transparent',
-                                                border: 'none',
-                                                borderBottom: `1px solid ${theme === 'dark' ? '#1f2937' : '#f9fafb'}`,
-                                                cursor: 'pointer',
-                                                textAlign: 'left',
-                                                gap: '12px',
-                                            }}
-                                            onMouseEnter={e => e.currentTarget.style.background = theme === 'dark' ? '#1e1b4b' : '#f5f3ff'}
-                                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                            className="w-full text-left px-3 py-2.5 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-brand-50 dark:hover:bg-brand-500/10 hover:text-brand-600 dark:hover:text-brand-400 rounded-lg transition-all flex items-center justify-between group border border-transparent hover:border-brand-100 dark:hover:border-brand-500/20"
                                         >
-                                            <span style={{ fontSize: '12px', fontWeight: 600, color: theme === 'dark' ? '#e5e7eb' : '#374151' }}>
-                                                {v.label}
-                                            </span>
-                                            <span style={{ fontSize: '10px', fontFamily: 'monospace', color: '#818cf8', whiteSpace: 'nowrap' }}>
+                                            <span>{v.label}</span>
+                                            <span className="text-[9px] font-mono text-gray-400 group-hover:text-brand-400 opacity-60 group-hover:opacity-100">
                                                 {v.value}
                                             </span>
                                         </button>
                                     ))}
                                 </div>
-                            </>
+                            </div>
                         )}
                     </div>
                 )}
@@ -222,7 +195,7 @@ const TinyEditor = ({
                 readOnly={disabled}
                 placeholder={placeholder}
             />
-        </div>
+        </div >
     );
 };
 
