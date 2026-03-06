@@ -7,7 +7,19 @@ import ProspectStudent from '../model/prospectStudentModel.js';
 // --- Folder Controllers ---
 export const getFolders = async (req, res) => {
     try {
-        const folders = await Folder.find().sort({ createdAt: -1 });
+        const brandId = req.headers['x-brand-id'];
+        const query = {};
+
+        // If brandId is provided, filter by it. 
+        // We also include folders with no brand (null) to support legacy data.
+        if (brandId) {
+            query.$or = [
+                { brand: brandId },
+                { brand: null }
+            ];
+        }
+
+        const folders = await Folder.find(query).sort({ createdAt: -1 });
         res.status(200).json({ success: true, folders });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -17,7 +29,12 @@ export const getFolders = async (req, res) => {
 export const createFolder = async (req, res) => {
     try {
         const { name } = req.body;
-        const folder = await Folder.create({ name, createdBy: req.user.id });
+        const brandId = req.headers['x-brand-id'];
+        const folder = await Folder.create({
+            name,
+            brand: brandId || null,
+            createdBy: req.user.id
+        });
         res.status(201).json({ success: true, folder });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });

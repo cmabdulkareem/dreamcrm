@@ -314,6 +314,36 @@ const OnboardingAcceptance = () => {
                 .pdf-content-fix { text-align: left !important; letter-spacing: 0.1px !important; word-spacing: 1px !important; line-height: 1.6 !important; }
                 .pdf-content-fix * { letter-spacing: 0.1px !important; word-spacing: 1px !important; }
                 #pdf-render-container { background: white !important; }
+
+                /* Fix text wrapping in agreement content */
+                .onboarding-section .ql-editor,
+                .onboarding-section [class*="prose"],
+                .onboarding-section div[dangerouslySetInnerHTML] {
+                    white-space: normal !important;
+                    word-break: break-word !important;
+                    overflow-wrap: break-word !important;
+                    word-wrap: break-word !important;
+                    max-width: 100% !important;
+                    overflow: hidden !important;
+                }
+                .onboarding-section p,
+                .onboarding-section span,
+                .onboarding-section li,
+                .onboarding-section h1,
+                .onboarding-section h2,
+                .onboarding-section h3,
+                .onboarding-section h4 {
+                    white-space: normal !important;
+                    word-break: break-word !important;
+                    overflow-wrap: break-word !important;
+                    max-width: 100% !important;
+                }
+                /* Ensure ql-editor resets don't interfere */
+                .ql-editor.p-0 {
+                    padding: 0 !important;
+                    white-space: normal !important;
+                }
+
                 @media print {
                     .no-print { display: none !important; }
                     body { background: white !important; }

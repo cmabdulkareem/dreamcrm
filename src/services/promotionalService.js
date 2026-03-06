@@ -2,11 +2,15 @@ import axios from 'axios';
 import API from '../config/api';
 
 export const promotionalService = {
-    getPromotionals: async (type = 'all') => {
+    getPromotionals: async (type = 'all', brandId = null) => {
         try {
+            const headers = {};
+            if (brandId) headers['x-brand-id'] = brandId;
+
             const response = await axios.get(`${API}/promotional`, {
                 params: { type },
                 withCredentials: true,
+                headers,
             });
             return response.data;
         } catch (error) {
@@ -28,10 +32,14 @@ export const promotionalService = {
         }
     },
 
-    deletePromotional: async (id) => {
+    deletePromotional: async (id, brandId = null) => {
         try {
+            const headers = {};
+            if (brandId) headers['x-brand-id'] = brandId;
+
             const response = await axios.delete(`${API}/promotional/${id}`, {
                 withCredentials: true,
+                headers,
             });
             return response.data;
         } catch (error) {

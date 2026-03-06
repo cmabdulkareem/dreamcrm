@@ -13,6 +13,7 @@ import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import axios from 'axios';
 import API from '../../../config/api';
+import InputField from '../../../components/form/input/InputField';
 
 import {
     FileText,
@@ -194,7 +195,7 @@ const DroppableStageColumn = ({ stage, apps, onDrop, onViewHistory, onSchedule, 
 };
 
 // --- APPLICATION DETAILS MODAL ---
-const ApplicationDetailsModal = ({ app, isOpen, onClose }) => {
+const ApplicationDetailsModal = ({ app, isOpen, onClose, onEdit }) => {
     if (!app) return null;
 
     return (
@@ -215,6 +216,21 @@ const ApplicationDetailsModal = ({ app, isOpen, onClose }) => {
                             </div>
                         </div>
                     </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => onEdit(app)}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 active:scale-95"
+                        >
+                            <UserCircle className="size-4" />
+                            Edit Details
+                        </button>
+                        <button
+                            onClick={onClose}
+                            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors bg-gray-50 dark:bg-gray-800 rounded-xl"
+                        >
+                            <X size={20} />
+                        </button>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
@@ -234,15 +250,49 @@ const ApplicationDetailsModal = ({ app, isOpen, onClose }) => {
                         </div>
 
                         <div>
-                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">Position</label>
-                            <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
-                                <Briefcase className="size-4 opacity-50" />
-                                <span className="text-sm font-bold">{app.jobId?.title || 'Position'}</span>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">Position & Education</label>
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+                                    <Briefcase className="size-4 opacity-50" />
+                                    <span className="text-sm font-bold">{app.jobId?.title || 'Position'}</span>
+                                </div>
+                                {app.qualification && (
+                                    <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+                                        <UserCircle className="size-4 opacity-50" />
+                                        <span className="text-sm">{app.qualification}</span>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
 
                     <div className="space-y-6">
+                        <div>
+                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">Experience & Skills</label>
+                            <div className="space-y-3">
+                                <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300">
+                                    <Clock className="size-4 opacity-50" />
+                                    <span className="text-sm font-medium">{app.experience || 'Not specified'}</span>
+                                </div>
+                                {app.otherSkills && (
+                                    <div className="flex items-start gap-3 text-gray-600 dark:text-gray-300">
+                                        <ShieldCheck className="size-4 opacity-50 mt-1" />
+                                        <div className="flex flex-wrap gap-2">
+                                            {Array.isArray(app.otherSkills) ? (
+                                                app.otherSkills.map((skill, idx) => (
+                                                    <span key={idx} className="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[10px] font-bold uppercase tracking-wider rounded-md border border-blue-100 dark:border-blue-800">
+                                                        {skill}
+                                                    </span>
+                                                ))
+                                            ) : (
+                                                <span className="text-sm">{app.otherSkills}</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
                         <div>
                             <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-2">Documents</label>
                             {app.resumeUrl ? (
@@ -266,11 +316,11 @@ const ApplicationDetailsModal = ({ app, isOpen, onClose }) => {
                     </div>
                 </div>
 
-                {app.coverLetter && (
+                {app.remarks && (
                     <div className="bg-gray-50 dark:bg-white/[0.02] border border-gray-100 dark:border-gray-800 rounded-3xl p-6">
-                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-3">Cover Letter / Notes</label>
+                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-3">Remarks</label>
                         <div className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-wrap italic">
-                            "{app.coverLetter}"
+                            "{app.remarks}"
                         </div>
                     </div>
                 )}
@@ -889,6 +939,13 @@ const SelectAgreementModal = ({ app, isOpen, onClose, onSuccess }) => {
     const [selectedTemplates, setSelectedTemplates] = useState([]);
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [offerDetails, setOfferDetails] = useState({
+        offerDesignation: app?.jobId?.title || '',
+        offerLocation: '',
+        offerJoiningDate: '',
+        offerSalary: '',
+        offerWorkingHours: ''
+    });
 
     useEffect(() => {
         if (isOpen && app) {
@@ -896,14 +953,11 @@ const SelectAgreementModal = ({ app, isOpen, onClose, onSuccess }) => {
                 setLoading(true);
                 try {
                     const response = await axios.get(`${API}/hr/agreements`, { withCredentials: true });
-                    console.log('Fetched agreement templates for selection:', response.data);
                     setTemplates(response.data);
-                    // Pre-select active template if exists
                     const active = response.data.find(t => t.isActive);
                     if (active) setSelectedTemplates([active._id]);
                     else if (response.data.length > 0) setSelectedTemplates([response.data[0]._id]);
                 } catch (error) {
-                    console.error('Error fetching templates:', error);
                     toast.error('Failed to load agreement templates');
                 } finally {
                     setLoading(false);
@@ -916,113 +970,182 @@ const SelectAgreementModal = ({ app, isOpen, onClose, onSuccess }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (selectedTemplates.length === 0) return toast.error('Please select at least one agreement template');
-
         setSubmitting(true);
         try {
-            await hrService.updateApplicationStatus(app._id, 'Hired', 'Offer Sent with Selected Agreements', false, selectedTemplates);
+            await hrService.updateApplicationStatus(
+                app._id,
+                'Hired',
+                'Offer Sent with Selected Agreements',
+                false,
+                selectedTemplates,
+                offerDetails.offerDesignation,
+                offerDetails.offerLocation,
+                offerDetails.offerJoiningDate,
+                offerDetails.offerSalary,
+                offerDetails.offerWorkingHours
+            );
             toast.success('Candidate moved to Offer stage and onboarding email sent.');
             onSuccess();
             onClose();
         } catch (error) {
-            console.error('Error sending offer:', error);
             toast.error(error.message || 'Failed to send offer');
         } finally {
             setSubmitting(false);
         }
     };
 
-    if (!app) return null;
+    if (!app || !isOpen) return null;
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} className="max-w-md">
-            <div className="p-6">
-                <h3 className="text-xl font-black text-gray-900 dark:text-white tracking-tight mb-6 flex items-center gap-2">
-                    <FileText className="size-5 text-emerald-600" />
-                    Select Onboarding Agreement
-                </h3>
-                <div className="bg-emerald-50/50 dark:bg-emerald-500/5 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 mb-6">
-                    <div className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Send Offer To</div>
-                    <div className="text-sm font-bold text-gray-900 dark:text-white">{app.fullName}</div>
-                    <div className="text-[11px] text-gray-500 font-medium">{app.jobId?.title || 'Position'}</div>
+        <div className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
+            <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200 h-fit max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+                {/* Header */}
+                <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-gray-800/50 shrink-0">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-emerald-100 dark:bg-emerald-500/10 rounded-xl">
+                            <FileText className="size-5 text-emerald-600 dark:text-emerald-400" />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-bold text-gray-900 dark:text-white">Select Onboarding Agreement</h3>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">Personalize offer for {app.fullName}</p>
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                        <X size={20} />
+                    </button>
                 </div>
 
-                {loading ? (
-                    <div className="py-10 flex justify-center"><LoadingSpinner /></div>
-                ) : templates.length === 0 ? (
-                    <div className="text-center py-8">
-                        <p className="text-sm text-gray-500 mb-4">No agreement templates found.</p>
-                        <Button onClick={onClose} variant="outline" className="w-full font-bold !rounded-2xl text-xs uppercase tracking-widest">Cancel</Button>
+                {/* Scrollable Body */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                    {/* Candidate Info */}
+                    <div className="bg-emerald-50/50 dark:bg-emerald-500/5 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 flex items-center justify-between">
+                        <div>
+                            <div className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-1">Target Candidate</div>
+                            <div className="text-sm font-bold text-gray-900 dark:text-white">{app.fullName}</div>
+                            <div className="text-[11px] text-gray-500 font-medium">{app.jobId?.title || 'Position'}</div>
+                        </div>
+                        <Badge variant="success" className="font-black uppercase tracking-widest text-[9px]">HIRING STAGE</Badge>
                     </div>
-                ) : (
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        <div className="space-y-3">
-                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Choose Template</label>
-                            <div className="space-y-2 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
-                                {templates.map((template) => (
-                                    <label
-                                        key={template._id}
-                                        className={`
-                                            relative flex items-center p-4 rounded-2xl border-2 cursor-pointer transition-all
-                                            ${selectedTemplates.includes(template._id)
+
+                    {loading ? (
+                        <div className="py-10 flex justify-center"><LoadingSpinner /></div>
+                    ) : templates.length === 0 ? (
+                        <div className="text-center py-8">
+                            <p className="text-sm text-gray-500">No agreement templates found.</p>
+                        </div>
+                    ) : (
+                        <form id="offer-agreement-form" onSubmit={handleSubmit} className="space-y-5">
+                            {/* Offer Details */}
+                            <div className="space-y-4">
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Offer Details</label>
+                                <InputField
+                                    label="Designation"
+                                    value={offerDetails.offerDesignation}
+                                    onChange={(e) => setOfferDetails({ ...offerDetails, offerDesignation: e.target.value })}
+                                    placeholder="e.g. Senior Software Engineer"
+                                />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <InputField
+                                        label="Location"
+                                        value={offerDetails.offerLocation}
+                                        onChange={(e) => setOfferDetails({ ...offerDetails, offerLocation: e.target.value })}
+                                        placeholder="e.g. Dubai"
+                                    />
+                                    <InputField
+                                        label="Joining Date"
+                                        type="date"
+                                        value={offerDetails.offerJoiningDate}
+                                        onChange={(e) => setOfferDetails({ ...offerDetails, offerJoiningDate: e.target.value })}
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <InputField
+                                        label="Salary"
+                                        value={offerDetails.offerSalary}
+                                        onChange={(e) => setOfferDetails({ ...offerDetails, offerSalary: e.target.value })}
+                                        placeholder="e.g. AED 15,000"
+                                    />
+                                    <InputField
+                                        label="Working Hours"
+                                        value={offerDetails.offerWorkingHours}
+                                        onChange={(e) => setOfferDetails({ ...offerDetails, offerWorkingHours: e.target.value })}
+                                        placeholder="e.g. 9 AM - 6 PM"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Template Picker */}
+                            <div className="space-y-3">
+                                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Choose Agreement Template(s)</label>
+                                <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
+                                    {templates.map((template) => (
+                                        <label
+                                            key={template._id}
+                                            className={`relative flex items-center p-4 rounded-2xl border-2 cursor-pointer transition-all ${selectedTemplates.includes(template._id)
                                                 ? 'border-emerald-500 bg-emerald-50/30 dark:bg-emerald-500/10'
                                                 : 'border-gray-100 dark:border-gray-800 hover:border-emerald-200'
-                                            }
-                                        `}
-                                    >
-                                        <input
-                                            type="checkbox"
-                                            name="template"
-                                            value={template._id}
-                                            checked={selectedTemplates.includes(template._id)}
-                                            onChange={() => {
-                                                setSelectedTemplates(prev =>
-                                                    prev.includes(template._id)
-                                                        ? prev.filter(id => id !== template._id)
-                                                        : [...prev, template._id]
-                                                );
-                                            }}
-                                            className="hidden"
-                                        />
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-sm font-bold text-gray-900 dark:text-white">{template.name}</span>
-                                                {template.isActive && (
-                                                    <span className="text-[8px] font-black uppercase tracking-tighter bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded-full">Active</span>
-                                                )}
+                                                }`}
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                value={template._id}
+                                                checked={selectedTemplates.includes(template._id)}
+                                                onChange={() => {
+                                                    setSelectedTemplates(prev =>
+                                                        prev.includes(template._id)
+                                                            ? prev.filter(id => id !== template._id)
+                                                            : [...prev, template._id]
+                                                    );
+                                                }}
+                                                className="hidden"
+                                            />
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm font-bold text-gray-900 dark:text-white">{template.name}</span>
+                                                    {template.isActive && (
+                                                        <span className="text-[8px] font-black uppercase tracking-tighter bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded-full">Active</span>
+                                                    )}
+                                                </div>
+                                                <div className="text-[10px] text-gray-400 mt-0.5">{template.sections?.length || 0} Sections</div>
                                             </div>
-                                            <div className="text-[10px] text-gray-400 mt-0.5">{template.sections?.length || 0} Sections</div>
-                                        </div>
-                                        {selectedTemplates.includes(template._id) && (
-                                            <div className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center text-white shadow-lg animate-in zoom-in-50 duration-200">
-                                                <CheckCircle2 className="size-3" />
-                                            </div>
-                                        )}
-                                    </label>
-                                ))}
+                                            {selectedTemplates.includes(template._id) && (
+                                                <div className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center text-white shadow-lg">
+                                                    <CheckCircle2 className="size-3" />
+                                                </div>
+                                            )}
+                                        </label>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
+                        </form>
+                    )}
+                </div>
 
-                        <div className="pt-2 flex gap-3">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={onClose}
-                                className="flex-1 font-bold !rounded-2xl text-xs uppercase tracking-widest h-12"
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                type="submit"
-                                loading={submitting}
-                                className="flex-1 bg-emerald-600 hover:bg-black font-bold !rounded-2xl text-xs uppercase tracking-widest text-white shadow-xl shadow-emerald-500/10 h-12"
-                            >
-                                Send Offer
-                            </Button>
-                        </div>
-                    </form>
-                )}
+                {/* Fixed Footer */}
+                <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 flex items-center gap-3 bg-gray-50/50 dark:bg-gray-800/50 shrink-0">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="flex-1 px-4 py-2.5 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-xs uppercase tracking-widest"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        form="offer-agreement-form"
+                        type="submit"
+                        disabled={submitting || loading || templates.length === 0}
+                        className="flex-1 px-4 py-2.5 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 disabled:opacity-50 text-xs uppercase tracking-widest"
+                    >
+                        {submitting ? (
+                            <>
+                                <LoadingSpinner size="sm" />
+                                Sending...
+                            </>
+                        ) : 'Send Offer & Agreement'}
+                    </button>
+                </div>
             </div>
-        </Modal>
+        </div>
     );
 };
 
@@ -1044,6 +1167,7 @@ const CandidateList = () => {
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
     const [selectedApplicant, setSelectedApplicant] = useState(null);
     const [activeJobForCandidate, setActiveJobForCandidate] = useState(null);
+    const [selectedCandidateForEdit, setSelectedCandidateForEdit] = useState(null);
 
     const fetchData = async () => {
         try {
@@ -1451,6 +1575,11 @@ const CandidateList = () => {
                     app={selectedApplicant}
                     isOpen={isDetailsModalOpen}
                     onClose={() => setIsDetailsModalOpen(false)}
+                    onEdit={(app) => {
+                        setIsDetailsModalOpen(false);
+                        setSelectedCandidateForEdit(app);
+                        setIsAddCandidateModalOpen(true);
+                    }}
                 />
 
                 <ScheduleInterviewModal
@@ -1472,9 +1601,11 @@ const CandidateList = () => {
                     onClose={() => {
                         setIsAddCandidateModalOpen(false);
                         setActiveJobForCandidate(null);
+                        setSelectedCandidateForEdit(null);
                     }}
-                    jobId={activeJobForCandidate?.id}
-                    jobTitle={activeJobForCandidate?.title}
+                    jobId={activeJobForCandidate?.id || selectedCandidateForEdit?.jobId?._id}
+                    jobTitle={activeJobForCandidate?.title || selectedCandidateForEdit?.jobId?.title}
+                    candidate={selectedCandidateForEdit}
                     onSuccess={fetchData}
                 />
             </div>

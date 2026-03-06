@@ -209,9 +209,30 @@ export const hrService = {
         }
     },
 
-    updateApplicationStatus: async (id, status, remark, clearInterview = false, templateIds = null) => {
+    updateApplication: async (id, data) => {
         try {
-            const response = await axios.patch(`${API}/hr/applications/${id}/status`, { status, remark, clearInterview, templateIds }, { withCredentials: true });
+            const response = await axios.put(`${API}/hr/applications/${id}`, data, { withCredentials: true });
+            toast.success('Candidate details updated successfully');
+            return response.data;
+        } catch (error) {
+            console.error("Failed to update application", error);
+            throw new Error(error.response?.data?.message || "Failed to update candidate details");
+        }
+    },
+
+    updateApplicationStatus: async (id, status, remark, clearInterview = false, templateIds = null, offerDesignation, offerLocation, offerJoiningDate, offerSalary, offerWorkingHours) => {
+        try {
+            const response = await axios.patch(`${API}/hr/applications/${id}/status`, {
+                status,
+                remark,
+                clearInterview,
+                templateIds,
+                offerDesignation,
+                offerLocation,
+                offerJoiningDate,
+                offerSalary,
+                offerWorkingHours
+            }, { withCredentials: true });
             return response.data;
         } catch (error) {
             console.error("Failed to update application status", error);
@@ -236,6 +257,16 @@ export const hrService = {
         } catch (error) {
             console.error("Failed to delete application", error);
             throw new Error(error.response?.data?.message || "Failed to delete application");
+        }
+    },
+
+    reorderAgreementTemplates: async (orders) => {
+        try {
+            const response = await axios.post(`${API}/hr/agreements/reorder`, { orders }, { withCredentials: true });
+            return response.data;
+        } catch (error) {
+            console.error("Failed to reorder agreement templates", error);
+            throw new Error(error.response?.data?.message || "Failed to reorder agreements");
         }
     }
 };

@@ -20,8 +20,12 @@ const PublicJobApply = () => {
         email: '',
         phone: '',
         resumeUrl: '',
-        coverLetter: ''
+        remarks: '',
+        qualification: '',
+        experience: '',
+        otherSkills: []
     });
+    const [skillInput, setSkillInput] = useState('');
 
     useEffect(() => {
         const fetchJob = async () => {
@@ -43,11 +47,60 @@ const PublicJobApply = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+    const addSkill = (skill) => {
+        const trimmedSkill = skill.trim();
+        if (trimmedSkill && !formData.otherSkills.includes(trimmedSkill)) {
+            setFormData(prev => ({
+                ...prev,
+                otherSkills: [...prev.otherSkills, trimmedSkill]
+            }));
+        }
+        setSkillInput('');
+    };
+
+    const removeSkill = (skillToRemove) => {
+        setFormData(prev => ({
+            ...prev,
+            otherSkills: prev.otherSkills.filter(skill => skill !== skillToRemove)
+        }));
+    };
+
+    const handleSkillKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (skillInput.trim()) addSkill(skillInput);
+        } else if (e.key === 'Backspace' && !skillInput && formData.otherSkills.length > 0) {
+            removeSkill(formData.otherSkills[formData.otherSkills.length - 1]);
+        }
+    };
+
+    const handleSkillChange = (e) => {
+        const val = e.target.value;
+        if (val.includes(',')) {
+            const parts = val.split(',');
+            const newSkill = parts[0].trim();
+            if (newSkill) addSkill(newSkill);
+            setSkillInput(parts[1] || '');
+        } else {
+            setSkillInput(val);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
             setSubmitting(true);
-            await hrService.submitApplication({ ...formData, jobId: id });
+
+            // If there's pending input, add it before submitting
+            const finalData = { ...formData };
+            if (skillInput.trim()) {
+                const trimmed = skillInput.trim().replace(/,$/, '');
+                if (trimmed && !finalData.otherSkills.includes(trimmed)) {
+                    finalData.otherSkills = [...finalData.otherSkills, trimmed];
+                }
+            }
+
+            await hrService.submitApplication({ ...finalData, jobId: id });
             setSubmitted(true);
             window.scrollTo(0, 0);
         } catch (error) {
@@ -206,6 +259,60 @@ const PublicJobApply = () => {
                         </div>
 
                         <div className="sm:col-span-2">
+                            <Label htmlFor="qualification">Qualification (Optional)</Label>
+                            <InputField
+                                name="qualification"
+                                id="qualification"
+                                value={formData.qualification}
+                                onChange={handleChange}
+                                placeholder="e.g. B.Tech in Computer Science"
+                            />
+                        </div>
+
+                        <div>
+                            <Label htmlFor="experience">Experience (Optional)</Label>
+                            <InputField
+                                name="experience"
+                                id="experience"
+                                value={formData.experience}
+                                onChange={handleChange}
+                                placeholder="e.g. 5+ Years"
+                            />
+                        </div>
+
+                        <div className="sm:col-span-2">
+                            <div className="flex justify-between items-center mb-1">
+                                <Label htmlFor="otherSkills">Key Skills (Optional)</Label>
+                                <span className="text-[10px] text-gray-500 italic">Press comma or Enter to add</span>
+                            </div>
+                            <div className="flex flex-wrap gap-2 p-3 bg-white border border-gray-300 rounded-xl focus-within:ring-2 focus-within:ring-blue-600/20 focus-within:border-blue-600 transition-all min-h-[50px] shadow-sm">
+                                {formData.otherSkills.map((skill, idx) => (
+                                    <span
+                                        key={idx}
+                                        className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 text-sm font-semibold rounded-lg border border-blue-100 animate-in fade-in zoom-in duration-200"
+                                    >
+                                        {skill}
+                                        <button
+                                            type="button"
+                                            onClick={() => removeSkill(skill)}
+                                            className="hover:text-blue-900 transition-colors"
+                                        >
+                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+                                        </button>
+                                    </span>
+                                ))}
+                                <input
+                                    type="text"
+                                    value={skillInput}
+                                    onChange={handleSkillChange}
+                                    onKeyDown={handleSkillKeyDown}
+                                    placeholder={formData.otherSkills.length === 0 ? "e.g. React, Node.js, Python" : ""}
+                                    className="flex-1 min-w-[200px] bg-transparent outline-none text-gray-900 py-1"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="sm:col-span-2">
                             <Label htmlFor="resumeUrl" required>Resume Link (Google Drive/Dropbox)</Label>
                             <InputField
                                 name="resumeUrl"
@@ -218,13 +325,13 @@ const PublicJobApply = () => {
                         </div>
 
                         <div className="sm:col-span-2">
-                            <Label htmlFor="coverLetter">Cover Letter (Optional)</Label>
+                            <Label htmlFor="remarks">Remarks (Optional)</Label>
                             <TextArea
-                                name="coverLetter"
-                                id="coverLetter"
-                                value={formData.coverLetter}
+                                name="remarks"
+                                id="remarks"
+                                value={formData.remarks}
                                 onChange={handleChange}
-                                placeholder="Tell us why you are a good fit for this role..."
+                                placeholder="Tell us why you are a good fit for this role or add any notes..."
                                 rows={5}
                             />
                         </div>

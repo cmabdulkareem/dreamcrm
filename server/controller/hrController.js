@@ -251,7 +251,7 @@ export const hrController = {
 
     applyForJob: async (req, res) => {
         try {
-            const { jobId, fullName, email, phone, resumeUrl, coverLetter } = req.body;
+            const { jobId, fullName, email, phone, resumeUrl, remarks, qualification, experience, otherSkills } = req.body;
 
             const job = await Job.findById(jobId);
             if (!job) {
@@ -263,7 +263,10 @@ export const hrController = {
                 email,
                 phone,
                 resumeUrl,
-                coverLetter,
+                remarks,
+                qualification,
+                experience,
+                otherSkills: typeof otherSkills === 'string' ? otherSkills.split(',').map(s => s.trim()).filter(s => s !== '') : otherSkills,
                 source: 'Online',
                 history: [{
                     status: 'Pending',
@@ -283,7 +286,7 @@ export const hrController = {
     addManualCandidate: async (req, res) => {
         try {
             const { id } = req.params; // jobId
-            const { fullName, email, phone, resumeUrl, coverLetter } = req.body;
+            const { fullName, email, phone, resumeUrl, remarks, qualification, experience, otherSkills } = req.body;
             const userId = req.user?.id;
 
             const job = await Job.findById(id);
@@ -296,7 +299,10 @@ export const hrController = {
                 email,
                 phone,
                 resumeUrl,
-                coverLetter,
+                remarks,
+                qualification,
+                experience,
+                otherSkills: typeof otherSkills === 'string' ? otherSkills.split(',').map(s => s.trim()).filter(s => s !== '') : otherSkills,
                 source: 'Manual',
                 history: [{
                     status: 'Pending',
@@ -373,10 +379,51 @@ export const hrController = {
         }
     },
 
+    updateApplication: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { fullName, email, phone, resumeUrl, remarks, qualification, experience, otherSkills } = req.body;
+
+            const job = await Job.findOne({ "applications._id": id });
+            if (!job) return res.status(404).json({ message: 'Application not found' });
+
+            const application = job.applications.id(id);
+
+            if (fullName) application.fullName = fullName;
+            if (email) application.email = email;
+            if (phone) application.phone = phone;
+            if (resumeUrl !== undefined) application.resumeUrl = resumeUrl;
+            if (remarks !== undefined) application.remarks = remarks;
+            if (qualification !== undefined) application.qualification = qualification;
+            if (experience !== undefined) application.experience = experience;
+            if (otherSkills !== undefined) {
+                application.otherSkills = typeof otherSkills === 'string'
+                    ? otherSkills.split(',').map(s => s.trim()).filter(s => s !== '')
+                    : otherSkills;
+            }
+
+            await job.save();
+            res.json(application);
+        } catch (error) {
+            console.error('Update Application Error:', error);
+            res.status(500).json({ message: error.message });
+        }
+    },
+
     updateApplicationStatus: async (req, res) => {
         try {
             const { id } = req.params;
-            const { status, remark, clearInterview, templateIds } = req.body;
+            const {
+                status,
+                remark,
+                clearInterview,
+                templateIds,
+                offerDesignation,
+                offerLocation,
+                offerJoiningDate,
+                offerSalary,
+                offerWorkingHours
+            } = req.body;
             const userId = req.user?.id;
 
             const job = await Job.findOne({ "applications._id": id });
@@ -391,6 +438,13 @@ export const hrController = {
                 application.interviewDate = null;
                 application.interviewTime = null;
             }
+
+            // Save offer details if provided
+            if (offerDesignation) application.offerDesignation = offerDesignation;
+            if (offerLocation) application.offerLocation = offerLocation;
+            if (offerJoiningDate) application.offerJoiningDate = offerJoiningDate;
+            if (offerSalary) application.offerSalary = offerSalary;
+            if (offerWorkingHours) application.offerWorkingHours = offerWorkingHours;
 
             application.history.push({
                 status,
@@ -476,7 +530,7 @@ export const hrController = {
     getAgreementTemplates: async (req, res) => {
         try {
             const templates = await AgreementTemplate.find()
-                .sort({ createdAt: -1 });
+                .sort({ order: 1, createdAt: -1 });
             res.json(templates);
         } catch (error) {
             console.error('Error fetching agreement templates:', error);
@@ -531,6 +585,25 @@ export const hrController = {
         }
     },
 
+    reorderAgreementTemplates: async (req, res) => {
+        try {
+            const { orders } = req.body; // Array of { id: string, order: number }
+
+            if (!orders || !Array.isArray(orders)) {
+                return res.status(400).json({ message: 'Orders array is required' });
+            }
+
+            const updatePromises = orders.map(item =>
+                AgreementTemplate.findByIdAndUpdate(item.id, { order: item.order })
+            );
+
+            await Promise.all(updatePromises);
+            res.json({ message: 'Agreements reordered successfully' });
+        } catch (error) {
+            res.status(500).json({ message: error.message });
+        }
+    },
+
     /* ============================================
        CANDIDATE ONBOARDING (PUBLIC)
     ============================================ */
@@ -553,7 +626,13 @@ export const hrController = {
             res.json({
                 fullName: application.fullName,
                 jobTitle: job.title,
-                templates: application.agreementTemplates
+                templates: application.agreementTemplates.map(tpl => ({
+                    ...tpl.toObject(),
+                    sections: tpl.sections.map(s => ({
+                        ...s.toObject(),
+                        content: substitutePlaceholders(s.content, application)
+                    }))
+                }))
             });
         } catch (error) {
             res.status(500).json({ message: error.message });
@@ -585,7 +664,7 @@ export const hrController = {
                     template.sections.forEach(s => {
                         allSections.push({
                             title: s.title,
-                            content: s.content
+                            content: substitutePlaceholders(s.content, application)
                         });
                     });
                 }
@@ -1009,4 +1088,27 @@ export const hrController = {
             res.status(500).json({ message: error.message });
         }
     }
+};
+
+const substitutePlaceholders = (content, application) => {
+    if (!content) return '';
+
+    const placeholders = {
+        '{{full_name}}': application.fullName || '',
+        '{{designation}}': application.offerDesignation || '',
+        '{{location}}': application.offerLocation || '',
+        '{{date_of_joining}}': application.offerJoiningDate ? new Date(application.offerJoiningDate).toLocaleDateString() : '',
+        '{{salary}}': application.offerSalary || '',
+        '{{working_hours}}': application.offerWorkingHours || ''
+    };
+
+    let substituted = content;
+    Object.keys(placeholders).forEach(key => {
+        const value = placeholders[key];
+        // Use a global regex for replacement
+        const regex = new RegExp(key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+        substituted = substituted.replace(regex, value);
+    });
+
+    return substituted;
 };

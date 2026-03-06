@@ -27,12 +27,19 @@ export default function Promotional() {
 
     useEffect(() => {
         fetchItems(activeTab);
-    }, [activeTab]);
+    }, [activeTab, selectedBrand]);
 
     const fetchItems = async (type) => {
+        if (!selectedBrand?._id && !selectedBrand?.id) {
+            setItems(prev => ({ ...prev, [type]: [] }));
+            setLoading(false);
+            return;
+        }
+
         setLoading(true);
         try {
-            const response = await promotionalService.getPromotionals(type);
+            const brandId = selectedBrand?._id || selectedBrand?.id;
+            const response = await promotionalService.getPromotionals(type, brandId);
             if (response.success) {
                 setItems(prev => ({ ...prev, [type]: response.data }));
             }
@@ -45,6 +52,10 @@ export default function Promotional() {
     };
 
     const handleUploadClick = () => {
+        if (!selectedBrand?._id && !selectedBrand?.id) {
+            toast.error('Please select a brand from the switcher first.');
+            return;
+        }
         setUploadTitle('');
         setShowUploadModal(true);
     };
@@ -98,7 +109,8 @@ export default function Promotional() {
         if (!window.confirm('Are you sure you want to delete this file?')) return;
 
         try {
-            const response = await promotionalService.deletePromotional(id);
+            const brandId = selectedBrand?._id || selectedBrand?.id;
+            const response = await promotionalService.deletePromotional(id, brandId);
             if (response.success) {
                 toast.success('File deleted successfully');
                 setItems(prev => ({

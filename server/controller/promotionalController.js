@@ -115,9 +115,12 @@ export const uploadPromotional = (req, res) => {
 export const getPromotionals = async (req, res) => {
     try {
         const { type } = req.query;
-        const brandId = req.user.brand;
+        const brandId = req.headers['x-brand-id'] || null;
 
-        let query = { brandId };
+        let query = {};
+        if (brandId) {
+            query.brandId = brandId;
+        }
         if (type && type !== 'all') {
             query.type = type;
         }
@@ -136,9 +139,12 @@ export const getPromotionals = async (req, res) => {
 export const deletePromotional = async (req, res) => {
     try {
         const { id } = req.params;
-        const brandId = req.user.brand;
+        const brandId = req.headers['x-brand-id'] || null;
 
-        const promotional = await Promotional.findOne({ _id: id, brandId });
+        const query = { _id: id };
+        if (brandId) query.brandId = brandId;
+
+        const promotional = await Promotional.findOne(query);
 
         if (!promotional) {
             return res.status(404).json({ success: false, message: 'Promotional material not found' });

@@ -2,6 +2,7 @@ import userModel from "../model/userModel.js";
 import brandModel from "../model/brandModel.js"; // Ensure Brand model is registered
 import mongoose from "mongoose";
 import ActivityLog from "../model/activityLogModel.js";
+import MarketingTask from "../model/marketingTaskModel.js";
 
 // Helper to get base URL with correct protocol (checking for proxy)
 const getBaseUrl = (req) => {
@@ -439,6 +440,14 @@ export const authCheck = async (req, res) => {
       path: '/'
     });
 
+    // Check if user is assigned to ANY marketing tasks (across all brands)
+    const hasMarketingTasks = await MarketingTask.exists({
+      $or: [
+        { createdBy: user._id },
+        { team: user._id }
+      ]
+    });
+
     return res.status(200).json({
       token,
       user: {
@@ -448,6 +457,7 @@ export const authCheck = async (req, res) => {
         phone: user.phone,
         roles: [...new Set((user.brands || []).flatMap(b => b.roles || []))],
         isAdmin: user.isAdmin,
+        hasMarketingTasks: !!hasMarketingTasks,
         avatar: user.avatar ? `${getBaseUrl(req)}${user.avatar}` : null,
         bloodGroup: user.bloodGroup,
         country: user.country,

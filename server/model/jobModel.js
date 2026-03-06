@@ -21,9 +21,21 @@ const applicationSchema = new mongoose.Schema({
         type: String,
         required: false
     },
-    coverLetter: {
+    remarks: {
         type: String,
         default: ''
+    },
+    qualification: {
+        type: String,
+        default: ''
+    },
+    experience: {
+        type: String,
+        default: ''
+    },
+    otherSkills: {
+        type: [String],
+        default: []
     },
     status: {
         type: String,
@@ -46,6 +58,26 @@ const applicationSchema = new mongoose.Schema({
     interviewTime: {
         type: String,
         default: null
+    },
+    offerDesignation: {
+        type: String,
+        default: ''
+    },
+    offerLocation: {
+        type: String,
+        default: ''
+    },
+    offerJoiningDate: {
+        type: Date,
+        default: null
+    },
+    offerSalary: {
+        type: String,
+        default: ''
+    },
+    offerWorkingHours: {
+        type: String,
+        default: ''
     },
     onboardingToken: {
         type: String,

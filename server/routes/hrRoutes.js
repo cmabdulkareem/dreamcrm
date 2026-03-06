@@ -21,12 +21,14 @@ router.put('/jobs/:id', verifyToken, hrController.updateJob);
 router.delete('/jobs/:id', verifyToken, hrController.deleteJob);
 router.patch('/applications/:id/status', verifyToken, hrController.updateApplicationStatus);
 router.patch('/applications/:id/schedule', verifyToken, hrController.scheduleInterview);
+router.put('/applications/:id', verifyToken, hrController.updateApplication);
 router.delete('/applications/:id', verifyToken, hrController.deleteApplication);
 router.post('/jobs/:id/candidates', verifyToken, hrController.addManualCandidate);
 
 // Agreement Template Management
 router.get('/agreements', verifyToken, hrController.getAgreementTemplates);
 router.post('/agreements', verifyToken, hrController.createAgreementTemplate);
+router.post('/agreements/reorder', verifyToken, hrController.reorderAgreementTemplates);
 router.put('/agreements/:id', verifyToken, hrController.updateAgreementTemplate);
 router.delete('/agreements/:id', verifyToken, hrController.deleteAgreementTemplate);
 

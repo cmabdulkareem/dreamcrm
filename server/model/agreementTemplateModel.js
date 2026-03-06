@@ -27,6 +27,10 @@ const agreementTemplateSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    order: {
+        type: Number,
+        default: 0
+    },
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'

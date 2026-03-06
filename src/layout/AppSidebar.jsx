@@ -105,6 +105,7 @@ const navItems = [
     subItems: [
       { name: "Databases", path: "/databases", pro: true },
       { name: "Promotional", path: "/marketing/promotional", pro: false },
+      { name: "Marketing Portal", path: "/marketing/portal", pro: false },
       { name: "404 Error", path: "/error-404", pro: false },
     ],
   },
@@ -239,14 +240,24 @@ const AppSidebar = () => {
         ];
 
         if (restrictedItemsForFaculty.includes(nav.name) && hasRole(user, "Instructor", brandId) && !hasManagerAccess) {
-          return null;
+          if (nav.name === "Marketing" && user?.hasMarketingTasks) {
+            // Allow assigned staff
+          } else {
+            return null;
+          }
         }
 
         // Restricted items for Counsellors (who are not managers)
         if (isCounsellor(user, brandId) && !isManager(user, brandId)) {
           // Counsellors need Lead Management, but not Finance or technical/admin items
           const hiddenForCounsellor = ["Finance", "Marketing", "UI Elements"];
-          if (hiddenForCounsellor.includes(nav.name)) return null;
+          if (hiddenForCounsellor.includes(nav.name)) {
+            if (nav.name === "Marketing" && user?.hasMarketingTasks) {
+              // Allow assigned staff
+            } else {
+              return null;
+            }
+          }
         }
 
         if (nav.name === "EMS") {
@@ -273,15 +284,23 @@ const AppSidebar = () => {
           !hasManagerAccess &&
           !hasRole(user, "Instructor", brandId)
         ) {
-          const allowedForIT = ["Lab Management", "Settings"];
+          const allowedForIT = ["Lab Management", "Settings", "Marketing"];
           if (!allowedForIT.includes(nav.name)) return null;
+
+          if (nav.name === "Marketing" && !user?.hasMarketingTasks) {
+            return null;
+          }
         }
 
         // Restricted items for Academic Coordinator
         if (hasRole(user, "Academic Coordinator", brandId) && !hasManagerAccess) {
           // AC ONLY needs Student Management, Settings, Lead Management and Leave Management (will filter subitems below)
-          const allowedForAC = ["Student Management", "Settings", "Leave Management", "Lead Management"];
+          const allowedForAC = ["Student Management", "Settings", "Leave Management", "Lead Management", "Marketing"];
           if (!allowedForAC.includes(nav.name)) return null;
+
+          if (nav.name === "Marketing" && !user?.hasMarketingTasks) {
+            return null;
+          }
         }
 
         // Restricted items for Accountants (who are not managers)
@@ -295,7 +314,13 @@ const AppSidebar = () => {
             "Course Curriculum",
             "UI Elements"
           ];
-          if (hiddenForAccountant.includes(nav.name)) return null;
+          if (hiddenForAccountant.includes(nav.name)) {
+            if (nav.name === "Marketing" && user?.hasMarketingTasks) {
+              // Allow assigned staff
+            } else {
+              return null;
+            }
+          }
         }
 
         // Special handling for Finance (hide for non-accountants/non-managers)
@@ -392,7 +417,7 @@ const AppSidebar = () => {
                     // Check if this specific sub-item is enabled
                     const isSubItemEnabled = subItem.name === "Announcements"
                       ? !selectedBrand
-                      : (selectedBrand || isGlobalItem(subItem.name));
+                      : (selectedBrand || isGlobalItem(subItem.name) || (subItem.name === "Marketing Portal" && user?.hasMarketingTasks));
                     const subItemDisabledClass = !isSubItemEnabled ? "opacity-40 cursor-not-allowed pointer-events-none" : "";
 
                     // RESTRICTION: Hide User Management, Brand Management, and Announcements for non-admin managers
@@ -419,7 +444,7 @@ const AppSidebar = () => {
 
                     // RESTRICTION: Academic Coordinator only sees Batch Management, Edit Profile, Cold Call list and personal Leave Management
                     if (hasRole(user, "Academic Coordinator", brandId) && !hasManagerAccess) {
-                      const allowedSubItemsAC = ["Batch Management", "Edit Profile", "Leave Management", "Cold Call list", "Birthday Calendar", "New Lead", "Manage Leads"];
+                      const allowedSubItemsAC = ["Batch Management", "Edit Profile", "Leave Management", "Cold Call list", "Birthday Calendar", "New Lead", "Manage Leads", "Marketing Portal"];
                       if (!allowedSubItemsAC.includes(subItem.name)) {
                         return null;
                       }
@@ -433,7 +458,7 @@ const AppSidebar = () => {
                     // RESTRICTION: Instructor should only see "Batch Management" under Student Management
                     if (hasRole(user, "Instructor", brandId) && !hasManagerAccess) {
                       const restrictedForFaculty = ["New Student (beta)", "Manage Students (beta)"];
-                      if (restrictedForFaculty.includes(subItem.name)) {
+                      if (restrictedForFaculty.includes(subItem.name) && subItem.name !== "Marketing Portal") {
                         return null;
                       }
                     }
@@ -451,7 +476,8 @@ const AppSidebar = () => {
                         "Leave Management",
                         "Create Event",
                         "Manage Events",
-                        "Edit Profile"
+                        "Edit Profile",
+                        "Marketing Portal"
                       ];
                       if (!allowedForCounsellor.includes(subItem.name)) {
                         return null;

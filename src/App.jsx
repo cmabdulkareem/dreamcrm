@@ -32,6 +32,8 @@ const Calendar = lazy(() => import("./pages/Calendar"));
 const EmailInbox = lazy(() => import("./pages/Email/EmailInbox"));
 const Databases = lazy(() => import("./pages/Marketing/Databases"));
 const Promotional = lazy(() => import("./pages/Marketing/Promotional"));
+const MarketingPortal = lazy(() => import("./pages/Marketing/MarketingPortal"));
+
 
 // HR Module
 const HRDashboard = lazy(() => import("./pages/HR/HRDashboard"));
@@ -122,6 +124,8 @@ function App() {
                   <Route path="/email" element={<Suspense fallback={<LoadingSpinner />}><EmailInbox /></Suspense>} />
                   <Route path="/databases" element={<ProtectedRoutes><Suspense fallback={<LoadingSpinner />}><Databases /></Suspense></ProtectedRoutes>} />
                   <Route path="/marketing/promotional" element={<ProtectedRoutes><Suspense fallback={<LoadingSpinner />}><Promotional /></Suspense></ProtectedRoutes>} />
+                  <Route path="/marketing/portal" element={<ProtectedRoutes><Suspense fallback={<LoadingSpinner />}><MarketingPortal /></Suspense></ProtectedRoutes>} />
+
 
                   {/* Settings */}
                   <Route path="/settings/campaigns" element={<ProtectedRoutes requireManager={true}><CampaignSettings /></ProtectedRoutes>} />

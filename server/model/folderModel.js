@@ -6,6 +6,12 @@ const folderSchema = new mongoose.Schema({
         required: true,
         trim: true
     },
+    brand: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Brand',
+        required: false,
+        default: null
+    },
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',

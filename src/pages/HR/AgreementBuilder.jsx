@@ -32,6 +32,95 @@ import {
     TableCell,
 } from "../../components/ui/table";
 import API from "../../config/api";
+import { DndProvider, useDrag, useDrop } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
+import { GripVertical } from 'lucide-react';
+import { hrService } from '../../services/hrService';
+
+const DRAG_TYPE = 'AGREEMENT_TEMPLATE';
+
+const DraggableRow = ({ template, index, moveRow, saveOrder, handleEdit, handleToggleActive, handleDelete }) => {
+    const [{ isDragging }, drag] = useDrag({
+        type: DRAG_TYPE,
+        item: { index },
+        end: () => {
+            saveOrder();
+        },
+        collect: (monitor) => ({
+            isDragging: monitor.isDragging(),
+        }),
+    });
+
+    const [, drop] = useDrop({
+        accept: DRAG_TYPE,
+        hover: (item, monitor) => {
+            if (!monitor.isOver({ shallow: true })) return;
+            const dragIndex = item.index;
+            const hoverIndex = index;
+            if (dragIndex === hoverIndex) return;
+            moveRow(dragIndex, hoverIndex);
+            item.index = hoverIndex;
+        },
+    });
+
+    return (
+        <TableRow
+            ref={(node) => drag(drop(node))}
+            className={`group hover:bg-slate-50/80 dark:hover:bg-white/5 odd:bg-transparent even:bg-gray-50/30 dark:even:bg-white/[0.01] transition-opacity ${isDragging ? 'opacity-30' : 'opacity-100'}`}
+        >
+            <TableCell className="py-4 px-6 pl-10 relative font-semibold text-gray-800 dark:text-white/90">
+                <div className="absolute left-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing text-gray-400 p-1 transition-opacity">
+                    <GripVertical size={16} />
+                </div>
+                <div className={`absolute left-0 top-0 bottom-0 w-[6px] ${template.isActive ? 'bg-brand-500' : 'bg-gray-200 dark:bg-gray-700'}`} />
+                {template.name}
+            </TableCell>
+            <TableCell className="py-4 px-6 border-l border-gray-100 dark:border-gray-800/50 text-theme-sm text-gray-500 dark:text-gray-400">
+                <div className="flex items-center gap-2">
+                    <Clock className="size-3.5" />
+                    {new Date(template.updatedAt).toLocaleDateString()}
+                </div>
+            </TableCell>
+            <TableCell className="py-4 px-6 border-l border-gray-100 dark:border-gray-800/50 text-theme-sm text-gray-500 dark:text-gray-400 font-medium">
+                {template.sections?.length || 0} Modules
+            </TableCell>
+            <TableCell className="py-4 px-6 border-l border-gray-100 dark:border-gray-800/50 text-center">
+                {template.isActive ? (
+                    <Badge color="success" size="sm" variant="light" className="font-bold">ACTIVE</Badge>
+                ) : (
+                    <Badge color="light" size="sm" variant="light" className="font-bold">DRAFT</Badge>
+                )}
+            </TableCell>
+            <TableCell className="py-4 px-6 border-l border-gray-100 dark:border-gray-800/50 text-center">
+                <div className="flex items-center justify-center gap-2">
+                    <button
+                        onClick={() => handleEdit(template)}
+                        className="p-2 text-gray-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 rounded-lg transition-all"
+                        title="Edit Template"
+                    >
+                        <Pencil className="size-4.5" />
+                    </button>
+                    <button
+                        onClick={() => handleToggleActive(template._id, template.isActive)}
+                        className={`p-2 rounded-lg transition-all ${template.isActive
+                            ? 'text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-500/10'
+                            : 'text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10'}`}
+                        title={template.isActive ? 'Deactivate' : 'Activate'}
+                    >
+                        {template.isActive ? <X className="size-4.5" /> : <FileCheck className="size-4.5" />}
+                    </button>
+                    <button
+                        onClick={() => handleDelete(template._id)}
+                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-all"
+                        title="Delete Template"
+                    >
+                        <Trash2 className="size-4.5" />
+                    </button>
+                </div>
+            </TableCell>
+        </TableRow>
+    );
+};
 
 const AgreementBuilder = () => {
     const { user } = useContext(AuthContext);
@@ -159,6 +248,30 @@ const AgreementBuilder = () => {
         setCurrentTemplateId(null);
     };
 
+    const moveRow = (dragIndex, hoverIndex) => {
+        const draggedTemplate = templates[dragIndex];
+        const newTemplates = [...templates];
+        newTemplates.splice(dragIndex, 1);
+        newTemplates.splice(hoverIndex, 0, draggedTemplate);
+
+        // Local state update only
+        setTemplates(newTemplates);
+    };
+
+    const saveOrder = async () => {
+        try {
+            const orders = templates.map((tpl, idx) => ({
+                id: tpl._id,
+                order: idx
+            }));
+            await hrService.reorderAgreementTemplates(orders);
+        } catch (error) {
+            console.error('Failed to save new order:', error);
+            toast.error('Failed to save agreement order');
+            fetchTemplates(); // Revert to server state on failure
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gray-50/50 dark:bg-white/[0.03] pb-20 text-gray-900 dark:text-white">
             <PageMeta title="Agreement Builder | CDC Insights" />
@@ -232,56 +345,17 @@ const AgreementBuilder = () => {
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                    templates.map((tpl) => (
-                                        <TableRow key={tpl._id} className="group hover:bg-slate-50/80 dark:hover:bg-white/5 odd:bg-transparent even:bg-gray-50/30 dark:even:bg-white/[0.01]">
-                                            <TableCell className="py-4 px-6 pl-10 relative font-semibold text-gray-800 dark:text-white/90">
-                                                <div className={`absolute left-0 top-0 bottom-0 w-[6px] ${tpl.isActive ? 'bg-brand-500' : 'bg-gray-200 dark:bg-gray-700'}`} />
-                                                {tpl.name}
-                                            </TableCell>
-                                            <TableCell className="py-4 px-6 border-l border-gray-100 dark:border-gray-800/50 text-theme-sm text-gray-500 dark:text-gray-400">
-                                                <div className="flex items-center gap-2">
-                                                    <Clock className="size-3.5" />
-                                                    {new Date(tpl.updatedAt).toLocaleDateString()}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="py-4 px-6 border-l border-gray-100 dark:border-gray-800/50 text-theme-sm text-gray-500 dark:text-gray-400 font-medium">
-                                                {tpl.sections?.length || 0} Modules
-                                            </TableCell>
-                                            <TableCell className="py-4 px-6 border-l border-gray-100 dark:border-gray-800/50 text-center">
-                                                {tpl.isActive ? (
-                                                    <Badge color="success" size="sm" variant="light" className="font-bold">ACTIVE</Badge>
-                                                ) : (
-                                                    <Badge color="light" size="sm" variant="light" className="font-bold">DRAFT</Badge>
-                                                )}
-                                            </TableCell>
-                                            <TableCell className="py-4 px-6 border-l border-gray-100 dark:border-gray-800/50 text-center">
-                                                <div className="flex items-center justify-center gap-2">
-                                                    <button
-                                                        onClick={() => handleEdit(tpl)}
-                                                        className="p-2 text-gray-400 hover:text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/10 rounded-lg transition-all"
-                                                        title="Edit Template"
-                                                    >
-                                                        <Pencil className="size-4.5" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleToggleActive(tpl._id, tpl.isActive)}
-                                                        className={`p-2 rounded-lg transition-all ${tpl.isActive
-                                                            ? 'text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-500/10'
-                                                            : 'text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10'}`}
-                                                        title={tpl.isActive ? 'Deactivate' : 'Activate'}
-                                                    >
-                                                        {tpl.isActive ? <X className="size-4.5" /> : <FileCheck className="size-4.5" />}
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDelete(tpl._id)}
-                                                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-all"
-                                                        title="Delete Template"
-                                                    >
-                                                        <Trash2 className="size-4.5" />
-                                                    </button>
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
+                                    templates.map((tpl, index) => (
+                                        <DraggableRow
+                                            key={tpl._id}
+                                            template={tpl}
+                                            index={index}
+                                            moveRow={moveRow}
+                                            saveOrder={saveOrder}
+                                            handleEdit={handleEdit}
+                                            handleToggleActive={handleToggleActive}
+                                            handleDelete={handleDelete}
+                                        />
                                     ))
                                 )}
                             </TableBody>
@@ -422,4 +496,10 @@ const AgreementBuilder = () => {
     );
 };
 
-export default AgreementBuilder;
+export default function AgreementBuilderWithDnd() {
+    return (
+        <DndProvider backend={HTML5Backend}>
+            <AgreementBuilder />
+        </DndProvider>
+    );
+}

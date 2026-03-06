@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import Papa from 'papaparse';
 import { toast } from 'react-toastify';
@@ -19,8 +19,10 @@ import {
     GridIcon
 } from "../../icons";
 import API from "../../config/api";
+import { AuthContext } from "../../context/AuthContext";
 
 const Databases = () => {
+    const { selectedBrand } = useContext(AuthContext);
     const [activeLevel, setActiveLevel] = useState('folders'); // folders, schools, streams, classes, students
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -46,9 +48,16 @@ const Databases = () => {
 
     useEffect(() => {
         fetchData();
-    }, [activeLevel, selectedFolder, selectedSchool, selectedStream, selectedClass]);
+    }, [activeLevel, selectedFolder, selectedSchool, selectedStream, selectedClass, selectedBrand]);
 
     const fetchData = async () => {
+        const brandId = selectedBrand?._id || selectedBrand?.id;
+        if (!brandId) {
+            setData([]);
+            setLoading(false);
+            return;
+        }
+
         setLoading(true);
         try {
             let url = `${API}/prospect-database/folders`;
@@ -62,7 +71,9 @@ const Databases = () => {
                 url = `${API}/prospect-database/classes/${selectedClass._id}/students`;
             }
 
-            const response = await axios.get(url);
+            const response = await axios.get(url, {
+                headers: { 'x-brand-id': brandId }
+            });
             if (response.data.success) {
                 setData(response.data.folders || response.data.schools || response.data.streams || response.data.classes || response.data.students);
             }
@@ -151,6 +162,12 @@ const Databases = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        const brandId = selectedBrand?._id || selectedBrand?.id;
+        if (!brandId) {
+            toast.error('Please select a brand first');
+            return;
+        }
+
         try {
             let url = `${API}/prospect-database/folders`;
             let method = 'post';
@@ -175,7 +192,9 @@ const Databases = () => {
                 url = `${API}/prospect-database/classes/${selectedClass._id}/students`;
             }
 
-            await axios[method](url, formData);
+            await axios[method](url, formData, {
+                headers: { 'x-brand-id': brandId }
+            });
             toast.success(`${getSingular(activeLevel)} saved successfully`);
             setShowModal(false);
             fetchData();
@@ -187,9 +206,13 @@ const Databases = () => {
 
     const handleDelete = async (id) => {
         if (!window.confirm('Are you sure you want to delete this? All children will also be deleted.')) return;
+        const brandId = selectedBrand?._id || selectedBrand?.id;
+
         try {
             let endpoint = activeLevel;
-            await axios.delete(`${API}/prospect-database/${endpoint}/${id}`);
+            await axios.delete(`${API}/prospect-database/${endpoint}/${id}`, {
+                headers: { 'x-brand-id': brandId }
+            });
             toast.success('Deleted successfully');
             fetchData();
         } catch (error) {
@@ -254,12 +277,16 @@ const Databases = () => {
     };
 
     const handleBulkSave = async () => {
+        const brandId = selectedBrand?._id || selectedBrand?.id;
         try {
             const studentsToSave = importingStudents.map(({ sn, tempId, remark, ...rest }) => ({
                 ...rest,
                 socialMedia: remark
             }));
-            await axios.post(`${API}/prospect-database/classes/${selectedClass._id}/students/bulk`, { students: studentsToSave });
+            await axios.post(`${API}/prospect-database/classes/${selectedClass._id}/students/bulk`,
+                { students: studentsToSave },
+                { headers: { 'x-brand-id': brandId } }
+            );
             toast.success('Students imported successfully');
             setShowImportTable(false);
             setImportingStudents([]);
@@ -290,8 +317,12 @@ const Databases = () => {
             return;
         }
 
+        const brandId = selectedBrand?._id || selectedBrand?.id;
         try {
-            await axios.put(`${API}/prospect-database/students/${item._id}`, { [updateField]: value });
+            await axios.put(`${API}/prospect-database/students/${item._id}`,
+                { [updateField]: value },
+                { headers: { 'x-brand-id': brandId } }
+            );
             toast.success('Updated successfully');
             setEditingCell(null);
             fetchData();
