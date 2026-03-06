@@ -266,6 +266,18 @@ const leadPotentialOptions = [
   { value: "notAProspect", label: "Not a Prospect", color: "text-gray-600 bg-gray-100" },
 ];
 
+const immediateFollowupOptions = [
+  { value: "5m", label: "5 Minutes" },
+  { value: "15m", label: "15 Minutes" },
+  { value: "30m", label: "30 Minutes" },
+  { value: "1h", label: "1 Hour" },
+  { value: "2h", label: "2 Hours" },
+  { value: "3h", label: "3 Hours" },
+  { value: "5h", label: "5 Hours" },
+  { value: "8h", label: "8 Hours" },
+  { value: "12h", label: "12 Hours" },
+];
+
 const callListStatusOptions = [
   { value: 'pending', label: 'Pending', color: '#A3A3A3' },
   { value: 'neutral', label: 'Neutral – Needs follow-up', color: '#737373' },
@@ -304,5 +316,6 @@ export {
   rolesOptions,
   leadStatusOptions,
   leadPotentialOptions,
+  immediateFollowupOptions,
   callListStatusOptions
 };

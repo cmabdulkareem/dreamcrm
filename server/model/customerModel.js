@@ -112,7 +112,13 @@ const customerSchema = new mongoose.Schema({
   leadPotential: {
     type: String,
     enum: ['strongProspect', 'potentialProspect', 'weakProspect', 'notAProspect'],
-    required: false // Explicitly set required to false
+    required: false
+  },
+  immediateFollowupInterval: {
+    type: String
+  },
+  immediateFollowupAt: {
+    type: Date
   },
   brand: {
     type: mongoose.Schema.Types.ObjectId,

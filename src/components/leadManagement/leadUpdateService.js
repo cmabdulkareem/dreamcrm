@@ -35,10 +35,24 @@ export const saveLeadChanges = async (
   setSelectedRow,
   setRemarks,
   addNotification,
-  areToastsEnabled
+  areToastsEnabled,
+  immediateFollowupInterval // Added
 ) => {
   try {
     let latestCustomerData = selectedRow;
+
+    // Calculate immediateFollowupAt if interval is provided
+    let immediateFollowupAt = null;
+    if (immediateFollowupInterval) {
+      const now = new Date();
+      if (immediateFollowupInterval.endsWith('m')) {
+        const mins = parseInt(immediateFollowupInterval);
+        immediateFollowupAt = new Date(now.getTime() + mins * 60000);
+      } else if (immediateFollowupInterval.endsWith('h')) {
+        const hours = parseInt(immediateFollowupInterval);
+        immediateFollowupAt = new Date(now.getTime() + hours * 3600000);
+      }
+    }
 
     // Check if there's a new remark to add OR if the lead status has changed
     const hasRemark = remarks.trim();
@@ -91,7 +105,9 @@ export const saveLeadChanges = async (
       followUpDate: leadStatus === "converted" ? null : followUpDate, // Clear followUpDate for converted leads
       leadStatus,
       leadPotential, // Include leadPotential in update
-      coursePreference: selectedValues
+      coursePreference: selectedValues,
+      immediateFollowupInterval,
+      immediateFollowupAt
     };
 
 

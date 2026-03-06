@@ -6,6 +6,7 @@ import {
   TableRow,
 } from "../ui/table";
 import Badge from "../ui/badge/Badge";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect, useCallback, useRef, useContext, useMemo } from "react";
 import { createPortal } from "react-dom";
 import axios from "axios";
@@ -43,7 +44,8 @@ import {
   contactPoints,
   campaigns,
   leadStatusOptions,
-  leadPotentialOptions
+  leadPotentialOptions,
+  immediateFollowupOptions
 } from "../../data/DataSets.jsx";
 
 // Import our new modules
@@ -169,6 +171,8 @@ const getDueDateBadgeText = (followUpDate) => {
 import API from "../../config/api";
 
 export default function RecentOrders() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { user, selectedBrand } = useContext(AuthContext);
   const { addEvent, events, updateEvent } = useCalendar();
   const { addNotification, areToastsEnabled } = useNotifications();
@@ -244,6 +248,7 @@ export default function RecentOrders() {
   const [selectedValues, setSelectedValues] = useState([]);
   const [leadStatus, setLeadStatus] = useState("");
   const [leadPotential, setLeadPotential] = useState(""); // Added lead potential state
+  const [immediateFollowup, setImmediateFollowup] = useState(""); // New field
   const [phoneExists, setPhoneExists] = useState(false);
   const [checkingPhone, setCheckingPhone] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
@@ -356,7 +361,7 @@ export default function RecentOrders() {
         sessionStorage.removeItem('openLeadId'); // Clear after opening
       }
     }
-  }, [data]);
+  }, [data, location]);
 
 
 
@@ -955,7 +960,8 @@ export default function RecentOrders() {
         setSelectedRow,
         setRemarks,
         addNotification,
-        areToastsEnabled
+        areToastsEnabled,
+        immediateFollowup // Added
       );
     } finally {
       setIsSubmitting(false);
@@ -2027,35 +2033,7 @@ export default function RecentOrders() {
                   </div>
                 </div>
                 <div className="flex flex-col md:flex-row gap-4 items-stretch">
-                  <div className="w-full md:w-1/4">
-                    <Label>Campaign</Label>
-                    <Select
-                      options={campaignOptions}
-                      value={campaign}
-                      placeholder="Campaigns"
-                      onChange={handleCampaignChange}
-                      disabled={!hasManagerRole}
-                    />
-
-                  </div>
-                  <div className="w-full md:w-1/4">
-                    <Label>Lead Status *</Label>
-                    <Select
-                      id="leadStatus"
-                      label="Lead Status"
-                      options={leadStatusOptions}
-                      value={leadStatus}
-                      onChange={(value) => {
-                        setLeadStatus(value);
-                        // Clear followUpDate when status changes to converted
-                        if (value === "converted" || value === "lost") {
-                          setFollowUpDate("");
-                        }
-                      }}
-                      required
-                    />
-                  </div>
-                  <div className="w-full md:w-1/4">
+                  <div className="w-full md:w-1/3">
                     <Label>Lead Potential *</Label>
                     <Select
                       options={leadPotentialOptions}
@@ -2065,16 +2043,54 @@ export default function RecentOrders() {
                     />
                   </div>
                   {leadStatus !== "converted" && leadStatus !== "lost" && (
-                    <div className="w-full md:w-1/4">
+                    <div className="w-full md:w-1/3">
                       <DatePicker
                         id="followupDate"
                         label="Next Follow Up Date *"
                         value={followUpDate}
-                        disablePastDates={true} // Hide past dates completely
+                        disablePastDates={true}
                         onChange={(date, str) => setFollowUpDate(str)}
                       />
                     </div>
                   )}
+                  <div className="w-full md:w-1/3">
+                    <Label>Immediate Followup</Label>
+                    <Select
+                      options={immediateFollowupOptions}
+                      value={immediateFollowup}
+                      placeholder="Select Interval"
+                      onChange={setImmediateFollowup}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col md:flex-row gap-4 items-stretch">
+                  <div className="w-full md:w-1/2">
+                    <Label>Campaign</Label>
+                    <Select
+                      options={campaignOptions}
+                      value={campaign}
+                      placeholder="Campaigns"
+                      onChange={handleCampaignChange}
+                      disabled={!hasManagerRole}
+                    />
+                  </div>
+                  <div className="w-full md:w-1/2">
+                    <Label>Lead Status *</Label>
+                    <Select
+                      id="leadStatus"
+                      label="Lead Status"
+                      options={leadStatusOptions}
+                      value={leadStatus}
+                      onChange={(value) => {
+                        setLeadStatus(value);
+                        if (value === "converted" || value === "lost") {
+                          setFollowUpDate("");
+                        }
+                      }}
+                      required
+                    />
+                  </div>
                 </div>
 
                 <div className="flex flex-col md:flex-row gap-4 items-stretch">

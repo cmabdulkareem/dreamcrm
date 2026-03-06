@@ -3,7 +3,7 @@ import customerModel from "../model/customerModel.js";
 import userModel from "../model/userModel.js";
 import mongoose from "mongoose";
 import { isAdmin, isManager, isCounsellor } from "../utils/roleHelpers.js";
-import { emitNotification as emitSocketNotification } from "../realtime/socket.js";
+import { emitNotification as emitSocketNotification, emitImmediateFollowup } from "../realtime/socket.js";
 import { logActivity } from "../utils/activityLogger.js";
 
 // Helper to normalize phone
@@ -79,7 +79,9 @@ export const createCustomer = async (req, res) => {
       handledBy,
       followUpDate,
       leadRemarks,
-      leadPotential // Added leadPotential field
+      leadPotential, // Added leadPotential field
+      immediateFollowupInterval,
+      immediateFollowupAt
     } = req.body;
     const { hasRole } = await import("../utils/roleHelpers.js");
 
@@ -152,6 +154,8 @@ export const createCustomer = async (req, res) => {
       followUpDate: followUpDate ? new Date(followUpDate) : null,
       remarks,
       leadPotential, // Added leadPotential field
+      immediateFollowupInterval,
+      immediateFollowupAt: immediateFollowupAt ? new Date(immediateFollowupAt) : null,
       // Automatically assign the lead to the user who created it
       assignedTo: req.user.id,
       assignedBy: req.user.id,
@@ -196,6 +200,15 @@ export const createCustomer = async (req, res) => {
       }
     } catch (notifError) {
       console.error('Error sending create notification:', notifError);
+    }
+
+    // Emit Immediate Followup via Socket if applicable
+    if (updatedCustomer && updatedCustomer.immediateFollowupAt) {
+      emitImmediateFollowup({
+        recipients: [updatedCustomer.assignedTo],
+        brandId: updatedCustomer.brand,
+        customer: updatedCustomer
+      });
     }
 
     return res.status(201).json({
@@ -342,7 +355,7 @@ export const updateCustomer = async (req, res) => {
         return; // Skip updating this field if empty
       }
 
-      if (key === 'dob' || key === 'followUpDate') {
+      if (['dob', 'followUpDate', 'immediateFollowupAt', 'convertedAt'].includes(key)) {
         customer[key] = updateData[key] ? new Date(updateData[key]) : null;
       } else if (key !== 'remarks' && key !== 'createdBy') { // Prevent overwriting createdBy
         customer[key] = updateData[key];
@@ -393,6 +406,15 @@ export const updateCustomer = async (req, res) => {
       }
     } catch (notifError) {
       console.error('Error sending update notification:', notifError);
+    }
+
+    // Emit Immediate Followup via Socket if applicable
+    if (updatedCustomer && updatedCustomer.immediateFollowupAt) {
+      emitImmediateFollowup({
+        recipients: [updatedCustomer.assignedTo],
+        brandId: updatedCustomer.brand,
+        customer: updatedCustomer
+      });
     }
 
     // Log activity
@@ -478,6 +500,15 @@ export const addRemark = async (req, res) => {
       }
     } catch (notifError) {
       console.error('Error sending remark notification:', notifError);
+    }
+
+    // Emit Immediate Followup via Socket if applicable
+    if (customer.immediateFollowupAt) {
+      emitImmediateFollowup({
+        recipients: [customer.assignedTo],
+        brandId: customer.brand,
+        customer: customer
+      });
     }
 
     // Log activity
@@ -792,6 +823,48 @@ export const getAllCustomersUnfiltered = async (req, res) => {
     return res.status(200).json({ customers });
   } catch (error) {
     console.error("Error fetching all customers:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Get leads with pending immediate followups
+export const getImmediateFollowups = async (req, res) => {
+  try {
+    const brandId = req.headers['x-brand-id'];
+    const now = new Date();
+
+    // We want leads where immediateFollowupAt is set and is in the future
+    // or very recently passed (within last 30 mins) to ensure they see it
+    const thirtyMinsAgo = new Date(now.getTime() - 30 * 60000);
+
+    let query = {
+      ...req.brandFilter,
+      immediateFollowupAt: { $exists: true, $ne: null, $gte: thirtyMinsAgo },
+      leadStatus: { $nin: ['converted', 'lost', 'notInterested'] } // Only active leads
+    };
+
+    // Granular role filtering
+    const hasAdminAccess = isAdmin(req.user, brandId);
+    const hasManagerAccess = isManager(req.user, brandId);
+    if (!hasAdminAccess && !hasManagerAccess) {
+      query.assignedTo = req.user.id;
+    }
+
+    const customers = await customerModel.find(query)
+      .select('fullName phone1 immediateFollowupAt assignedTo leadStatus')
+      .sort({ immediateFollowupAt: 1 });
+
+    return res.status(200).json({
+      customers,
+      debug: {
+        now: now.toISOString(),
+        thirtyMinsAgo: thirtyMinsAgo.toISOString(),
+        query,
+        brandId
+      }
+    });
+  } catch (error) {
+    console.error("Error fetching immediate followups:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };

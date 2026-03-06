@@ -9,6 +9,7 @@ import Footer from "../components/common/Footer";
 import InstallPWA from "../components/common/InstallPWA";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import ImmediateFollowupAlert from "../components/leadManagement/ImmediateFollowupAlert";
 
 const LayoutContent = () => {
   const { isExpanded, isHovered, isMobileOpen } = useSidebar();
@@ -34,6 +35,7 @@ const LayoutContent = () => {
         <Footer />
       </div>
       <InstallPWA />
+      <ImmediateFollowupAlert />
       <ToastContainer position="top-center" className="!z-[999999]" style={{ zIndex: 999999 }} />
     </div>
   );

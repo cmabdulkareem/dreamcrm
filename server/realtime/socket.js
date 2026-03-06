@@ -21,6 +21,7 @@ export default function setupSocket(server) {
 	})
 
 	ioInstance = io
+	console.log('✅ Socket.io initialized on /api/socket.io')
 
 	io.on('connection', (socket) => {
 		let currentUserId = null
@@ -140,6 +141,46 @@ export function emitLabUpdate({ labId, brandIds, type, data }) {
 
 	// 2. Also notify general admin room
 	ioInstance.to('room:admin').emit('lab:update', payload);
+}
+
+export function emitImmediateFollowup({ recipients, brandId, customer }) {
+	if (!ioInstance) {
+		console.warn('[Socket] emitImmediateFollowup called before ioInstance initialized');
+		return;
+	}
+
+	const bIdStr = normalizeId(brandId);
+
+	const payload = {
+		customer: {
+			_id: String(customer._id),
+			fullName: customer.fullName,
+			phone1: customer.phone1,
+			immediateFollowupAt: customer.immediateFollowupAt,
+			leadStatus: customer.leadStatus,
+			leadPotential: customer.leadPotential
+		},
+		brandId: bIdStr,
+		timestamp: new Date()
+	};
+
+	// 1. Notify specific users
+	if (recipients && Array.isArray(recipients)) {
+		recipients.forEach(userId => {
+			const uid = normalizeId(userId);
+			if (uid) {
+				ioInstance.to(`user:${uid}`).emit('immediate:followup', payload);
+			}
+		});
+	}
+
+	// 2. Notify Brand Managers/Admins
+	if (bIdStr) {
+		ioInstance.to(`brand:${bIdStr}`).emit('immediate:followup', payload);
+	}
+
+	// 3. Notify Global Admins
+	ioInstance.to('room:admin').emit('immediate:followup', payload);
 }
 
 export function getOnlineUsers() {

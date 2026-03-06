@@ -28,7 +28,8 @@ import {
   //   courseOptions,
   contactPoints,
   campaigns,
-  leadPotentialOptions // Added import
+  leadPotentialOptions,
+  immediateFollowupOptions
 } from "../../data/DataSets.jsx";
 import Button from "../../components/ui/button/Button.jsx";
 
@@ -59,7 +60,8 @@ export default function FormElements() {
   const [campaign, setCampaign] = useState("");
   const [leadRemarks, setLeadRemarks] = useState("");
   const [followUpDate, setFollowUpDate] = useState("");
-  const [leadPotential, setLeadPotential] = useState(""); // Added state for lead potential
+  const [leadPotential, setLeadPotential] = useState("");
+  const [immediateFollowup, setImmediateFollowup] = useState("");
   const [error, setError] = useState(false);
   const [phoneExists, setPhoneExists] = useState(false);
   const [checkingPhone, setCheckingPhone] = useState(false);
@@ -479,7 +481,8 @@ export default function FormElements() {
     setCampaign("");
     setLeadRemarks("");
     setFollowUpDate("");
-    setLeadPotential(""); // Reset lead potential
+    setLeadPotential("");
+    setImmediateFollowup("");
     setError(false);
     setValidationErrors({});
   };
@@ -516,9 +519,27 @@ export default function FormElements() {
       campaign,
       handledBy: user?.fullName || "Unknown",
       leadRemarks,
-      followUpDate,
-      leadPotential, // Added lead potential to form data
+      leadFollowUpDate: followUpDate,
+      leadPotential,
+      immediateFollowupInterval: immediateFollowup || null,
     };
+
+    // Calculate immediateFollowupAt if an interval is selected
+    if (immediateFollowup) {
+      const now = new Date();
+      const intervalMatch = immediateFollowup.match(/(\d+)([mh])/);
+      if (intervalMatch) {
+        const value = parseInt(intervalMatch[1]);
+        const unit = intervalMatch[2];
+        const deadline = new Date(now);
+        if (unit === 'm') {
+          deadline.setMinutes(now.getMinutes() + value);
+        } else if (unit === 'h') {
+          deadline.setHours(now.getHours() + value);
+        }
+        formData.immediateFollowupAt = deadline;
+      }
+    }
 
     try {
       const response = await axios.post(
@@ -804,33 +825,19 @@ export default function FormElements() {
                   </div>
                 </div>
                 <div className="flex flex-col md:flex-row gap-4">
-                  {/* Changed to 1/2 width each */}
                   <div className="w-full md:w-1/3">
                     <DatePicker
                       id="followupDate"
                       label="Next Follow Up Date"
                       required={true}
                       value={followUpDate}
-                      disablePastDates={true} // Hide past dates completely
+                      disablePastDates={true}
                       onChange={(date, str) => setFollowUpDate(str)}
                       error={!!validationErrors.followUpDate}
                       hint={validationErrors.followUpDate}
                     />
                   </div>
-                  <div className="w-full md:w-2/3">
-                    <Label htmlFor="leadRemarks" required={true}>Remarks</Label>
-                    <Input
-                      type="text"
-                      id="leadRemarks"
-                      value={leadRemarks}
-                      onChange={(e) => setLeadRemarks(e.target.value)}
-                      error={!!validationErrors.leadRemarks}
-                      hint={validationErrors.leadRemarks}
-                    />
-                  </div>
-                </div>
-                <div className="flex flex-col md:flex-row gap-4">
-                  <div className="w-full">
+                  <div className="w-full md:w-1/3">
                     <Label required={true}>Lead Potential</Label>
                     <Select
                       options={leadPotentialOptions}
@@ -841,6 +848,28 @@ export default function FormElements() {
                       hint={validationErrors.leadPotential}
                     />
                   </div>
+                  <div className="w-full md:w-1/3">
+                    <Label>Immediate Followup</Label>
+                    <Select
+                      options={immediateFollowupOptions}
+                      value={immediateFollowup}
+                      placeholder="Select Interval"
+                      onChange={setImmediateFollowup}
+                    />
+                  </div>
+                </div>
+
+                <div className="w-full">
+                  <Label htmlFor="leadRemarks" required={true}>Remarks</Label>
+                  <Input
+                    type="text"
+                    id="leadRemarks"
+                    value={leadRemarks}
+                    onChange={(e) => setLeadRemarks(e.target.value)}
+                    error={!!validationErrors.leadRemarks}
+                    hint={validationErrors.leadRemarks}
+                    placeholder="Enter lead remarks details here..."
+                  />
                 </div>
               </div>
             </ComponentCard>

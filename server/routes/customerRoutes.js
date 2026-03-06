@@ -15,7 +15,8 @@ import {
   getLeaderboard,
   importLeads,
   checkPhoneUniqueness,
-  getRecentActivityLogs
+  getRecentActivityLogs,
+  getImmediateFollowups
 } from '../controller/customerController.js';
 import verifyToken from "../middleware/verifyToken.js";
 import { applyBrandFilter } from "../middleware/brandMiddleware.js";
@@ -35,6 +36,7 @@ router.get('/all-leads-count', getAllLeadsCount);
 router.get('/brand-conversion-metrics', getBrandConversionMetrics);
 router.get('/leaderboard', getLeaderboard);
 router.get('/activity-logs', getRecentActivityLogs);
+router.get('/get-immediate-followups', getImmediateFollowups);
 router.get('/:id', getCustomerById);
 router.put('/update/:id', updateCustomer);
 router.post('/remark/:id', addRemark);
