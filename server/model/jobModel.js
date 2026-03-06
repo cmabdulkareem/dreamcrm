@@ -96,6 +96,7 @@ const applicationSchema = new mongoose.Schema({
         default: null
     },
     signedContent: [{
+        templateName: String,
         title: String,
         content: String
     }],

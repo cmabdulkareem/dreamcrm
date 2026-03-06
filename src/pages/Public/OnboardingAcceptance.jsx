@@ -320,11 +320,13 @@ const OnboardingAcceptance = () => {
                 .onboarding-section [class*="prose"],
                 .onboarding-section div[dangerouslySetInnerHTML] {
                     white-space: normal !important;
-                    word-break: break-word !important;
+                    word-break: normal !important;
                     overflow-wrap: break-word !important;
                     word-wrap: break-word !important;
+                    hyphens: none !important;
+                    -webkit-hyphens: none !important;
                     max-width: 100% !important;
-                    overflow: hidden !important;
+                    overflow: visible !important;
                 }
                 .onboarding-section p,
                 .onboarding-section span,
@@ -334,14 +336,17 @@ const OnboardingAcceptance = () => {
                 .onboarding-section h3,
                 .onboarding-section h4 {
                     white-space: normal !important;
-                    word-break: break-word !important;
+                    word-break: normal !important;
                     overflow-wrap: break-word !important;
+                    hyphens: none !important;
+                    -webkit-hyphens: none !important;
                     max-width: 100% !important;
                 }
                 /* Ensure ql-editor resets don't interfere */
                 .ql-editor.p-0 {
                     padding: 0 !important;
                     white-space: normal !important;
+                    word-break: normal !important;
                 }
 
                 @media print {

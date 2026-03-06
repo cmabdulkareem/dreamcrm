@@ -663,6 +663,7 @@ export const hrController = {
                 if (template && template.sections) {
                     template.sections.forEach(s => {
                         allSections.push({
+                            templateName: template.name,
                             title: s.title,
                             content: substitutePlaceholders(s.content, application)
                         });
@@ -781,6 +782,38 @@ export const hrController = {
                 </div>
             `;
 
+            let contentHtml = '';
+            let lastTemplateName = '';
+            application.signedContent.forEach((section, idx) => {
+                const isNewAgreement = section.templateName && section.templateName !== lastTemplateName;
+
+                if (isNewAgreement && idx > 0) {
+                    // Force page break before new agreement starts
+                    contentHtml += `<div style="page-break-before: always;"></div>`;
+                }
+
+                if (isNewAgreement) {
+                    contentHtml += `
+                        <div style="border-bottom: 2px solid #1e3a8b; margin-bottom: 25px; padding-bottom: 5px;">
+                            <h2 style="font-size: 16pt; font-weight: 900; color: #1e3a8b; text-transform: uppercase; margin: 0;">${section.templateName}</h2>
+                        </div>
+                    `;
+                    lastTemplateName = section.templateName;
+                }
+
+                contentHtml += `
+                <div class="section" style="${isNewAgreement ? 'margin-top: 0;' : ''}">
+                                <div class="section-header">
+                                    <span class="section-num">${(idx + 1).toString().padStart(2, '0')}</span>
+                                    <h2 class="section-title">${section.title}</h2>
+                                </div>
+                                <div class="section-body">
+                                    ${section.content}
+                                </div>
+                            </div>
+                        `;
+            });
+
             const htmlContent = `
             <!DOCTYPE html>
             <html>
@@ -798,8 +831,12 @@ export const hrController = {
                         background: #fff;
                         color: #1a1a1b;
                         font-size: 11pt;
-                        line-height: 1.5;
+                        line-height: 1.6;
                         -webkit-print-color-adjust: exact;
+                        word-break: normal;
+                        overflow-wrap: break-word;
+                        hyphens: none;
+                        -webkit-hyphens: none;
                     }
                     .document-wrapper {
                         width: 100%;
@@ -889,7 +926,11 @@ export const hrController = {
                         font-size: 11pt;
                         color: #374151;
                         text-align: left;
-                        line-height: 1.5;
+                        line-height: 1.6;
+                        word-break: normal;
+                        overflow-wrap: break-word;
+                        hyphens: none;
+                        -webkit-hyphens: none;
                     }
                     .section-body h3 {
                         font-size: 13pt;
@@ -988,17 +1029,7 @@ export const hrController = {
                     <div class="divider"></div>
 
                     <div class="content">
-                        ${application.signedContent.map((section, idx) => `
-                            <div class="section">
-                                <div class="section-header">
-                                    <span class="section-num">${(idx + 1).toString().padStart(2, '0')}</span>
-                                    <h2 class="section-title">${section.title}</h2>
-                                </div>
-                                <div class="section-body">
-                                    ${section.content}
-                                </div>
-                            </div>
-                        `).join('')}
+                        ${contentHtml}
                     </div>
 
                     <div class="signature-area-wrapper">
@@ -1007,7 +1038,7 @@ export const hrController = {
                                 <div class="sig-label">Candidate Signature</div>
                                 <div class="sig-line">${application.signatureName}</div>
                                 <div class="sig-details">
-                                    <strong>Date Signed:</strong> ${new Date(application.signedAt).toLocaleString()}<br/>
+                                    <strong>Date Signed:</strong> ${new Date(application.signedAt).toLocaleString()}<br />
                                     <strong>Legal Name:</strong> ${application.fullName}
                                 </div>
                             </div>
@@ -1029,10 +1060,10 @@ export const hrController = {
                             &copy; ${new Date().getFullYear()} CDC International • Human Resources Division • Confidential Record
                         </footer>
                     </div>
-                </div>
-            </body>
-            </html>
-            `;
+                </div >
+            </body >
+            </html >
+    `;
 
             const pdfBuffer = await generatePdfFromHtml(htmlContent, {
                 headerTemplate,
@@ -1042,7 +1073,7 @@ export const hrController = {
             });
 
             res.setHeader('Content-Type', 'application/pdf');
-            res.setHeader('Content-Disposition', `attachment; filename=Agreement_${application.fullName.replace(/\s+/g, '_')}.pdf`);
+            res.setHeader('Content-Disposition', `attachment; filename = Agreement_${application.fullName.replace(/\s+/g, '_')}.pdf`);
             res.send(pdfBuffer);
 
         } catch (error) {
