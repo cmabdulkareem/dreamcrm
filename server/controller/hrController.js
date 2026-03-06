@@ -833,10 +833,12 @@ export const hrController = {
                         font-size: 11pt;
                         line-height: 1.6;
                         -webkit-print-color-adjust: exact;
-                        word-break: normal;
-                        overflow-wrap: break-word;
-                        hyphens: none;
-                        -webkit-hyphens: none;
+                        word-break: normal !important;
+                        word-wrap: normal !important;
+                        overflow-wrap: break-word !important;
+                        hyphens: none !important;
+                        -webkit-hyphens: none !important;
+                        text-align: left !important;
                     }
                     .document-wrapper {
                         width: 100%;
@@ -925,12 +927,13 @@ export const hrController = {
                     .section-body {
                         font-size: 11pt;
                         color: #374151;
-                        text-align: left;
+                        text-align: left !important;
                         line-height: 1.6;
-                        word-break: normal;
-                        overflow-wrap: break-word;
-                        hyphens: none;
-                        -webkit-hyphens: none;
+                        word-break: normal !important;
+                        word-wrap: normal !important;
+                        overflow-wrap: break-word !important;
+                        hyphens: none !important;
+                        -webkit-hyphens: none !important;
                     }
                     .section-body h3 {
                         font-size: 13pt;

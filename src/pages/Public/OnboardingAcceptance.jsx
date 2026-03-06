@@ -228,8 +228,8 @@ const OnboardingAcceptance = () => {
                                             {section.title}
                                         </h2>
                                         <div
-                                            className="prose prose-blue max-w-none text-gray-600 leading-relaxed ql-editor p-0 break-words overflow-hidden"
-                                            style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
+                                            className="prose prose-blue max-w-none text-gray-600 leading-relaxed ql-editor p-0 overflow-visible"
+                                            style={{ wordBreak: 'normal', overflowWrap: 'break-word', hyphens: 'none', textAlign: 'left' }}
                                             dangerouslySetInnerHTML={{ __html: section.content }}
                                         />
                                     </section>
