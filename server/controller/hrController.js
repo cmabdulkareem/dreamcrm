@@ -822,7 +822,7 @@ export const hrController = {
                 <style>
                     @page {
                         size: A4;
-                        margin: 25mm 15mm 25mm 15mm;
+                        margin: 15mm 15mm 15mm 15mm;
                     }
                     body {
                         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -835,7 +835,7 @@ export const hrController = {
                         -webkit-print-color-adjust: exact;
                         word-break: normal !important;
                         word-wrap: normal !important;
-                        overflow-wrap: break-word !important;
+                        overflow-wrap: normal !important;
                         hyphens: none !important;
                         -webkit-hyphens: none !important;
                         text-align: left !important;
@@ -931,7 +931,7 @@ export const hrController = {
                         line-height: 1.6;
                         word-break: normal !important;
                         word-wrap: normal !important;
-                        overflow-wrap: break-word !important;
+                        overflow-wrap: normal !important;
                         hyphens: none !important;
                         -webkit-hyphens: none !important;
                     }

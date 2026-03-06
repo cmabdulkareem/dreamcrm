@@ -228,8 +228,14 @@ const OnboardingAcceptance = () => {
                                             {section.title}
                                         </h2>
                                         <div
-                                            className="prose prose-blue max-w-none text-gray-600 leading-relaxed ql-editor p-0 overflow-visible"
-                                            style={{ wordBreak: 'normal', overflowWrap: 'break-word', hyphens: 'none', textAlign: 'left' }}
+                                            className="ql-editor p-0 overflow-visible text-gray-600 leading-relaxed"
+                                            style={{
+                                                wordBreak: 'normal',
+                                                wordWrap: 'normal',
+                                                overflowWrap: 'normal',
+                                                hyphens: 'none',
+                                                textAlign: 'left'
+                                            }}
                                             dangerouslySetInnerHTML={{ __html: section.content }}
                                         />
                                     </section>
@@ -316,17 +322,21 @@ const OnboardingAcceptance = () => {
                 #pdf-render-container { background: white !important; }
 
                 /* Fix text wrapping in agreement content */
+                /* Force-stop all mid-word breaks and hyphenation */
                 .onboarding-section .ql-editor,
+                .onboarding-section .ql-editor *,
                 .onboarding-section [class*="prose"],
-                .onboarding-section div[dangerouslySetInnerHTML] {
+                .onboarding-section div[dangerouslySetInnerHTML],
+                .onboarding-section div[dangerouslySetInnerHTML] * {
                     white-space: normal !important;
                     word-break: normal !important;
-                    overflow-wrap: break-word !important;
-                    word-wrap: break-word !important;
+                    overflow-wrap: normal !important;
+                    word-wrap: normal !important;
                     hyphens: none !important;
                     -webkit-hyphens: none !important;
                     max-width: 100% !important;
                     overflow: visible !important;
+                    text-align: left !important;
                 }
                 .onboarding-section p,
                 .onboarding-section span,
@@ -337,10 +347,12 @@ const OnboardingAcceptance = () => {
                 .onboarding-section h4 {
                     white-space: normal !important;
                     word-break: normal !important;
-                    overflow-wrap: break-word !important;
+                    overflow-wrap: normal !important;
+                    word-wrap: normal !important;
                     hyphens: none !important;
                     -webkit-hyphens: none !important;
                     max-width: 100% !important;
+                    text-align: left !important;
                 }
                 /* Ensure ql-editor resets don't interfere */
                 .ql-editor.p-0 {
