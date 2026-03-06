@@ -17,10 +17,10 @@ export const getFinancialYearRange = (date = new Date()) => {
     }
 
     // April 1st of the start year
-    const startDate = new Date(Date.UTC(startYear, 3, 1, 0, 0, 0, 0));
+    const startDate = new Date(startYear, 3, 1, 0, 0, 0, 0);
 
     // March 31st of the following year
-    const endDate = new Date(Date.UTC(startYear + 1, 2, 31, 23, 59, 59, 999));
+    const endDate = new Date(startYear + 1, 2, 31, 23, 59, 59, 999);
 
     return { startDate, endDate };
 };

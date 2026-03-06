@@ -230,9 +230,9 @@ const OnboardingAcceptance = () => {
                                         <div
                                             className="ql-editor p-0 overflow-visible text-gray-600 leading-relaxed"
                                             style={{
-                                                wordBreak: 'normal',
-                                                wordWrap: 'normal',
-                                                overflowWrap: 'normal',
+                                                wordBreak: 'keep-all',
+                                                wordWrap: 'break-word',
+                                                overflowWrap: 'break-word',
                                                 hyphens: 'none',
                                                 textAlign: 'left'
                                             }}
@@ -328,12 +328,14 @@ const OnboardingAcceptance = () => {
                 .onboarding-section [class*="prose"],
                 .onboarding-section div[dangerouslySetInnerHTML],
                 .onboarding-section div[dangerouslySetInnerHTML] * {
-                    white-space: normal !important;
-                    word-break: normal !important;
-                    overflow-wrap: normal !important;
-                    word-wrap: normal !important;
+                    white-space: pre-wrap !important;
+                    word-break: keep-all !important;
+                    overflow-wrap: break-word !important;
+                    word-wrap: break-word !important;
                     hyphens: none !important;
                     -webkit-hyphens: none !important;
+                    -moz-hyphens: none !important;
+                    -ms-hyphens: none !important;
                     max-width: 100% !important;
                     overflow: visible !important;
                     text-align: left !important;
@@ -345,20 +347,24 @@ const OnboardingAcceptance = () => {
                 .onboarding-section h2,
                 .onboarding-section h3,
                 .onboarding-section h4 {
-                    white-space: normal !important;
-                    word-break: normal !important;
-                    overflow-wrap: normal !important;
-                    word-wrap: normal !important;
+                    white-space: pre-wrap !important;
+                    word-break: keep-all !important;
+                    overflow-wrap: break-word !important;
+                    word-wrap: break-word !important;
                     hyphens: none !important;
                     -webkit-hyphens: none !important;
+                    -moz-hyphens: none !important;
+                    -ms-hyphens: none !important;
                     max-width: 100% !important;
                     text-align: left !important;
                 }
                 /* Ensure ql-editor resets don't interfere */
                 .ql-editor.p-0 {
                     padding: 0 !important;
-                    white-space: normal !important;
-                    word-break: normal !important;
+                    white-space: pre-wrap !important;
+                    word-break: keep-all !important;
+                    overflow-wrap: break-word !important;
+                    word-wrap: break-word !important;
                 }
 
                 @media print {

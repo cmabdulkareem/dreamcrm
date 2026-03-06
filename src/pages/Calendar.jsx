@@ -100,6 +100,7 @@ const Calendar = () => {
             ref={calendarRef}
             plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
             initialView="dayGridMonth"
+            timeZone="Asia/Kolkata"
             headerToolbar={{
               left: "prev,next addEventButton",
               center: "title",

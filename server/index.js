@@ -1,4 +1,5 @@
 import express from 'express'
+process.env.TZ = 'Asia/Kolkata';
 import compression from 'compression'
 import http from 'http'
 import { config } from 'dotenv'

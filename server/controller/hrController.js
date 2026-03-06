@@ -820,201 +820,212 @@ export const hrController = {
             <head>
                 <meta charset="UTF-8">
                 <style>
-                    @page {
-                        size: A4;
-                        margin: 15mm 15mm 15mm 15mm;
-                    }
-                    body {
-                        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                        margin: 0;
-                        padding: 0;
-                        background: #fff;
-                        color: #1a1a1b;
-                        font-size: 11pt;
-                        line-height: 1.6;
-                        -webkit-print-color-adjust: exact;
-                        word-break: normal !important;
-                        word-wrap: normal !important;
-                        overflow-wrap: normal !important;
-                        hyphens: none !important;
-                        -webkit-hyphens: none !important;
-                        text-align: left !important;
-                    }
-                    .document-wrapper {
-                        width: 100%;
-                        position: relative;
-                    }
-                    /* Watermark that repeats on every page via fixed position */
-                    .watermark {
-                        position: fixed;
-                        top: 50%;
-                        left: 50%;
-                        transform: translate(-50%, -50%) rotate(-35deg);
-                        font-size: 110px;
-                        font-weight: 900;
-                        color: rgba(0, 0, 0, 0.02); /* Slightly more visible but still subtle */
-                        white-space: nowrap;
-                        z-index: -1;
-                        pointer-events: none;
-                        text-transform: uppercase;
-                        letter-spacing: 12px;
-                    }
-                    header {
-                        text-align: center;
-                        margin-bottom: 30px;
-                        position: relative;
-                        z-index: 1;
-                    }
-                    .logo-container {
-                        margin-bottom: 15px;
-                    }
-                    .logo-container img {
-                        height: 80px;
-                        width: auto;
-                    }
-                    .doc-title {
-                        font-size: 18pt;
-                        font-weight: 900;
-                        text-transform: uppercase;
-                        letter-spacing: -0.5px;
-                        margin: 0 0 8px 0;
-                        color: #111;
-                    }
-                    .meta-info {
-                        font-size: 11pt;
-                        color: #4b5563;
-                        max-width: 90%;
-                        margin: 0 auto;
-                    }
-                    .meta-info strong {
-                        color: #111;
-                    }
-                    .divider {
-                        height: 0.5px;
-                        background: #e5e7eb;
-                        width: 100%;
-                        margin: 20px 0 30px 0;
-                    }
-                    .section {
-                        margin-top: 20px;
-                        margin-bottom: 20px;
-                        page-break-inside: auto; /* Allow sections to break if needed */
-                    }
-                    .section-header {
-                        display: flex;
-                        align-items: center;
-                        gap: 8px;
-                        margin-bottom: 10px;
-                        break-after: avoid; /* Don't leave header alone at bottom of page */
-                    }
-                    .section-num {
-                        font-size: 11px;
-                        font-weight: 800;
-                        color: #2563eb;
-                        background: #eff6ff;
-                        padding: 3px 6px;
-                        border-radius: 3px;
-                        flex-shrink: 0;
-                    }
-                    .section-title {
-                        font-size: 14pt;
-                        font-weight: 700;
-                        text-transform: uppercase;
-                        color: #111;
-                        letter-spacing: 0.5px;
-                        margin: 0;
-                    }
-                    .section-body {
-                        font-size: 11pt;
-                        color: #374151;
-                        text-align: left !important;
-                        line-height: 1.6;
-                        word-break: normal !important;
-                        word-wrap: normal !important;
-                        overflow-wrap: normal !important;
-                        hyphens: none !important;
-                        -webkit-hyphens: none !important;
-                    }
-                    .section-body h3 {
-                        font-size: 13pt;
-                        font-weight: 700;
-                        margin: 12px 0 6px 0;
-                        color: #111;
-                    }
-                    .section-body p {
-                        margin: 0 0 8px 0;
-                    }
-                    .section-body ul, .section-body ol {
-                        padding-left: 15px;
-                        margin: 6px 0;
-                    }
-                    .section-body li {
-                        margin-bottom: 3px;
-                    }
-                    .signature-area-wrapper {
-                        margin-top: 40px;
-                        page-break-inside: avoid; /* Keep signature block together */
-                    }
-                    .signature-section {
-                        padding-top: 25px;
-                        border-top: 1px solid #eee;
-                        display: grid;
-                        grid-template-columns: 1fr 1fr;
-                        gap: 40px;
-                    }
-                    .sig-label {
-                        font-size: 8px;
-                        font-weight: 800;
-                        color: #9ca3af;
-                        text-transform: uppercase;
-                        letter-spacing: 1px;
-                        margin-bottom: 15px;
-                    }
-                    .sig-line {
-                        font-family: 'Georgia', serif;
-                        font-size: 20px;
-                        font-style: italic;
-                        color: #00085a;
-                        padding: 5px 0;
-                        border-bottom: 1px solid #111;
-                        margin-bottom: 8px;
-                        min-height: 35px;
-                    }
-                    .sig-details {
-                        font-size: 9px;
-                        color: #4b5563;
-                        line-height: 1.4;
-                    }
-                    .verification-badge {
-                        display: inline-flex;
-                        align-items: center;
-                        gap: 4px;
-                        padding: 4px 8px;
-                        background: #f0fdf4;
-                        color: #166534;
-                        border: 1px solid #bbf7d0;
-                        border-radius: 4px;
-                        font-size: 8px;
-                        font-weight: 700;
-                        margin-top: 6px;
-                    }
-                    .doc-id-small {
-                        font-family: 'Courier New', Courier, monospace;
-                        font-size: 8px;
-                        color: #9ca3af;
-                        margin-top: 8px;
-                    }
-                    footer {
-                        margin-top: 40px;
-                        text-align: center;
-                        font-size: 8px;
-                        color: #9ca3af;
-                        text-transform: uppercase;
-                        letter-spacing: 1px;
-                        padding-top: 15px;
-                        border-top: 0.5px solid #f3f4f6;
-                    }
-                </style>
+@page {
+    size: A4;
+    margin: 25mm 15mm 25mm 15mm;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: #fff;
+    color: #1a1a1b;
+    font-size: 11pt;
+    line-height: 1.6;
+    -webkit-print-color-adjust: exact;
+
+    /* FIX WORD BREAKING */
+    word-break: normal;
+    overflow-wrap: normal;
+    word-wrap: normal;
+    white-space: normal;
+    hyphens: none;
+
+    text-align: left;
+}
+
+.document-wrapper {
+    width: 100%;
+    position: relative;
+}
+
+/* watermark */
+
+.watermark {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-35deg);
+    font-size: 110px;
+    font-weight: 900;
+    color: rgba(0,0,0,0.02);
+    white-space: nowrap;
+    z-index: -1;
+    pointer-events: none;
+    text-transform: uppercase;
+    letter-spacing: 12px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.logo-container img {
+    height: 80px;
+}
+
+.doc-title {
+    font-size: 18pt;
+    font-weight: 900;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+
+.meta-info {
+    font-size: 11pt;
+    color: #4b5563;
+    max-width: 90%;
+    margin: auto;
+}
+
+.meta-info strong {
+    color: #111;
+}
+
+.divider {
+    height: 1px;
+    background: #e5e7eb;
+    margin: 20px 0 30px 0;
+}
+
+.section {
+    margin: 20px 0;
+    page-break-inside: auto;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    break-after: avoid;
+}
+
+.section-num {
+    font-size: 11px;
+    font-weight: 800;
+    color: #2563eb;
+    background: #eff6ff;
+    padding: 3px 6px;
+    border-radius: 3px;
+}
+
+.section-title {
+    font-size: 14pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #111;
+}
+
+.section-body {
+    font-size: 11pt;
+    color: #374151;
+    line-height: 1.6;
+
+    /* FIX WORD WRAPPING */
+    word-break: normal;
+    overflow-wrap: normal;
+    word-wrap: normal;
+    white-space: normal;
+}
+
+.section-body p {
+    margin-bottom: 8px;
+}
+
+.section-body h3 {
+    font-size: 13pt;
+    margin: 12px 0 6px 0;
+}
+
+.section-body ul,
+.section-body ol {
+    padding-left: 18px;
+}
+
+.section-body li {
+    margin-bottom: 4px;
+}
+
+.signature-area-wrapper {
+    margin-top: 40px;
+    page-break-inside: avoid;
+}
+
+.signature-section {
+    padding-top: 25px;
+    border-top: 1px solid #eee;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+}
+
+.sig-label {
+    font-size: 8px;
+    font-weight: 800;
+    color: #9ca3af;
+    text-transform: uppercase;
+    margin-bottom: 15px;
+}
+
+.sig-line {
+    font-family: Georgia, serif;
+    font-size: 20px;
+    font-style: italic;
+    border-bottom: 1px solid #111;
+    padding: 5px 0;
+    margin-bottom: 8px;
+    min-height: 35px;
+}
+
+.sig-details {
+    font-size: 9px;
+    color: #4b5563;
+}
+
+.verification-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    background: #f0fdf4;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+    border-radius: 4px;
+    font-size: 8px;
+    font-weight: 700;
+    margin-top: 6px;
+}
+
+.doc-id-small {
+    font-family: 'Courier New', monospace;
+    font-size: 8px;
+    color: #9ca3af;
+    margin-top: 8px;
+}
+
+footer {
+    margin-top: 40px;
+    text-align: center;
+    font-size: 8px;
+    color: #9ca3af;
+    text-transform: uppercase;
+    padding-top: 15px;
+    border-top: 1px solid #f3f4f6;
+}
+</style>
             </head>
             <body>
                 <div class="document-wrapper">
