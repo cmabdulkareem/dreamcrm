@@ -454,6 +454,7 @@ const AgreementBuilder = () => {
                                                         value={section.content}
                                                         onChange={(content) => handleSectionChange(index, 'content', content)}
                                                         height={500}
+                                                        isAgreementMode={true}
                                                     />
                                                 </div>
                                             </div>

@@ -34,8 +34,7 @@
   }
 
   html {
-    zoom: 90%;
-    min-height: 111.11vh !important;
+    min-height: 100vh !important;
     height: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
@@ -44,22 +43,11 @@
   }
 
   body {
-    min-height: 111.11vh !important;
+    min-height: 100vh !important;
     margin: 0 !important;
     padding: 0 !important;
     background-color: rgb(17 24 39) !important;
     /* gray-900 */
-  }
-
-  /* Fallback for browsers not supporting zoom (like Firefox) */
-  @supports not (zoom: 90%) {
-    html {
-      transform: scale(0.9);
-      transform-origin: top left;
-      width: 111.11%;
-      height: 111.11%;
-      overflow-x: hidden;
-    }
   }
 }
 

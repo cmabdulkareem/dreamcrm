@@ -18,7 +18,8 @@ const TinyEditor = ({
     onChange,
     placeholder = "Start typing...",
     height = 500,
-    disabled = false
+    disabled = false,
+    isAgreementMode = false
 }) => {
     const { theme } = useTheme();
     const quillRef = useRef(null);
@@ -43,7 +44,7 @@ const TinyEditor = ({
 
     return (
         <div
-            className={`relative w-full rounded-2xl border border-gray-200 dark:border-gray-800 overflow-visible shadow-theme-xs transition-all quill-editor-wrapper ${theme === 'dark' ? 'quill-dark' : ''}`}
+            className={`relative w-full rounded-2xl border border-gray-200 dark:border-gray-800 overflow-visible shadow-theme-xs transition-all quill-editor-wrapper ${theme === 'dark' ? 'quill-dark' : ''} ${isAgreementMode ? 'quill-agreement-mode' : ''}`}
         >
             {/* Quill Toolbar — standard controls only */}
             <div className="relative">
@@ -183,6 +184,49 @@ const TinyEditor = ({
                 }
                 .quill-editor-wrapper .ql-toolbar.ql-snow {
                     border-radius: 12px 12px 0 0;
+                }
+                
+                /* AGREEMENT MODE - PRECISE PDF ALIGNMENT */
+                .quill-agreement-mode .ql-container {
+                    background: #f8fafc !important;
+                    display: flex !important;
+                    justify-content: center !important;
+                    padding: 60px 0 !important;
+                    height: auto !important;
+                    min-height: calc(100vh - 200px) !important;
+                }
+                
+                .quill-agreement-mode .ql-editor {
+                    width: 210mm !important;
+                    min-height: 297mm !important;
+                    margin: 0 auto !important;
+                    padding: 25mm 15mm !important; /* MATCH PDF MARGINS */
+                    background: white !important;
+                    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+                    
+                    /* PDF TYPOGRAPHY MATCH */
+                    font-family: 'Inter', -apple-system, sans-serif !important;
+                    font-size: 11pt !important;
+                    line-height: 1.0 !important;
+                    color: #1a1a1b !important;
+                    
+                    /* PDF WRAPPING MATCH */
+                    word-break: normal !important;
+                    overflow-wrap: break-word !important;
+                    white-space: normal !important;
+                }
+                
+                .quill-agreement-mode .ql-editor p,
+                .quill-agreement-mode .ql-editor li {
+                    margin-bottom: 8px !important;
+                }
+                
+                .quill-agreement-mode .ql-editor h3 {
+                    font-size: 13pt !important;
+                    font-weight: 700 !important;
+                    margin-top: 12px !important;
+                    margin-bottom: 6px !important;
+                    text-transform: uppercase !important;
                 }
             `}</style>
 

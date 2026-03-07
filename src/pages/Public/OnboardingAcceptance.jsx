@@ -213,33 +213,34 @@ const OnboardingAcceptance = () => {
 
                     <div className="space-y-12">
                         {data.templates && data.templates[currentStep] && (
-                            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                                <div className="border-b-2 border-blue-900 pb-2 mb-6">
-                                    <h2 className="text-2xl font-black text-blue-900 uppercase tracking-tight">
-                                        {data.templates[currentStep].name}
-                                    </h2>
-                                </div>
-                                {data.templates[currentStep].sections?.map((section, idx) => (
-                                    <section key={`${currentStep}-${idx}`} className="onboarding-section">
-                                        <h2 className="text-xl font-black text-gray-900 mb-4 flex items-center gap-3">
-                                            <span className="text-blue-600/20 text-4xl font-black tabular-nums transition-colors selection:bg-blue-200">
-                                                {(idx + 1).toString().padStart(2, '0')}
-                                            </span>
-                                            {section.title}
+                            <div className="agreement-viewport overflow-x-auto bg-gray-100/50 rounded-2xl p-4 sm:p-0 sm:bg-transparent">
+                                <div className="agreement-a4-page mx-auto bg-white shadow-lg sm:shadow-none min-w-[210mm] w-[210mm] min-h-[297mm] p-[25mm_15mm] border border-gray-100 sm:border-0 rounded-xl sm:rounded-none">
+                                    <div className="border-b-2 border-blue-900 pb-2 mb-8">
+                                        <h2 className="text-2xl font-black text-blue-900 uppercase tracking-tight">
+                                            {data.templates[currentStep].name}
                                         </h2>
-                                        <div
-                                            className="ql-editor p-0 overflow-visible text-gray-600 leading-relaxed"
-                                            style={{
-                                                wordBreak: 'keep-all',
-                                                wordWrap: 'break-word',
-                                                overflowWrap: 'break-word',
-                                                hyphens: 'none',
-                                                textAlign: 'left'
-                                            }}
-                                            dangerouslySetInnerHTML={{ __html: section.content }}
-                                        />
-                                    </section>
-                                ))}
+                                    </div>
+                                    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                        {data.templates[currentStep].sections?.map((section, idx) => (
+                                            <section key={`${currentStep}-${idx}`} className="onboarding-section">
+                                                <h2 className="text-lg font-black text-gray-900 mb-3 flex items-center gap-3">
+                                                    <span className="text-blue-600/20 text-3xl font-black tabular-nums">
+                                                        {(idx + 1).toString().padStart(2, '0')}
+                                                    </span>
+                                                    {section.title}
+                                                </h2>
+                                                <div
+                                                    className="agreement-content-body text-[#1a1a1b]"
+                                                    dangerouslySetInnerHTML={{ __html: section.content }}
+                                                />
+                                            </section>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="mt-4 sm:hidden flex items-center justify-center gap-2 text-gray-400 animate-pulse">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+                                    <span className="text-[10px] font-bold uppercase tracking-widest">Swipe for full document</span>
+                                </div>
                             </div>
                         )}
                     </div>
@@ -316,55 +317,57 @@ const OnboardingAcceptance = () => {
 
             <style dangerouslySetInnerHTML={{
                 __html: `
-                .pdf-title-fix { letter-spacing: 0.5px !important; word-spacing: 2px !important; }
-                .pdf-content-fix { text-align: left !important; letter-spacing: 0.1px !important; word-spacing: 1px !important; line-height: 1.6 !important; }
-                .pdf-content-fix * { letter-spacing: 0.1px !important; word-spacing: 1px !important; }
-                #pdf-render-container { background: white !important; }
+                /* PDF PARITY FOR ONBOARDING PREVIEW */
+                .agreement-viewport {
+                    -webkit-overflow-scrolling: touch;
+                    margin-bottom: 2rem;
+                }
+                
+                .agreement-a4-page {
+                    font-family: 'Inter', -apple-system, sans-serif !important;
+                    background: white !important;
+                    color: #1a1a1b !important;
+                }
 
-                /* Fix text wrapping in agreement content */
-                /* Force-stop all mid-word breaks and hyphenation */
-                .onboarding-section .ql-editor,
-                .onboarding-section .ql-editor *,
-                .onboarding-section [class*="prose"],
-                .onboarding-section div[dangerouslySetInnerHTML],
-                .onboarding-section div[dangerouslySetInnerHTML] * {
-                    white-space: pre-wrap !important;
-                    word-break: keep-all !important;
+                .agreement-content-body {
+                    font-size: 11pt !important;
+                    line-height: 1.0 !important;
+                    word-break: normal !important;
                     overflow-wrap: break-word !important;
-                    word-wrap: break-word !important;
-                    hyphens: none !important;
-                    -webkit-hyphens: none !important;
-                    -moz-hyphens: none !important;
-                    -ms-hyphens: none !important;
-                    max-width: 100% !important;
-                    overflow: visible !important;
+                    white-space: normal !important;
                     text-align: left !important;
                 }
-                .onboarding-section p,
-                .onboarding-section span,
-                .onboarding-section li,
-                .onboarding-section h1,
-                .onboarding-section h2,
-                .onboarding-section h3,
-                .onboarding-section h4 {
-                    white-space: pre-wrap !important;
-                    word-break: keep-all !important;
-                    overflow-wrap: break-word !important;
-                    word-wrap: break-word !important;
-                    hyphens: none !important;
-                    -webkit-hyphens: none !important;
-                    -moz-hyphens: none !important;
-                    -ms-hyphens: none !important;
-                    max-width: 100% !important;
-                    text-align: left !important;
+
+                .agreement-content-body p,
+                .agreement-content-body li {
+                    margin-bottom: 8px !important;
                 }
-                /* Ensure ql-editor resets don't interfere */
-                .ql-editor.p-0 {
-                    padding: 0 !important;
-                    white-space: pre-wrap !important;
-                    word-break: keep-all !important;
-                    overflow-wrap: break-word !important;
-                    word-wrap: break-word !important;
+
+                .agreement-content-body h3 {
+                    font-size: 13pt !important;
+                    font-weight: 700 !important;
+                    margin-top: 12px !important;
+                    margin-bottom: 6px !important;
+                    text-transform: uppercase !important;
+                    color: #111 !important;
+                }
+
+                .agreement-content-body ul,
+                .agreement-content-body ol {
+                    padding-left: 20px !important;
+                    margin-bottom: 8px !important;
+                }
+
+                @media (max-width: 768px) {
+                    .agreement-viewport {
+                        margin-left: -1rem; /* Adjust for mobile padding */
+                        margin-right: -1rem;
+                        padding: 1rem;
+                    }
+                    .agreement-a4-page {
+                        /* Keep A4 width for horizontal scroll */
+                        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+                    }
                 }
 
                 @media print {
