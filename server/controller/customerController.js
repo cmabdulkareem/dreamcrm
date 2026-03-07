@@ -87,8 +87,8 @@ export const createCustomer = async (req, res) => {
 
 
     // Validation
-    if (!fullName || !phone1) {
-      return res.status(400).json({ message: "Full name and phone are required." });
+    if (!fullName || !phone1 || !followUpDate) {
+      return res.status(400).json({ message: "Full name, phone, and follow-up date are required." });
     }
 
     // Check for duplicate phone number within the brand

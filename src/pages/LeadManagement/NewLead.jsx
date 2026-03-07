@@ -519,7 +519,7 @@ export default function FormElements() {
       campaign,
       handledBy: user?.fullName || "Unknown",
       leadRemarks,
-      leadFollowUpDate: followUpDate,
+      followUpDate,
       leadPotential,
       immediateFollowupInterval: immediateFollowup || null,
     };
