@@ -190,7 +190,7 @@ export default function Promotional() {
 
     return (
         <div className="p-6">
-            <PageMeta title="Promotional Materials | CDC Insights" />
+            <PageMeta title="Promotional Materials | CDC International" />
             <PageBreadcrumb
                 pageTitle="Promotional Materials"
                 items={[

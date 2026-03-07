@@ -106,7 +106,7 @@ const ApplyLeave = () => {
 
     return (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <PageMeta title="Apply for Leave - CDC Insights" />
+            <PageMeta title="Apply for Leave - CDC International" />
             <ToastContainer position="top-center" className="!z-[999999]" style={{ zIndex: 999999 }} />
 
             <div className="">

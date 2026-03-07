@@ -173,11 +173,11 @@ const OnboardingAcceptance = () => {
 
     return (
         <div className="min-h-screen bg-gray-50/50 py-12 px-4 sm:px-6 lg:px-8">
-            <PageMeta title={`Onboarding: ${data.fullName} - CDC Insights`} />
+            <PageMeta title={`Onboarding: ${data.fullName} - CDC International`} />
 
             <div className="max-w-4xl mx-auto">
                 <div className="flex justify-between items-center mb-10">
-                    <img src="/images/logo/logo.svg" alt="CDC Insights" className="h-10 w-auto" />
+                    <img src="/images/logo/logo.svg" alt="CDC International" className="h-10 w-auto" />
                     <div className="text-right">
                         <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 bg-blue-50 px-3 py-1 rounded-full">Secure Onboarding Portal</span>
                     </div>
@@ -310,7 +310,7 @@ const OnboardingAcceptance = () => {
 
                 <div className="mt-10 text-center">
                     <p className="text-gray-400 text-xs">
-                        © {new Date().getFullYear()} CDC Insights. Secure Document Portal. IP Logged for verification.
+                        © {new Date().getFullYear()} CDC International. Secure Document Portal. IP Logged for verification.
                     </p>
                 </div>
             </div>

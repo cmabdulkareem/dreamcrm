@@ -127,7 +127,7 @@ const LeaveRequestPortal = () => {
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <PageMeta title="Leave Request Portal - CDC Insights" />
+      <PageMeta title="Leave Request Portal - CDC International" />
       <div className="min-h-screen bg-gray-50/50 dark:bg-gray-900/50 py-12">
         <div className="container mx-auto px-4">
           <div className="">

@@ -5,7 +5,7 @@ export default function Blank() {
   return (
     <div>
       <PageMeta
-        title="Blank Page | CDC Insights"
+        title="Blank Page | CDC International"
         description="Blank page"
       />
       <PageBreadcrumb pageTitle="Blank Page" />

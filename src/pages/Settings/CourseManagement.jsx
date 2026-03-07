@@ -365,7 +365,7 @@ const CourseManagement = () => {
   return (
     <div>
       <PageMeta
-        title="Course Management | CDC Insights"
+        title="Course Management | CDC International"
         description="Manage courses and categories here"
       />
       <PageBreadcrumb pageTitle="Course Management" />

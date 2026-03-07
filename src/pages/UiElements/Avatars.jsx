@@ -7,8 +7,8 @@ export default function Avatars() {
   return (
     <>
       <PageMeta
-        title="Avatars | CDC Insights"
-        description="Avatars page for CDC Insights"
+        title="Avatars | CDC International"
+        description="Avatars page for CDC International"
       />
       <PageBreadcrumb pageTitle="Avatars" />
       <div className="space-y-5 sm:space-y-6">

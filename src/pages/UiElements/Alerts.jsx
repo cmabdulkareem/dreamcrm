@@ -7,8 +7,8 @@ export default function Alerts() {
   return (
     <>
       <PageMeta
-        title="Alerts | CDC Insights"
-        description="Alerts page for CDC Insights"
+        title="Alerts | CDC International"
+        description="Alerts page for CDC International"
       />
       <PageBreadcrumb pageTitle="Alerts" />
       <div className="space-y-5 sm:space-y-6">

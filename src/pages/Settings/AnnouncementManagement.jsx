@@ -259,7 +259,7 @@ const AnnouncementManagement = () => {
   return (
     <>
       <PageMeta
-        title="Announcement Management | CDC Insights"
+        title="Announcement Management | CDC International"
         description="Create and manage system announcements"
       />
 

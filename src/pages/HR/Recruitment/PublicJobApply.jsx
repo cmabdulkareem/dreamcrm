@@ -157,7 +157,7 @@ const PublicJobApply = () => {
 
             <div className="max-w-4xl mx-auto">
                 <div className="flex justify-center mb-8 sm:hidden">
-                    <img src="/images/logo/logo.svg" alt="CDC Insights" className="h-12 w-auto" />
+                    <img src="/images/logo/logo.svg" alt="CDC International" className="h-12 w-auto" />
                 </div>
                 {/* Header Section */}
                 <div className="bg-white rounded-3xl p-8 sm:p-10 shadow-sm border border-gray-100 mb-8">
@@ -181,7 +181,7 @@ const PublicJobApply = () => {
                             </div>
                         </div>
                         <div className="hidden sm:block">
-                            <img src="/images/logo/logo.svg" alt="CDC Insights" className="h-12 w-auto" />
+                            <img src="/images/logo/logo.svg" alt="CDC International" className="h-12 w-auto" />
                         </div>
                     </div>
 
@@ -354,7 +354,7 @@ const PublicJobApply = () => {
                 </div>
 
                 <div className="mt-8 text-center text-gray-500 text-sm">
-                    © {new Date().getFullYear()} CDC Insights. All rights reserved.
+                    © {new Date().getFullYear()} CDC International. All rights reserved.
                 </div>
             </div>
         </div>

@@ -91,7 +91,7 @@ const Calendar = () => {
   return (
     <>
       <PageMeta
-        title="Calendar | CDC Insights"
+        title="Calendar | CDC International"
         description="Calendar view of your schedules"
       />
       <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">

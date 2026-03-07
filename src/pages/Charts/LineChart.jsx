@@ -7,8 +7,8 @@ export default function LineChart() {
   return (
     <>
       <PageMeta
-        title="Performance | CDC Insights"
-        description="Performance Dashboard for CDC Insights"
+        title="Performance | CDC International"
+        description="Performance Dashboard for CDC International"
       />
       <PageBreadcrumb pageTitle="Line Chart" />
       <div className="space-y-6">

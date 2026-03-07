@@ -7,8 +7,8 @@ export default function BasicTables() {
   return (
     <>
       <PageMeta
-        title="Basic Tables | CDC Insights"
-        description="Basic Tables for CDC Insights"
+        title="Basic Tables | CDC International"
+        description="Basic Tables for CDC International"
       />
       <PageBreadcrumb pageTitle="Basic Tables" />
       <div className="space-y-6">

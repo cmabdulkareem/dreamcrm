@@ -1371,7 +1371,7 @@ const CandidateList = () => {
     return (
         <DndProvider backend={HTML5Backend}>
             <div className="min-h-screen pb-20">
-                <PageMeta title="Recruitment Management | CDC Insights" />
+                <PageMeta title="Recruitment Management | CDC International" />
 
                 <PageBreadCrumb items={[{ name: 'EMS', path: '/hr' }, { name: 'Recruitment & Candidates' }]} />
 

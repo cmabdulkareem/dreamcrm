@@ -427,7 +427,7 @@ const UserManagement = () => {
   if (!currentUser?.isAdmin) {
     return (
       <div>
-        <PageMeta title="Access Denied | CDC Insights" description="Access denied" />
+        <PageMeta title="Access Denied | CDC International" description="Access denied" />
         <PageBreadcrumb pageTitle="Access Denied" />
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
@@ -446,7 +446,7 @@ const UserManagement = () => {
   return (
     <div>
       <PageMeta
-        title="User Management | CDC Insights"
+        title="User Management | CDC International"
         description="Manage users and assign roles"
       />
       <PageBreadcrumb pageTitle="User Management" />

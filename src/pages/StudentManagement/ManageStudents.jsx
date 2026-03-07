@@ -510,7 +510,7 @@ export default function ManageStudents() {
   return (
     <div>
       <PageMeta
-        title="Manage Students | CDC Insights"
+        title="Manage Students | CDC International"
         description="Manage your students here"
       />
       <PageBreadcrumb pageTitle="Manage Students" />

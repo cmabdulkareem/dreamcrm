@@ -78,7 +78,7 @@ const MyLeaves = () => {
 
     return (
         <>
-            <PageMeta title="My Leaves - CDC Insights" />
+            <PageMeta title="My Leaves - CDC International" />
             <ToastContainer position="top-center" className="!z-[999999]" style={{ zIndex: 999999 }} />
 
             <div className="space-y-5">

@@ -6,8 +6,8 @@ export default function SignIn() {
   return (
     <>
       <PageMeta
-        title="Sign In | CDC Insights"
-        description="Sign in to your CDC Insights account"
+        title="Sign In | CDC International"
+        description="Sign in to your CDC International account"
       />
       <AuthLayout>
         <SignInForm />

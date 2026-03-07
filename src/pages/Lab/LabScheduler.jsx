@@ -1280,7 +1280,7 @@ function ArrangementContent() {
 
     return (
         <div className="">
-            <PageMeta title="Lab Scheduler | CDC Insights" />
+            <PageMeta title="Lab Scheduler | CDC International" />
             <PageBreadcrumb
                 pageTitle="Lab Arrangement"
                 items={[

@@ -8,8 +8,8 @@ export default function Badges() {
   return (
     <div>
       <PageMeta
-        title="Badges | CDC Insights"
-        description="Badges page for CDC Insights"
+        title="Badges | CDC International"
+        description="Badges page for CDC International"
       />
       <PageBreadcrumb pageTitle="Badges" />
       <div className="space-y-5 sm:space-y-6">

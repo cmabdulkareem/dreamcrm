@@ -600,7 +600,7 @@ export default function NewStudent() {
   return (
     <div>
       <PageMeta
-        title="New Student | CDC Insights"
+        title="New Student | CDC International"
         description="Add new student here"
       />
       <PageBreadcrumb pageTitle="New Student" />

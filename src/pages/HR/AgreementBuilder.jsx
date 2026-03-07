@@ -274,7 +274,7 @@ const AgreementBuilder = () => {
 
     return (
         <div className="min-h-screen bg-gray-50/50 dark:bg-white/[0.03] pb-20 text-gray-900 dark:text-white">
-            <PageMeta title="Agreement Builder | CDC Insights" />
+            <PageMeta title="Agreement Builder | CDC International" />
             <PageBreadCrumb pageTitle="Manage Agreement Templates" />
 
             <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">

@@ -27,7 +27,7 @@ const JobForm = ({ jobId, onClose, onSuccess }) => {
         status: 'Active',
         description: '',
         requirements: '',
-        brand: 'CDC Insights'
+        brand: 'CDC International'
     });
 
     const [brands, setBrands] = useState([]);
@@ -45,7 +45,7 @@ const JobForm = ({ jobId, onClose, onSuccess }) => {
                 status: 'Active',
                 description: '',
                 requirements: '',
-                brand: 'CDC Insights'
+                brand: 'CDC International'
             });
         }
     }, [id, isEditMode]);

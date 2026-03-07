@@ -617,7 +617,7 @@ export default function FormElements() {
   return (
     <div>
       <PageMeta
-        title="New Lead | CDC Insights"
+        title="New Lead | CDC International"
         description="Add new enquiry here"
       />
       <PageBreadcrumb pageTitle="New Enquiry" />

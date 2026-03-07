@@ -7,8 +7,8 @@ export default function BarChart() {
   return (
     <div>
       <PageMeta
-        title="Analytics | CDC Insights"
-        description="Analytics Dashboard for CDC Insights"
+        title="Analytics | CDC International"
+        description="Analytics Dashboard for CDC International"
       />
       <PageBreadcrumb pageTitle="Bar Chart" />
       <div className="space-y-6">

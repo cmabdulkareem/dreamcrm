@@ -8,8 +8,8 @@ export default function Buttons() {
   return (
     <div>
       <PageMeta
-        title="Buttons | CDC Insights"
-        description="Buttons page for CDC Insights"
+        title="Buttons | CDC International"
+        description="Buttons page for CDC International"
       />
       <PageBreadcrumb pageTitle="Buttons" />
       <div className="space-y-5 sm:space-y-6">

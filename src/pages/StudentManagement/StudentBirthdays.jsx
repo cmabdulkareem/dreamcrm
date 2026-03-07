@@ -77,7 +77,7 @@ const StudentBirthdays = () => {
     return (
         <>
             <PageMeta
-                title="Student Birthdays | CDC Insights"
+                title="Student Birthdays | CDC International"
                 description="View student birthdays on a calendar"
             />
 

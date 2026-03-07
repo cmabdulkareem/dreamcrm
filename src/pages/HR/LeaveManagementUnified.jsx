@@ -51,7 +51,7 @@ const LeaveManagementUnified = () => {
 
     return (
         <div className="space-y-6">
-            <PageMeta title="Leave Management - CDC Insights" />
+            <PageMeta title="Leave Management - CDC International" />
             <PageBreadCrumb
                 items={[
                     { name: 'Dashboard', path: '/' },

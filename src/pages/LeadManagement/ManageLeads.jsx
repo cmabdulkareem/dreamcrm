@@ -6,7 +6,7 @@ export default function Blank() {
   return (
     <div>
       <PageMeta
-        title="Manage Leads | CDC Insights, You can manage enquiries here"
+        title="Manage Leads | CDC International, You can manage enquiries here"
         description="This is where we manage enquiries"
       />
       <PageBreadcrumb pageTitle="Manage Your Leads Here" />

@@ -7,7 +7,7 @@ const Footer = () => {
           href="https://www.codesprouts.in"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-brand-500 hover:text-brand-600 transition-colors duration-200"
+          className="text-green-500 hover:text-green-600 transition-colors duration-200"
         >
           CodeSprouts innovation
         </a>

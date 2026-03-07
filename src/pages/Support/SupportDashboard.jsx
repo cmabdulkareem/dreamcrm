@@ -150,7 +150,7 @@ const SupportDashboard = () => {
 
     return (
         <div className="space-y-6">
-            <PageMeta title="Feature Request & Support | CDC Insights" />
+            <PageMeta title="Feature Request & Support | CDC International" />
             <PageBreadcrumb pageTitle="Feature Request & Support" />
 
             <div className="flex justify-end">

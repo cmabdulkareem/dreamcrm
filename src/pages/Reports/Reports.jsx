@@ -327,7 +327,7 @@ export default function Reports() {
 
     return (
         <div>
-            <PageMeta title="Reports | CDC Insights" description="Generate reports for leads and cold call lists" />
+            <PageMeta title="Reports | CDC International" description="Generate reports for leads and cold call lists" />
 
             {/* Breadcrumb with Share Idea Button */}
             <div className="flex items-center justify-between mb-6">

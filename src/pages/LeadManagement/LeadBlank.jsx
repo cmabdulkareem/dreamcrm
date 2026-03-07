@@ -15,7 +15,7 @@ export default function FormElements() {
   return (
     <div>
       <PageMeta
-        title="Manage Leads | CDC Insights, You can manage enquiries here"
+        title="Manage Leads | CDC International, You can manage enquiries here"
         description="Manage your leads and enquiries here"
       />
       <PageBreadcrumb pageTitle="Manage Your Leads Here" />

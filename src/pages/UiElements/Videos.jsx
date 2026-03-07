@@ -10,8 +10,8 @@ export default function Videos() {
   return (
     <>
       <PageMeta
-        title="Videos | CDC Insights"
-        description="Videos page for CDC Insights"
+        title="Videos | CDC International"
+        description="Videos page for CDC International"
       />
       <PageBreadcrumb pageTitle="Videos" />
       <div className="grid grid-cols-1 gap-5 sm:gap-6 xl:grid-cols-2">

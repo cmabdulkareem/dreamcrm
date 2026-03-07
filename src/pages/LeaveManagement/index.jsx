@@ -252,7 +252,7 @@ const LeaveManagement = () => {
 
   return (
     <div className="space-y-6">
-      <PageMeta title="Leave Management - CDC Insights" />
+      <PageMeta title="Leave Management - CDC International" />
       <ToastContainer position="top-center" className="!z-[999999]" style={{ zIndex: 999999 }} />
 
       {isPortal ? (

@@ -216,7 +216,7 @@ const MarketingPortal = () => {
 
     return (
         <div className="p-4 sm:p-6 lg:p-8">
-            <PageMeta title="Marketing Portal | CDC Insights" />
+            <PageMeta title="Marketing Portal | CDC International" />
             <PageBreadcrumb pageTitle="Manage Your Marketing Tasks" />
 
             {!selectedBrand ? (
