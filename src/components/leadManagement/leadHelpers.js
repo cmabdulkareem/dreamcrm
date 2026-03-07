@@ -147,3 +147,20 @@ export const getContactPointIcon = (contactPoint, otherContactPoint = "") => {
 
   return { icon: HelpCircle, label: fallbackLabel, color: "text-gray-400" };
 };
+
+// Helper function to determine lead potential background color
+export const getLeadPotentialBackgroundColor = (leadPotential) => {
+  switch (leadPotential) {
+    case "strongProspect":
+      return "bg-green-50/30 dark:bg-green-500/5";
+    case "potentialProspect":
+      return "bg-blue-50/30 dark:bg-blue-500/5";
+    case "weakProspect":
+      return "bg-yellow-50/30 dark:bg-yellow-500/5";
+    case "notAProspect":
+      return "bg-gray-50/30 dark:bg-gray-500/5";
+    default:
+      return "";
+  }
+};
+

@@ -214,6 +214,9 @@ export const saveLeadChanges = async (
       });
     }
 
+    // Signal Alert component to refresh
+    window.dispatchEvent(new CustomEvent("refresh-immediate-followups"));
+
     return true;
   } catch (error) {
     console.error("Error updating lead:", error);
@@ -359,5 +362,78 @@ export const markRemarkAsRead = async (leadId, remarkIndex) => {
   } catch (error) {
     console.error("Error marking remark as read:", error);
     throw error;
+  }
+};
+
+// Set immediate follow-up
+export const setImmediateFollowup = async (
+  leadId,
+  interval,
+  user,
+  fetchCustomers,
+  addNotification,
+  areToastsEnabled,
+  toast
+) => {
+  try {
+    // Calculate immediateFollowupAt if interval is provided
+    let immediateFollowupAt = null;
+    const now = new Date();
+    if (interval.endsWith('m')) {
+      const mins = parseInt(interval);
+      immediateFollowupAt = new Date(now.getTime() + mins * 60000);
+    } else if (interval.endsWith('h')) {
+      const hours = parseInt(interval);
+      immediateFollowupAt = new Date(now.getTime() + hours * 3600000);
+    }
+
+    const updatePayload = {
+      immediateFollowupInterval: interval,
+      immediateFollowupAt
+    };
+
+    const response = await axios.put(
+      `${API}/customers/update/${leadId}`,
+      updatePayload,
+      { withCredentials: true }
+    );
+
+    // Refresh data
+    if (typeof fetchCustomers === 'function') {
+      await fetchCustomers();
+    }
+
+    // Add notification
+    if (typeof addNotification === 'function') {
+      addNotification({
+        type: 'lead_updated',
+        userName: user?.fullName || 'Someone',
+        avatar: user?.avatar || null,
+        action: 'set immediate follow-up for',
+        entityName: response.data.customer?.fullName || 'a lead',
+        module: 'Lead Management',
+      });
+    }
+
+    if (typeof areToastsEnabled === 'function' && areToastsEnabled()) {
+      toast.success("Immediate follow-up reminder set", {
+        position: "top-center",
+        autoClose: 3000,
+      });
+    }
+
+    // Signal Alert component to refresh
+    window.dispatchEvent(new CustomEvent("refresh-immediate-followups"));
+
+    return true;
+  } catch (error) {
+    console.error("Error setting immediate follow-up:", error);
+    if (typeof areToastsEnabled === 'function' && areToastsEnabled()) {
+      toast.error("Failed to set immediate follow-up. Please try again.", {
+        position: "top-center",
+        autoClose: 3000,
+      });
+    }
+    return false;
   }
 };

@@ -203,7 +203,7 @@ export const createCustomer = async (req, res) => {
     }
 
     // Emit Immediate Followup via Socket if applicable
-    if (updatedCustomer && updatedCustomer.immediateFollowupAt) {
+    if (updatedCustomer) {
       emitImmediateFollowup({
         recipients: [updatedCustomer.assignedTo],
         brandId: updatedCustomer.brand,
@@ -409,7 +409,7 @@ export const updateCustomer = async (req, res) => {
     }
 
     // Emit Immediate Followup via Socket if applicable
-    if (updatedCustomer && updatedCustomer.immediateFollowupAt) {
+    if (updatedCustomer) {
       emitImmediateFollowup({
         recipients: [updatedCustomer.assignedTo],
         brandId: updatedCustomer.brand,
@@ -472,6 +472,10 @@ export const addRemark = async (req, res) => {
       customer.followUpDate = new Date(nextFollowUpDate);
     }
 
+    // Clear immediate follow-up as this activity satisfies it
+    customer.immediateFollowupAt = null;
+    customer.immediateFollowupInterval = "";
+
     await customer.save();
 
     // Fetch the updated customer with all fields
@@ -502,12 +506,12 @@ export const addRemark = async (req, res) => {
       console.error('Error sending remark notification:', notifError);
     }
 
-    // Emit Immediate Followup via Socket if applicable
-    if (customer.immediateFollowupAt) {
+    // Emit Immediate Followup via Socket
+    if (updatedCustomer) {
       emitImmediateFollowup({
-        recipients: [customer.assignedTo],
-        brandId: customer.brand,
-        customer: customer
+        recipients: [updatedCustomer.assignedTo],
+        brandId: updatedCustomer.brand,
+        customer: updatedCustomer
       });
     }
 

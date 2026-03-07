@@ -41,20 +41,24 @@ export default function ImmediateFollowupAlert() {
 
         if (socket) {
             const handleImmediateFollowup = (data) => {
-                console.log('🔔 Received immediate:followup socket event:', data);
                 const { customer, brandId: eventBrandId } = data;
                 if (!customer) return;
 
-                console.log('🔍 Brand Check:', { currentBrand: brandId, eventBrand: eventBrandId });
-
                 // Only update if it belongs to the current brand
                 if (brandId && eventBrandId && String(brandId) !== String(eventBrandId)) {
-                    console.log('⏭️ Skipping followup for different brand:', eventBrandId);
                     return;
                 }
 
+                console.log('🔔 Processing immediate:followup for lead:', customer.fullName, 'Cleared:', !customer.immediateFollowupAt);
+
+                // Aggressive refresh: just fetch from server to be 100% sure
+                fetchFollowups();
+
+                // Also update local state for faster perceived performance
                 setFollowups(prev => {
-                    // Update if exists, otherwise add to top
+                    if (!customer.immediateFollowupAt) {
+                        return prev.filter(f => f._id !== customer._id);
+                    }
                     const exists = prev.some(f => f._id === customer._id);
                     if (exists) {
                         return prev.map(f => f._id === customer._id ? customer : f);
@@ -73,7 +77,17 @@ export default function ImmediateFollowupAlert() {
     // Cleanup dismissed IDs periodically or refresh every 5 mins
     useEffect(() => {
         const interval = setInterval(fetchFollowups, 300000); // 5 mins fallback
-        return () => clearInterval(interval);
+
+        const handleRefresh = () => {
+            console.log("🔄 Refreshing immediate followups via custom event");
+            fetchFollowups();
+        };
+        window.addEventListener("refresh-immediate-followups", handleRefresh);
+
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener("refresh-immediate-followups", handleRefresh);
+        };
     }, [fetchFollowups]);
 
     // Filter by:
@@ -81,6 +95,7 @@ export default function ImmediateFollowupAlert() {
     // 2. Within 15 minutes of due time (or already past due)
     const activeFollowups = followups.filter(f => {
         if (dismissedIds.has(f._id)) return false;
+        if (!f.immediateFollowupAt) return false;
 
         const targetTime = new Date(f.immediateFollowupAt);
         const windowStart = new Date(currentTime.getTime() + 15 * 60000); // 15 mins from now

@@ -44,7 +44,8 @@ export default function DatePicker({
     // Initialize flatpickr with wrap: true to control the input manually
     fp.current = flatpickr(`#${id}-wrapper`, {
       mode: mode || "single",
-      static: true,
+      static: false,
+      appendTo: document.body,
       monthSelectorType: "static",
       dateFormat: "Y-m-d",
       wrap: true, // Key: allows us to wrap custom input structure
