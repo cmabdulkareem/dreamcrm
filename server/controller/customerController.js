@@ -408,8 +408,9 @@ export const updateCustomer = async (req, res) => {
       console.error('Error sending update notification:', notifError);
     }
 
-    // Emit Immediate Followup via Socket if applicable
-    if (updatedCustomer) {
+    // Emit Immediate Followup via Socket ONLY if it was active or just became active
+    // This prevents "emitting even if there is no immediate action added"
+    if (updatedCustomer && (customer.immediateFollowupAt || updatedCustomer.immediateFollowupAt)) {
       emitImmediateFollowup({
         recipients: [updatedCustomer.assignedTo],
         brandId: updatedCustomer.brand,
@@ -506,8 +507,8 @@ export const addRemark = async (req, res) => {
       console.error('Error sending remark notification:', notifError);
     }
 
-    // Emit Immediate Followup via Socket
-    if (updatedCustomer) {
+    // Emit Immediate Followup via Socket ONLY if it was active or just became active (cleared)
+    if (updatedCustomer && (customer.immediateFollowupAt || updatedCustomer.immediateFollowupAt)) {
       emitImmediateFollowup({
         recipients: [updatedCustomer.assignedTo],
         brandId: updatedCustomer.brand,
@@ -847,12 +848,9 @@ export const getImmediateFollowups = async (req, res) => {
       leadStatus: { $nin: ['converted', 'lost', 'notInterested'] } // Only active leads
     };
 
-    // Granular role filtering
-    const hasAdminAccess = isAdmin(req.user, brandId);
-    const hasManagerAccess = isManager(req.user, brandId);
-    if (!hasAdminAccess && !hasManagerAccess) {
-      query.assignedTo = req.user.id;
-    }
+    // Aggressive filtering: only show alerts for leads ASSIGNED to the user
+    // This prevents "Admin noise" where owners see everyone's alerts
+    query.assignedTo = req.user.id;
 
     const customers = await customerModel.find(query)
       .select('fullName phone1 immediateFollowupAt assignedTo leadStatus')

@@ -106,9 +106,12 @@ export const saveLeadChanges = async (
       leadStatus,
       leadPotential, // Include leadPotential in update
       coursePreference: selectedValues,
-      immediateFollowupInterval,
-      immediateFollowupAt
     };
+
+    if (immediateFollowupInterval !== undefined) {
+      updatePayload.immediateFollowupInterval = immediateFollowupInterval;
+      updatePayload.immediateFollowupAt = immediateFollowupAt;
+    }
 
 
     const response = await axios.put(

@@ -49,7 +49,7 @@ export default function ImmediateFollowupAlert() {
                     return;
                 }
 
-                console.log('🔔 Processing immediate:followup for lead:', customer.fullName, 'Cleared:', !customer.immediateFollowupAt);
+
 
                 // Aggressive refresh: just fetch from server to be 100% sure
                 fetchFollowups();
@@ -79,7 +79,7 @@ export default function ImmediateFollowupAlert() {
         const interval = setInterval(fetchFollowups, 300000); // 5 mins fallback
 
         const handleRefresh = () => {
-            console.log("🔄 Refreshing immediate followups via custom event");
+
             fetchFollowups();
         };
         window.addEventListener("refresh-immediate-followups", handleRefresh);

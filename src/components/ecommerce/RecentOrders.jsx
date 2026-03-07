@@ -314,9 +314,14 @@ export default function RecentOrders() {
         selectedValues, user, handledByPerson, getLeadStatusLabel,
         addEvent, updateEvent, events,
         () => fetchCustomers(setData, setLoading),
-        setSelectedRow, setRemarks, addNotification, areToastsEnabled, "" // Clear immediate followup on save
+        setSelectedRow, setRemarks, addNotification, areToastsEnabled,
+        // Only clear immediate followup if we are in "Action Now" mode (handled by checking if leadId was in session)
+        sessionStorage.getItem("openLeadId") === selectedRow?._id ? "" : undefined
       );
       if (success) {
+        if (sessionStorage.getItem("openLeadId") === selectedRow?._id) {
+          sessionStorage.removeItem("openLeadId");
+        }
         closeEditModal();
         resetModal();
       }

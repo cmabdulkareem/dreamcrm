@@ -164,7 +164,8 @@ export function emitImmediateFollowup({ recipients, brandId, customer }) {
 		timestamp: new Date()
 	};
 
-	// 1. Notify specific users
+	// 1. Notify specific users (Assigned users) ONLY
+	// This prevents "Admin noise" where everyone sees everyone's alerts
 	if (recipients && Array.isArray(recipients)) {
 		recipients.forEach(userId => {
 			const uid = normalizeId(userId);
@@ -173,14 +174,6 @@ export function emitImmediateFollowup({ recipients, brandId, customer }) {
 			}
 		});
 	}
-
-	// 2. Notify Brand Managers/Admins
-	if (bIdStr) {
-		ioInstance.to(`brand:${bIdStr}`).emit('immediate:followup', payload);
-	}
-
-	// 3. Notify Global Admins
-	ioInstance.to('room:admin').emit('immediate:followup', payload);
 }
 
 export function getOnlineUsers() {

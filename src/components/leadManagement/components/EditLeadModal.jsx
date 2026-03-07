@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Modal } from "../../ui/modal";
 import Button from "../../ui/button/Button";
 import Label from "../../form/Label";
@@ -17,6 +17,7 @@ import {
     BoltIcon,
     UserIcon,
     ChatIcon,
+    PencilIcon,
 } from "../../../icons";
 import {
     countries,
@@ -81,6 +82,9 @@ const EditLeadModal = ({
     // Campaign handler
     onCampaignChange,
 }) => {
+    const [isEditingLeadInfo, setIsEditingLeadInfo] = useState(false);
+    const [isEditingEducation, setIsEditingEducation] = useState(false);
+
     const canEditFields = isAdmin(user, brandIdForRoles) || hasManagerRole;
 
     return (
@@ -92,10 +96,10 @@ const EditLeadModal = ({
         >
             <div className="flex flex-col h-full bg-white dark:bg-gray-900">
                 {/* Fixed Header */}
-                <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-800 shrink-0">
+                <div className="flex items-center justify-between py-4 px-6 border-b border-gray-100 dark:border-gray-800 shrink-0">
                     <div>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-white lg:text-2xl">Edit Lead</h2>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Manage and update lead details, qualifications, and activity history.</p>
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 whitespace-nowrap overflow-hidden text-ellipsis">Manage lead details, qualifications, and activity history.</p>
                     </div>
                     <button
                         onClick={onClose}
@@ -111,138 +115,216 @@ const EditLeadModal = ({
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
 
                         {/* ===== Column 1: Form Details ===== */}
-                        <div className="space-y-8 overflow-y-auto pr-3 brand-scrollbar">
+                        <div className="space-y-6 overflow-y-auto pr-3 brand-scrollbar">
 
                             {/* Section 1: Lead Information */}
                             <div className="space-y-4">
-                                <div className="flex items-center gap-3 pb-2 border-b border-gray-100 dark:border-gray-800">
-                                    <div className="p-1.5 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                                        <UserCircleIcon className="size-4 text-blue-600 dark:text-blue-400" />
+                                <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-1.5 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                                            <UserCircleIcon className="size-4 text-blue-600 dark:text-blue-400" />
+                                        </div>
+                                        <h3 className="text-sm font-bold text-gray-800 dark:text-white uppercase tracking-wider">Lead Information</h3>
                                     </div>
-                                    <h3 className="text-sm font-bold text-gray-800 dark:text-white uppercase tracking-wider">Lead Information</h3>
+                                    <button
+                                        onClick={() => setIsEditingLeadInfo(!isEditingLeadInfo)}
+                                        className={`p-1.5 rounded-md transition-colors ${isEditingLeadInfo ? 'bg-blue-600 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400'}`}
+                                    >
+                                        <PencilIcon className="size-3.5" />
+                                    </button>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <Label htmlFor="firstName">Full Name *</Label>
-                                        <input type="text" id="firstName" value={fullName} onChange={(e) => setFullName(e.target.value)} disabled={!canEditFields} className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm" />
-                                    </div>
-                                    <div>
-                                        <Label>Email</Label>
-                                        <Input type="email" value={email} error={error} onChange={onEmailChange} placeholder="Enter email" disabled={!canEditFields} />
-                                    </div>
-                                    <div>
-                                        <div className="flex items-center justify-between mb-1">
-                                            <Label className="mb-0">Phone 1 *</Label>
-                                            <div className="flex gap-2">
-                                                <a href={`tel:${phone1}`} className="p-1 rounded bg-gray-50 dark:bg-gray-800 text-gray-500 hover:text-blue-600 transition-colors"><Phone className="size-3" /></a>
-                                                <a href={`https://wa.me/${phone1.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="p-1 rounded bg-green-50 dark:bg-green-900/20 text-green-600 hover:bg-green-100 transition-colors"><MessageCircle className="size-3" /></a>
-                                            </div>
+                                {!isEditingLeadInfo ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-y-3 gap-x-4 p-3 bg-gray-50/50 dark:bg-gray-800/30 rounded-xl border border-gray-100 dark:border-gray-700/50">
+                                        <div className="flex flex-col">
+                                            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tight">Full Name</span>
+                                            <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">{fullName || "N/A"}</span>
                                         </div>
-                                        <PhoneInput selectPosition="end" countries={countries} value={phone1} onChange={onPhone1Change} error={!!validationErrors.phone1 || phoneExists} disabled={!canEditFields} />
-                                        {checkingPhone && <p className="text-[10px] text-blue-500 mt-0.5 animate-pulse">Checking uniqueness...</p>}
-                                        {validationErrors.phone1 && <p className="text-[10px] text-red-500 mt-0.5">{validationErrors.phone1}</p>}
+                                        <div className="flex flex-col">
+                                            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tight">Email</span>
+                                            <span className="text-sm font-semibold text-gray-700 dark:text-gray-200 break-all">{email || "N/A"}</span>
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tight">Phone 1</span>
+                                            <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">{phone1 || "N/A"}</span>
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tight">Phone 2</span>
+                                            <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">{phone2 || "N/A"}</span>
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tight">Gender / DoB</span>
+                                            <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                                                {gender || "N/A"} {dob ? ` / ${formatDate(dob)}` : ""}
+                                            </span>
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tight">Place</span>
+                                            <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">{place === "Other" ? otherPlace : place || "N/A"}</span>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <Label>Phone 2</Label>
-                                        <PhoneInput selectPosition="end" countries={countries} value={phone2} onChange={setPhone2} />
-                                    </div>
-                                    <div>
-                                        <Label>Gender</Label>
-                                        <Select options={enquirerGender} value={gender} onChange={setGender} />
-                                    </div>
-                                    <div>
-                                        <DatePicker id="dob" label="DoB" value={dob} onChange={(_, str) => setDob(str)} />
-                                    </div>
-                                    <div>
-                                        <Label>Place *</Label>
-                                        <Select options={placeOptions} value={place} onChange={setPlace} />
-                                    </div>
-                                    {place === "Other" && (
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-1 duration-200">
                                         <div>
-                                            <Label htmlFor="otherPlace">Specify other</Label>
-                                            <Input type="text" id="otherPlace" value={otherPlace} onChange={(e) => setOtherPlace(e.target.value)} />
+                                            <Label htmlFor="firstName">Full Name *</Label>
+                                            <input type="text" id="firstName" value={fullName} onChange={(e) => setFullName(e.target.value)} disabled={!canEditFields} className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:ring-2 focus:ring-blue-100 outline-none transition-all" />
                                         </div>
-                                    )}
-                                </div>
+                                        <div>
+                                            <Label>Email</Label>
+                                            <Input type="email" value={email} error={error} onChange={onEmailChange} placeholder="Enter email" disabled={!canEditFields} />
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center justify-between mb-1">
+                                                <Label className="mb-0">Phone 1 *</Label>
+                                                <div className="flex gap-2">
+                                                    <a href={`tel:${phone1}`} className="p-1 rounded bg-gray-50 dark:bg-gray-800 text-gray-500 hover:text-blue-600 transition-colors"><Phone className="size-3" /></a>
+                                                    <a href={`https://wa.me/${phone1.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="p-1 rounded bg-green-50 dark:bg-green-900/20 text-green-600 hover:bg-green-100 transition-colors"><MessageCircle className="size-3" /></a>
+                                                </div>
+                                            </div>
+                                            <PhoneInput selectPosition="end" countries={countries} value={phone1} onChange={onPhone1Change} error={!!validationErrors.phone1 || phoneExists} disabled={!canEditFields} />
+                                            {checkingPhone && <p className="text-[10px] text-blue-500 mt-0.5 animate-pulse">Checking uniqueness...</p>}
+                                            {validationErrors.phone1 && <p className="text-[10px] text-red-500 mt-0.5">{validationErrors.phone1}</p>}
+                                        </div>
+                                        <div>
+                                            <Label>Phone 2</Label>
+                                            <PhoneInput selectPosition="end" countries={countries} value={phone2} onChange={setPhone2} />
+                                        </div>
+                                        <div>
+                                            <Label>Gender</Label>
+                                            <Select options={enquirerGender} value={gender} onChange={setGender} />
+                                        </div>
+                                        <div>
+                                            <DatePicker id="dob" label="DoB" value={dob} onChange={(_, str) => setDob(str)} />
+                                        </div>
+                                        <div>
+                                            <Label>Place *</Label>
+                                            <Select options={placeOptions} value={place} onChange={setPlace} />
+                                        </div>
+                                        {place === "Other" && (
+                                            <div>
+                                                <Label htmlFor="otherPlace">Specify other</Label>
+                                                <Input type="text" id="otherPlace" value={otherPlace} onChange={(e) => setOtherPlace(e.target.value)} />
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
 
                             {/* Section 2: Education & Interest */}
                             <div className="space-y-4">
-                                <div className="flex items-center gap-3 pb-2 border-b border-gray-100 dark:border-gray-800">
-                                    <div className="p-1.5 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                                        <FileIcon className="size-4 text-purple-600 dark:text-purple-400" />
+                                <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-1.5 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                                            <FileIcon className="size-4 text-purple-600 dark:text-purple-400" />
+                                        </div>
+                                        <h3 className="text-sm font-bold text-gray-800 dark:text-white uppercase tracking-wider">Education & Interest</h3>
                                     </div>
-                                    <h3 className="text-sm font-bold text-gray-800 dark:text-white uppercase tracking-wider">Education & Interest</h3>
+                                    <button
+                                        onClick={() => setIsEditingEducation(!isEditingEducation)}
+                                        className={`p-1.5 rounded-md transition-colors ${isEditingEducation ? 'bg-purple-600 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400'}`}
+                                    >
+                                        <PencilIcon className="size-3.5" />
+                                    </button>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <Label>Current Status</Label>
-                                        <Select options={enquirerStatus} value={status} onChange={setStatus} />
+                                {!isEditingEducation ? (
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-y-3 gap-x-4 p-3 bg-gray-50/50 dark:bg-gray-800/30 rounded-xl border border-gray-100 dark:border-gray-700/50">
+                                        <div className="flex flex-col">
+                                            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tight">Current Status</span>
+                                            <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">{status || "N/A"}</span>
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tight">Education</span>
+                                            <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">{education === "Other" ? otherEducation : education || "N/A"}</span>
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tight">Contact Point</span>
+                                            <div className="flex items-center gap-1.5">
+                                                {contactPoint && (() => {
+                                                    const { icon: Icon, color } = getContactPointIcon(contactPoint, otherContactPoint);
+                                                    return <Icon className={`size-3 ${color}`} />;
+                                                })()}
+                                                <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">
+                                                    {contactPoint || "N/A"}
+                                                    {(contactPoint === "other" || contactPoint?.toLowerCase() === "reference" || contactPoint?.toLowerCase() === "referance") && otherContactPoint ? ` (${otherContactPoint})` : ""}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="md:col-span-3 flex flex-col">
+                                            <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tight">Course Preferences</span>
+                                            <div className="flex flex-wrap gap-1 mt-0.5">
+                                                {selectedValues && selectedValues.length > 0 ? (
+                                                    selectedValues.map(val => (
+                                                        <Badge key={val} size="sm" variant="outline" className="text-[9px] px-1.5 py-0 leading-none h-4">{val}</Badge>
+                                                    ))
+                                                ) : <span className="text-xs text-gray-400 italic">None</span>}
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <Label>Education *</Label>
-                                        <Select options={enquirerEducation} value={education} onChange={setEducation} />
-                                    </div>
-                                    {education === "Other" && (
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-1 duration-200">
                                         <div>
-                                            <Label htmlFor="otherEducation">Specify other</Label>
-                                            <Input type="text" id="otherEducation" value={otherEducation} onChange={(e) => setOtherEducation(e.target.value)} />
+                                            <Label>Current Status</Label>
+                                            <Select options={enquirerStatus} value={status} onChange={setStatus} />
                                         </div>
-                                    )}
-                                    <div>
-                                        <div className="flex items-center justify-between mb-1">
-                                            <Label className="mb-0">Contact Point</Label>
-                                            {contactPoint && (() => {
-                                                const { icon: Icon, color } = getContactPointIcon(contactPoint, otherContactPoint);
-                                                return <Icon className={`size-3.5 ${color}`} />;
-                                            })()}
-                                        </div>
-                                        <Select
-                                            options={hasManagerRole ? contactPointOptions : contactPointOptions.filter(cp => cp.value !== "__add_new__")}
-                                            value={contactPoint}
-                                            onChange={setContactPoint}
-                                            disabled={!hasManagerRole}
-                                        />
-                                    </div>
-                                    {(contactPoint === "other" || contactPoint?.toLowerCase() === "reference" || contactPoint?.toLowerCase() === "referance") && (
                                         <div>
-                                            <Label htmlFor="otherContactPoint">Other source/ref</Label>
-                                            <Input type="text" id="otherContactPoint" value={otherContactPoint} onChange={(e) => setOtherContactPoint(e.target.value)} />
+                                            <Label>Education *</Label>
+                                            <Select options={enquirerEducation} value={education} onChange={setEducation} />
                                         </div>
-                                    )}
-                                    <div className="md:col-span-2">
-                                        <MultiSelect label="Course Preference" options={dynamicCourseOptions} selectedValues={selectedValues} onChange={setSelectedValues} className="py-1" />
+                                        {education === "Other" && (
+                                            <div>
+                                                <Label htmlFor="otherEducation">Specify other</Label>
+                                                <Input type="text" id="otherEducation" value={otherEducation} onChange={(e) => setOtherEducation(e.target.value)} />
+                                            </div>
+                                        )}
+                                        <div>
+                                            <div className="flex items-center justify-between mb-1">
+                                                <Label className="mb-0">Contact Point</Label>
+                                                {contactPoint && (() => {
+                                                    const { icon: Icon, color } = getContactPointIcon(contactPoint, otherContactPoint);
+                                                    return <Icon className={`size-3.5 ${color}`} />;
+                                                })()}
+                                            </div>
+                                            <Select
+                                                options={hasManagerRole ? contactPointOptions : contactPointOptions.filter(cp => cp.value !== "__add_new__")}
+                                                value={contactPoint}
+                                                onChange={setContactPoint}
+                                                disabled={!hasManagerRole}
+                                            />
+                                        </div>
+                                        {(contactPoint === "other" || contactPoint?.toLowerCase() === "reference" || contactPoint?.toLowerCase() === "referance") && (
+                                            <div>
+                                                <Label htmlFor="otherContactPoint">Other source/ref</Label>
+                                                <Input type="text" id="otherContactPoint" value={otherContactPoint} onChange={(e) => setOtherContactPoint(e.target.value)} />
+                                            </div>
+                                        )}
+                                        <div className="md:col-span-2">
+                                            <MultiSelect label="Course Preference" options={dynamicCourseOptions} selectedValues={selectedValues} onChange={setSelectedValues} className="py-1" />
+                                        </div>
                                     </div>
-                                </div>
+                                )}
                             </div>
 
-                            {/* Section 3: Lead Qualification */}
+                            {/* Section 3: Management & Follow-up */}
                             <div className="space-y-4">
                                 <div className="flex items-center gap-3 pb-2 border-b border-gray-100 dark:border-gray-800">
                                     <div className="p-1.5 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
                                         <BoltIcon className="size-4 text-yellow-600 dark:text-yellow-400" />
                                     </div>
-                                    <h3 className="text-sm font-bold text-gray-800 dark:text-white uppercase tracking-wider">Lead Qualification</h3>
+                                    <h3 className="text-sm font-bold text-gray-800 dark:text-white uppercase tracking-wider">Management & Follow-up</h3>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-2 gap-3">
                                     <div>
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <Label className="mb-0">Lead Potential *</Label>
-                                            {leadPotential && (
-                                                <div className={`size-2 rounded-full ${leadPotential === 'strongProspect' ? 'bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.4)]' : leadPotential === 'potentialProspect' ? 'bg-yellow-500' : 'bg-gray-400'}`} />
-                                            )}
-                                        </div>
-                                        <Select options={leadPotentialOptions} value={leadPotential} onChange={setLeadPotential} />
+                                        <Label className="mb-1 text-[11px]">Potential *</Label>
+                                        <Select options={leadPotentialOptions} value={leadPotential} onChange={setLeadPotential} className="h-9 py-1 text-xs" />
                                     </div>
                                     <div>
-                                        <Label>Campaign</Label>
-                                        <Select options={campaignOptions} value={campaign} onChange={onCampaignChange} disabled={!hasManagerRole} />
+                                        <Label className="mb-1 text-[11px]">Campaign</Label>
+                                        <Select options={campaignOptions} value={campaign} onChange={onCampaignChange} disabled={!hasManagerRole} className="h-9 py-1 text-xs" />
                                     </div>
-                                    <div className="md:col-span-2">
-                                        <Label>Lead Status *</Label>
+                                    <div>
+                                        <Label className="mb-1 text-[11px]">Lead Status *</Label>
                                         <Select
                                             id="leadStatus"
                                             options={leadStatusOptions}
@@ -252,37 +334,25 @@ const EditLeadModal = ({
                                                 if (value === "converted" || value === "lost") setFollowUpDate("");
                                             }}
                                             required
+                                            className="h-9 py-1 text-xs"
                                         />
                                     </div>
-                                </div>
-                            </div>
-
-                            {/* Section 4: Follow-up Details */}
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-3 pb-2 border-b border-gray-100 dark:border-gray-800">
-                                    <div className="p-1.5 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                                        <CalendarIcon className="size-4 text-green-600 dark:text-green-400" />
-                                    </div>
-                                    <h3 className="text-sm font-bold text-gray-800 dark:text-white uppercase tracking-wider">Follow-up Details</h3>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {(leadStatus !== "converted" && leadStatus !== "lost") && (
-                                        <div>
+                                    <div>
+                                        {(leadStatus !== "converted" && leadStatus !== "lost") && (
                                             <DatePicker id="followupDate" label="Next Follow Up *" value={followUpDate} disablePastDates={true} onChange={(_, str) => setFollowUpDate(str)} />
-                                        </div>
-                                    )}
-                                    <div className="md:col-span-2">
-                                        <div className="flex items-center justify-between mb-1.5">
-                                            <Label className="mb-0">New Remark *</Label>
-                                            <span className="text-xs text-gray-400 italic">Internal Note</span>
+                                        )}
+                                    </div>
+                                    <div className="col-span-2">
+                                        <div className="flex items-center justify-between mb-1">
+                                            <Label className="mb-0 text-[11px]">New Remark *</Label>
+                                            <span className="text-[9px] text-gray-400 italic">Internal Note</span>
                                         </div>
                                         <textarea
                                             id="remarks"
                                             value={remarks}
                                             onChange={(e) => setRemarks(e.target.value)}
                                             placeholder="Add followup notes..."
-                                            className="w-full h-32 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/20 transition-all outline-none resize-none placeholder:text-xs"
+                                            className="w-full h-20 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/20 transition-all outline-none resize-none placeholder:text-[10px]"
                                         />
                                     </div>
                                 </div>
@@ -350,16 +420,16 @@ const EditLeadModal = ({
                 </div>
 
                 {/* Fixed Footer */}
-                <div className="flex items-center justify-between p-6 border-t border-gray-100 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-900/30 shrink-0">
-                    <p className="text-xs text-gray-400 flex items-center gap-2">
-                        <UserIcon className="size-3" />
+                <div className="flex items-center justify-between py-4 px-6 border-t border-gray-100 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-900/30 shrink-0">
+                    <p className="text-[10px] text-gray-400 flex items-center gap-1.5">
+                        <UserIcon className="size-2.5" />
                         <span>Last updated: {formatDate(selectedRow?.updatedAt)}</span>
                     </p>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                         <Button
                             variant="outline"
                             onClick={onClose}
-                            className="text-xs px-4 border-gray-200 dark:border-gray-700 hover:bg-white dark:hover:bg-gray-800"
+                            className="h-8 py-0 px-3 text-[11px] border-gray-200 dark:border-gray-700 hover:bg-white dark:hover:bg-gray-800"
                         >
                             Cancel
                         </Button>
@@ -368,7 +438,7 @@ const EditLeadModal = ({
                             onClick={onSave}
                             loading={isSubmitting}
                             disabled={phoneExists}
-                            className="text-xs px-8 shadow-lg shadow-blue-500/10"
+                            className="h-8 py-0 px-6 text-[11px] shadow-lg shadow-blue-500/10"
                         >
                             Update Lead
                         </Button>
