@@ -213,8 +213,8 @@ const OnboardingAcceptance = () => {
 
                     <div className="space-y-12">
                         {data.templates && data.templates[currentStep] && (
-                            <div className="agreement-viewport overflow-x-auto bg-gray-100/50 rounded-2xl p-4 sm:p-0 sm:bg-transparent">
-                                <div className="agreement-a4-page mx-auto bg-white shadow-lg sm:shadow-none min-w-[210mm] w-[210mm] min-h-[297mm] p-[25mm_15mm] border border-gray-100 sm:border-0 rounded-xl sm:rounded-none">
+                            <div className="agreement-viewport overflow-x-auto bg-gray-50/50 rounded-2xl">
+                                <div className="agreement-a4-page mx-auto shadow-lg">
                                     <div className="border-b-2 border-blue-900 pb-2 mb-8">
                                         <h2 className="text-2xl font-black text-blue-900 uppercase tracking-tight">
                                             {data.templates[currentStep].name}
@@ -321,12 +321,21 @@ const OnboardingAcceptance = () => {
                 .agreement-viewport {
                     -webkit-overflow-scrolling: touch;
                     margin-bottom: 2rem;
+                    width: 100% !important;
+                    overflow-x: auto !important;
+                    display: block !important;
                 }
                 
                 .agreement-a4-page {
                     font-family: 'Inter', -apple-system, sans-serif !important;
                     background: white !important;
                     color: #1a1a1b !important;
+                    width: 210mm !important;
+                    min-width: 210mm !important;
+                    max-width: none !important;
+                    min-height: 297mm !important;
+                    padding: 25mm 15mm !important;
+                    margin: 0 auto !important;
                 }
 
                 .agreement-content-body {
@@ -360,13 +369,16 @@ const OnboardingAcceptance = () => {
 
                 @media (max-width: 768px) {
                     .agreement-viewport {
-                        margin-left: -1rem; /* Adjust for mobile padding */
-                        margin-right: -1rem;
-                        padding: 1rem;
+                        margin-left: -2rem; /* Pull out of parent padding */
+                        margin-right: -2rem;
+                        padding: 1.5rem 0;
+                        background: #f1f5f9; /* Subtle contrast background */
                     }
                     .agreement-a4-page {
-                        /* Keep A4 width for horizontal scroll */
-                        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+                        /* Strict width enforcement for horizontal scroll */
+                        margin-left: 1.5rem !important; /* Visual padding for start */
+                        margin-right: 1.5rem !important;
+                        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
                     }
                 }
 
