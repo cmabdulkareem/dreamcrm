@@ -825,6 +825,10 @@ export const hrController = {
     margin: 25mm 15mm 25mm 15mm;
 }
 
+* {
+    box-sizing: border-box !important;
+}
+
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     margin: 0;
@@ -832,14 +836,14 @@ body {
     background: #fff;
     color: #1a1a1b;
     font-size: 11pt;
-    line-height: 1.6;
+    line-height: 1.0;
     -webkit-print-color-adjust: exact;
 
-    /* FIX WORD BREAKING */
-    word-break: normal;
-    overflow-wrap: normal;
-    word-wrap: normal;
+    /* PERFECT BALANCE PDF WRAPPING */
+    word-break: keep-all;
     white-space: normal;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
     hyphens: none;
 
     text-align: left;
@@ -932,17 +936,26 @@ header {
 .section-body {
     font-size: 11pt;
     color: #374151;
-    line-height: 1.6;
+    line-height: 1.0;
 
-    /* FIX WORD WRAPPING */
-    word-break: normal;
-    overflow-wrap: normal;
-    word-wrap: normal;
+    /* PERFECT BALANCE PDF WRAPPING */
+    word-break: keep-all;
     white-space: normal;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    display: block;
 }
 
-.section-body p {
+.section-body p, 
+.section-body li,
+.section-body div {
     margin-bottom: 8px;
+    page-break-inside: avoid;
+    break-inside: avoid;
+    /* INHERIT SAFE WRAP */
+    word-break: inherit;
+    overflow-wrap: inherit;
+    white-space: inherit;
 }
 
 .section-body h3 {
@@ -1016,6 +1029,12 @@ header {
     margin-top: 8px;
 }
 
+.content {
+    width: 100%;
+    display: block;
+    overflow: visible;
+}
+
 footer {
     margin-top: 40px;
     text-align: center;
@@ -1024,6 +1043,7 @@ footer {
     text-transform: uppercase;
     padding-top: 15px;
     border-top: 1px solid #f3f4f6;
+    clear: both;
 }
 </style>
             </head>
