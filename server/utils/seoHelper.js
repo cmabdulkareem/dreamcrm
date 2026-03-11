@@ -3,7 +3,7 @@
  * Supports both 'event' and 'job' types.
  */
 export const generateSEOHtml = (originalHtml, data, type = 'event', isDev = false) => {
-  let title = "Dream CRM";
+  let title = "CDC International";
   let description = "Streamline Your Business with CDC International.";
   let url = "https://crm.cdcinternational.in";
   let imageUrl = "";
@@ -11,7 +11,7 @@ export const generateSEOHtml = (originalHtml, data, type = 'event', isDev = fals
 
   if (data) {
     if (type === 'event') {
-      title = `${data.eventName} | Dream CRM`;
+      title = `${data.eventName} | CDC International`;
       description = data.eventDescription || "Register for this event";
       url = `https://crm.cdcinternational.in/event-registration/${data.registrationLink}`;
       hydrationKey = "window.__INITIAL_EVENT_DATA__";
@@ -28,12 +28,12 @@ export const generateSEOHtml = (originalHtml, data, type = 'event', isDev = fals
       hydrationKey = "window.__INITIAL_JOB_DATA__";
       imageUrl = "https://crm.cdcinternational.in/images/logo/logo.svg";
     } else if (type === 'attendance') {
-      title = `${data.batch?.batchName || 'Attendance Report'} | Dream CRM`;
+      title = `${data.batch?.batchName || 'Attendance Report'} | CDC International`;
       description = `View attendance report for ${data.batch?.batchName || 'your batch'}.`;
       hydrationKey = "window.__INITIAL_ATTENDANCE_DATA__";
       imageUrl = "https://crm.cdcinternational.in/images/logo/logo.svg";
     } else if (type === 'onboarding') {
-      title = `Onboarding Acceptance: ${data.fullName} | Dream CRM`;
+      title = `Onboarding Acceptance: ${data.fullName} | CDC International`;
       description = `Onboarding and Agreement Acceptance for ${data.fullName}.`;
       hydrationKey = "window.__INITIAL_ONBOARDING_DATA__";
       imageUrl = "https://crm.cdcinternational.in/images/logo/logo.svg";

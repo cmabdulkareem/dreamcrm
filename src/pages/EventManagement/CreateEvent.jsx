@@ -671,32 +671,32 @@ const CreateEvent = () => {
         </div>
 
         {/* Right Side: Live Preview (Sticky) */}
-        <div className="w-full lg:w-2/5 flex justify-center">
-          <div className="sticky top-6 w-full max-w-[390px]">
+        <div className="w-full lg:w-2/5 flex flex-col items-center">
+          <div className="sticky top-6 w-full max-w-[300px]">
             {/* iPhone Frame */}
-            <div className="relative bg-black rounded-[50px] p-3 shadow-2xl border-[6px] border-gray-900 shadow-brand-500/10">
+            <div className="relative bg-black rounded-[45px] p-2.5 shadow-2xl border-[5px] border-gray-900 shadow-brand-500/10">
 
               {/* iPhone Buttons - Volume Drop/Power */}
-              <div className="absolute -left-[10px] top-32 w-[4px] h-16 bg-gray-800 rounded-l-md"></div>
-              <div className="absolute -left-[10px] top-52 w-[4px] h-12 bg-gray-800 rounded-l-md"></div>
-              <div className="absolute -right-[10px] top-40 w-[4px] h-20 bg-gray-800 rounded-r-md"></div>
+              <div className="absolute -left-[8px] top-24 w-[3px] h-12 bg-gray-800 rounded-l-md"></div>
+              <div className="absolute -left-[8px] top-40 w-[3px] h-10 bg-gray-800 rounded-l-md"></div>
+              <div className="absolute -right-[8px] top-32 w-[3px] h-16 bg-gray-800 rounded-r-md"></div>
 
               {/* Dynamic Island */}
-              <div className="absolute top-6 left-1/2 -translate-x-1/2 w-28 h-7 bg-black rounded-full z-50 flex items-center justify-end px-4 gap-1.5 shadow-lg shadow-black/20">
-                <div className="size-1.5 rounded-full bg-blue-500/20"></div>
-                <div className="size-2 rounded-full bg-green-500/40 blur-[1px]"></div>
+              <div className="absolute top-5 left-1/2 -translate-x-1/2 w-20 h-5 bg-black rounded-full z-50 flex items-center justify-end px-3 gap-1 shadow-lg shadow-black/20">
+                <div className="size-1 rounded-full bg-blue-500/20"></div>
+                <div className="size-1.5 rounded-full bg-green-500/40 blur-[1px]"></div>
               </div>
 
               {/* Status Bar Elements */}
-              <div className="absolute top-8 left-10 text-[10px] font-bold text-black z-40">9:41</div>
-              <div className="absolute top-8 right-10 flex gap-1 z-40">
-                <div className="w-4 h-2 rounded-[2px] border border-black/20 relative">
+              <div className="absolute top-7 left-8 text-[9px] font-bold text-black z-40">9:41</div>
+              <div className="absolute top-7 right-8 flex gap-1 z-40">
+                <div className="w-3 h-1.5 rounded-[1px] border border-black/20 relative">
                   <div className="absolute right-0.5 top-0.5 bottom-0.5 left-0.5 bg-black rounded-[0.5px]"></div>
                 </div>
               </div>
 
               {/* Main Content Area */}
-              <div className="bg-white rounded-[40px] overflow-hidden shadow-inner h-[760px] flex flex-col scrollbar-hide">
+              <div className="bg-white rounded-[35px] overflow-hidden shadow-inner h-[620px] flex flex-col scrollbar-hide">
                 <div className="flex-1 overflow-y-auto scrollbar-hide">
                   {/* Simulated Header Banner */}
                   <div className="relative">
@@ -772,24 +772,25 @@ const CreateEvent = () => {
                 {/* Home Indicator */}
               </div>
             </div>
-          </div>
-        </div>
 
-        <div className="flex gap-4 mt-8 px-1">
-          <Button
-            variant="outline"
-            className="flex-1 !rounded-[20px] !py-4 text-xs font-bold"
-            onClick={() => navigate('/events')}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            className="flex-2 !rounded-[20px] !py-4 text-xs font-bold shadow-lg shadow-brand-500/20"
-            startIcon={<CheckCircleIcon className="size-4" />}
-          >
-            Create Event
-          </Button>
+            <div className="flex gap-4 mt-8 px-1">
+              <Button
+                variant="outline"
+                type="button"
+                className="flex-1 !rounded-[20px] !py-4 text-xs font-bold"
+                onClick={() => navigate('/events')}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                className="flex-2 !rounded-[20px] !py-4 text-xs font-bold shadow-lg shadow-brand-500/20"
+                startIcon={<CheckCircleIcon className="size-4" />}
+              >
+                Create Event
+              </Button>
+            </div>
+          </div>
         </div>
       </form>
     </div>
