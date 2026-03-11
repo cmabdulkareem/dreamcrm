@@ -208,7 +208,7 @@ function App() {
                 <Route path="*" element={<NotFound />} />
 
                 {/* Public Routes */}
-                <Route path="/event-registration/:link" element={<EventRegistration />} />
+                <Route path="/event-registration/:link" element={<Suspense fallback={<LoadingSpinner />}><EventRegistration /></Suspense>} />
                 <Route path="/public/attendance/:shareToken" element={<PublicAttendance />} />
                 <Route path="/jobs/apply/:id" element={<Suspense fallback={<LoadingSpinner />}><PublicJobApply /></Suspense>} />
                 <Route path="/onboarding/:token" element={<Suspense fallback={<LoadingSpinner />}><OnboardingAcceptance /></Suspense>} />

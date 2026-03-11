@@ -12,6 +12,9 @@ import { fileURLToPath } from 'url'
 config({ quiet: true })
 
 import './config/db.js'
+import eventModel from './model/eventModel.js'
+import jobModel from './model/jobModel.js'
+import { generateSEOHtml } from './utils/seoHelper.js'
 import routes from './routes/userRoutes.js'
 import setupSocket, { emitNotification } from './realtime/socket.js'
 import customerRoutes from './routes/customerRoutes.js'
@@ -113,14 +116,75 @@ app.use('/api/marketing/tasks', marketingTaskRoutes)
 
 // ================= SPA FALLBACK =================
 
-app.use((req, res, next) => {
+app.use(async (req, res, next) => {
   const isApiOrUpload = req.url.startsWith('/api/') || req.url.startsWith('/uploads/');
   const hasExtension = req.url.split('?')[0].includes('.');
 
   if (isApiOrUpload || hasExtension) {
     return next();
   }
-  res.sendFile(path.join(__dirname, '../dist/index.html'))
+
+  // Check if it's an event registration route for SEO
+  const eventMatch = req.url.match(/^\/event-registration\/([a-f0-9]+)$/);
+  if (eventMatch) {
+    try {
+      const link = eventMatch[1];
+      const event = await eventModel.findOne({ registrationLink: link, isActive: true });
+      if (event) {
+        let indexPath = path.join(__dirname, '../dist/index.html');
+        let isDev = false;
+        if (!fs.existsSync(indexPath)) {
+          indexPath = path.join(__dirname, '../index.html');
+          isDev = true;
+        }
+
+        if (fs.existsSync(indexPath)) {
+          let html = fs.readFileSync(indexPath, 'utf8');
+          html = generateSEOHtml(html, event, 'event', isDev);
+          return res.send(html);
+        }
+      }
+    } catch (error) {
+      console.error('SEO Injection Error (Event):', error);
+    }
+  }
+
+  // Check if it's a job application route for SEO
+  const jobMatch = req.url.match(/^\/jobs\/apply\/([a-f0-9]{24})$/);
+  if (jobMatch) {
+    try {
+      const id = jobMatch[1];
+      const job = await jobModel.findById(id);
+      if (job && job.status === 'Active') {
+        let indexPath = path.join(__dirname, '../dist/index.html');
+        let isDev = false;
+        if (!fs.existsSync(indexPath)) {
+          indexPath = path.join(__dirname, '../index.html');
+          isDev = true;
+        }
+        if (fs.existsSync(indexPath)) {
+          let html = fs.readFileSync(indexPath, 'utf8');
+          html = generateSEOHtml(html, job, 'job', isDev);
+          return res.send(html);
+        }
+      }
+    } catch (error) {
+      console.error('SEO Injection Error (Job):', error);
+    }
+  }
+
+  const distPath = path.join(__dirname, '../dist/index.html');
+  const rootPath = path.join(__dirname, '../index.html');
+  
+  if (fs.existsSync(distPath)) {
+    res.sendFile(distPath);
+  } else if (fs.existsSync(rootPath)) {
+    let html = fs.readFileSync(rootPath, 'utf8');
+    html = generateSEOHtml(html, null, 'event', true); 
+    res.send(html);
+  } else {
+    next();
+  }
 })
 
 // ================= SERVER =================

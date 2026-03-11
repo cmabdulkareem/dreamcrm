@@ -11,8 +11,8 @@ import Badge from '../../../components/ui/badge/Badge';
 
 const PublicJobApply = () => {
     const { id } = useParams();
-    const [job, setJob] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const [job, setJob] = useState(window.__INITIAL_JOB_DATA__ || null);
+    const [loading, setLoading] = useState(!window.__INITIAL_JOB_DATA__);
     const [submitting, setSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
     const [formData, setFormData] = useState({
@@ -29,6 +29,15 @@ const PublicJobApply = () => {
 
     useEffect(() => {
         const fetchJob = async () => {
+            // Use hydrated data if available and matches the ID
+            if (window.__INITIAL_JOB_DATA__ && window.__INITIAL_JOB_DATA__._id === id) {
+                setJob(window.__INITIAL_JOB_DATA__);
+                setLoading(false);
+                // Clean up global to avoid stale data on client-side navigation
+                delete window.__INITIAL_JOB_DATA__;
+                return;
+            }
+
             try {
                 const data = await hrService.getPublicJob(id);
                 setJob(data);

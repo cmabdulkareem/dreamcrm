@@ -12,17 +12,40 @@ import API from "../config/api";
 
 const EventRegistration = () => {
   const { link } = useParams();
-  const [event, setEvent] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [event, setEvent] = useState(() => {
+    // Check if we have pre-loaded data from SSR
+    if (typeof window !== 'undefined' && window.__INITIAL_EVENT_DATA__ && window.__INITIAL_EVENT_DATA__.registrationLink === link) {
+      return window.__INITIAL_EVENT_DATA__;
+    }
+    return null;
+  });
+  const [loading, setLoading] = useState(!event);
   const [submitting, setSubmitting] = useState(false);
   const [registered, setRegistered] = useState(false);
   const [registrationId, setRegistrationId] = useState(null);
-  const [formData, setFormData] = useState({});
+  const [formData, setFormData] = useState(() => {
+    // Initialize form data if event is pre-loaded
+    if (typeof window !== 'undefined' && window.__INITIAL_EVENT_DATA__ && window.__INITIAL_EVENT_DATA__.registrationLink === link) {
+      const initialData = {};
+      window.__INITIAL_EVENT_DATA__.registrationFields.forEach(field => {
+        initialData[field.fieldName] = '';
+      });
+      return initialData;
+    }
+    return {};
+  });
   const [errors, setErrors] = useState({});
 
   // Fetch event details
-  const fetchEvent = async () => {
+  const fetchEvent = async (force = false) => {
+    // Skip fetching if we already have the data (from SSR) unless forced
+    if (event && !force) {
+      setLoading(false);
+      return;
+    }
+
     try {
+      setLoading(true);
       const response = await axios.get(`${API}/events/public/${link}`);
       setEvent(response.data.event);
 
@@ -42,6 +65,13 @@ const EventRegistration = () => {
 
   useEffect(() => {
     fetchEvent();
+
+    // Clean up initial data to prevent stale hydration on client-side navigation
+    return () => {
+      if (typeof window !== 'undefined' && window.__INITIAL_EVENT_DATA__) {
+        delete window.__INITIAL_EVENT_DATA__;
+      }
+    };
   }, [link]);
 
   // Handle form input changes
