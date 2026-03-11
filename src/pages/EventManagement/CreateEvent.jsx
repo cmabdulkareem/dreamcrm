@@ -5,6 +5,8 @@ import 'react-toastify/dist/ReactToastify.css';
 import { useNavigate } from 'react-router-dom';
 import ReactCrop, { centerCrop, makeAspectCrop, convertToPixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
+import { DndProvider, useDrag, useDrop } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
 import ComponentCard from '../../components/common/ComponentCard';
 import PageMeta from '../../components/common/PageMeta';
 import PageBreadcrumb from '../../components/common/PageBreadCrumb';
@@ -24,7 +26,8 @@ import {
   FileIcon,
   CheckCircleIcon,
   CloseIcon,
-  ChevronDownIcon
+  ChevronDownIcon,
+  GridIcon
 } from '../../icons';
 
 axios.defaults.withCredentials = true;
@@ -32,6 +35,140 @@ axios.defaults.withCredentials = true;
 import API from "../../config/api";
 
 const generatePin = () => Math.floor(1000 + Math.random() * 9000).toString();
+
+const ItemType = {
+  FIELD: 'field',
+};
+
+const DraggableField = ({ field, index, moveField, removeField, handleFieldChange }) => {
+  const ref = useRef(null);
+  const [{ handlerId }, drop] = useDrop({
+    accept: ItemType.FIELD,
+    collect(monitor) {
+      return {
+        handlerId: monitor.getHandlerId(),
+      };
+    },
+    hover(item, monitor) {
+      if (!ref.current) {
+        return;
+      }
+      const dragIndex = item.index;
+      const hoverIndex = index;
+      if (dragIndex === hoverIndex) {
+        return;
+      }
+      const hoverBoundingRect = ref.current?.getBoundingClientRect();
+      const hoverMiddleY = (hoverBoundingRect.bottom - hoverBoundingRect.top) / 2;
+      const clientOffset = monitor.getClientOffset();
+      const hoverClientY = clientOffset.y - hoverBoundingRect.top;
+      if (dragIndex < hoverIndex && hoverClientY < hoverMiddleY) {
+        return;
+      }
+      if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) {
+        return;
+      }
+      moveField(dragIndex, hoverIndex);
+      item.index = hoverIndex;
+    },
+  });
+
+  const [{ isDragging }, drag] = useDrag({
+    type: ItemType.FIELD,
+    item: () => {
+      return { id: index, index };
+    },
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging(),
+    }),
+  });
+
+  drag(drop(ref));
+
+  return (
+    <div
+      ref={ref}
+      style={{ opacity: isDragging ? 0.4 : 1 }}
+      data-handler-id={handlerId}
+      className="p-4 bg-gray-50/50 dark:bg-white/[0.02] border border-gray-100 dark:border-gray-800 rounded-2xl transition-all hover:border-brand-200 dark:hover:border-brand-800 group relative"
+    >
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center gap-4">
+          <div className="flex-none flex items-center justify-center size-10 bg-white dark:bg-gray-900 rounded-xl shadow-theme-xs text-gray-400 cursor-move">
+            <GridIcon className="size-5" />
+          </div>
+
+          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label className="text-[10px] text-gray-500 uppercase tracking-widest mb-1.5 block">Field Label</Label>
+              <Input
+                type="text"
+                value={field.fieldName}
+                onChange={(e) => handleFieldChange(index, 'fieldName', e.target.value)}
+                className="!h-9 !py-1 text-sm"
+              />
+            </div>
+            <div>
+              <Label className="text-[10px] text-gray-500 uppercase tracking-widest mb-1.5 block">Type</Label>
+              <Select
+                options={[
+                  { value: "text", label: "Short Text" },
+                  { value: "email", label: "Email Address" },
+                  { value: "number", label: "Number" },
+                  { value: "date", label: "Date" },
+                  { value: "textarea", label: "Long Text" },
+                  { value: "select", label: "Dropdown Select" }
+                ]}
+                value={field.fieldType}
+                onChange={(value) => handleFieldChange(index, 'fieldType', value)}
+                className="!h-9 text-sm"
+              />
+            </div>
+          </div>
+
+          <div className="flex h-full items-end gap-4 pb-1">
+            <label className="flex items-center gap-2 cursor-pointer group/check">
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  checked={field.isRequired}
+                  onChange={(e) => handleFieldChange(index, 'isRequired', e.target.checked)}
+                  className="sr-only"
+                />
+                <div className={`w-10 h-5 rounded-full transition-colors ${field.isRequired ? 'bg-brand-500' : 'bg-gray-200 dark:bg-gray-800'}`}></div>
+                <div className={`absolute left-1 top-1 size-3 bg-white rounded-full transition-all ${field.isRequired ? 'translate-x-5' : ''}`}></div>
+              </div>
+              <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Required</span>
+            </label>
+
+            <button
+              type="button"
+              onClick={() => removeField(index)}
+              className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
+              title="Remove Field"
+            >
+              <TrashBinIcon className="size-5" />
+            </button>
+          </div>
+        </div>
+
+        {field.fieldType === 'select' && (
+          <div className="w-full pt-4 border-t border-gray-100 dark:border-gray-800">
+            <Label className="text-[10px] text-gray-500 uppercase tracking-widest mb-1.5 block">Options (Comma separated)</Label>
+            <Input
+              type="text"
+              value={field.options ? field.options.join(',') : ''}
+              onChange={(e) => handleFieldChange(index, 'options', e.target.value.split(','))}
+              onBlur={(e) => handleFieldChange(index, 'options', e.target.value.split(',').map(opt => opt.trim()).filter(opt => opt !== ""))}
+              placeholder="Option 1, Option 2, etc."
+              className="!h-9 !py-1 text-sm font-normal"
+            />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
 const CreateEvent = () => {
   const { user } = useContext(AuthContext);
@@ -88,6 +225,18 @@ const CreateEvent = () => {
       registrationFields: updatedFields
     }));
   };
+
+  const moveRegistrationField = useCallback((dragIndex, hoverIndex) => {
+    const dragField = formData.registrationFields[dragIndex];
+    const updatedFields = [...formData.registrationFields];
+    updatedFields.splice(dragIndex, 1);
+    updatedFields.splice(hoverIndex, 0, dragField);
+
+    setFormData(prev => ({
+      ...prev,
+      registrationFields: updatedFields
+    }));
+  }, [formData.registrationFields]);
 
   // Add a new registration field
   const addRegistrationField = () => {
@@ -351,7 +500,8 @@ const CreateEvent = () => {
   }
 
   return (
-    <div className="max-w-(--breakpoint-2xl) mx-auto pb-20">
+    <DndProvider backend={HTML5Backend}>
+      <div className="max-w-(--breakpoint-2xl) mx-auto pb-20">
       <PageMeta title="Create Event - CRM" />
       <PageBreadcrumb pageTitle="Create Your Event Here" />
       <ToastContainer position="top-right" className="!z-[999999]" />
@@ -484,95 +634,95 @@ const CreateEvent = () => {
               </div>
 
               {/* Right side: Event Media (Red Area) */}
-              <div className="lg:col-span-6">
+              <div className="lg:col-span-6">                <div>
                 <Label>Event Banner</Label>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleBannerUpload}
-                  accept="image/*"
-                  className="hidden"
-                />
-
-                {bannerPreview ? (
-                  <div className="space-y-4">
-                    {!croppedBannerUrl ? (
-                      <div className="space-y-3">
-                        <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-900 p-4 overflow-auto">
-                          <div style={{ width: 'fit-content', margin: '0 auto' }}>
+                <div className="mt-2">
+                  {!bannerPreview ? (
+                    <div
+                      onClick={() => fileInputRef.current.click()}
+                      className="border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-3xl p-12 text-center cursor-pointer hover:border-brand-500/50 hover:bg-brand-50/30 dark:hover:bg-brand-500/5 transition-all group"
+                    >
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleBannerUpload}
+                        accept="image/*"
+                        className="hidden"
+                      />
+                      <div className="size-16 bg-brand-50 dark:bg-brand-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                        <PlusIcon className="size-8 text-brand-500" />
+                      </div>
+                      <p className="text-sm font-bold text-gray-900 dark:text-white mb-1">Click to upload banner</p>
+                      <p className="text-xs text-gray-500">Suggested size: 1200x630px (Max 5MB)</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {!croppedBannerUrl ? (
+                        <div className="bg-gray-900 rounded-3xl overflow-hidden shadow-2xl">
+                          <div className="p-4 border-b border-white/10 flex justify-between items-center bg-gray-900/50">
+                            <span className="text-white text-xs font-bold uppercase tracking-widest">Crop Banner Image</span>
+                            <button
+                              type="button"
+                              onClick={removeBanner}
+                              className="size-8 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-red-500 transition-colors"
+                            >
+                              <CloseIcon className="size-4" />
+                            </button>
+                          </div>
+                          <div className="max-h-[500px] overflow-hidden flex items-center justify-center bg-black/40">
                             <ReactCrop
                               crop={crop}
                               onChange={(c) => setCrop(c)}
                               onComplete={(c) => setCompletedCrop(c)}
                               aspect={16 / 9}
+                              className="max-w-full"
                             >
                               <img
                                 ref={imgRef}
+                                alt="Crop me"
                                 src={bannerPreview}
-                                alt="To be cropped"
                                 onLoad={onImageLoad}
-                                style={{
-                                  maxHeight: '500px',
-                                  width: 'auto',
-                                  display: 'block'
-                                }}
+                                style={{ maxHeight: '500px' }}
                               />
                             </ReactCrop>
                           </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={removeBanner}
-                            startIcon={<TrashBinIcon className="size-3.5" />}
-                            className="flex-1 text-xs"
-                          >
-                            Discard
-                          </Button>
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            onClick={handleCropComplete}
-                            startIcon={<CheckCircleIcon className="size-3.5" />}
-                            className="flex-1 text-xs"
-                          >
-                            Confirm
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="relative group">
-                        <div className="aspect-video w-full overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-800 relative shadow-sm">
-                          <img
-                            src={croppedBannerUrl}
-                            alt="Banner Preview"
-                            className="w-full h-full object-cover"
-                          />
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                            <Button variant="primary" size="sm" onClick={triggerBannerUpload} startIcon={<PencilIcon className="size-3.5" />} className="!h-8 !px-3 text-[10px]">
-                              Change
+                          <div className="p-4 bg-gray-900/50 border-t border-white/10 flex justify-center">
+                            <Button
+                              onClick={handleCropComplete}
+                              startIcon={<CheckCircleIcon className="size-4" />}
+                            >
+                              Save Crop
                             </Button>
-                            <Button variant="danger" size="sm" onClick={removeBanner} startIcon={<TrashBinIcon className="size-3.5" />} className="!h-8 !px-3 text-[10px]">
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="relative group rounded-3xl overflow-hidden shadow-lg border border-gray-100 dark:border-gray-800">
+                          <img src={croppedBannerUrl} alt="Banner Preview" className="w-full aspect-video object-cover" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                            <Button
+                              size="sm"
+                              variant="neutral"
+                              onClick={() => setCroppedBannerUrl(null)}
+                              startIcon={<PencilIcon className="size-4" />}
+                            >
+                              Recrop
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="danger"
+                              onClick={removeBanner}
+                              startIcon={<TrashBinIcon className="size-4" />}
+                            >
                               Remove
                             </Button>
                           </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div
-                    onClick={triggerBannerUpload}
-                    className="border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl h-[200px] flex flex-col items-center justify-center bg-gray-50/50 dark:bg-white/[0.02] cursor-pointer hover:border-brand-500 hover:bg-brand-50/10 transition-all group"
-                  >
-                    <div className="size-10 rounded-full bg-white dark:bg-gray-900 shadow-theme-xs flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                      <PlusIcon className="size-5 text-brand-500" />
+                      )}
                     </div>
-                    <p className="text-gray-700 dark:text-white/90 font-semibold text-xs mb-1">Upload banner</p>
-                    <p className="text-[10px] text-gray-400">16:9 ratio</p>
-                  </div>
-                )}
+                  )}
+                </div>
+              </div>
+
               </div>
             </div>
           </ComponentCard>
@@ -584,83 +734,14 @@ const CreateEvent = () => {
               {/* Existing Fields List */}
               <div className="space-y-3">
                 {formData.registrationFields.map((field, index) => (
-                  <div
+                  <DraggableField
                     key={index}
-                    className="flex flex-col md:flex-row items-stretch md:items-center gap-4 p-4 bg-gray-50/50 dark:bg-white/[0.02] border border-gray-100 dark:border-gray-800 rounded-2xl transition-all hover:border-brand-200 dark:hover:border-brand-800 group"
-                  >
-                    <div className="flex-none flex items-center justify-center size-10 bg-white dark:bg-gray-900 rounded-xl shadow-theme-xs text-gray-400">
-                      <ListIcon className="size-5" />
-                    </div>
-
-                    <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <Label className="text-[10px] text-gray-500 uppercase tracking-widest mb-1.5 block">Field Label</Label>
-                        <Input
-                          type="text"
-                          value={field.fieldName}
-                          onChange={(e) => handleFieldChange(index, 'fieldName', e.target.value)}
-                          className="!h-9 !py-1 text-sm"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-[10px] text-gray-500 uppercase tracking-widest mb-1.5 block">Type</Label>
-                        <Select
-                          options={[
-                            { value: "text", label: "Short Text" },
-                            { value: "email", label: "Email Address" },
-                            { value: "number", label: "Number" },
-                            { value: "date", label: "Date" },
-                            { value: "textarea", label: "Long Text" },
-                            { value: "select", label: "Dropdown Select" }
-                          ]}
-                          value={field.fieldType}
-                          onChange={(value) => handleFieldChange(index, 'fieldType', value)}
-                          className="!h-9 text-sm"
-                        />
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="flex-1">
-                          <Label className="text-[10px] text-gray-500 uppercase tracking-widest mb-1.5 block">Settings</Label>
-                          <label className="flex items-center gap-2 cursor-pointer group/check">
-                            <div className="relative">
-                              <input
-                                type="checkbox"
-                                checked={field.isRequired}
-                                onChange={(e) => handleFieldChange(index, 'isRequired', e.target.checked)}
-                                className="sr-only"
-                              />
-                              <div className={`w-10 h-5 rounded-full transition-colors ${field.isRequired ? 'bg-brand-500' : 'bg-gray-200 dark:bg-gray-800'}`}></div>
-                              <div className={`absolute left-1 top-1 size-3 bg-white rounded-full transition-all ${field.isRequired ? 'translate-x-5' : ''}`}></div>
-                            </div>
-                            <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Required</span>
-                          </label>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => removeRegistrationField(index)}
-                          className="mt-5 p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
-                          title="Remove Field"
-                        >
-                          <TrashBinIcon className="size-5" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {field.fieldType === 'select' && (
-                      <div className="w-full mt-2 md:mt-0 pt-2 border-t border-gray-100 dark:border-gray-800">
-                        <Label className="text-[10px] text-gray-500 uppercase tracking-widest mb-1.5 block">Options (Comma separated)</Label>
-                        <Input
-                          type="text"
-                          value={field.options ? field.options.join(',') : ''}
-                          onChange={(e) => handleFieldChange(index, 'options', e.target.value.split(','))}
-                          onBlur={(e) => handleFieldChange(index, 'options', e.target.value.split(',').map(opt => opt.trim()).filter(opt => opt !== ""))}
-                          placeholder="Option 1, Option 2, etc."
-                          className="!h-9 !py-1 text-sm font-normal"
-                        />
-                      </div>
-                    )}
-                  </div>
+                    index={index}
+                    field={field}
+                    moveField={moveRegistrationField}
+                    removeField={removeRegistrationField}
+                    handleFieldChange={handleFieldChange}
+                  />
                 ))}
               </div>
 
@@ -859,7 +940,8 @@ const CreateEvent = () => {
         </div>
       </form>
     </div>
-  );
+  </DndProvider>
+);
 };
 
 export default CreateEvent;
