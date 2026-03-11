@@ -14,6 +14,10 @@ config({ quiet: true })
 import './config/db.js'
 import eventModel from './model/eventModel.js'
 import jobModel from './model/jobModel.js'
+import Batch from './model/batchModel.js'
+import BatchStudent from './model/batchStudentModel.js'
+import Attendance from './model/attendanceModel.js'
+import Holiday from './model/holidayModel.js'
 import { generateSEOHtml } from './utils/seoHelper.js'
 import routes from './routes/userRoutes.js'
 import setupSocket, { emitNotification } from './realtime/socket.js'
@@ -125,7 +129,7 @@ app.use(async (req, res, next) => {
   }
 
   // Check if it's an event registration route for SEO
-  const eventMatch = req.url.match(/^\/event-registration\/([a-f0-9]+)$/);
+  const eventMatch = req.url.match(/^\/event-registration\/([a-f0-9]+)(\/|\?|$)/);
   if (eventMatch) {
     try {
       const link = eventMatch[1];
@@ -150,7 +154,7 @@ app.use(async (req, res, next) => {
   }
 
   // Check if it's a job application route for SEO
-  const jobMatch = req.url.match(/^\/jobs\/apply\/([a-f0-9]{24})$/);
+  const jobMatch = req.url.match(/^\/jobs\/apply\/([a-f0-9]{24})(\/|\?|$)/);
   if (jobMatch) {
     try {
       const id = jobMatch[1];
@@ -170,6 +174,119 @@ app.use(async (req, res, next) => {
       }
     } catch (error) {
       console.error('SEO Injection Error (Job):', error);
+    }
+  }
+
+  // Check if it's a public attendance route for SEO
+  const attendanceMatch = req.url.match(/^\/public\/attendance\/([a-z0-9]+)(\/|\?|$)/);
+  if (attendanceMatch) {
+    try {
+      const shareToken = attendanceMatch[1];
+      const batch = await Batch.findOne({ shareToken });
+      if (batch) {
+        const students = await BatchStudent.find({ batchId: batch._id }).sort({ studentName: 1 });
+        const now = new Date();
+        const m = now.getMonth();
+        const y = now.getFullYear();
+        const startDate = new Date(y, m, 1);
+        startDate.setHours(0, 0, 0, 0);
+        const endDate = new Date(y, m + 1, 0);
+        endDate.setHours(23, 59, 59, 999);
+        
+        const [attendance, holidays] = await Promise.all([
+          Attendance.find({ batchId: batch._id, date: { $gte: startDate, $lte: endDate } }).sort({ date: 1 }),
+          Holiday.find({ brand: batch.brand, date: { $gte: startDate, $lte: endDate } }).sort({ date: 1 })
+        ]);
+
+        const data = {
+          batch: { batchName: batch.batchName, subject: batch.subject, instructorName: batch.instructorName },
+          students,
+          attendance,
+          holidays
+        };
+
+        let indexPath = path.join(__dirname, '../dist/index.html');
+        let isDev = false;
+        if (!fs.existsSync(indexPath)) {
+          indexPath = path.join(__dirname, '../index.html');
+          isDev = true;
+        }
+        if (fs.existsSync(indexPath)) {
+          let html = fs.readFileSync(indexPath, 'utf8');
+          html = generateSEOHtml(html, data, 'attendance', isDev);
+          return res.send(html);
+        }
+      }
+    } catch (error) {
+      console.error('SEO Injection Error (Attendance):', error);
+    }
+  }
+
+  // Check if it's an onboarding route for SEO
+  const onboardingMatch = req.url.match(/^\/onboarding\/([a-f0-9]{64})(\/|\?|$)/);
+  if (onboardingMatch) {
+    try {
+      const token = onboardingMatch[1];
+      const job = await jobModel.findOne({ "applications.onboardingToken": token }).populate('applications.agreementTemplates');
+      if (job) {
+        const application = job.applications.find(app => app.onboardingToken === token);
+        if (application && !application.agreementSigned) {
+          const data = {
+            fullName: application.fullName,
+            jobTitle: job.title,
+            templates: application.agreementTemplates 
+          };
+
+          let indexPath = path.join(__dirname, '../dist/index.html');
+          let isDev = false;
+          if (!fs.existsSync(indexPath)) {
+            indexPath = path.join(__dirname, '../index.html');
+            isDev = true;
+          }
+          if (fs.existsSync(indexPath)) {
+            let html = fs.readFileSync(indexPath, 'utf8');
+            html = generateSEOHtml(html, data, 'onboarding', isDev);
+            return res.send(html);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('SEO Injection Error (Onboarding):', error);
+    }
+  }
+
+  // Check if it's an agreement verification route for SEO
+  const verifyMatch = req.url.match(/^\/agreement\/verify\/([a-f0-9]+)(\/|\?|$)/);
+  if (verifyMatch) {
+    try {
+      const id = verifyMatch[1];
+      const job = await jobModel.findOne({
+        $or: [{ "applications._id": id }, { "applications.onboardingToken": id }]
+      });
+      if (job) {
+        const application = job.applications.id(id) || job.applications.find(app => app.onboardingToken === id);
+        if (application && application.agreementSigned) {
+          const data = {
+            valid: true,
+            issuedTo: application.fullName,
+            jobTitle: job.title
+          };
+
+          let indexPath = path.join(__dirname, '../dist/index.html');
+          let isDev = false;
+          if (!fs.existsSync(indexPath)) {
+            indexPath = path.join(__dirname, '../index.html');
+            isDev = true;
+          }
+          if (fs.existsSync(indexPath)) {
+            let html = fs.readFileSync(indexPath, 'utf8');
+            html = generateSEOHtml(html, data, 'agreement', isDev);
+            return res.send(html);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('SEO Injection Error (Verification):', error);
     }
   }
 

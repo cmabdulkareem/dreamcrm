@@ -105,10 +105,6 @@ function App() {
 
   return (
     <>
-      <PageMeta
-        title="Streamline Your Business"
-        description="Manage leads, students, events, and more with our comprehensive CRM solution."
-      />
       <NotificationProvider>
         <CalendarProvider>
 

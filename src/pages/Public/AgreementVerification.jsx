@@ -2,15 +2,25 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import API_URL from '../../config/api';
+import PageMeta from '../../components/common/PageMeta';
 
 const AgreementVerification = () => {
     const { id } = useParams();
-    const [loading, setLoading] = useState(true);
+    const [verificationData, setVerificationData] = useState(() => {
+        if (typeof window !== 'undefined' && window.__INITIAL_VERIFICATION_DATA__) {
+            return window.__INITIAL_VERIFICATION_DATA__;
+        }
+        return null;
+    });
+    const [loading, setLoading] = useState(!verificationData);
     const [error, setError] = useState(null);
-    const [verificationData, setVerificationData] = useState(null);
 
     useEffect(() => {
         const verifyAgreement = async () => {
+            if (verificationData) {
+                setLoading(false);
+                return;
+            }
             try {
                 const response = await axios.get(`${API_URL}/hr/agreement/verify/${id}`);
                 setVerificationData(response.data);
@@ -24,7 +34,13 @@ const AgreementVerification = () => {
         if (id) {
             verifyAgreement();
         }
-    }, [id]);
+
+        return () => {
+            if (typeof window !== 'undefined' && window.__INITIAL_VERIFICATION_DATA__) {
+                delete window.__INITIAL_VERIFICATION_DATA__;
+            }
+        };
+    }, [id, verificationData]);
 
     if (loading) {
         return (
@@ -61,6 +77,10 @@ const AgreementVerification = () => {
 
     return (
         <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 py-12">
+            <PageMeta 
+                title="Agreement Verification" 
+                description="Verify the digital signature and authenticity of the agreement."
+            />
             <div className="max-w-lg w-full bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100">
                 {/* Header Decoration */}
                 <div className="h-2 bg-[#ffd215]"></div>

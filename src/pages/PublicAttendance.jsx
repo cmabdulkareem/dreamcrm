@@ -4,10 +4,17 @@ import axios from 'axios';
 import API from '../config/api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 
+import PageMeta from '../components/common/PageMeta';
+
 export default function PublicAttendance() {
     const { shareToken } = useParams();
-    const [loading, setLoading] = useState(true);
-    const [data, setData] = useState(null);
+    const [data, setData] = useState(() => {
+        if (typeof window !== 'undefined' && window.__INITIAL_ATTENDANCE_DATA__ && window.__INITIAL_ATTENDANCE_DATA__.batch) {
+            return window.__INITIAL_ATTENDANCE_DATA__;
+        }
+        return null;
+    });
+    const [loading, setLoading] = useState(!data);
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
     const [error, setError] = useState(null);
@@ -25,6 +32,8 @@ export default function PublicAttendance() {
     }, [shareToken, selectedMonth, selectedYear]);
 
     const fetchData = async () => {
+        if (data && !error && loading === false) return; // Already have data from SSR or previous fetch
+        
         setLoading(true);
         setError(null);
         try {
@@ -37,6 +46,15 @@ export default function PublicAttendance() {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        // Clean up initial data to prevent stale hydration
+        return () => {
+            if (typeof window !== 'undefined' && window.__INITIAL_ATTENDANCE_DATA__) {
+                delete window.__INITIAL_ATTENDANCE_DATA__;
+            }
+        };
+    }, []);
 
     const getDaysInMonth = (month, year) => new Date(year, month, 0).getDate();
     const daysInMonth = getDaysInMonth(selectedMonth, selectedYear);
@@ -218,6 +236,10 @@ export default function PublicAttendance() {
 
     return (
         <div className="min-h-screen bg-gray-50 pb-12">
+            <PageMeta 
+                title={data?.batch?.batchName || "Attendance Report"} 
+                description={`Attendance report for ${data?.batch?.subject || "student batch"}`}
+            />
             {/* Header */}
             <header className="bg-white border-b sticky top-0 z-30 px-4 py-4 sm:px-6 shadow-sm">
                 <div className="max-w-7xl mx-auto">

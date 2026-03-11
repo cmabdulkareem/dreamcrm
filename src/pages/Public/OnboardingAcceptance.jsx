@@ -11,8 +11,13 @@ import API from "../../config/api";
 
 const OnboardingAcceptance = () => {
     const { token } = useParams();
-    const [data, setData] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const [data, setData] = useState(() => {
+        if (typeof window !== 'undefined' && window.__INITIAL_ONBOARDING_DATA__) {
+            return window.__INITIAL_ONBOARDING_DATA__;
+        }
+        return null;
+    });
+    const [loading, setLoading] = useState(!data);
     const [submitting, setSubmitting] = useState(false);
     const [signed, setSigned] = useState(false);
     const [signatureName, setSignatureName] = useState('');
@@ -22,6 +27,13 @@ const OnboardingAcceptance = () => {
 
     useEffect(() => {
         const fetchData = async () => {
+            if (data) {
+                setLoading(false);
+                if (data.templates && agreedSteps.length === 0) {
+                    setAgreedSteps(new Array(data.templates.length).fill(false));
+                }
+                return;
+            }
             try {
                 const response = await axios.get(`${API}/hr/public/onboarding/${token}`);
                 setData(response.data);
@@ -36,7 +48,13 @@ const OnboardingAcceptance = () => {
             }
         };
         fetchData();
-    }, [token]);
+
+        return () => {
+            if (typeof window !== 'undefined' && window.__INITIAL_ONBOARDING_DATA__) {
+                delete window.__INITIAL_ONBOARDING_DATA__;
+            }
+        };
+    }, [token, data]);
 
     const handleDownload = async () => {
         try {

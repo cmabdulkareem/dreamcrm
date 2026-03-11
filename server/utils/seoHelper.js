@@ -26,7 +26,21 @@ export const generateSEOHtml = (originalHtml, data, type = 'event', isDev = fals
       description = data.description ? data.description.substring(0, 160) : `Apply for the ${data.title} position at ${data.brand}.`;
       url = `https://crm.cdcinternational.in/jobs/apply/${data._id}`;
       hydrationKey = "window.__INITIAL_JOB_DATA__";
-      
+      imageUrl = "https://crm.cdcinternational.in/images/logo/logo.svg";
+    } else if (type === 'attendance') {
+      title = `${data.batch?.batchName || 'Attendance Report'} | Dream CRM`;
+      description = `View attendance report for ${data.batch?.batchName || 'your batch'}.`;
+      hydrationKey = "window.__INITIAL_ATTENDANCE_DATA__";
+      imageUrl = "https://crm.cdcinternational.in/images/logo/logo.svg";
+    } else if (type === 'onboarding') {
+      title = `Onboarding Acceptance: ${data.fullName} | Dream CRM`;
+      description = `Onboarding and Agreement Acceptance for ${data.fullName}.`;
+      hydrationKey = "window.__INITIAL_ONBOARDING_DATA__";
+      imageUrl = "https://crm.cdcinternational.in/images/logo/logo.svg";
+    } else if (type === 'agreement') {
+      title = `Agreement Verification | Dream CRM`;
+      description = `Verify the authenticity of a digital agreement issued by CDC International.`;
+      hydrationKey = "window.__INITIAL_VERIFICATION_DATA__";
       imageUrl = "https://crm.cdcinternational.in/images/logo/logo.svg";
     }
   }
