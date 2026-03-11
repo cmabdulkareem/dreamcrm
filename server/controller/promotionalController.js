@@ -25,23 +25,46 @@ const storage = multer.diskStorage({
 const upload = multer({
     storage: storage,
     limits: {
-        fileSize: 100 * 1024 * 1024 // 100MB limit for videos/raw files
+        fileSize: 50 * 1024 * 1024 // 50MB hard limit for the largest allowed type (video)
     }
 }).single('file');
 
 export const uploadPromotional = (req, res) => {
     upload(req, res, async (err) => {
         if (err) {
+            if (err.code === 'LIMIT_FILE_SIZE') {
+                return res.status(400).json({ success: false, message: 'File too large. Maximum allowed size for videos is 50MB.' });
+            }
             return res.status(400).json({ success: false, message: 'File upload error', error: err.message });
         }
 
         try {
             const { title, type } = req.body;
-
             const finalBrandId = req.headers['x-brand-id'] || null;
 
             if (!req.file) {
                 return res.status(400).json({ success: false, message: 'No file uploaded' });
+            }
+
+            // Dynamic size limits based on type
+            const sizeInMB = req.file.size / (1024 * 1024);
+            let limitMB = 50; // Default video limit
+            let typeLabel = "Video";
+
+            if (type === 'image') {
+                limitMB = 5;
+                typeLabel = "Image";
+            } else if (type === 'raw') {
+                limitMB = 20;
+                typeLabel = "Raw file";
+            }
+
+            if (sizeInMB > limitMB) {
+                fs.unlinkSync(req.file.path);
+                return res.status(400).json({
+                    success: false,
+                    message: `${typeLabel} exceeds the size limit of ${limitMB}MB.`
+                });
             }
 
             if (!finalBrandId) {
@@ -159,7 +182,11 @@ export const deletePromotional = async (req, res) => {
 
             const filePath = path.join(getUploadDir(subDir), fileName);
             if (fs.existsSync(filePath)) {
-                fs.unlinkSync(filePath);
+                try {
+                    fs.unlinkSync(filePath);
+                } catch (unlinkError) {
+                    console.error('Error unlinking file:', unlinkError);
+                }
             }
         }
 

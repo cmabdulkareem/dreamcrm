@@ -212,12 +212,26 @@ export const deleteEvent = async (req, res) => {
       return res.status(403).json({ message: "Access denied. Admin, Manager, or Counselor privileges required." });
     }
 
-    const { id } = req.params;
-
-    const event = await eventModel.findByIdAndDelete(id);
+    const event = await eventModel.findById(id);
     if (!event) {
       return res.status(404).json({ message: "Event not found." });
     }
+
+    // Delete banner image from disk if it exists
+    if (event.bannerImage) {
+      // bannerImage is like /uploads/banners/compressed-filename.jpg
+      const fileName = event.bannerImage.split('/').pop();
+      const filePath = path.join(getUploadDir('banners'), fileName);
+      if (fs.existsSync(filePath)) {
+        try {
+          fs.unlinkSync(filePath);
+        } catch (unlinkError) {
+          console.error('Error unlinking event banner:', unlinkError);
+        }
+      }
+    }
+
+    await eventModel.findByIdAndDelete(id);
 
     // Also delete all registrations for this event
     await eventRegistrationModel.deleteMany({ eventId: id });
