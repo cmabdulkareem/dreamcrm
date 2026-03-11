@@ -212,6 +212,7 @@ export const deleteEvent = async (req, res) => {
       return res.status(403).json({ message: "Access denied. Admin, Manager, or Counselor privileges required." });
     }
 
+    const { id } = req.params;
     const event = await eventModel.findById(id);
     if (!event) {
       return res.status(404).json({ message: "Event not found." });
