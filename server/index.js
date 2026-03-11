@@ -83,8 +83,6 @@ app.use('/uploads/backups', express.static(path.join(getBaseUploadDir(), 'backup
   }
 }))
 app.use('/uploads', express.static(getBaseUploadDir()))
-app.use(express.static(path.join(__dirname, '../dist')))
-app.use(express.static(path.join(__dirname, '../public')))
 
 // ================= API ROUTES =================
 app.use('/api/users', routes)
@@ -117,8 +115,7 @@ app.use('/api/promotional', promotionalRoutes)
 app.use('/api/hr', hrRoutes)
 app.use('/api/marketing/tasks', marketingTaskRoutes)
 
-
-// ================= SPA FALLBACK =================
+// ================= SPA & SSR FALLBACK =================
 
 app.use(async (req, res, next) => {
   const isApiOrUpload = req.url.startsWith('/api/') || req.url.startsWith('/uploads/');
@@ -128,25 +125,31 @@ app.use(async (req, res, next) => {
     return next();
   }
 
+  // Get base HTML path and dev status
+  let indexPath = path.join(__dirname, '../dist/index.html');
+  let isDev = false;
+  if (!fs.existsSync(indexPath)) {
+    indexPath = path.join(__dirname, '../index.html');
+    isDev = true;
+  }
+
+  if (!fs.existsSync(indexPath)) {
+    return next();
+  }
+
+  const reqPath = req.path;
+  const reqUrl = req.url;
+
   // Check if it's an event registration route for SEO
-  const eventMatch = req.url.match(/^\/event-registration\/([a-f0-9]+)(\/|\?|$)/);
+  const eventMatch = reqPath.match(/^\/event-registration\/([a-f0-9]+)(\/|$)/i);
   if (eventMatch) {
     try {
       const link = eventMatch[1];
       const event = await eventModel.findOne({ registrationLink: link, isActive: true });
       if (event) {
-        let indexPath = path.join(__dirname, '../dist/index.html');
-        let isDev = false;
-        if (!fs.existsSync(indexPath)) {
-          indexPath = path.join(__dirname, '../index.html');
-          isDev = true;
-        }
-
-        if (fs.existsSync(indexPath)) {
-          let html = fs.readFileSync(indexPath, 'utf8');
-          html = generateSEOHtml(html, event, 'event', isDev);
-          return res.send(html);
-        }
+        let html = fs.readFileSync(indexPath, 'utf8');
+        html = generateSEOHtml(html, event, 'event', isDev);
+        return res.send(html);
       }
     } catch (error) {
       console.error('SEO Injection Error (Event):', error);
@@ -154,23 +157,15 @@ app.use(async (req, res, next) => {
   }
 
   // Check if it's a job application route for SEO
-  const jobMatch = req.url.match(/^\/jobs\/apply\/([a-f0-9]{24})(\/|\?|$)/);
+  const jobMatch = reqPath.match(/^\/jobs\/apply\/([a-f0-9]{24})(\/|$)/i);
   if (jobMatch) {
     try {
       const id = jobMatch[1];
       const job = await jobModel.findById(id);
       if (job && job.status === 'Active') {
-        let indexPath = path.join(__dirname, '../dist/index.html');
-        let isDev = false;
-        if (!fs.existsSync(indexPath)) {
-          indexPath = path.join(__dirname, '../index.html');
-          isDev = true;
-        }
-        if (fs.existsSync(indexPath)) {
-          let html = fs.readFileSync(indexPath, 'utf8');
-          html = generateSEOHtml(html, job, 'job', isDev);
-          return res.send(html);
-        }
+        let html = fs.readFileSync(indexPath, 'utf8');
+        html = generateSEOHtml(html, job, 'job', isDev);
+        return res.send(html);
       }
     } catch (error) {
       console.error('SEO Injection Error (Job):', error);
@@ -178,7 +173,7 @@ app.use(async (req, res, next) => {
   }
 
   // Check if it's a public attendance route for SEO
-  const attendanceMatch = req.url.match(/^\/public\/attendance\/([a-z0-9]+)(\/|\?|$)/);
+  const attendanceMatch = reqPath.match(/^\/public\/attendance\/([a-z0-9]+)(\/|$)/i);
   if (attendanceMatch) {
     try {
       const shareToken = attendanceMatch[1];
@@ -205,17 +200,9 @@ app.use(async (req, res, next) => {
           holidays
         };
 
-        let indexPath = path.join(__dirname, '../dist/index.html');
-        let isDev = false;
-        if (!fs.existsSync(indexPath)) {
-          indexPath = path.join(__dirname, '../index.html');
-          isDev = true;
-        }
-        if (fs.existsSync(indexPath)) {
-          let html = fs.readFileSync(indexPath, 'utf8');
-          html = generateSEOHtml(html, data, 'attendance', isDev);
-          return res.send(html);
-        }
+        let html = fs.readFileSync(indexPath, 'utf8');
+        html = generateSEOHtml(html, data, 'attendance', isDev);
+        return res.send(html);
       }
     } catch (error) {
       console.error('SEO Injection Error (Attendance):', error);
@@ -223,7 +210,7 @@ app.use(async (req, res, next) => {
   }
 
   // Check if it's an onboarding route for SEO
-  const onboardingMatch = req.url.match(/^\/onboarding\/([a-f0-9]{64})(\/|\?|$)/);
+  const onboardingMatch = reqPath.match(/^\/onboarding\/([a-f0-9]{64})(\/|$)/i);
   if (onboardingMatch) {
     try {
       const token = onboardingMatch[1];
@@ -237,17 +224,9 @@ app.use(async (req, res, next) => {
             templates: application.agreementTemplates 
           };
 
-          let indexPath = path.join(__dirname, '../dist/index.html');
-          let isDev = false;
-          if (!fs.existsSync(indexPath)) {
-            indexPath = path.join(__dirname, '../index.html');
-            isDev = true;
-          }
-          if (fs.existsSync(indexPath)) {
-            let html = fs.readFileSync(indexPath, 'utf8');
-            html = generateSEOHtml(html, data, 'onboarding', isDev);
-            return res.send(html);
-          }
+          let html = fs.readFileSync(indexPath, 'utf8');
+          html = generateSEOHtml(html, data, 'onboarding', isDev);
+          return res.send(html);
         }
       }
     } catch (error) {
@@ -256,7 +235,7 @@ app.use(async (req, res, next) => {
   }
 
   // Check if it's an agreement verification route for SEO
-  const verifyMatch = req.url.match(/^\/agreement\/verify\/([a-f0-9]+)(\/|\?|$)/);
+  const verifyMatch = reqPath.match(/^\/agreement\/verify\/([a-f0-9]+)(\/|$)/i);
   if (verifyMatch) {
     try {
       const id = verifyMatch[1];
@@ -272,17 +251,9 @@ app.use(async (req, res, next) => {
             jobTitle: job.title
           };
 
-          let indexPath = path.join(__dirname, '../dist/index.html');
-          let isDev = false;
-          if (!fs.existsSync(indexPath)) {
-            indexPath = path.join(__dirname, '../index.html');
-            isDev = true;
-          }
-          if (fs.existsSync(indexPath)) {
-            let html = fs.readFileSync(indexPath, 'utf8');
-            html = generateSEOHtml(html, data, 'agreement', isDev);
-            return res.send(html);
-          }
+          let html = fs.readFileSync(indexPath, 'utf8');
+          html = generateSEOHtml(html, data, 'agreement', isDev);
+          return res.send(html);
         }
       }
     } catch (error) {
@@ -290,19 +261,21 @@ app.use(async (req, res, next) => {
     }
   }
 
-  const distPath = path.join(__dirname, '../dist/index.html');
-  const rootPath = path.join(__dirname, '../index.html');
-  
-  if (fs.existsSync(distPath)) {
-    res.sendFile(distPath);
-  } else if (fs.existsSync(rootPath)) {
-    let html = fs.readFileSync(rootPath, 'utf8');
-    html = generateSEOHtml(html, null, 'event', true); 
+  // Default Fallback with Base SEO Injection
+  try {
+    let html = fs.readFileSync(indexPath, 'utf8');
+    html = generateSEOHtml(html, null, 'event', isDev); 
     res.send(html);
-  } else {
+  } catch (error) {
+    console.error('SEO Injection Error (Fallback):', error);
     next();
   }
 })
+
+// ================= STATIC FILES =================
+
+app.use(express.static(path.join(__dirname, '../dist')))
+app.use(express.static(path.join(__dirname, '../public')))
 
 // ================= SERVER =================
 

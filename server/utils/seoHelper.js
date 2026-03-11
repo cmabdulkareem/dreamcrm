@@ -47,20 +47,41 @@ export const generateSEOHtml = (originalHtml, data, type = 'event', isDev = fals
 
   let html = originalHtml;
 
-  // 1. Inject/Replace Meta Tags
-  if (html.includes('<title>')) {
-    html = html.replace(/<title>.*?<\/title>/i, `<title>${title}</title>`);
-  } else {
-    html = html.replace(/<\/head>/i, `<title>${title}</title>\n</head>`);
-  }
+  // Function to replace or inject tags
+  const replaceOrInject = (regex, newTag, fallbackRegex) => {
+    if (regex.test(html)) {
+      html = html.replace(regex, newTag);
+    } else if (fallbackRegex && fallbackRegex.test(html)) {
+      html = html.replace(fallbackRegex, (match) => `${newTag}\n${match}`);
+    } else {
+      html = html.replace(/<\/head>/i, `${newTag}\n</head>`);
+    }
+  };
+
+  // 1. Handle Title (Replace existing or inject before </head>)
+  // Added [\s\S]*? to handle newlines
+  replaceOrInject(/<title[^>]*>[\s\S]*?<\/title>/i, `<title>${title}</title>`, /<\/head>/i);
   
-  if (html.includes('<meta name="description"')) {
-    html = html.replace(/<meta name="description" content=".*?" \/>/i, `<meta name="description" content="${description}" />`);
+  // 2. Handle Description (Replace existing or inject before </head>)
+  // More robust regex for meta tags which can have attributes in different orders
+  if (/<meta[^>]*name=["']description["'][^>]*>/i.test(html)) {
+    html = html.replace(/<meta[^>]*name=["']description["'][^>]*content=["'][\s\S]*?["'][^>]*>/i, `<meta name="description" content="${description}" />`);
+    html = html.replace(/<meta[^>]*content=["'][\s\S]*?["'][^>]*name=["']description["'][^>]*>/i, `<meta name="description" content="${description}" />`);
   } else {
     html = html.replace(/<\/head>/i, `<meta name="description" content="${description}" />\n</head>`);
   }
 
-  // 2. Inject Social Meta Tags (OG, Twitter)
+  // 3. Inject Social Meta Tags (OG, Twitter)
+  // To avoid duplicates, we'll remove existing OG/Twitter tags for these properties first
+  const clearSocialTags = (prop) => {
+    const ogRegex = new RegExp(`<meta[^>]*property=["']og:${prop}["'][^>]*>`, 'gi');
+    const twRegex = new RegExp(`<meta[^>]*name=["']twitter:${prop}["'][^>]*>`, 'gi');
+    const twUrlRegex = new RegExp(`<meta[^>]*property=["']twitter:${prop}["'][^>]*>`, 'gi');
+    html = html.replace(ogRegex, '').replace(twRegex, '').replace(twUrlRegex, '');
+  };
+
+  ['url', 'title', 'description', 'image', 'type'].forEach(clearSocialTags);
+
   const socialMeta = `
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website" />
