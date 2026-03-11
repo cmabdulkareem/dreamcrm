@@ -475,6 +475,18 @@ export const updateStudent = async (req, res) => {
 
     // Handle photo upload
     if (req.file) {
+      // Delete old photo if it exists
+      if (student.photo) {
+        const fileName = student.photo.split('/').pop();
+        const filePath = path.join(getUploadDir('student_photos'), fileName);
+        if (fs.existsSync(filePath)) {
+          try {
+            fs.unlinkSync(filePath);
+          } catch (unlinkError) {
+            console.error('Error unlinking old student photo:', unlinkError);
+          }
+        }
+      }
       updateData.photo = getUploadUrl('student_photos', req.file.filename);
     }
 
@@ -599,10 +611,25 @@ export const deleteStudent = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const student = await studentModel.findByIdAndDelete(id);
+    const student = await studentModel.findById(id);
     if (!student) {
       return res.status(404).json({ message: "Student not found." });
     }
+
+    // Delete photo from disk if it exists
+    if (student.photo) {
+      const fileName = student.photo.split('/').pop();
+      const filePath = path.join(getUploadDir('student_photos'), fileName);
+      if (fs.existsSync(filePath)) {
+        try {
+          fs.unlinkSync(filePath);
+        } catch (unlinkError) {
+          console.error('Error unlinking student photo during deletion:', unlinkError);
+        }
+      }
+    }
+
+    await studentModel.findByIdAndDelete(id);
 
     // Notification Logic
     try {
