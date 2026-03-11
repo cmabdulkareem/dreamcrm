@@ -3,6 +3,9 @@ import brandModel from "../model/brandModel.js"; // Ensure Brand model is regist
 import mongoose from "mongoose";
 import ActivityLog from "../model/activityLogModel.js";
 import MarketingTask from "../model/marketingTaskModel.js";
+import fs from 'fs';
+import path from 'path';
+import { getUploadDir } from '../utils/uploadHelper.js';
 
 // Helper to get base URL with correct protocol (checking for proxy)
 const getBaseUrl = (req) => {
@@ -1122,10 +1125,25 @@ export const deleteUser = async (req, res) => {
     }
 
     // Find and delete user
-    const user = await userModel.findByIdAndDelete(id);
+    const user = await userModel.findById(id);
     if (!user) {
       return res.status(404).json({ message: "User not found." });
     }
+
+    // Delete avatar from disk if it exists
+    if (user.avatar && user.avatar.startsWith('/uploads/profiles/')) {
+      const fileName = user.avatar.split('/').pop();
+      const filePath = path.join(getUploadDir('profiles'), fileName);
+      if (fs.existsSync(filePath)) {
+        try {
+          fs.unlinkSync(filePath);
+        } catch (unlinkError) {
+          console.error('Error unlinking user avatar:', unlinkError);
+        }
+      }
+    }
+
+    await userModel.findByIdAndDelete(id);
 
     return res.status(200).json({ message: "User deleted successfully." });
   } catch (error) {

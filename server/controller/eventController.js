@@ -101,6 +101,8 @@ export const createEvent = async (req, res) => {
       eventName,
       eventDescription,
       eventDate,
+      registrationStartsAt,
+      registrationClosesAt,
       registrationFields,
       maxRegistrations,
       eventPin
@@ -118,6 +120,8 @@ export const createEvent = async (req, res) => {
       eventName,
       eventDescription,
       eventDate: new Date(eventDate),
+      registrationStartsAt: new Date(registrationStartsAt),
+      registrationClosesAt: new Date(registrationClosesAt),
       registrationFields,
       registrationLink,
       maxRegistrations: parseInt(maxRegistrations) || 0,
@@ -176,7 +180,7 @@ export const updateEvent = async (req, res) => {
 
     // Update fields
     Object.keys(updateData).forEach(key => {
-      if (key === 'eventDate') {
+      if (['eventDate', 'registrationStartsAt', 'registrationClosesAt'].includes(key)) {
         event[key] = new Date(updateData[key]);
       } else if (key === 'maxRegistrations') {
         event[key] = parseInt(updateData[key]) || 0;
@@ -282,6 +286,19 @@ export const registerForEvent = async (req, res) => {
     const event = await eventModel.findOne({ registrationLink: link, isActive: true });
     if (!event) {
       return res.status(404).json({ message: "Event not found or inactive." });
+    }
+
+    // Check registration window
+    const now = new Date();
+    if (now < event.registrationStartsAt) {
+      return res.status(400).json({ 
+        message: `Registration has not started yet. It will open on ${new Date(event.registrationStartsAt).toLocaleString()}.` 
+      });
+    }
+    if (now > event.registrationClosesAt) {
+      return res.status(400).json({ 
+        message: "Registration for this event has closed." 
+      });
     }
 
     // Check if event has reached max registrations
@@ -423,6 +440,19 @@ export const uploadEventBanner = async (req, res) => {
 
     // Save the compressed file path in the database (relative path for web access)
     const bannerImageUrl = getUploadUrl('banners', compressedFileName);
+
+    // Delete old banner image from disk if it exists and is different from the new one
+    if (event.bannerImage && event.bannerImage !== bannerImageUrl) {
+      const oldFileName = event.bannerImage.split('/').pop();
+      const oldFilePath = path.join(bannersDir, oldFileName);
+      if (fs.existsSync(oldFilePath)) {
+        try {
+          fs.unlinkSync(oldFilePath);
+        } catch (unlinkError) {
+          console.error('Error unlinking old event banner:', unlinkError);
+        }
+      }
+    }
 
     event.bannerImage = bannerImageUrl;
     await event.save();

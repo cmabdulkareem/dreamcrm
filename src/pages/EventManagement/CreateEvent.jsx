@@ -40,6 +40,10 @@ const CreateEvent = () => {
     eventDescription: '',
     eventDate: '',
     eventTime: '10:00', // Default to 10 AM
+    registrationStartDate: '',
+    registrationStartTime: '09:00',
+    registrationClosesDate: '',
+    registrationClosesTime: '23:59',
     maxRegistrations: 0,
     eventPin: generatePin(), // Auto-generate PIN
     registrationFields: [
@@ -162,15 +166,31 @@ const CreateEvent = () => {
       return;
     }
 
-    if (!formData.eventName || !formData.eventDate) {
-      toast.error("Event name and date are required");
+    if (!formData.eventName || !formData.eventDate || !formData.registrationStartDate || !formData.registrationClosesDate) {
+      toast.error("Event name, date, and registration window are required");
+      return;
+    }
+
+    const eventStart = new Date(`${formData.eventDate}T${formData.eventTime}:00`);
+    const regStart = new Date(`${formData.registrationStartDate}T${formData.registrationStartTime}:00`);
+    const regClose = new Date(`${formData.registrationClosesDate}T${formData.registrationClosesTime}:00`);
+
+    if (regStart >= regClose) {
+      toast.error("Registration must start before it closes");
+      return;
+    }
+
+    if (regClose > eventStart) {
+      toast.error("Registration must close before or at the time the event starts");
       return;
     }
 
     try {
       const eventData = {
         ...formData,
-        eventDate: new Date(`${formData.eventDate}T${formData.eventTime}:00`).toISOString()
+        eventDate: eventStart.toISOString(),
+        registrationStartsAt: regStart.toISOString(),
+        registrationClosesAt: regClose.toISOString()
       };
 
       const response = await axios.post(`${API}/events/create`, eventData, { withCredentials: true });
@@ -377,6 +397,49 @@ const CreateEvent = () => {
                     onChange={handleInputChange}
                     required
                   />
+                </div>
+              </div>
+
+              {/* Registration Window */}
+              <div className="pt-4 border-t border-gray-100 dark:border-gray-800">
+                <Label className="text-brand-500 font-bold mb-4 block uppercase tracking-wider text-xs">Registration Window</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <DatePicker
+                      id="registrationStartDate"
+                      label="Registration Starts *"
+                      value={formData.registrationStartDate}
+                      onChange={(date, dateString) => setFormData({ ...formData, registrationStartDate: dateString })}
+                      required
+                    />
+                    <Input
+                      type="time"
+                      id="registrationStartTime"
+                      name="registrationStartTime"
+                      label="Start Time *"
+                      value={formData.registrationStartTime}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-4">
+                    <DatePicker
+                      id="registrationClosesDate"
+                      label="Registration Closes *"
+                      value={formData.registrationClosesDate}
+                      onChange={(date, dateString) => setFormData({ ...formData, registrationClosesDate: dateString })}
+                      required
+                    />
+                    <Input
+                      type="time"
+                      id="registrationClosesTime"
+                      name="registrationClosesTime"
+                      label="Close Time *"
+                      value={formData.registrationClosesTime}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -589,8 +652,9 @@ const CreateEvent = () => {
                         <Label className="text-[10px] text-gray-500 uppercase tracking-widest mb-1.5 block">Options (Comma separated)</Label>
                         <Input
                           type="text"
-                          value={field.options ? field.options.join(', ') : ''}
-                          onChange={(e) => handleFieldChange(index, 'options', e.target.value.split(',').map(opt => opt.trim()))}
+                          value={field.options ? field.options.join(',') : ''}
+                          onChange={(e) => handleFieldChange(index, 'options', e.target.value.split(','))}
+                          onBlur={(e) => handleFieldChange(index, 'options', e.target.value.split(',').map(opt => opt.trim()).filter(opt => opt !== ""))}
                           placeholder="Option 1, Option 2, etc."
                           className="!h-9 !py-1 text-sm font-normal"
                         />
@@ -635,8 +699,9 @@ const CreateEvent = () => {
                     <Input
                       type="text"
                       placeholder="Choice 1, Choice 2, Choice 3"
-                      value={newField.options?.join(', ') || ''}
-                      onChange={(e) => setNewField({ ...newField, options: e.target.value.split(',').map(opt => opt.trim()) })}
+                      value={newField.options?.join(',') || ''}
+                      onChange={(e) => setNewField({ ...newField, options: e.target.value.split(',') })}
+                      onBlur={(e) => setNewField({ ...newField, options: e.target.value.split(',').map(opt => opt.trim()).filter(opt => opt !== "") })}
                     />
                   </div>
                 )}

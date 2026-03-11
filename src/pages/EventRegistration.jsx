@@ -199,6 +199,14 @@ const EventRegistration = () => {
     );
   }
 
+  // Determine registration status
+  const now = new Date();
+  const regStarts = new Date(event.registrationStartsAt);
+  const regCloses = new Date(event.registrationClosesAt);
+  const isUpcoming = now < regStarts;
+  const isClosed = now > regCloses;
+  const isOpen = !isUpcoming && !isClosed;
+
   // --- CALENDAR HELPERS ---
 
   // 1. Google Calendar Link
@@ -470,6 +478,26 @@ END:VCALENDAR`;
             <span className="inline-block py-1 px-3 rounded-full bg-brand-50 text-brand-600 text-xs font-bold tracking-wider uppercase mb-4">
               Official Registration
             </span>
+
+            {isUpcoming && (
+              <div className="mb-6 py-3 px-4 bg-amber-50 border border-amber-100 rounded-2xl text-amber-700 flex items-center justify-center gap-2 max-w-lg mx-auto">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                </svg>
+                <span className="font-semibold text-sm">
+                  Registration opens on {regStarts.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })} at {regStarts.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+            )}
+
+            {isClosed && (
+              <div className="mb-6 py-3 px-4 bg-red-50 border border-red-100 rounded-2xl text-red-700 flex items-center justify-center gap-2 max-w-lg mx-auto">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+                <span className="font-semibold text-sm">Registration for this event is now closed.</span>
+              </div>
+            )}
             <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 tracking-tight leading-tight mb-4">
               {event.eventName}
             </h1>
@@ -516,7 +544,7 @@ END:VCALENDAR`;
                 Attendee Details
               </h3>
 
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleSubmit} className={`space-y-6 ${!isOpen ? 'opacity-50 pointer-events-none' : ''}`}>
                 <div className="space-y-5">
                   {event.registrationFields.map((field, index) => (
                     <div key={index} className="space-y-1.5">
@@ -573,8 +601,8 @@ END:VCALENDAR`;
                 <div className="pt-6">
                   <button
                     type="submit"
-                    disabled={submitting}
-                    className={`w-full group relative flex justify-center py-4 px-4 border border-transparent rounded-xl text-lg font-bold text-white bg-brand-600 hover:bg-brand-700 focus:outline-none focus:ring-4 focus:ring-brand-500/30 shadow-lg shadow-brand-500/30 transition-all transform hover:-translate-y-0.5 ${submitting ? 'opacity-80 cursor-not-allowed' : ''}`}
+                    disabled={submitting || !isOpen}
+                    className={`w-full group relative flex justify-center py-4 px-4 border border-transparent rounded-xl text-lg font-bold text-white ${isOpen ? 'bg-brand-600 hover:bg-brand-700 shadow-brand-500/30' : 'bg-gray-400 cursor-not-allowed shadow-none'} focus:outline-none focus:ring-4 focus:ring-brand-500/30 shadow-lg transition-all transform ${isOpen && !submitting ? 'hover:-translate-y-0.5' : ''} ${submitting ? 'opacity-80' : ''}`}
                   >
                     {submitting ? (
                       <span className="flex items-center gap-3">
@@ -586,10 +614,12 @@ END:VCALENDAR`;
                       </span>
                     ) : (
                       <span className="flex items-center gap-2">
-                        Secure My Spot
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 transition-transform group-hover:translate-x-1" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                        </svg>
+                        {isUpcoming ? 'Registration Not Yet Open' : isClosed ? 'Registration Closed' : 'Secure My Spot'}
+                        {isOpen && (
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 transition-transform group-hover:translate-x-1" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        )}
                       </span>
                     )}
                   </button>

@@ -33,6 +33,14 @@ const eventSchema = new mongoose.Schema({
     type: Date,
     required: true
   },
+  registrationStartsAt: {
+    type: Date,
+    required: true
+  },
+  registrationClosesAt: {
+    type: Date,
+    required: true
+  },
   registrationFields: [eventRegistrationSchema],
   isActive: {
     type: Boolean,

@@ -15,6 +15,10 @@ import ReactCrop from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { isManager } from '../../utils/roleHelpers';
 import { AuthContext } from '../../context/AuthContext';
+import { Dropdown } from '../../components/ui/dropdown/Dropdown';
+import { DropdownItem } from '../../components/ui/dropdown/DropdownItem';
+import { PencilIcon, TrashIcon, CheckCircleIcon, CloseIcon } from '../../icons';
+import { getImageUrl } from '../../utils/imageHelper';
 
 axios.defaults.withCredentials = true;
 
@@ -31,6 +35,10 @@ const ManageEvents = () => {
     eventDescription: '',
     eventDate: '',
     eventTime: '10:00',
+    registrationStartDate: '',
+    registrationStartTime: '09:00',
+    registrationClosesDate: '',
+    registrationClosesTime: '23:59',
     maxRegistrations: 0,
     eventPin: '',
     registrationFields: [
@@ -44,6 +52,7 @@ const ManageEvents = () => {
     isRequired: false,
     options: []
   });
+  const [openDropdownId, setOpenDropdownId] = useState(null);
 
   // Banner image state for editing
   const [bannerPreview, setBannerPreview] = useState(null);
@@ -172,6 +181,11 @@ const ManageEvents = () => {
       eventName: '',
       eventDescription: '',
       eventDate: '',
+      eventTime: '10:00',
+      registrationStartDate: '',
+      registrationStartTime: '09:00',
+      registrationClosesDate: '',
+      registrationClosesTime: '23:59',
       maxRegistrations: 0,
       eventPin: '',
       registrationFields: [
@@ -213,7 +227,11 @@ const ManageEvents = () => {
         eventName: event.eventName || '',
         eventDescription: event.eventDescription || '',
         eventDate: event.eventDate ? new Date(event.eventDate).toISOString().split('T')[0] : '',
-        eventTime: event.eventDate ? new Date(event.eventDate).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '10:00',
+        eventTime: event.eventDate ? new Date(event.eventDate).getUTCHours().toString().padStart(2, '0') + ':' + new Date(event.eventDate).getUTCMinutes().toString().padStart(2, '0') : '10:00',
+        registrationStartDate: event.registrationStartsAt ? new Date(event.registrationStartsAt).toISOString().split('T')[0] : '',
+        registrationStartTime: event.registrationStartsAt ? new Date(event.registrationStartsAt).getUTCHours().toString().padStart(2, '0') + ':' + new Date(event.registrationStartsAt).getUTCMinutes().toString().padStart(2, '0') : '09:00',
+        registrationClosesDate: event.registrationClosesAt ? new Date(event.registrationClosesAt).toISOString().split('T')[0] : '',
+        registrationClosesTime: event.registrationClosesAt ? new Date(event.registrationClosesAt).getUTCHours().toString().padStart(2, '0') + ':' + new Date(event.registrationClosesAt).getUTCMinutes().toString().padStart(2, '0') : '23:59',
         maxRegistrations: event.maxRegistrations || 0,
         eventPin: event.eventPin || '',
         registrationFields: event.registrationFields || [
@@ -257,10 +275,31 @@ const ManageEvents = () => {
       return;
     }
 
+    if (!formData.eventName || !formData.eventDate || !formData.registrationStartDate || !formData.registrationClosesDate) {
+      toast.error("Event name, date, and registration window are required");
+      return;
+    }
+
+    const eventStart = new Date(`${formData.eventDate}T${formData.eventTime}:00`);
+    const regStart = new Date(`${formData.registrationStartDate}T${formData.registrationStartTime}:00`);
+    const regClose = new Date(`${formData.registrationClosesDate}T${formData.registrationClosesTime}:00`);
+
+    if (regStart >= regClose) {
+      toast.error("Registration must start before it closes");
+      return;
+    }
+
+    if (regClose > eventStart) {
+      toast.error("Registration must close before or at the time the event starts");
+      return;
+    }
+
     try {
       const eventData = {
         ...formData,
-        eventDate: new Date(`${formData.eventDate}T${formData.eventTime}:00`).toISOString()
+        eventDate: eventStart.toISOString(),
+        registrationStartsAt: regStart.toISOString(),
+        registrationClosesAt: regClose.toISOString()
       };
 
       const response = await axios.put(`${API}/events/update/${currentEventId}`, eventData, { withCredentials: true });
@@ -549,6 +588,46 @@ const ManageEvents = () => {
                 </div>
               </div>
 
+              <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+                <Label className="text-brand-500 font-bold mb-4 block uppercase tracking-wider text-xs">Registration Window</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <DatePicker
+                      id="registrationStartDate"
+                      label="Registration Starts *"
+                      value={formData.registrationStartDate}
+                      onChange={(date, dateString) => setFormData({ ...formData, registrationStartDate: dateString })}
+                    />
+                    <Input
+                      type="time"
+                      id="registrationStartTime"
+                      name="registrationStartTime"
+                      label="Start Time *"
+                      value={formData.registrationStartTime}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-4">
+                    <DatePicker
+                      id="registrationClosesDate"
+                      label="Registration Closes *"
+                      value={formData.registrationClosesDate}
+                      onChange={(date, dateString) => setFormData({ ...formData, registrationClosesDate: dateString })}
+                    />
+                    <Input
+                      type="time"
+                      id="registrationClosesTime"
+                      name="registrationClosesTime"
+                      label="Close Time *"
+                      value={formData.registrationClosesTime}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="flex flex-col md:flex-row gap-6">
                 <div className="w-full md:w-1/2">
                   <div className="space-y-4">
@@ -622,8 +701,9 @@ const ManageEvents = () => {
                                     <Label>Options (comma separated)</Label>
                                     <Input
                                       type="text"
-                                      value={field.options ? field.options.join(', ') : ''}
-                                      onChange={(e) => handleFieldChange(index, 'options', e.target.value.split(',').map(opt => opt.trim()))}
+                                      value={field.options ? field.options.join(',') : ''}
+                                      onChange={(e) => handleFieldChange(index, 'options', e.target.value.split(','))}
+                                      onBlur={(e) => handleFieldChange(index, 'options', e.target.value.split(',').map(opt => opt.trim()).filter(opt => opt !== ""))}
                                       placeholder="Option 1, Option 2, Option 3"
                                     />
                                   </div>
@@ -681,8 +761,9 @@ const ManageEvents = () => {
                                 <Label>Options (comma separated)</Label>
                                 <Input
                                   type="text"
-                                  value={newField.options ? newField.options.join(', ') : ''}
-                                  onChange={(e) => setNewField({ ...newField, options: e.target.value.split(',').map(opt => opt.trim()) })}
+                                  value={newField.options ? newField.options.join(',') : ''}
+                                  onChange={(e) => setNewField({ ...newField, options: e.target.value.split(',') })}
+                                  onBlur={(e) => setNewField({ ...newField, options: e.target.value.split(',').map(opt => opt.trim()).filter(opt => opt !== "") })}
                                   placeholder="Option 1, Option 2, Option 3"
                                 />
                               </div>
@@ -878,109 +959,156 @@ const ManageEvents = () => {
                 </div>
               ) : (
                 events.map((event) => (
-                  <ComponentCard key={event._id} className="border rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-200">
-                    <div className="p-6">
-                      <div className="flex justify-between items-start mb-4">
-                        <h3 className="text-xl font-bold text-gray-900 dark:text-white">{event.eventName}</h3>
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${event.isActive
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
-                          : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
+                  <div key={event._id} className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all group">
+                    <div className="relative aspect-video bg-gray-100 dark:bg-gray-900 flex items-center justify-center overflow-hidden">
+                      {event.bannerImage ? (
+                        <img
+                          src={getImageUrl(event.bannerImage)}
+                          alt={event.eventName}
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center p-6 text-gray-400">
+                          <svg className="w-12 h-12 mb-2 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <span className="text-xs font-medium uppercase tracking-wider opacity-50">No Banner</span>
+                        </div>
+                      )}
+
+                      <div className="absolute top-2 left-2">
+                        <span className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider shadow-sm ${event.isActive
+                          ? 'bg-green-500 text-white'
+                          : 'bg-red-500 text-white'
                           }`}>
                           {event.isActive ? 'Active' : 'Inactive'}
                         </span>
                       </div>
 
-                      <p className="text-gray-600 dark:text-gray-300 text-sm mb-5 line-clamp-2">
+                      {isManager(user) && (
+                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="relative">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setOpenDropdownId(openDropdownId === event._id ? null : event._id);
+                              }}
+                              className="p-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg shadow-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                              title="Actions"
+                            >
+                              <PencilIcon className="w-4 h-4" />
+                            </button>
+
+                            <Dropdown
+                              isOpen={openDropdownId === event._id}
+                              onClose={() => setOpenDropdownId(null)}
+                              className="absolute right-0 mt-2 w-48"
+                            >
+                              <div className="py-1">
+                                <DropdownItem onClick={() => { handleEditEvent(event._id); setOpenDropdownId(null); }}>
+                                  <div className="flex items-center gap-2">
+                                    <PencilIcon className="w-4 h-4" />
+                                    <span>Edit Event</span>
+                                  </div>
+                                </DropdownItem>
+
+                                <DropdownItem onClick={() => { toggleEventStatus(event._id); setOpenDropdownId(null); }}>
+                                  <div className="flex items-center gap-2">
+                                    {event.isActive ? (
+                                      <>
+                                        <CloseIcon className="w-4 h-4 text-yellow-500" />
+                                        <span>Deactivate</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <CheckCircleIcon className="w-4 h-4 text-green-500" />
+                                        <span>Activate</span>
+                                      </>
+                                    )}
+                                  </div>
+                                </DropdownItem>
+
+                                <div className="border-t border-gray-100 dark:border-gray-800 my-1"></div>
+
+                                <DropdownItem
+                                  onClick={() => { deleteEvent(event._id); setOpenDropdownId(null); }}
+                                  className="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <TrashIcon className="w-4 h-4" />
+                                    <span>Delete Event</span>
+                                  </div>
+                                </DropdownItem>
+                              </div>
+                            </Dropdown>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-4">
+                      <h4 className="font-bold text-gray-900 dark:text-white truncate text-lg" title={event.eventName}>
+                        {event.eventName}
+                      </h4>
+                      <p className="text-gray-500 dark:text-gray-400 text-sm mt-1 line-clamp-2 min-h-[40px]">
                         {event.eventDescription || 'No description provided'}
                       </p>
 
-                      <div className="mb-5 space-y-2">
-                        <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                      <div className="mt-4 space-y-2.5">
+                        <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
                           <svg className="w-4 h-4 mr-2 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                           </svg>
-                          <span className="font-medium">Date:</span>
-                          <span className="ml-2">{new Date(event.eventDate).toLocaleString()}</span>
+                          <span className="font-semibold">Date:</span>
+                          <span className="ml-1.5">{new Date(event.eventDate).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                         </div>
-                        <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                        <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
                           <svg className="w-4 h-4 mr-2 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                           </svg>
-                          <span className="font-medium">Registrations:</span>
-                          <span className="ml-2">{event.currentRegistrations} / {event.maxRegistrations || 'Unlimited'}</span>
+                          <span className="font-semibold">Capacity:</span>
+                          <span className="ml-1.5">{event.currentRegistrations} / {event.maxRegistrations || '∞'}</span>
                         </div>
                       </div>
 
-                      {event.registrationLink && (
-                        <div className="mb-4">
-                          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
-                            <span className="font-medium">Registration Link:</span>
-                          </p>
-                          <div className="flex">
-                            <input
-                              type="text"
-                              readOnly
-                              value={`${window.location.origin}/event-registration/${event.registrationLink}`}
-                              className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded-l dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                            />
+                      {event.registrationLink && (                        <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-1">Registration Link</p>
+                              <p className="text-xs text-brand-500 truncate font-medium">
+                                {`${window.location.origin}/event-registration/${event.registrationLink}`}
+                              </p>
+                            </div>
                             <button
                               onClick={() => copyRegistrationLink(event.registrationLink)}
-                              className="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded-r text-sm dark:bg-gray-600 dark:hover:bg-gray-500"
+                              className="p-2 bg-gray-50 dark:bg-gray-700 hover:bg-brand-50 dark:hover:bg-brand-500/10 text-gray-400 hover:text-brand-500 rounded transition-colors shrink-0"
+                              title="Copy Link"
                             >
-                              Copy
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                              </svg>
                             </button>
                           </div>
                         </div>
                       )}
 
-                      <div className="flex flex-wrap gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
-                        {isManager(user) && (
-                          <>
-                            <button
-                              onClick={() => toggleEventStatus(event._id)}
-                              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${event.isActive
-                                ? 'bg-yellow-500 hover:bg-yellow-600 text-white'
-                                : 'bg-green-500 hover:bg-green-600 text-white'
-                                }`}
-                            >
-                              {event.isActive ? 'Deactivate' : 'Activate'}
-                            </button>
-
-                            <button
-                              onClick={() => handleEditEvent(event._id)}
-                              className="px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-md text-sm font-medium transition-colors"
-                            >
-                              Edit
-                            </button>
-
-                            <button
-                              onClick={() => viewRegistrations(event._id)}
-                              className="px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-md text-sm font-medium transition-colors"
-                            >
-                              View Registrations
-                            </button>
-
-                            <button
-                              onClick={() => deleteEvent(event._id)}
-                              className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md text-sm font-medium transition-colors"
-                            >
-                              Delete
-                            </button>
-                          </>
-                        )}
-                        {!isManager(user) && (
-                          <button
-                            onClick={() => viewRegistrations(event._id)}
-                            className="px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-md text-sm font-medium transition-colors"
-                          >
-                            View Registrations
-                          </button>
-                        )}
+                      <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                        <button
+                          onClick={() => viewRegistrations(event._id)}
+                          className="w-full py-3 bg-brand-500 hover:bg-brand-600 text-white text-sm font-bold rounded-lg transition-all shadow-sm shadow-brand-500/10 flex items-center justify-center gap-2"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                          </svg>
+                          View Registrations
+                        </button>
                       </div>
                     </div>
-                  </ComponentCard>
+                  </div>
                 ))
               )}
+
             </div>
           </div>
         </ComponentCard>
