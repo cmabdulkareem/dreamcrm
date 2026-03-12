@@ -49,12 +49,23 @@ export const getLeadStatusColor = (lead) => {
   return "light";
 };
 
-// Get latest remark from lead
-export const getLatestRemark = (remarks) => {
-  if (remarks && remarks.length > 0) {
-    return remarks[remarks.length - 1].remark;
-  }
-  return "No remarks yet";
+// Get latest remark from lead (includes callLogs)
+export const getLatestRemark = (remarks, callLogs) => {
+  const allActivities = [
+    ...(remarks || []).map(r => ({ text: r.remark, date: r.updatedOn })),
+    ...(callLogs || []).map(c => {
+      let icon = '📞';
+      const typeStr = String(c.type);
+      const isMissed = typeStr === 'MISSED' || typeStr === '3' || typeStr === 'REJECTED' || typeStr === '5' || c.duration === 0;
+      
+      if (isMissed) icon = '📵';
+      else if (typeStr === 'INCOMING' || typeStr === '1') icon = '📲';
+      
+      return { text: `${icon} ${c.remark || 'Call logged'}`, date: c.timestamp };
+    }),
+  ].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  return allActivities.length > 0 ? allActivities[0].text : "No remarks yet";
 };
 
 // Check if lead has unread remarks

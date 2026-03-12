@@ -12,6 +12,7 @@ dist-ssr
 *.local
 server/.env
 server/backups/
+mobile-app
 
 # Editor directories and files
 .vscode/*

@@ -26,6 +26,23 @@ const remarkSchema = new mongoose.Schema({
   }
 }, { _id: false });
 
+const callLogSchema = new mongoose.Schema({
+  timestamp: {
+    type: Date,
+    default: Date.now
+  },
+  duration: {
+    type: Number, // duration in seconds
+    required: true
+  },
+  handledBy: {
+    type: String
+  },
+  remark: {
+    type: String
+  }
+}, { _id: false });
+
 const customerSchema = new mongoose.Schema({
   fullName: {
     type: String,
@@ -90,6 +107,7 @@ const customerSchema = new mongoose.Schema({
     default: 'new'
   },
   remarks: [remarkSchema],
+  callLogs: [callLogSchema],
   // Add fields for lead assignment
   assignedTo: {
     type: mongoose.Schema.Types.ObjectId,

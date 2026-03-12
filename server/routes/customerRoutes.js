@@ -16,7 +16,8 @@ import {
   importLeads,
   checkPhoneUniqueness,
   getRecentActivityLogs,
-  getImmediateFollowups
+  getImmediateFollowups,
+  searchCustomerByPhone
 } from '../controller/customerController.js';
 import verifyToken from "../middleware/verifyToken.js";
 import { applyBrandFilter } from "../middleware/brandMiddleware.js";
@@ -28,6 +29,7 @@ router.use(verifyToken);
 router.use(applyBrandFilter);
 
 router.get('/check-phone', checkPhoneUniqueness);
+router.get('/search', searchCustomerByPhone);
 router.post('/create', createCustomer);
 router.get('/all', getAllCustomers);
 router.get('/all-unfiltered', getAllCustomersUnfiltered);

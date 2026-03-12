@@ -41,7 +41,7 @@ const LeadTableRow = ({
     canAssignLeads,
     user,
 }) => {
-    const latestRemark = getLatestRemark(row.remarks);
+    const latestRemark = getLatestRemark(row.remarks, row.callLogs);
     const hasUnread = hasUnreadRemarks(row.remarks);
     const styles = getLeadPotentialStyles(row.leadPotential);
     const { icon: ContactIcon, label: cpLabel, color: cpColor } = getContactPointIcon(row.contactPoint, row.otherContactPoint);

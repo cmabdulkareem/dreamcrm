@@ -372,48 +372,97 @@ const EditLeadModal = ({
                                 {/* Vertical Line */}
                                 <div className="absolute left-2.5 top-2 bottom-2 w-0.5 bg-gray-200 dark:bg-gray-800" />
 
-                                {selectedRow?.remarks && selectedRow.remarks.length > 0 ? (
-                                    [...selectedRow.remarks].reverse().map((remark, index) => {
-                                        const statusColor = getLeadStatusColor(remark.leadStatus || "new");
+                                {(() => {
+                                    const allActivities = [
+                                        ...(selectedRow?.remarks || []).map(r => ({ ...r, type: 'remark' })),
+                                        ...(selectedRow?.callLogs || []).map(c => ({ ...c, type: 'call', updatedOn: c.timestamp }))
+                                    ].sort((a, b) => new Date(b.updatedOn) - new Date(a.updatedOn));
+
+                                    if (allActivities.length === 0) {
                                         return (
-                                            <div key={index} className="relative pl-8 group">
-                                                {/* Dot */}
-                                                <div className={`absolute left-1.5 top-1.5 size-2.5 rounded-full border-2 border-white dark:border-gray-900 z-10 ${statusColor === 'success' ? 'bg-green-500' : statusColor === 'info' ? 'bg-blue-500' : statusColor === 'warning' ? 'bg-yellow-500' : statusColor === 'error' ? 'bg-red-500' : 'bg-gray-400'}`} />
-                                                <div className="flex flex-col">
-                                                    <div className="flex items-center justify-between mb-1">
-                                                        <span className="text-xs font-bold text-gray-600 dark:text-gray-400">{remark.handledBy || "System"}</span>
-                                                        <span className="text-[10px] text-gray-400">
-                                                            {remark.updatedOn ? new Date(remark.updatedOn).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : "N/A"}
-                                                        </span>
-                                                    </div>
-                                                    <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-100 dark:border-gray-700 hover:border-blue-100 dark:hover:border-blue-900/30 transition-all shadow-sm">
-                                                        <div className="flex items-center gap-2 mb-1.5">
-                                                            <Badge size="sm" color={statusColor} className="px-1.5 py-0 text-[10px] font-medium leading-none">
-                                                                {getLeadStatusLabel(remark.leadStatus || "new")}
-                                                            </Badge>
-                                                            {remark.isUnread && (
-                                                                <span className="flex items-center gap-0.5 text-[9px] font-bold text-red-500">
-                                                                    <span className="size-1 bg-red-500 rounded-full animate-ping" /> NEW
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <p className="text-sm text-gray-600 dark:text-gray-400 leading-normal break-words">{remark.remark || "Record updated"}</p>
-                                                        {remark.nextFollowUpDate && (
-                                                            <div className="mt-2 pt-2 border-t border-gray-50 dark:border-gray-700/50 flex items-center gap-1.5 text-[10px] text-gray-400 italic">
-                                                                <CalendarIcon className="size-3" /> Next: <strong className="text-gray-500 dark:text-gray-300">{new Date(remark.nextFollowUpDate).toLocaleDateString()}</strong>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
+                                            <div className="text-center py-10 opacity-50">
+                                                <ChatIcon className="size-6 text-gray-300 mx-auto mb-2" />
+                                                <p className="text-[10px] text-gray-500">No activity yet</p>
                                             </div>
                                         );
-                                    })
-                                ) : (
-                                    <div className="text-center py-10 opacity-50">
-                                        <ChatIcon className="size-6 text-gray-300 mx-auto mb-2" />
-                                        <p className="text-[10px] text-gray-500">No activity yet</p>
-                                    </div>
-                                )}
+                                    }
+
+                                    return allActivities.map((activity, index) => {
+                                        if (activity.type === 'remark') {
+                                            const statusColor = getLeadStatusColor(activity.leadStatus || "new");
+                                            return (
+                                                <div key={`remark-${index}`} className="relative pl-8 group">
+                                                    <div className={`absolute left-1.5 top-1.5 size-2.5 rounded-full border-2 border-white dark:border-gray-900 z-10 ${statusColor === 'success' ? 'bg-green-500' : statusColor === 'info' ? 'bg-blue-500' : statusColor === 'warning' ? 'bg-yellow-500' : statusColor === 'error' ? 'bg-red-500' : 'bg-gray-400'}`} />
+                                                    <div className="flex flex-col">
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <span className="text-xs font-bold text-gray-600 dark:text-gray-400">{activity.handledBy || "System"}</span>
+                                                            <span className="text-[10px] text-gray-400">
+                                                                {activity.updatedOn ? new Date(activity.updatedOn).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : "N/A"}
+                                                            </span>
+                                                        </div>
+                                                        <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-100 dark:border-gray-700 hover:border-blue-100 dark:hover:border-blue-900/30 transition-all shadow-sm">
+                                                            <div className="flex items-center gap-2 mb-1.5">
+                                                                <Badge size="sm" color={statusColor} className="px-1.5 py-0 text-[10px] font-medium leading-none">
+                                                                    {getLeadStatusLabel(activity.leadStatus || "new")}
+                                                                </Badge>
+                                                                {activity.isUnread && (
+                                                                    <span className="flex items-center gap-0.5 text-[9px] font-bold text-red-500">
+                                                                        <span className="size-1 bg-red-500 rounded-full animate-ping" /> NEW
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <p className="text-sm text-gray-600 dark:text-gray-400 leading-normal break-words">{activity.remark || "Record updated"}</p>
+                                                            {activity.nextFollowUpDate && (
+                                                                <div className="mt-2 pt-2 border-t border-gray-50 dark:border-gray-700/50 flex items-center gap-1.5 text-[10px] text-gray-400 italic">
+                                                                    <CalendarIcon className="size-3" /> Next: <strong className="text-gray-500 dark:text-gray-300">{new Date(activity.nextFollowUpDate).toLocaleDateString()}</strong>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        } else {
+                                            const typeStr = String(activity.type);
+                                            const isMissed = typeStr === 'MISSED' || typeStr === '3' || typeStr === 'REJECTED' || typeStr === '5' || activity.duration === 0;
+
+                                            const bgColor = isMissed ? 'bg-red-500' : 'bg-green-500';
+                                            const badgeBg = isMissed ? 'bg-red-50/50 dark:bg-red-900/10' : 'bg-green-50/50 dark:bg-green-900/10';
+                                            const badgeBorder = isMissed ? 'border-red-100/50 dark:border-red-800/30 hover:border-red-200 dark:hover:border-red-700' : 'border-green-100/50 dark:border-green-800/30 hover:border-green-200 dark:hover:border-green-700';
+                                            const textColor = isMissed ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400';
+                                            const durationColor = isMissed ? 'text-red-500' : 'text-green-500';
+                                            
+                                            let label = '📞 Call Log';
+                                            if (typeStr === 'MISSED' || typeStr === '3') label = '📵 Missed Call';
+                                            else if (typeStr === 'REJECTED' || typeStr === '5') label = '📵 Rejected Call';
+                                            else if (typeStr === 'INCOMING' || typeStr === '1') label = activity.duration > 0 ? '📲 Incoming Answered' : '📵 Incoming Missed';
+                                            else if (typeStr === 'OUTGOING' || typeStr === '2') label = activity.duration > 0 ? '📞 Outgoing Answered' : '📵 Outgoing Unanswered';
+
+                                            return (
+                                                <div key={`call-${index}`} className="relative pl-8 group">
+                                                    <div className={`absolute left-1.5 top-1.5 size-2.5 rounded-full border-2 border-white dark:border-gray-900 z-10 ${bgColor}`} />
+                                                    <div className="flex flex-col">
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <span className="text-xs font-bold text-gray-600 dark:text-gray-400">{activity.handledBy || "Mobile User"}</span>
+                                                            <span className="text-[10px] text-gray-400">
+                                                                {activity.timestamp ? new Date(activity.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : "N/A"}
+                                                            </span>
+                                                        </div>
+                                                        <div className={`${badgeBg} p-3 rounded-lg border ${badgeBorder} transition-all shadow-sm`}>
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <div className={`p-1 ${bgColor} rounded text-white`}>
+                                                                    <Phone className="size-2.5" />
+                                                                </div>
+                                                                <span className={`text-[10px] font-bold uppercase tracking-tight ${textColor}`}>{label}</span>
+                                                                <span className={`text-[10px] font-medium ${durationColor}`}>({Math.floor(activity.duration / 60)}m {activity.duration % 60}s)</span>
+                                                            </div>
+                                                            <p className="text-sm text-gray-700 dark:text-gray-300 leading-normal italic">"{activity.remark || "No remarks provided"}"</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+                                    });
+                                })()}
                             </div>
                         </div>
                     </div>

@@ -16,9 +16,34 @@ const RemarkTooltip = ({
     onMouseLeave,
 }) => {
     if (!hoveredRow || !show) return null;
-    if (!hoveredRow.remarks || hoveredRow.remarks.length === 0) return null;
+    const hasActivity = (hoveredRow.remarks?.length > 0) || (hoveredRow.callLogs?.length > 0);
+    if (!hasActivity) return null;
 
     const isAbove = tooltipPosition.transform?.includes('-100%') || tooltipPosition.transform === 'translateY(-10px)';
+
+    const callLogs = hoveredRow.callLogs || [];
+    const allActivities = [
+        ...(hoveredRow.remarks || []).map(r => ({ ...r, _type: 'remark', _date: r.updatedOn })),
+        ...callLogs.map(c => ({ ...c, _type: 'call', _date: c.timestamp })),
+    ].sort((a, b) => new Date(b._date) - new Date(a._date));
+
+    const totalCount = allActivities.length;
+
+    const isCallMissedUnansweredRejected = (item) => {
+        if (item.type === 'MISSED' || String(item.type) === '3') return true;
+        if (item.type === 'REJECTED' || String(item.type) === '5') return true;
+        if (item.duration === 0) return true;
+        return false;
+    };
+    const callTypeColor = (item) => isCallMissedUnansweredRejected(item) ? 'text-red-500' : 'text-green-600';
+    const callTypeLabel = (item) => {
+        const type = String(item.type);
+        if (type === 'MISSED' || type === '3') return '📵 Missed Call';
+        if (type === 'REJECTED' || type === '5') return '📵 Rejected Call';
+        if (type === 'INCOMING' || type === '1') return item.duration > 0 ? '📲 Incoming Answered' : '📵 Incoming Missed';
+        if (type === 'OUTGOING' || type === '2') return item.duration > 0 ? '📞 Outgoing Answered' : '📵 Outgoing Unanswered';
+        return '📞 Call Log';
+    };
 
     return createPortal(
         <div
@@ -55,36 +80,47 @@ const RemarkTooltip = ({
             )}
 
             <div className="p-3 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10 rounded-t-lg">
-                <h4 className="text-sm font-semibold text-gray-800 dark:text-white">Remark History</h4>
+                <h4 className="text-sm font-semibold text-gray-800 dark:text-white">Activity History</h4>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    {hoveredRow.remarks.length} remark{hoveredRow.remarks.length !== 1 ? 's' : ''}
+                    {totalCount} interaction{totalCount !== 1 ? 's' : ''}
                 </p>
             </div>
             <div
                 className="overflow-y-auto p-3 space-y-3 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent dark:scrollbar-thumb-gray-700 hover:scrollbar-thumb-gray-400 dark:hover:scrollbar-thumb-gray-600"
                 style={{ maxHeight: `${tooltipPosition.maxHeight - 60}px` }}
             >
-                {[...hoveredRow.remarks].reverse().map((remark, index) => (
-                    <div key={index} className="rounded-lg border border-gray-100 bg-gray-50 p-3 dark:border-gray-700 dark:bg-gray-900 transition-colors hover:bg-gray-100 dark:hover:bg-gray-800">
-                        <div className="flex justify-between items-center mb-2">
-                            <span className="text-xs font-medium text-gray-800 dark:text-white">{remark.handledBy || "Unknown"}</span>
+                {allActivities.map((item, index) => (
+                    <div key={index} className={`rounded-lg border p-3 ${item._type === 'call' ? 'bg-blue-50 border-blue-100 dark:bg-blue-900/20 dark:border-blue-800/40' : 'bg-gray-50 border-gray-100 dark:border-gray-700 dark:bg-gray-900'} transition-colors`}>
+                        <div className="flex justify-between items-center mb-1">
+                            <span className="text-xs font-medium text-gray-800 dark:text-white">{item.handledBy || "Unknown"}</span>
                             <span className="text-xs text-gray-500 dark:text-gray-400">
-                                {remark.updatedOn ? new Date(remark.updatedOn).toLocaleString() : "N/A"}
+                                {item._date ? new Date(item._date).toLocaleString() : "N/A"}
                             </span>
                         </div>
-                        <div className="flex items-center gap-2 mb-2">
-                            <Badge size="sm" color={getLeadStatusColor(remark.leadStatus || "new")}>
-                                {getLeadStatusLabel(remark.leadStatus || "new")}
-                            </Badge>
-                            {remark.isUnread && <span className="text-xs text-red-500 dark:text-red-400">Unread</span>}
-                        </div>
-                        <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">
-                            {remark.remark || "No remarks"}
-                        </p>
-                        {remark.nextFollowUpDate && (
-                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
-                                Next Follow-up: {new Date(remark.nextFollowUpDate).toLocaleDateString()}
-                            </p>
+                        {item._type === 'call' ? (
+                            <div>
+                                <span className={`text-xs font-bold ${callTypeColor(item)}`}>
+                                    {callTypeLabel(item)} · {Math.floor(item.duration / 60)}m {item.duration % 60}s
+                                </span>
+                                {item.remark && <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">{item.remark}</p>}
+                            </div>
+                        ) : (
+                            <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                    <Badge size="sm" color={getLeadStatusColor(item.leadStatus || "new")}>
+                                        {getLeadStatusLabel(item.leadStatus || "new")}
+                                    </Badge>
+                                    {item.isUnread && <span className="text-xs text-red-500 dark:text-red-400">Unread</span>}
+                                </div>
+                                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">
+                                    {item.remark || "No remarks"}
+                                </p>
+                                {item.nextFollowUpDate && (
+                                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                        Next Follow-up: {new Date(item.nextFollowUpDate).toLocaleDateString()}
+                                    </p>
+                                )}
+                            </div>
                         )}
                     </div>
                 ))}

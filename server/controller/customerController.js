@@ -56,6 +56,49 @@ export const checkPhoneUniqueness = async (req, res) => {
   }
 };
 
+// Search for a lead by phone number (returns full object)
+export const searchCustomerByPhone = async (req, res) => {
+  try {
+    const { phone } = req.query;
+    const brandId = req.brandFilter?.brand || req.headers['x-brand-id'];
+
+    if (!phone) {
+      return res.status(400).json({ message: "Phone number is required." });
+    }
+
+    if (!brandId) {
+      return res.status(400).json({ message: "Brand context is missing." });
+    }
+
+    const normalized = normalizePhone(phone);
+    if (!normalized || normalized.length < 10) {
+      return res.status(404).json({ message: "Invalid phone number." });
+    }
+
+    // Prepare query: search for the last 10 digits at the end of phone1 or phone2
+    const query = {
+      brand: brandId,
+      $or: [
+        { phone1: { $regex: new RegExp(`${normalized}$`) } },
+        { phone2: { $regex: new RegExp(`${normalized}$`) } }
+      ]
+    };
+
+    const lead = await customerModel.findOne(query)
+      .populate('assignedTo', 'fullName email')
+      .populate('assignedBy', 'fullName email');
+
+    if (!lead) {
+      return res.status(404).json({ message: "Lead not found." });
+    }
+
+    return res.status(200).json({ lead });
+  } catch (error) {
+    console.error("Search lead by phone error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
 
 // Create new customer/lead
 export const createCustomer = async (req, res) => {
@@ -329,6 +372,8 @@ export const updateCustomer = async (req, res) => {
       return res.status(404).json({ message: "Customer not found." });
     }
 
+    console.log(`[DEBUG] updateCustomer called for ${id}. Body:`, JSON.stringify(req.body, null, 2));
+
     // Check for duplicate phone number if phone1 is being updated
     if (updateData.phone1 && updateData.phone1 !== customer.phone1) {
       const brandId = customer.brand || req.brandFilter?.brand || req.headers['x-brand-id'];
@@ -347,6 +392,21 @@ export const updateCustomer = async (req, res) => {
       }
     }
 
+
+    // Handle $push operations (e.g., for remarks or callLogs)
+    if (updateData.$push) {
+      console.log(`[DEBUG] Pushing to arrays:`, JSON.stringify(updateData.$push, null, 2));
+      Object.keys(updateData.$push).forEach(key => {
+        if (Array.isArray(customer[key])) {
+          customer[key].push(updateData.$push[key]);
+          customer.markModified(key);
+          console.log(`[DEBUG] Pushed to ${key}. New length: ${customer[key].length}`);
+        } else {
+          console.log(`[DEBUG] Field ${key} is not an array on customer!`);
+        }
+      });
+      delete updateData.$push;
+    }
 
     // Update fields
     Object.keys(updateData).forEach(key => {
@@ -375,6 +435,7 @@ export const updateCustomer = async (req, res) => {
     }
 
     await customer.save();
+    console.log(`[DEBUG] Customer ${id} saved. CallLogs: ${customer.callLogs?.length}, Remarks: ${customer.remarks?.length}`);
 
 
     // Fetch the updated customer with all fields
