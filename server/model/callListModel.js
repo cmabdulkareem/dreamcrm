@@ -72,6 +72,10 @@ const callListSchema = new mongoose.Schema({
     assignedTo: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
+    },
+    assignedAt: {
+        type: Date,
+        default: Date.now
     }
 }, {
     timestamps: true
@@ -80,6 +84,7 @@ const callListSchema = new mongoose.Schema({
 // Indexes for efficient queries
 callListSchema.index({ brand: 1, createdAt: -1 });
 callListSchema.index({ brand: 1, assignedTo: 1, createdAt: -1 });
+callListSchema.index({ brand: 1, assignedAt: -1 });
 
 // Unique index for phoneNumber scoped by brand
 // Use partialFilterExpression to allow multiple empty phone numbers

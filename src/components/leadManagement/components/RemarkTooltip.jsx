@@ -2,6 +2,7 @@ import React from "react";
 import { createPortal } from "react-dom";
 import Badge from "../../ui/badge/Badge";
 import { getLeadStatusColor, getLeadStatusLabel } from "../leadHelpers";
+import { callListStatusOptions } from "../../../data/DataSets";
 
 /**
  * RemarkTooltip
@@ -43,6 +44,29 @@ const RemarkTooltip = ({
         if (type === 'INCOMING' || type === '1') return item.duration > 0 ? '📲 Incoming Answered' : '📵 Incoming Missed';
         if (type === 'OUTGOING' || type === '2') return item.duration > 0 ? '📞 Outgoing Answered' : '📵 Outgoing Unanswered';
         return '📞 Call Log';
+    };
+
+    const getCallListStatusBadgeColor = (status) => {
+        switch (status) {
+            case 'pending':
+            case 'busy':
+            case 'call-dropped':
+                return 'warning';
+            case 'interested-wants-details':
+            case 'very-interested':
+            case 'copied-to-lead':
+                return 'success';
+            case 'callback-requested':
+                return 'info';
+            case 'not-interested':
+            case 'invalid-number':
+                return 'error';
+            case 'neutral':
+            case 'no-answer':
+            case 'switched-off':
+            default:
+                return 'light';
+        }
     };
 
     return createPortal(
@@ -107,9 +131,17 @@ const RemarkTooltip = ({
                         ) : (
                             <div>
                                 <div className="flex items-center gap-2 mb-1">
-                                    <Badge size="sm" color={getLeadStatusColor(item.leadStatus || "new")}>
-                                        {getLeadStatusLabel(item.leadStatus || "new")}
-                                    </Badge>
+                                    {item.leadStatus ? (
+                                        <Badge size="sm" color={getLeadStatusColor(item.leadStatus)}>
+                                            {getLeadStatusLabel(item.leadStatus)}
+                                        </Badge>
+                                    ) : item.status ? (
+                                        <Badge size="sm" color={getCallListStatusBadgeColor(item.status)}>
+                                            {callListStatusOptions.find(opt => opt.value === item.status)?.label || item.status}
+                                        </Badge>
+                                    ) : (
+                                        <Badge size="sm" color="light">Pending</Badge>
+                                    )}
                                     {item.isUnread && <span className="text-xs text-red-500 dark:text-red-400">Unread</span>}
                                 </div>
                                 <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">

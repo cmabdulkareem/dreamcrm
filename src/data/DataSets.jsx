@@ -279,18 +279,18 @@ const immediateFollowupOptions = [
 ];
 
 const callListStatusOptions = [
-  { value: 'pending', label: 'Pending', color: '#A3A3A3' },
-  { value: 'neutral', label: 'Neutral – Needs follow-up', color: '#737373' },
-  { value: 'interested-wants-details', label: 'Interested – Wants details', color: '#38BDF8' },
-  { value: 'very-interested', label: 'Very Interested – Ready for next step', color: '#22C55E' },
-  { value: 'not-interested', label: 'Not Interested', color: '#EF4444' },
-  { value: 'callback-requested', label: 'Call back requested', color: '#8B5CF6' },
-  { value: 'copied-to-lead', label: 'Copied to New Lead', color: '#0EA5E9' },
-  { value: 'no-answer', label: 'No answer', color: '#FB923C' },
-  { value: 'busy', label: 'Busy', color: '#F97316' },
-  { value: 'switched-off', label: 'Switched Off', color: '#64748B' },
-  { value: 'invalid-number', label: 'Invalid / Wrong number', color: '#7F1D1D' },
-  { value: 'call-dropped', label: 'Call Dropped', color: '#DC2626' },
+  { value: 'pending', label: 'Pending', color: '#F59E0B' }, // Warning color (Amber)
+  { value: 'neutral', label: 'Neutral – Needs follow-up', color: '#6B7280' }, // Neutral (Gray)
+  { value: 'interested-wants-details', label: 'Interested – Wants details', color: '#10B981' }, // Emerald
+  { value: 'very-interested', label: 'Very Interested – Ready for next step', color: '#059669' }, // Success (Dark Emerald)
+  { value: 'not-interested', label: 'Not Interested', color: '#EF4444' }, // Error (Red)
+  { value: 'callback-requested', label: 'Call back requested', color: '#8B5CF6' }, // Info (Violet)
+  { value: 'copied-to-lead', label: 'Copied to New Lead', color: '#0EA5E9' }, // Cyan
+  { value: 'no-answer', label: 'No answer', color: '#F97316' }, // Orange
+  { value: 'busy', label: 'Busy', color: '#EA580C' }, // Dark Orange
+  { value: 'switched-off', label: 'Switched Off', color: '#4B5563' }, // Gray 600
+  { value: 'invalid-number', label: 'Invalid / Wrong number', color: '#991B1B' }, // Dark Red
+  { value: 'call-dropped', label: 'Call Dropped', color: '#B91C1C' }, // Red 700
 ];
 
 export {

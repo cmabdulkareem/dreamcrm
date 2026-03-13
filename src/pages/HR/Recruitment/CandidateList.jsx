@@ -1042,14 +1042,14 @@ const SelectAgreementModal = ({ app, isOpen, onClose, onSuccess }) => {
                                     label="Designation"
                                     value={offerDetails.offerDesignation}
                                     onChange={(e) => setOfferDetails({ ...offerDetails, offerDesignation: e.target.value })}
-                                    placeholder="e.g. Senior Software Engineer"
+                                    placeholder="Enter Designation"
                                 />
                                 <div className="grid grid-cols-2 gap-4">
                                     <InputField
                                         label="Location"
                                         value={offerDetails.offerLocation}
                                         onChange={(e) => setOfferDetails({ ...offerDetails, offerLocation: e.target.value })}
-                                        placeholder="e.g. Calicut"
+                                        placeholder="Enter Location"
                                     />
                                     <InputField
                                         label="Joining Date"
@@ -1063,7 +1063,7 @@ const SelectAgreementModal = ({ app, isOpen, onClose, onSuccess }) => {
                                         label="Salary"
                                         value={offerDetails.offerSalary}
                                         onChange={(e) => setOfferDetails({ ...offerDetails, offerSalary: e.target.value })}
-                                        placeholder="e.g. INR 45,000"
+                                        placeholder="Enter Salary (INR 45,000)"
                                     />
                                     <InputField
                                         label="Working Hours"

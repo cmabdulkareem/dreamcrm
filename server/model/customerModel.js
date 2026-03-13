@@ -148,6 +148,16 @@ const customerSchema = new mongoose.Schema({
   },
   convertedAt: {
     type: Date
+  },
+  aiScore: {
+    type: Number,
+    min: 0,
+    max: 100,
+    default: null
+  },
+  aiScoreReasoning: {
+    type: String,
+    default: null
   }
 }, {
   timestamps: true

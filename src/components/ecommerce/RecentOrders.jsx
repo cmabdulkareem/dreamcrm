@@ -88,6 +88,7 @@ export default function RecentOrders() {
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [openDropdownId, setOpenDropdownId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [scoringLeadId, setScoringLeadId] = useState(null);
 
   // ── Selected row ───────────────────────────────────────────────────────────
   const [selectedRow, setSelectedRow] = useState(null);
@@ -412,6 +413,27 @@ export default function RecentOrders() {
     }
   };
 
+  const handleScoreLead = useCallback(async (row) => {
+    setScoringLeadId(row._id);
+    try {
+      const response = await axios.get(`${API}/ai/score-lead/${row._id}`, { withCredentials: true });
+      const { score, reasoning } = response.data;
+      setData(prev => prev.map(lead =>
+        lead._id === row._id ? { ...lead, aiScore: score, aiScoreReasoning: reasoning } : lead
+      ));
+    } catch (error) {
+      console.error('Error scoring lead:', error);
+      if (error.response?.status === 429) {
+        const wait = error.response.data?.retryAfter;
+        toast.warning(`⚠️ AI quota exceeded.${wait ? ` Retry in ${wait}s.` : ' Try again later.'}`, { autoClose: 6000 });
+      } else {
+        toast.error('Failed to score lead. Please try again.');
+      }
+    } finally {
+      setScoringLeadId(null);
+    }
+  }, []);
+
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6">
@@ -449,21 +471,20 @@ export default function RecentOrders() {
           />
 
           {/* Desktop Table */}
-          <div className="hidden md:block overflow-auto max-h-[calc(100vh-320px)] rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm custom-scrollbar">
+          <div className="hidden md:block overflow-auto max-h-[calc(100vh-220px)] rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm custom-scrollbar">
             <Table className="min-w-full border-collapse">
               <TableHeader className="sticky top-0 z-20 bg-gray-50 dark:bg-gray-900 shadow-[0_1px_0_0_rgba(0,0,0,0.05)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.05)] border-b border-gray-100 dark:border-gray-800">
                 <TableRow>
-                  <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest pl-8 bg-inherit">
-                    <div className="flex items-center gap-3">
-                      <input type="checkbox" checked={filteredData.length > 0 && selectedLeads.length === filteredData.length} onChange={handleSelectAll} className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500 cursor-pointer" />
-                      <div className="size-6 invisible shrink-0" />
-                    </div>
+                  <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit w-12">
+                    <input type="checkbox" checked={filteredData.length > 0 && selectedLeads.length === filteredData.length} onChange={handleSelectAll} className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500 cursor-pointer" />
                   </TableCell>
+                  <TableCell isHeader className="py-4 px-3 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit">#</TableCell>
                   <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit border-l border-gray-100 dark:border-gray-800/50">Name</TableCell>
                   <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit border-l border-gray-100 dark:border-gray-800/50">Date Added</TableCell>
                   <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-center text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit border-l border-gray-100 dark:border-gray-800/50">Contact Point</TableCell>
                   <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-center text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit border-l border-gray-100 dark:border-gray-800/50">Campaign</TableCell>
                   <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit border-l border-gray-100 dark:border-gray-800/50">Status & Remark</TableCell>
+                  <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-center text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit border-l border-gray-100 dark:border-gray-800/50">AI Score</TableCell>
                   <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit border-l border-gray-100 dark:border-gray-800/50">Next Follow-up</TableCell>
                   <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-center text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit border-l border-gray-100 dark:border-gray-800/50">Actions</TableCell>
                 </TableRow>
@@ -476,10 +497,11 @@ export default function RecentOrders() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredData.map((row) => (
+                  filteredData.map((row, index) => (
                     <LeadTableRow
                       key={row._id}
                       row={row}
+                      index={index + 1}
                       selectedLeads={selectedLeads}
                       openDropdownId={openDropdownId}
                       onSelect={handleSelectLead}
@@ -496,6 +518,8 @@ export default function RecentOrders() {
                       onAnalysisLeave={handleAnalysisLeave}
                       canAssignLeads={canAssignLeads}
                       user={user}
+                      onScoreLead={handleScoreLead}
+                      isScoringLead={scoringLeadId === row._id}
                     />
                   ))
                 )}

@@ -314,17 +314,17 @@ const EditLeadModal = ({
                                     <h3 className="text-sm font-bold text-gray-800 dark:text-white uppercase tracking-wider">Management & Follow-up</h3>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <Label className="mb-1 text-[11px]">Potential *</Label>
-                                        <Select options={leadPotentialOptions} value={leadPotential} onChange={setLeadPotential} className="h-9 py-1 text-xs" />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="flex flex-col gap-1.5">
+                                        <Label htmlFor="otherContactPoint">Potential *</Label>
+                                        <Select options={leadPotentialOptions} value={leadPotential} onChange={setLeadPotential} />
                                     </div>
-                                    <div>
-                                        <Label className="mb-1 text-[11px]">Campaign</Label>
-                                        <Select options={campaignOptions} value={campaign} onChange={onCampaignChange} disabled={!hasManagerRole} className="h-9 py-1 text-xs" />
+                                    <div className="flex flex-col gap-1.5">
+                                        <Label htmlFor="otherContactPoint">Campaign</Label>
+                                        <Select options={campaignOptions} value={campaign} onChange={onCampaignChange} disabled={!hasManagerRole} />
                                     </div>
-                                    <div>
-                                        <Label className="mb-1 text-[11px]">Lead Status *</Label>
+                                    <div className="flex flex-col gap-1.5">
+                                        <Label htmlFor="otherContactPoint">Lead Status *</Label>
                                         <Select
                                             id="leadStatus"
                                             options={leadStatusOptions}
@@ -334,17 +334,19 @@ const EditLeadModal = ({
                                                 if (value === "converted" || value === "lost") setFollowUpDate("");
                                             }}
                                             required
-                                            className="h-9 py-1 text-xs"
                                         />
                                     </div>
-                                    <div>
+                                    <div className="flex flex-col gap-1.5">
                                         {(leadStatus !== "converted" && leadStatus !== "lost") && (
-                                            <DatePicker id="followupDate" label="Next Follow Up *" value={followUpDate} disablePastDates={true} onChange={(_, str) => setFollowUpDate(str)} />
+                                            <>
+                                                <Label htmlFor="followupDate">Next Follow Up *</Label>
+                                                <DatePicker id="followupDate" value={followUpDate} disablePastDates={true} onChange={(_, str) => setFollowUpDate(str)} />
+                                            </>
                                         )}
                                     </div>
                                     <div className="col-span-2">
-                                        <div className="flex items-center justify-between mb-1">
-                                            <Label className="mb-0 text-[11px]">New Remark *</Label>
+                                        <div className="flex items-center justify-between mb-1.5">
+                                            <Label htmlFor="remarks">New Remark *</Label>
                                             <span className="text-[9px] text-gray-400 italic">Internal Note</span>
                                         </div>
                                         <textarea
@@ -352,7 +354,7 @@ const EditLeadModal = ({
                                             value={remarks}
                                             onChange={(e) => setRemarks(e.target.value)}
                                             placeholder="Add followup notes..."
-                                            className="w-full h-20 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/20 transition-all outline-none resize-none placeholder:text-[10px]"
+                                            className="w-full min-h-[80px] rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-700 dark:text-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/20 transition-all outline-none resize-none placeholder:text-[10px]"
                                         />
                                     </div>
                                 </div>
@@ -478,7 +480,7 @@ const EditLeadModal = ({
                         <Button
                             variant="outline"
                             onClick={onClose}
-                            className="h-8 py-0 px-3 text-[11px] border-gray-200 dark:border-gray-700 hover:bg-white dark:hover:bg-gray-800"
+                            className="h-9 py-1.5 px-4 text-sm border-gray-200 dark:border-gray-700 hover:bg-white dark:hover:bg-gray-800"
                         >
                             Cancel
                         </Button>
@@ -487,7 +489,7 @@ const EditLeadModal = ({
                             onClick={onSave}
                             loading={isSubmitting}
                             disabled={phoneExists}
-                            className="h-8 py-0 px-6 text-[11px] shadow-lg shadow-blue-500/10"
+                            className="h-9 py-1.5 px-6 text-sm shadow-lg shadow-blue-500/10"
                         >
                             Update Lead
                         </Button>

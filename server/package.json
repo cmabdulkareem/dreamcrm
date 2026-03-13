@@ -23,6 +23,7 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
+    "groq-sdk": "^1.1.1",
     "imap": "^0.8.17",
     "jsonwebtoken": "^9.0.2",
     "mailparser": "^3.9.0",

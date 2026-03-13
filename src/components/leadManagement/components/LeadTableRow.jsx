@@ -1,5 +1,5 @@
 import React from "react";
-import { Bell } from "lucide-react";
+import { Bell, Sparkles, RefreshCw } from "lucide-react";
 import {
     TableCell,
     TableRow,
@@ -24,6 +24,7 @@ import { isAdmin, isManager, isOwner } from "../../../utils/roleHelpers";
  */
 const LeadTableRow = ({
     row,
+    index,
     selectedLeads,
     openDropdownId,
     onSelect,
@@ -40,6 +41,8 @@ const LeadTableRow = ({
     onAnalysisLeave,
     canAssignLeads,
     user,
+    onScoreLead,
+    isScoringLead,
 }) => {
     const latestRemark = getLatestRemark(row.remarks, row.callLogs);
     const hasUnread = hasUnreadRemarks(row.remarks);
@@ -54,24 +57,20 @@ const LeadTableRow = ({
 
     return (
         <TableRow className="group transition-all hover:bg-slate-50/80 dark:hover:bg-white/5 odd:bg-transparent even:bg-gray-50/30 dark:even:bg-white/[0.01] border-b border-gray-100 dark:border-gray-800/50 last:border-0">
-            {/* Checkbox + unread indicator */}
-            <TableCell className="py-4 pl-8 relative">
+            {/* Checkbox */}
+            <TableCell className="py-4 px-4 relative w-12">
                 <div className={`absolute left-0 top-0 bottom-0 w-[6px] ${styles.bar}`} />
-                <div className="flex items-center gap-3">
-                    <input
-                        type="checkbox"
-                        checked={selectedLeads.includes(row._id)}
-                        onChange={() => onSelect(row._id)}
-                        className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
-                    />
-                    {hasUnread ? (
-                        <div className="size-5 shrink-0 rounded-full bg-red-600 flex items-center justify-center shadow-md" title="New Remark">
-                            <BoltIcon className="size-3.5 text-white" />
-                        </div>
-                    ) : (
-                        <div className="size-6 invisible shrink-0" />
-                    )}
-                </div>
+                <input
+                    type="checkbox"
+                    checked={selectedLeads.includes(row._id)}
+                    onChange={() => onSelect(row._id)}
+                    className="h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+                />
+            </TableCell>
+
+            {/* Row Number */}
+            <TableCell className="py-4 px-3 text-gray-500 dark:text-gray-400 text-[11px] font-bold tabular-nums">
+                {index}
             </TableCell>
 
             {/* Name + course + phone */}
@@ -135,6 +134,33 @@ const LeadTableRow = ({
                         )}
                     </div>
                 </div>
+            </TableCell>
+
+            {/* AI Score */}
+            <TableCell className="py-3 px-4 border-l border-gray-100 dark:border-gray-800/50 text-center">
+                <button
+                    onClick={(e) => { e.stopPropagation(); onScoreLead(row); }}
+                    disabled={isScoringLead}
+                    title="Click to recalculate AI Score"
+                    className="flex flex-col items-center justify-center w-full min-h-[36px] p-1.5 rounded-lg hover:bg-violet-50 dark:hover:bg-violet-900/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed group/score"
+                >
+                    {isScoringLead ? (
+                        <RefreshCw className="size-4 animate-spin text-violet-500 group-hover/score:text-violet-600" />
+                    ) : row.aiScore !== null && row.aiScore !== undefined ? (
+                        <span className={`text-lg font-bold tabular-nums ${
+                                row.aiScore >= 70
+                                    ? 'text-emerald-500 group-hover/score:text-emerald-600'
+                                    : row.aiScore >= 40
+                                    ? 'text-amber-500 group-hover/score:text-amber-600'
+                                    : 'text-red-400 group-hover/score:text-red-500'
+                            }`}
+                        >
+                            {row.aiScore}
+                        </span>
+                    ) : (
+                        <span className="text-xs text-gray-400 italic group-hover/score:text-violet-500">Not scored</span>
+                    )}
+                </button>
             </TableCell>
 
             {/* Next Follow-up */}

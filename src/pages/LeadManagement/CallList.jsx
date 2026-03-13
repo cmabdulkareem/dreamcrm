@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useContext, useMemo, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
@@ -20,10 +20,14 @@ import API from '../../config/api';
 import { AuthContext } from '../../context/AuthContext';
 import { isOwner, isManager } from '../../utils/roleHelpers';
 import Select from '../../components/form/Select';
-import { CloseIcon, DownloadIcon, FileIcon, ChevronDownIcon, ChevronUpIcon, PencilIcon, TrashBinIcon, CalendarIcon } from '../../icons';
+import { CloseIcon, DownloadIcon, FileIcon, ChevronDownIcon, ChevronUpIcon, PencilIcon, TrashBinIcon, CalendarIcon, VerticalDotsIcon } from '../../icons';
+import { Dropdown } from '../../components/ui/dropdown/Dropdown';
+import { DropdownItem } from '../../components/ui/dropdown/DropdownItem';
 import { countries, callListStatusOptions } from '../../data/DataSets';
 import ColdCallMobileCard from '../../components/leadManagement/components/ColdCallMobileCard';
 import { getLatestRemark } from '../../components/leadManagement/leadHelpers';
+import { useTooltipPosition } from '../../components/leadManagement/hooks/useTooltipPosition';
+import RemarkTooltip from '../../components/leadManagement/components/RemarkTooltip';
 
 const SearchIcon = ({ className }) => (
     <svg className={className} width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -54,12 +58,18 @@ export default function CallList() {
     // Dropdown state for mobile cards
     const [openDropdownId, setOpenDropdownId] = useState(null);
 
-    // Tooltip states for remark history
-    const [hoveredRemarkRow, setHoveredRemarkRow] = useState(null);
-    const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0, arrowLeft: 0 });
-    const [showTooltip, setShowTooltip] = useState(false);
-    const hoverTimeoutRef = useRef(null);
-    const tooltipRef = useRef(null);
+    // Tooltip states for remark history (Consolidated via Hook)
+    const {
+        hoveredRemarkRow,
+        tooltipPosition,
+        showTooltip,
+        hoverTimeoutRef,
+        tooltipRef,
+        handleTooltipEnter,
+        handleTooltipLeave
+    } = useTooltipPosition();
+
+    const hoveredRow = useMemo(() => callLists.find(c => c._id === hoveredRemarkRow), [callLists, hoveredRemarkRow]);
 
     // Form states
     const [name, setName] = useState('');
@@ -89,7 +99,7 @@ export default function CallList() {
     const [stats, setStats] = useState([]);
     const [creatorFilter, setCreatorFilter] = useState('');
     const [assigneeFilter, setAssigneeFilter] = useState('');
-    const [sortBy, setSortBy] = useState('createdAt');
+    const [sortBy, setSortBy] = useState('assignedAt');
     const [sortOrder, setSortOrder] = useState('desc');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
@@ -239,134 +249,6 @@ export default function CallList() {
     };
 
 
-    // Calculate optimal tooltip position (Ported from RecentOrders.jsx)
-    const calculateTooltipPosition = (rect) => {
-        const tooltipWidth = 384; // w-96 = 384px
-        const padding = 20;
-        const viewportWidth = window.innerWidth;
-        const viewportHeight = window.innerHeight;
-        const headerHeight = 85;
-
-        // Center-align horizontally
-        let left = rect.left + rect.width / 2 - tooltipWidth / 2;
-
-        // Adjust if tooltip would go off right edge
-        if (left + tooltipWidth > viewportWidth - padding) {
-            left = viewportWidth - tooltipWidth - padding;
-        }
-
-        // Adjust if tooltip would go off left edge
-        if (left < padding) {
-            left = padding;
-        }
-
-        // Recalculate arrowLeft relative to the tooltip's final left position
-        let arrowLeft = (rect.left + rect.width / 2) - left;
-        // Clamp arrow to tooltip bounds
-        arrowLeft = Math.max(24, Math.min(tooltipWidth - 24, arrowLeft));
-
-        // Calculate vertical position
-        const spaceAbove = rect.top - headerHeight - padding;
-        const spaceBelow = viewportHeight - rect.bottom - padding;
-
-        const estimatedTooltipHeight = 350;
-
-        let top = 0;
-        let transform = "";
-        let maxHeight = 0;
-
-        const shouldShowAbove = spaceAbove > estimatedTooltipHeight || spaceAbove > spaceBelow;
-
-        if (shouldShowAbove) {
-            // Show ABOVE
-            top = rect.top;
-            transform = "translateY(-100%) translateY(-6px)";
-            maxHeight = Math.min(spaceAbove, 480);
-        } else {
-            // Show BELOW
-            top = rect.bottom;
-            transform = "translateY(6px)";
-            maxHeight = Math.min(spaceBelow, 480);
-        }
-
-        return { top, left, arrowLeft, transform, maxHeight, isAbove: shouldShowAbove };
-    };
-
-    // Handle tooltip hover with delay
-    const handleTooltipEnter = (e, entry) => {
-        if (entry.remarks && entry.remarks.length > 0) {
-            if (hoverTimeoutRef.current) {
-                clearTimeout(hoverTimeoutRef.current);
-            }
-
-            const rect = e.currentTarget.getBoundingClientRect();
-            const position = calculateTooltipPosition(rect);
-
-            setTooltipPosition(position);
-            setHoveredRemarkRow(entry._id);
-
-            hoverTimeoutRef.current = setTimeout(() => {
-                setShowTooltip(true);
-            }, 150);
-        }
-    };
-
-    const handleTooltipLeave = () => {
-        if (hoverTimeoutRef.current) {
-            clearTimeout(hoverTimeoutRef.current);
-            hoverTimeoutRef.current = null;
-        }
-
-        hoverTimeoutRef.current = setTimeout(() => {
-            setHoveredRemarkRow(null);
-            setShowTooltip(false);
-        }, 300); // Increased delay for ergonomics
-    };
-
-    // Handle window resize/scroll to update tooltip position
-    useEffect(() => {
-        if (!hoveredRemarkRow || !showTooltip) return;
-
-        const handleUpdatePosition = (e) => {
-            // Ignore scroll events originating from WITHIN the tooltip itself
-            if (e && e.type === 'scroll' && tooltipRef.current && tooltipRef.current.contains(e.target)) {
-                return;
-            }
-
-            // Try desktop first, then mobile
-            const element = document.querySelector(`[data-tooltip-id="desktop-${hoveredRemarkRow}"]`) ||
-                document.querySelector(`[data-tooltip-id="mobile-${hoveredRemarkRow}"]`);
-
-            if (element) {
-                const rect = element.getBoundingClientRect();
-                const pos = calculateTooltipPosition(rect);
-
-                // Preserve the initial direction to prevent flipping during scroll
-                if (tooltipPosition) {
-                    const wasAbove = tooltipPosition.transform.includes('-100%');
-                    if (wasAbove) {
-                        pos.top = rect.top;
-                        pos.transform = "translateY(-100%) translateY(-6px)";
-                        pos.maxHeight = Math.min(rect.top - 85 - 20, 480);
-                    } else {
-                        pos.top = rect.bottom;
-                        pos.transform = "translateY(6px)";
-                        pos.maxHeight = Math.min(window.innerHeight - rect.bottom - 20, 480);
-                    }
-                }
-
-                setTooltipPosition(pos);
-            }
-        };
-
-        window.addEventListener('resize', handleUpdatePosition);
-        window.addEventListener('scroll', handleUpdatePosition, true);
-
-        return () => {
-            window.removeEventListener('resize', handleUpdatePosition);
-            window.removeEventListener('scroll', handleUpdatePosition, true);
-        };
-    }, [hoveredRemarkRow, showTooltip]);
 
     const resetForm = () => {
         setName('');
@@ -475,9 +357,19 @@ export default function CallList() {
 
     const handleStatusUpdate = async (id, newStatus) => {
         try {
+            const statusLabel = callListStatusOptions.find(opt => opt.value === newStatus)?.label || newStatus;
+            const remarkText = `Status updated to ${statusLabel}`;
+            
             const response = await axios.patch(
                 `${API}/call-lists/${id}/status`,
-                { status: newStatus },
+                { 
+                    status: newStatus,
+                    remarks: [{
+                        remark: remarkText,
+                        handledBy: user?.fullName || 'System',
+                        updatedOn: new Date().toISOString()
+                    }]
+                },
                 { withCredentials: true }
             );
 
@@ -618,23 +510,32 @@ export default function CallList() {
     };
 
     const renderActions = (entry) => (
-        <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-            <button
+        <div className="flex items-center justify-center gap-2" onClick={(e) => e.stopPropagation()}>
+            <Button
+                size="sm"
+                variant="outline"
+                className="mr-1"
+                endIcon={<PencilIcon className="size-4" />}
                 onClick={() => handleEdit(entry)}
-                className="size-7 flex items-center justify-center rounded-lg bg-gray-50/50 dark:bg-gray-800 text-brand-500 hover:bg-brand-50 hover:text-brand-600 dark:hover:bg-brand-500/10 dark:hover:text-brand-400 transition-colors"
-                title="Edit Entry"
-            >
-                <PencilIcon className="size-3.5" />
-            </button>
-            {canDelete && (
+            />
+            <div className="relative">
                 <button
-                    onClick={() => handleDeleteClick(entry)}
-                    className="size-7 flex items-center justify-center rounded-lg bg-gray-50/50 dark:bg-gray-800 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400 transition-colors"
-                    title="Delete Entry"
+                    onClick={() => toggleDropdown(entry._id)}
+                    className="dropdown-toggle size-9 flex items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-700 dark:border-gray-800 dark:bg-white/[0.03] dark:text-gray-400 dark:hover:bg-white/[0.05]"
                 >
-                    <TrashBinIcon className="size-3.5" />
+                    <VerticalDotsIcon className="size-5" />
                 </button>
-            )}
+                <Dropdown isOpen={openDropdownId === entry._id} onClose={() => setOpenDropdownId(null)} className="w-40">
+                    {canDelete && (
+                        <DropdownItem
+                            onClick={() => { setOpenDropdownId(null); handleDeleteClick(entry); }}
+                            className="flex items-center gap-2 text-red-500"
+                        >
+                            <TrashBinIcon className="size-4" /> Delete
+                        </DropdownItem>
+                    )}
+                </Dropdown>
+            </div>
         </div>
     );
 
@@ -714,7 +615,7 @@ export default function CallList() {
                         {/* Called Group */}
                         <div className="flex items-center gap-3 px-4 py-2 bg-slate-50/50 dark:bg-white/5 rounded-full border border-slate-200/50 dark:border-white/10 h-10 shadow-sm transition-all hover:bg-slate-100/50 dark:hover:bg-white/10">
                             <span className="font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest text-[9px]">
-                                Total Called:
+                                Called:
                             </span>
                             <span className="font-black text-green-600 dark:text-brand-400 text-[15px] tabular-nums leading-none">
                                 {totalCalled}
@@ -754,54 +655,16 @@ export default function CallList() {
 
                     {/* Actions Row (Moved from top) */}
                     <div className="flex items-center gap-2">
-                        <div className="relative">
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setShowCalendar(!showCalendar)}
-                                className={`h-10 w-10 !p-0 !rounded-full bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 hover:border-slate-400 text-gray-600 dark:text-gray-400 transition-all ${showCalendar ? 'ring-2 ring-brand-500 border-brand-500' : ''}`}
-                                title="Filter by Date"
-                            >
-                                <CalendarIcon className="size-6" />
-                            </Button>
-
-                            {showCalendar && (
-                                <>
-                                    {/* Mobile Backdrop */}
-                                    <div
-                                        className="fixed inset-0 z-[45] bg-black/20 backdrop-blur-sm sm:hidden"
-                                        onClick={() => setShowCalendar(false)}
-                                    />
-                                    <div className="absolute right-0 top-full mt-2 z-[50] w-72 sm:w-80 shadow-2xl animate-in fade-in slide-in-from-top-2 max-sm:fixed max-sm:top-1/2 max-sm:left-1/2 max-sm:-translate-x-1/2 max-sm:-translate-y-1/2 max-sm:w-[calc(100%-32px)] max-sm:max-w-[320px]">
-                                        <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-3 shadow-2xl">
-                                            <div className="flex items-center justify-between mb-2 sm:hidden">
-                                                <span className="text-sm font-bold text-gray-700 dark:text-gray-300">Select Date Range</span>
-                                                <button onClick={() => setShowCalendar(false)} className="text-gray-400 hover:text-gray-600">
-                                                    <CloseIcon className="size-5" />
-                                                </button>
-                                            </div>
-                                            <RangeDatePicker
-                                                value={dateRange}
-                                                onChange={(dates) => {
-                                                    setDateRange(dates);
-                                                    setPage(1);
-                                                    // On mobile, close after selection if it's a full range or just keep it open for now
-                                                }}
-                                                placeholder="Filter dates"
-                                            />
-                                            <div className="mt-3 sm:hidden">
-                                                <Button
-                                                    size="sm"
-                                                    className="w-full"
-                                                    onClick={() => setShowCalendar(false)}
-                                                >
-                                                    Apply Filter
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </>
-                            )}
+                        <div className="w-56 sm:w-60">
+                            <RangeDatePicker
+                                value={dateRange}
+                                onChange={(dates) => {
+                                    setDateRange(dates);
+                                    setPage(1);
+                                }}
+                                placeholder="Filter dates"
+                                className="!h-10 border-gray-200 dark:border-gray-700 !mt-0 !py-0 !leading-[40px]"
+                            />
                         </div>
 
                         <Button
@@ -828,9 +691,10 @@ export default function CallList() {
                             size="sm"
                             variant="primary"
                             onClick={openAddModal}
-                            className="h-10 px-6 !rounded-full font-bold tracking-tight shadow-md hover:shadow-lg transition-all"
+                            className="h-10 w-10 !rounded-full font-bold text-2xl shadow-md hover:shadow-lg transition-all flex items-center justify-center pt-0.5"
+                            title="Add New Entry"
                         >
-                            Add New Entry
+                            +
                         </Button>
                     </div>
                 </div>
@@ -1010,7 +874,7 @@ export default function CallList() {
                                 ))}
                             </div>
 
-                            <div className="hidden md:block overflow-auto max-h-[calc(100vh-320px)] rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm custom-scrollbar">
+                            <div className="hidden md:block overflow-auto max-h-[calc(100vh-220px)] rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm custom-scrollbar">
                                 <Table className="min-w-full border-collapse">
                                     <TableHeader className="sticky top-0 z-20 bg-gray-50 dark:bg-gray-900 shadow-[0_1px_0_0_rgba(0,0,0,0.05)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.05)]">
                                         <TableRow>
@@ -1026,10 +890,8 @@ export default function CallList() {
                                             )}
                                             <TableCell isHeader className="py-4 px-3 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest w-12 bg-inherit sticky left-12 z-30 shadow-[1px_0_4px_-2px_rgba(0,0,0,0.1)] dark:shadow-[1px_0_4px_-2px_rgba(255,255,255,0.1)]">#</TableCell>
                                             <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest min-w-[220px] bg-inherit sticky left-[88px] z-30 shadow-[2px_0_6px_-2px_rgba(0,0,0,0.15)] dark:shadow-[2px_0_6px_-2px_rgba(255,255,255,0.15)]">Contact Details</TableCell>
-                                            <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest min-w-[130px] bg-inherit border-l border-gray-100 dark:border-gray-800/50">Assigned To</TableCell>
                                             <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest min-w-[140px] bg-inherit border-l border-gray-100 dark:border-gray-800/50">Source / Purpose</TableCell>
                                             <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest min-w-[260px] bg-inherit border-l border-gray-100 dark:border-gray-800/50">Remarks</TableCell>
-                                            <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest min-w-[160px] bg-inherit border-l border-gray-100 dark:border-gray-800/50">Status</TableCell>
                                             <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-center text-[10.5px] dark:text-gray-400 uppercase tracking-widest min-w-[100px] bg-inherit border-l border-gray-100 dark:border-gray-800/50">Actions</TableCell>
                                         </TableRow>
                                     </TableHeader>
@@ -1050,30 +912,26 @@ export default function CallList() {
                                                     {(page - 1) * itemsPerPage + index + 1}
                                                 </TableCell>
                                                 <TableCell className="py-4 px-4 sticky left-[88px] z-10 bg-inherit shadow-[2px_0_6px_-2px_rgba(0,0,0,0.15)] dark:shadow-[2px_0_6px_-2px_rgba(255,255,255,0.15)]">
-                                                    <div className="flex flex-col gap-0.5">
+                                                    <div className="flex flex-col min-w-0">
                                                         <p
-                                                            className="font-semibold text-gray-800 text-theme-sm dark:text-white/90 leading-tight tracking-tight transition-colors cursor-default"
+                                                            className="font-semibold text-gray-800 text-theme-sm dark:text-white/90 truncate transition-colors cursor-default"
                                                             data-tooltip-id={`desktop-${entry._id}`}
                                                             onMouseEnter={(e) => handleTooltipEnter(e, entry)}
                                                             onMouseLeave={handleTooltipLeave}
                                                         >
                                                             {entry.name || 'Unnamed Entry'}
                                                         </p>
+                                                        <p className="text-gray-400 text-xs truncate max-w-[180px]">{entry.assignedTo?.fullName || 'Unassigned'}</p>
                                                         {entry.phoneNumber && (
-                                                            <div className="flex items-center gap-1.5">
+                                                            <div className="flex items-center gap-1.5 mt-0.5">
                                                                 <a href={`tel:${entry.phoneNumber}`} className="text-blue-500 hover:underline text-[12px] font-medium">
                                                                     {entry.phoneNumber}
                                                                 </a>
                                                                 <span className="text-gray-300 dark:text-gray-600 font-light">•</span>
-                                                                <span className="text-gray-400 text-xs">{formatDate(entry.createdAt)}</span>
+                                                                <span className="text-gray-400 text-xs" title={`Created: ${formatDate(entry.createdAt)}`}>{formatDate(entry.assignedAt || entry.createdAt)}</span>
                                                             </div>
                                                         )}
                                                     </div>
-                                                </TableCell>
-                                                <TableCell className="py-4 px-4 border-l border-gray-100 dark:border-gray-800/50">
-                                                    <span className="text-gray-700 dark:text-gray-300 text-theme-sm font-medium">
-                                                        {entry.assignedTo?.fullName || 'Unassigned'}
-                                                    </span>
                                                 </TableCell>
                                                 <TableCell className="py-4 px-4 border-l border-gray-100 dark:border-gray-800/50">
                                                     <div className="flex flex-col gap-1.5">
@@ -1092,26 +950,57 @@ export default function CallList() {
                                                         )}
                                                     </div>
                                                 </TableCell>
-                                                <TableCell 
-                                                    className="py-4 px-4 border-l border-gray-100 dark:border-gray-800/50 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-                                                    data-tooltip-id={`remark-${entry._id}`}
-                                                    onMouseEnter={(e) => handleTooltipEnter(e, entry)}
-                                                    onMouseLeave={handleTooltipLeave}
-                                                >
-                                                    <div className="text-theme-sm text-gray-700 dark:text-gray-300 font-medium leading-relaxed max-w-[280px] break-words">
-                                                        {(() => {
-                                                            const txt = getLatestRemarkWrapper(entry.remarks, entry.callLogs);
-                                                            return txt === '-' ? '-' : (
-                                                                txt.includes('📞') || txt.includes('📵') || txt.includes('📲') ? txt : (txt.charAt(0).toUpperCase() + txt.slice(1))
-                                                            );
-                                                        })()}
+                                                <TableCell className="py-4 px-4 border-l border-gray-100 dark:border-gray-800/50">
+                                                    <div className="flex flex-col gap-1.5">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="relative group/status flex items-center">
+                                                                <div className="relative flex items-center">
+                                                                    <span
+                                                                        className="px-2.5 py-1.5 rounded-full text-[12px] font-bold tracking-tight flex items-center gap-1.5 cursor-pointer transition-all hover:ring-2 hover:ring-offset-1 dark:hover:ring-offset-gray-900 shadow-sm active:scale-95"
+                                                                        style={{
+                                                                            backgroundColor: `${(callListStatusOptions.find(opt => opt.value === entry.status) || callListStatusOptions[0]).color}15`,
+                                                                            color: (callListStatusOptions.find(opt => opt.value === entry.status) || callListStatusOptions[0]).color,
+                                                                            border: `1px solid ${(callListStatusOptions.find(opt => opt.value === entry.status) || callListStatusOptions[0]).color}40`
+                                                                        }}
+                                                                    >
+                                                                        <span className="size-1.5 rounded-full shadow-sm" style={{ backgroundColor: (callListStatusOptions.find(opt => opt.value === entry.status) || callListStatusOptions[0]).color }}></span>
+                                                                        {(callListStatusOptions.find(opt => opt.value === entry.status) || callListStatusOptions[0]).label}
+                                                                        <ChevronDownIcon className="size-2.5 opacity-60" />
+                                                                    </span>
+                                                                    <select
+                                                                        className="absolute inset-0 w-full opacity-0 cursor-pointer"
+                                                                        value={entry.status || 'pending'}
+                                                                        onChange={(e) => handleStatusUpdate(entry._id, e.target.value)}
+                                                                        onClick={(e) => e.stopPropagation()}
+                                                                    >
+                                                                        {callListStatusOptions.map(opt => (
+                                                                            <option key={opt.value} value={opt.value}>
+                                                                                {opt.label}
+                                                                            </option>
+                                                                        ))}
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div
+                                                            className="relative group/remark"
+                                                            data-row-id={entry._id}
+                                                            onMouseEnter={(e) => handleTooltipEnter(e, entry)}
+                                                            onMouseLeave={handleTooltipLeave}
+                                                        >
+                                                            <p className="text-xs text-gray-600 dark:text-gray-400 max-w-[360px] truncate cursor-help leading-relaxed">
+                                                                {(() => {
+                                                                    const txt = getLatestRemarkWrapper(entry.remarks, entry.callLogs);
+                                                                    return txt === '-' ? "No remarks yet" : (
+                                                                        txt.includes('📞') || txt.includes('📵') || txt.includes('📲') ? txt : (txt.charAt(0).toUpperCase() + txt.slice(1))
+                                                                    );
+                                                                })()}
+                                                            </p>
+                                                        </div>
                                                     </div>
                                                 </TableCell>
                                                 <TableCell className="py-4 px-4 border-l border-gray-100 dark:border-gray-800/50">
-                                                    {renderStatus(entry)}
-                                                </TableCell>
-                                                <TableCell className="py-4 px-4 border-l border-gray-100 dark:border-gray-800/50">
-                                                    <div className="flex justify-center min-w-[80px]">
+                                                    <div className="flex items-center justify-center min-w-[80px]">
                                                         {renderActions(entry)}
                                                     </div>
                                                 </TableCell>
@@ -1788,182 +1677,14 @@ export default function CallList() {
             </Modal >
 
             {/* Lifecycle Tooltip */}
-            {
-                showTooltip && hoveredRemarkRow && createPortal(
-                    <div
-                        ref={tooltipRef}
-                        className="fixed z-[99999] w-[420px] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800 overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col"
-                        style={{
-                            top: tooltipPosition.top,
-                            left: tooltipPosition.left,
-                            transform: tooltipPosition.transform,
-                            maxHeight: tooltipPosition.maxHeight
-                        }}
-                        onMouseEnter={() => {
-                            if (hoverTimeoutRef.current) {
-                                clearTimeout(hoverTimeoutRef.current);
-                            }
-                        }}
-                        onMouseLeave={handleTooltipLeave}
-                    >
-                        {/* Arrow Pointer */}
-                        <div
-                            className="absolute w-3 h-3 bg-white dark:bg-gray-900 border-r border-b border-gray-100 dark:border-gray-800 z-10"
-                            style={{
-                                left: tooltipPosition.arrowLeft,
-                                bottom: tooltipPosition.transform.includes('-100%') ? '-6px' : 'auto',
-                                top: tooltipPosition.transform.includes('-100%') ? 'auto' : '-6px',
-                                transform: `translateX(-50%) rotate(${tooltipPosition.transform.includes('-100%') ? '45deg' : '225deg'})`,
-                            }}
-                        />
-
-                        <div className="bg-gray-50 dark:bg-white/[0.03] border-b border-gray-100 dark:border-gray-800 px-5 py-4 flex items-center justify-between relative z-20">
-                            <div className="flex items-center gap-2.5">
-                                <div className="size-8 rounded-lg bg-brand-500/10 flex items-center justify-center">
-                                    <svg className="size-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h4 className="text-sm font-bold text-gray-900 dark:text-white">Call Lifecycle</h4>
-                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Activity History</p>
-                                </div>
-                            </div>
-                            <div className="text-[11px] font-bold text-gray-400 bg-white dark:bg-white/5 px-2 py-1 rounded-md border border-gray-100 dark:border-white/5 shadow-sm">
-                                {(() => {
-                                    const entry = (callLists || []).find(c => c._id === hoveredRemarkRow);
-                                    return (entry?.remarks?.length || 0) + (entry?.callLogs?.length || 0);
-                                })()} Events
-                            </div>
-                        </div>
-
-                        <div className="p-5 overflow-y-auto custom-scrollbar flex-1 min-h-0 overscroll-contain">
-                            <div className="space-y-6 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[1.5px] before:bg-gradient-to-b before:from-brand-500/30 before:via-gray-100 dark:before:via-white/10 before:to-transparent">
-                                {(() => {
-                                    const entry = (callLists || []).find(c => c._id === hoveredRemarkRow);
-                                    if (!entry) return null;
-
-                                    const allActivities = [
-                                        ...(entry.remarks || []).map(r => ({ ...r, type: 'remark' })),
-                                        ...(entry.callLogs || []).map(c => ({ ...c, type: 'call', updatedOn: c.timestamp }))
-                                    ].sort((a, b) => new Date(b.updatedOn) - new Date(a.updatedOn));
-
-                                    if (allActivities.length === 0) {
-                                        return (
-                                            <div className="text-center py-6 opacity-50">
-                                                <p className="text-[12px] text-gray-500">No activity yet</p>
-                                            </div>
-                                        );
-                                    }
-
-                                    return allActivities.map((activity, idx) => {
-                                        if (activity.type === 'remark') {
-                                            const text = activity.remark || activity.status || '';
-                                            const isEntryCreated = text.toLowerCase() === 'entry created';
-                                            const isStatusChange = text.toLowerCase().includes('status updated to');
-                                            const isAssignment = text.toLowerCase().startsWith('assigned to');
-
-                                            let eventColor = 'text-gray-400';
-                                            let dotColor = 'bg-gray-400';
-                                            let bgColor = 'bg-white border-gray-100 dark:bg-white/[0.02] dark:border-white/5 text-gray-600 dark:text-gray-400';
-
-                                            if (isEntryCreated) {
-                                                eventColor = 'text-emerald-600 dark:text-emerald-400';
-                                                dotColor = 'bg-emerald-500';
-                                                bgColor = 'bg-emerald-50/30 border-emerald-100 dark:bg-emerald-500/5 dark:border-emerald-500/20 text-gray-700 dark:text-emerald-300';
-                                            } else if (isStatusChange) {
-                                                eventColor = 'text-blue-600 dark:text-blue-400';
-                                                dotColor = 'bg-blue-500';
-                                                bgColor = 'bg-blue-50/30 border-blue-100 dark:bg-blue-500/5 dark:border-blue-500/20 text-gray-700 dark:text-blue-300';
-                                            } else if (isAssignment) {
-                                                eventColor = 'text-violet-600 dark:text-violet-400';
-                                                dotColor = 'bg-violet-500';
-                                                bgColor = 'bg-violet-50/30 border-violet-100 dark:bg-violet-500/5 dark:border-violet-500/20 text-gray-700 dark:text-violet-300';
-                                            } else if (idx === 0) {
-                                                eventColor = 'text-brand-600 dark:text-brand-400';
-                                                dotColor = 'bg-brand-500';
-                                                bgColor = 'bg-brand-50/40 border-brand-100 dark:bg-brand-500/10 dark:border-brand-500/20 text-gray-800 dark:text-gray-200 font-semibold';
-                                            }
-                                            return (
-                                                <div key={activity._id || `remark-${idx}`} className="relative pl-8">
-                                                    <div className={`absolute left-0 top-1.5 size-[22px] rounded-full border-2 border-white dark:border-gray-900 flex items-center justify-center z-10 shadow-sm ${idx === 0 ? 'bg-brand-500' : 'bg-gray-100 dark:bg-gray-800'}`}>
-                                                        <div className={`size-1.5 rounded-full ${idx === 0 ? 'bg-white' : dotColor}`} />
-                                                    </div>
-                                                    <div className="flex flex-col gap-1.5">
-                                                        <div className="flex items-center justify-between">
-                                                            <div className="flex items-center gap-2">
-                                                                <span className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${eventColor}`}>
-                                                                    {(() => {
-                                                                        if (isEntryCreated) return 'Entry Created';
-                                                                        if (isStatusChange) return 'Status Change';
-                                                                        if (isAssignment) return 'Assignment';
-                                                                        return activity.status?.replace('-', ' ') || 'Remark Added';
-                                                                    })()}
-                                                                </span>
-                                                                {(activity.updatedBy || activity.handledBy) && (
-                                                                    <span className="text-[10px] text-gray-400 font-medium">· {activity.updatedBy?.fullName || activity.handledBy}</span>
-                                                                )}
-                                                            </div>
-                                                            <span className="text-[10px] font-medium text-gray-400 bg-gray-50 dark:bg-white/5 py-0.5 px-2 rounded-full border border-gray-100 dark:border-white/5">
-                                                                {formatDateTime(activity.updatedOn)}
-                                                            </span>
-                                                        </div>
-                                                        <div className={`p-3 rounded-xl border leading-relaxed text-[12px] shadow-sm ${bgColor}`}>
-                                                            {text.charAt(0).toUpperCase() + text.slice(1)}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        } else {
-                                            const typeStr = String(activity.type);
-                                            const isMissed = typeStr === 'MISSED' || typeStr === '3' || typeStr === 'REJECTED' || typeStr === '5' || activity.duration === 0;
-
-                                            const badgeColor = isMissed ? 'bg-red-500' : 'bg-green-500';
-                                            const bgColor = isMissed ? 'bg-red-50/40 border-red-100/50 dark:bg-red-500/5 dark:border-red-500/20' : 'bg-green-50/40 border-green-100/50 dark:bg-green-500/5 dark:border-green-500/20';
-                                            const titleColor = isMissed ? 'text-red-700 dark:text-red-400' : 'text-green-700 dark:text-green-400';
-                                            const textColor = 'text-gray-700 dark:text-gray-300';
-                                            
-                                            let label = 'Call Log';
-                                            if (typeStr === 'MISSED' || typeStr === '3') label = 'Missed Call';
-                                            else if (typeStr === 'REJECTED' || typeStr === '5') label = 'Rejected Call';
-                                            else if (typeStr === 'INCOMING' || typeStr === '1') label = activity.duration > 0 ? 'Incoming Answered' : 'Incoming Missed';
-                                            else if (typeStr === 'OUTGOING' || typeStr === '2') label = activity.duration > 0 ? 'Outgoing Answered' : 'Outgoing Unanswered';
-
-                                            return (
-                                                <div key={activity._id || `call-${idx}`} className="relative pl-8">
-                                                    <div className={`absolute left-0 top-1.5 size-[22px] rounded-full border-2 border-white dark:border-gray-900 flex items-center justify-center z-10 shadow-sm ${badgeColor}`}>
-                                                        <svg className="size-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
-                                                    </div>
-                                                    <div className="flex flex-col gap-1.5">
-                                                        <div className="flex items-center justify-between">
-                                                            <span className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${titleColor}`}>
-                                                                {label}
-                                                            </span>
-                                                            <span className="text-[10px] font-medium text-gray-400 bg-gray-50 dark:bg-white/5 py-0.5 px-2 rounded-full border border-gray-100 dark:border-white/5">
-                                                                {formatDateTime(activity.timestamp)}
-                                                            </span>
-                                                        </div>
-                                                        <div className={`p-3 rounded-xl border leading-relaxed text-[12px] shadow-sm ${bgColor}`}>
-                                                            <div className="flex items-center justify-between mb-1.5 pb-1.5 border-b border-black/5 dark:border-white/5">
-                                                                <span className="font-semibold text-gray-900 dark:text-gray-100">{activity.handledBy || "Mobile User"}</span>
-                                                                <span className="font-bold font-mono text-[10px] bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded text-gray-700 dark:text-gray-300">
-                                                                    {Math.floor(activity.duration / 60)}m {activity.duration % 60}s
-                                                                </span>
-                                                            </div>
-                                                            <span className={`${textColor} italic`}>"{activity.remark || "No remarks provided"}"</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        }
-                                    });
-                                })()}
-                            </div>
-                        </div>
-                    </div>,
-                    document.body
-                )
-            }
+            <RemarkTooltip
+                hoveredRow={hoveredRow}
+                show={showTooltip}
+                tooltipPosition={tooltipPosition}
+                tooltipRef={tooltipRef}
+                hoverTimeoutRef={hoverTimeoutRef}
+                onMouseLeave={handleTooltipLeave}
+            />
 
             <ToastContainer position="top-center" autoClose={3000} className="!z-[999999]" style={{ zIndex: 999999 }} />
         </div >

@@ -5,6 +5,23 @@ import mongoose from "mongoose";
 import { isAdmin, isManager, isCounsellor } from "../utils/roleHelpers.js";
 import { emitNotification as emitSocketNotification, emitImmediateFollowup } from "../realtime/socket.js";
 import { logActivity } from "../utils/activityLogger.js";
+import { scoreLead } from "../utils/aiService.js";
+
+// Fire-and-forget background AI scoring helper
+const scoreLeadInBackground = (lead) => {
+    setImmediate(async () => {
+        try {
+            const result = await scoreLead(lead);
+            await customerModel.findByIdAndUpdate(lead._id, {
+                aiScore: result.score,
+                aiScoreReasoning: result.reasoning
+            });
+        } catch (err) {
+            // Non-critical — don't crash the main flow
+            console.warn(`[AI Scoring] Background scoring failed for lead ${lead._id}:`, err.message);
+        }
+    });
+};
 
 // Helper to normalize phone
 const normalizePhone = (phone) => String(phone).replace(/\D/g, '').slice(-10);
@@ -372,8 +389,6 @@ export const updateCustomer = async (req, res) => {
       return res.status(404).json({ message: "Customer not found." });
     }
 
-    console.log(`[DEBUG] updateCustomer called for ${id}. Body:`, JSON.stringify(req.body, null, 2));
-
     // Check for duplicate phone number if phone1 is being updated
     if (updateData.phone1 && updateData.phone1 !== customer.phone1) {
       const brandId = customer.brand || req.brandFilter?.brand || req.headers['x-brand-id'];
@@ -395,14 +410,10 @@ export const updateCustomer = async (req, res) => {
 
     // Handle $push operations (e.g., for remarks or callLogs)
     if (updateData.$push) {
-      console.log(`[DEBUG] Pushing to arrays:`, JSON.stringify(updateData.$push, null, 2));
       Object.keys(updateData.$push).forEach(key => {
         if (Array.isArray(customer[key])) {
           customer[key].push(updateData.$push[key]);
           customer.markModified(key);
-          console.log(`[DEBUG] Pushed to ${key}. New length: ${customer[key].length}`);
-        } else {
-          console.log(`[DEBUG] Field ${key} is not an array on customer!`);
         }
       });
       delete updateData.$push;
@@ -435,8 +446,6 @@ export const updateCustomer = async (req, res) => {
     }
 
     await customer.save();
-    console.log(`[DEBUG] Customer ${id} saved. CallLogs: ${customer.callLogs?.length}, Remarks: ${customer.remarks?.length}`);
-
 
     // Fetch the updated customer with all fields
     const updatedCustomer = await customerModel.findById(id)
@@ -490,6 +499,9 @@ export const updateCustomer = async (req, res) => {
       message: "Customer updated successfully.",
       customer: updatedCustomer
     });
+
+    // Fire-and-forget: score the lead in background after response
+    scoreLeadInBackground(updatedCustomer);
   } catch (error) {
     console.error("Update customer error:", error);
     return res.status(500).json({ message: "Server error" });
@@ -588,6 +600,9 @@ export const addRemark = async (req, res) => {
       message: "Remark added successfully.",
       customer: updatedCustomer
     });
+
+    // Fire-and-forget: score the lead in background after response
+    scoreLeadInBackground(updatedCustomer);
   } catch (error) {
     console.error("Add remark error:", error);
     return res.status(500).json({ message: "Server error" });

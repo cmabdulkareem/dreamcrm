@@ -1,6 +1,6 @@
 import CallList from '../model/callListModel.js';
 import mongoose from 'mongoose';
-import { isOwner, isManager } from '../utils/roleHelpers.js';
+import { isOwner, isManager, hasRole } from '../utils/roleHelpers.js';
 
 // Helper to cast fields to ObjectId for aggregation
 const castQueryForAggregation = (query) => {
@@ -38,7 +38,7 @@ export const getAllCallLists = async (req, res) => {
             creator,
             assignedTo: filterAssignedTo,
             status,
-            sortBy = 'createdAt',
+            sortBy = 'assignedAt',
             sortOrder = 'desc'
         } = req.query;
 
@@ -48,8 +48,7 @@ export const getAllCallLists = async (req, res) => {
         const brandFilter = req.brandFilter || {};
 
         // 1. Role-based base query restriction (Security)
-        const { hasRole } = await import("../utils/roleHelpers.js");
-        const headerBrandId = req.headers['x-brand-id'];
+        const headerBrandId = req.headers['x-brand-id'] || null;
         const isACRole = hasRole(req.user, "Academic Coordinator", headerBrandId);
 
         let baseQuery = { ...brandFilter };
@@ -61,7 +60,7 @@ export const getAllCallLists = async (req, res) => {
         }
 
         // 2. Build statsQuery: Only based on selected date range (plus brand/security)
-        const statsQuery = { ...baseQuery };
+        let statsQuery = { ...baseQuery };
         if (startDate || endDate) {
             const dateQuery = {};
             if (startDate) dateQuery.$gte = new Date(startDate);
@@ -70,7 +69,34 @@ export const getAllCallLists = async (req, res) => {
                 end.setHours(23, 59, 59, 999);
                 dateQuery.$lte = end;
             }
-            statsQuery.createdAt = dateQuery;
+            
+            // Fallback logic for date range: check assignedAt, or createdAt if assignedAt is missing
+            const dateFallbackFilter = {
+                $or: [
+                    { assignedAt: dateQuery },
+                    {
+                        $and: [
+                            { $or: [{ assignedAt: null }, { assignedAt: { $exists: false } }] },
+                            { createdAt: dateQuery }
+                        ]
+                    }
+                ]
+            };
+
+            // Combine with existing security $or if it exists
+            if (statsQuery.$or) {
+                const existingSecurityOr = statsQuery.$or;
+                delete statsQuery.$or;
+                statsQuery = {
+                    ...statsQuery,
+                    $and: [
+                        { $or: existingSecurityOr },
+                        dateFallbackFilter
+                    ]
+                };
+            } else {
+                statsQuery = { ...statsQuery, ...dateFallbackFilter };
+            }
         }
 
         // 3. Build finalQuery for table: includes statsQuery + fine-grained filters
@@ -117,12 +143,33 @@ export const getAllCallLists = async (req, res) => {
         }
 
         const totalItems = await CallList.countDocuments(finalQuery);
-        const callLists = await CallList.find(finalQuery)
-            .populate('createdBy', 'fullName')
-            .populate('assignedTo', 'fullName')
-            .sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1 })
-            .skip(skip)
-            .limit(limitInt);
+        
+        // Use aggregation for coalesced sort (assignedAt || createdAt)
+        const aggregationPipeline = [
+            { $match: castQueryForAggregation(finalQuery) },
+            {
+                $addFields: {
+                    effectiveDate: { $ifNull: ["$assignedAt", "$createdAt"] }
+                }
+            },
+            {
+                $sort: {
+                    [sortBy === 'assignedAt' ? 'effectiveDate' : sortBy]: sortOrder === 'asc' ? 1 : -1,
+                    _id: -1 // Tie-breaking
+                }
+            },
+            { $skip: skip },
+            { $limit: limitInt }
+        ];
+
+        let callLists = await CallList.aggregate(aggregationPipeline);
+
+        // Populate manually since it's an aggregation
+        callLists = await CallList.populate(callLists, [
+            { path: 'createdBy', select: 'fullName' },
+            { path: 'assignedTo', select: 'fullName' },
+            { path: 'remarks.updatedBy', select: 'fullName' }
+        ]);
 
         return res.status(200).json({
             callLists,
@@ -195,12 +242,14 @@ export const createCallList = async (req, res) => {
                     remark: 'Entry Created',
                     status: 'pending',
                     updatedBy: req.user.id,
+                    handledBy: req.user.fullName || "System",
                     updatedOn: new Date()
                 },
                 ...(remarks?.trim() ? [{
                     remark: remarks.trim(),
                     status: 'pending',
                     updatedBy: req.user.id,
+                    handledBy: req.user.fullName || "System",
                     updatedOn: new Date()
                 }] : [])
             ],
@@ -209,7 +258,8 @@ export const createCallList = async (req, res) => {
             brand: brandId,
             createdBy: req.user.id,
             // If assignedTo is not provided, default to the creator
-            assignedTo: assignedTo || req.user.id
+            assignedTo: assignedTo || req.user.id,
+            assignedAt: new Date()
         });
 
         await newCallList.save();
@@ -281,6 +331,7 @@ export const updateCallList = async (req, res) => {
                 remark: remarks.trim(),
                 status: existingCallList.status,
                 updatedBy: req.user.id,
+                handledBy: req.user.fullName || "System",
                 updatedOn: new Date()
             });
         }
@@ -293,10 +344,16 @@ export const updateCallList = async (req, res) => {
                 const user = await User.findById(assignedTo).select('fullName');
                 assigneeName = user ? user.fullName : 'Unknown User';
             }
+
+            // REASSIGNMENT LOGIC: Update assignedAt to current date and add recycling remark
+            updateData.assignedAt = new Date();
+            updateData.status = 'pending'; // Reset to pending on reassignment
+
             newRemarks.push({
-                remark: `Assigned to ${assigneeName}`,
-                status: existingCallList.status,
+                remark: `Item recycled (Assigned to ${assigneeName})`,
+                status: 'pending',
                 updatedBy: req.user.id,
+                handledBy: req.user.fullName || "System",
                 updatedOn: new Date()
             });
         }
@@ -452,18 +509,34 @@ export const updateCallListStatus = async (req, res) => {
             return res.status(400).json({ message: "Status is required." });
         }
 
+        const { remarks } = req.body;
+        
+        let newRemark;
+        if (remarks && Array.isArray(remarks) && remarks.length > 0) {
+            newRemark = {
+                remark: remarks[0].remark || `Status updated to ${status}`,
+                status: status,
+                updatedBy: req.user.id,
+                handledBy: remarks[0].handledBy || req.user.fullName || "System",
+                updatedOn: new Date()
+            };
+        } else {
+            newRemark = {
+                remark: `Status updated to ${status}`,
+                status,
+                updatedBy: req.user.id,
+                handledBy: req.user.fullName || "System",
+                updatedOn: new Date()
+            };
+        }
+
         const query = { _id: id, ...req.brandFilter };
         const updatedCallList = await CallList.findOneAndUpdate(
             query,
             {
                 status,
                 $push: {
-                    remarks: {
-                        remark: `Status updated to ${status}`,
-                        status,
-                        updatedBy: req.user.id,
-                        updatedOn: new Date()
-                    }
+                    remarks: newRemark
                 }
             },
             { new: true }
@@ -526,28 +599,42 @@ export const bulkAssignCallLists = async (req, res) => {
         // For bulk assignments, we want to update each item's history
         const User = mongoose.model('User');
         let assigneeName = 'Unassigned';
-        if (updateData.assignedTo) {
+        if (updateData.assignedTo && updateData.assignedTo !== 'unassign') {
             const user = await User.findById(updateData.assignedTo).select('fullName');
             assigneeName = user ? user.fullName : 'Unknown User';
+        } else if (updateData.assignedTo === 'unassign') {
+            assigneeName = 'Unassigned';
+            updateData.assignedTo = null;
         }
 
         const bulkOps = ids.map(id => ({
             updateOne: {
                 filter: { _id: id, ...req.brandFilter },
                 update: {
-                    $set: updateData,
+                    $set: { 
+                        ...updateData, 
+                        assignedAt: new Date(),
+                        updatedAt: new Date(),
+                        status: 'pending' // Reset status for recycled items
+                    },
                     $push: {
                         remarks: {
-                            remark: `Assigned to ${assigneeName}`,
-                            status: 'pending', // or maintain current, but pending is default for reassign
+                            remark: `Item recycled (Assigned to ${assigneeName})`,
+                            status: 'pending',
                             updatedBy: req.user.id,
+                            handledBy: req.user.fullName || "System",
                             updatedOn: new Date()
                         }
                     }
-                }
+                },
+                // Use timestamps: false at the bulkWrite level if possible, 
+                // but Mongoose bulkWrite uses driver bulkWrite. 
+                // Instead, we can use the fact that we are doing a $set on createdAt.
             }
         }));
 
+        // Note: For bulkWrite, we can't easily set timestamps: false per operation in Mongoose 6/7.
+        // However, setting createdAt explicitly in $set usually works in bulkWrite.
         const result = await CallList.bulkWrite(bulkOps);
 
         return res.status(200).json({
