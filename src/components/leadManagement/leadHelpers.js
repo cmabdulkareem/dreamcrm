@@ -52,7 +52,11 @@ export const getLeadStatusColor = (lead) => {
 // Get latest remark from lead (includes callLogs)
 export const getLatestRemark = (remarks, callLogs) => {
   const allActivities = [
-    ...(remarks || []).map(r => ({ text: r.remark, date: r.updatedOn })),
+    ...(remarks || []).map(r => ({ 
+      text: r.remark, 
+      date: r.updatedOn,
+      type: 'remark'
+    })),
     ...(callLogs || []).map(c => {
       let icon = '📞';
       const typeStr = String(c.type);
@@ -61,7 +65,13 @@ export const getLatestRemark = (remarks, callLogs) => {
       if (isMissed) icon = '📵';
       else if (typeStr === 'INCOMING' || typeStr === '1') icon = '📲';
       
-      return { text: `${icon} ${c.remark || 'Call logged'}`, date: c.timestamp };
+      const duration = c.duration > 0 ? `${Math.floor(c.duration / 60)}m ${c.duration % 60}s` : '0s';
+      const detail = c.remark ? ` - ${c.remark}` : '';
+      return { 
+        text: `${icon} ${duration}${detail}`, 
+        date: c.timestamp,
+        type: 'call'
+      };
     }),
   ].sort((a, b) => new Date(b.date) - new Date(a.date));
 

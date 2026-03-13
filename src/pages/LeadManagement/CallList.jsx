@@ -1884,7 +1884,6 @@ export default function CallList() {
                                                 dotColor = 'bg-brand-500';
                                                 bgColor = 'bg-brand-50/40 border-brand-100 dark:bg-brand-500/10 dark:border-brand-500/20 text-gray-800 dark:text-gray-200 font-semibold';
                                             }
-
                                             return (
                                                 <div key={activity._id || `remark-${idx}`} className="relative pl-8">
                                                     <div className={`absolute left-0 top-1.5 size-[22px] rounded-full border-2 border-white dark:border-gray-900 flex items-center justify-center z-10 shadow-sm ${idx === 0 ? 'bg-brand-500' : 'bg-gray-100 dark:bg-gray-800'}`}>
@@ -1892,15 +1891,19 @@ export default function CallList() {
                                                     </div>
                                                     <div className="flex flex-col gap-1.5">
                                                         <div className="flex items-center justify-between">
-                                                            <span className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${eventColor}`}>
-                                                                <span className={`size-1.5 rounded-full ${dotColor}`} />
-                                                                {(() => {
-                                                                    if (isEntryCreated) return 'Entry Created';
-                                                                    if (isStatusChange) return 'Status Change';
-                                                                    if (isAssignment) return 'Assignment';
-                                                                    return activity.status?.replace('-', ' ') || 'Remark Added';
-                                                                })()}
-                                                            </span>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${eventColor}`}>
+                                                                    {(() => {
+                                                                        if (isEntryCreated) return 'Entry Created';
+                                                                        if (isStatusChange) return 'Status Change';
+                                                                        if (isAssignment) return 'Assignment';
+                                                                        return activity.status?.replace('-', ' ') || 'Remark Added';
+                                                                    })()}
+                                                                </span>
+                                                                {(activity.updatedBy || activity.handledBy) && (
+                                                                    <span className="text-[10px] text-gray-400 font-medium">· {activity.updatedBy?.fullName || activity.handledBy}</span>
+                                                                )}
+                                                            </div>
                                                             <span className="text-[10px] font-medium text-gray-400 bg-gray-50 dark:bg-white/5 py-0.5 px-2 rounded-full border border-gray-100 dark:border-white/5">
                                                                 {formatDateTime(activity.updatedOn)}
                                                             </span>
@@ -1908,14 +1911,6 @@ export default function CallList() {
                                                         <div className={`p-3 rounded-xl border leading-relaxed text-[12px] shadow-sm ${bgColor}`}>
                                                             {text.charAt(0).toUpperCase() + text.slice(1)}
                                                         </div>
-                                                        {(activity.updatedBy || activity.handledBy) && (
-                                                            <div className="flex items-center gap-1.5 ml-1">
-                                                                <div className="size-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-[8px] font-bold text-gray-500">
-                                                                    {activity.updatedBy?.fullName?.charAt(0) || activity.handledBy?.charAt(0)}
-                                                                </div>
-                                                                <span className="text-[10px] text-gray-400 font-medium">Logged by {activity.updatedBy?.fullName || activity.handledBy}</span>
-                                                            </div>
-                                                        )}
                                                     </div>
                                                 </div>
                                             );

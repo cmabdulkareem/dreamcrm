@@ -143,6 +143,27 @@ export const getAllCallLists = async (req, res) => {
     }
 };
 
+// Get a single call list entry by ID
+export const getCallListById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const query = { _id: id, ...req.brandFilter };
+        const entry = await CallList.findOne(query)
+            .populate('createdBy', 'fullName')
+            .populate('assignedTo', 'fullName')
+            .populate('remarks.updatedBy', 'fullName');
+
+        if (!entry) {
+            return res.status(404).json({ message: "Call list entry not found." });
+        }
+
+        return res.status(200).json({ entry });
+    } catch (error) {
+        console.error("Error fetching call list entry:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
+
 // Create a new call list entry
 export const createCallList = async (req, res) => {
     try {
@@ -596,6 +617,7 @@ export const addCallListRemark = async (req, res) => {
             pushedData.remarks = {
                 remark: remark || `Status updated to ${status}`,
                 status: status || entry.status,
+                handledBy: req.user.fullName || "System",
                 updatedBy: req.user.id,
                 updatedOn: new Date()
             };

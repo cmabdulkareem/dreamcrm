@@ -1,6 +1,7 @@
 import express from 'express';
 import {
     getAllCallLists,
+    getCallListById,
     createCallList,
     updateCallList,
     deleteCallList,
@@ -21,6 +22,7 @@ router.use(applyBrandFilter);
 
 // Call list operations
 router.get('/', getAllCallLists);
+router.get('/:id', getCallListById);
 router.post('/', createCallList);
 router.put('/:id', updateCallList);
 router.delete('/:id', deleteCallList); // Owner check is in controller
