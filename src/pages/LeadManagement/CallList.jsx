@@ -22,6 +22,8 @@ import { isOwner, isManager } from '../../utils/roleHelpers';
 import Select from '../../components/form/Select';
 import { CloseIcon, DownloadIcon, FileIcon, ChevronDownIcon, ChevronUpIcon, PencilIcon, TrashBinIcon, CalendarIcon } from '../../icons';
 import { countries, callListStatusOptions } from '../../data/DataSets';
+import ColdCallMobileCard from '../../components/leadManagement/components/ColdCallMobileCard';
+import { getLatestRemark } from '../../components/leadManagement/leadHelpers';
 
 const SearchIcon = ({ className }) => (
     <svg className={className} width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -48,6 +50,9 @@ export default function CallList() {
     const { isOpen: isImportOpen, openModal: openImportModal, closeModal: closeImportModal } = useModal();
     const [showFilters, setShowFilters] = useState(false);
     const [showCalendar, setShowCalendar] = useState(false);
+
+    // Dropdown state for mobile cards
+    const [openDropdownId, setOpenDropdownId] = useState(null);
 
     // Tooltip states for remark history
     const [hoveredRemarkRow, setHoveredRemarkRow] = useState(null);
@@ -608,36 +613,34 @@ export default function CallList() {
         });
     };
 
-    const getLatestRemark = (remarks) => {
-        if (!remarks || remarks.length === 0) return '-';
-        if (typeof remarks === 'string') return remarks;
-        if (Array.isArray(remarks)) {
-            const last = remarks[remarks.length - 1];
-            return typeof last === 'string' ? last : (last.remark || '-');
-        }
-        return '-';
+    const getLatestRemarkWrapper = (remarks, callLogs) => {
+        return getLatestRemark(remarks, callLogs);
     };
 
     const renderActions = (entry) => (
-        <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200 transform translate-x-2 group-hover:translate-x-0">
+        <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
             <button
                 onClick={() => handleEdit(entry)}
-                className="p-2 text-gray-500 hover:text-brand-600 hover:bg-slate-100 rounded-lg transition-colors border border-transparent hover:border-slate-200 shadow-sm hover:shadow"
+                className="size-7 flex items-center justify-center rounded-lg bg-gray-50/50 dark:bg-gray-800 text-brand-500 hover:bg-brand-50 hover:text-brand-600 dark:hover:bg-brand-500/10 dark:hover:text-brand-400 transition-colors"
                 title="Edit Entry"
             >
-                <PencilIcon className="size-4" />
+                <PencilIcon className="size-3.5" />
             </button>
             {canDelete && (
                 <button
                     onClick={() => handleDeleteClick(entry)}
-                    className="p-2 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors border border-transparent hover:border-rose-100 shadow-sm hover:shadow"
+                    className="size-7 flex items-center justify-center rounded-lg bg-gray-50/50 dark:bg-gray-800 text-red-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400 transition-colors"
                     title="Delete Entry"
                 >
-                    <TrashBinIcon className="size-4" />
+                    <TrashBinIcon className="size-3.5" />
                 </button>
             )}
         </div>
     );
+
+    const toggleDropdown = (id) => {
+        setOpenDropdownId((prev) => (prev === id ? null : id));
+    };
 
     const renderStatus = (entry) => {
         const currentStatus = callListStatusOptions.find(opt => opt.value === entry.status) || callListStatusOptions[0];
@@ -991,86 +994,19 @@ export default function CallList() {
                             {/* Mobile view Cards */}
                             <div className="grid grid-cols-1 gap-4 md:hidden">
                                 {filteredData.map((entry, index) => (
-                                    <div key={entry._id} className="group bg-white dark:bg-white/[0.03] border border-gray-100 dark:border-gray-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-all">
-                                        <div className="flex justify-between items-start mb-3">
-                                            <div className="flex items-center gap-3">
-                                                {(isOwner(user) || isManager(user)) && (
-                                                    <input
-                                                        type="checkbox"
-                                                        className="size-5 rounded border-gray-300 text-brand-500 focus:ring-brand-500 cursor-pointer shadow-sm"
-                                                        checked={selectedIds.includes(entry._id)}
-                                                        onChange={(e) => toggleSelect(entry._id, index, e)}
-                                                    />
-                                                )}
-                                                <div
-                                                    className="cursor-default"
-                                                    data-tooltip-id={`mobile-${entry._id}`}
-                                                    onMouseEnter={(e) => handleTooltipEnter(e, entry)}
-                                                    onMouseLeave={handleTooltipLeave}
-                                                >
-                                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-0.5">Entry #{index + 1}</span>
-                                                    <h3 className="font-bold text-[15px] text-gray-800 dark:text-white leading-snug tracking-tight">{entry.name || 'Unnamed'}</h3>
-                                                </div>
-                                            </div>
-                                            {renderStatus(entry)}
-                                        </div>
-
-                                        <div className="space-y-3 mb-4">
-                                            {entry.phoneNumber && (
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-gray-400 bg-gray-50 dark:bg-white/[0.03] p-1.5 rounded-lg">
-                                                        <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
-                                                    </span>
-                                                    <a
-                                                        href={`tel:${entry.phoneNumber}`}
-                                                        className="text-gray-900 dark:text-white hover:text-brand-600 font-bold text-sm tracking-tight underline decoration-gray-200 underline-offset-4"
-                                                    >
-                                                        {entry.phoneNumber}
-                                                    </a>
-                                                </div>
-                                            )}
-
-                                            <div className="grid grid-cols-2 gap-3 border-y border-gray-50 dark:border-gray-800/50 py-3">
-                                                <div>
-                                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1">Assigned To</span>
-                                                    <div className="font-bold text-[13px] text-gray-700 dark:text-gray-300">{entry.assignedTo?.fullName || 'Unassigned'}</div>
-                                                </div>
-                                                {(entry.source || entry.purpose) && (
-                                                    <div>
-                                                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block mb-1.5">Source / Purpose</span>
-                                                        <div className="flex flex-wrap gap-1.5">
-                                                            {entry.source && (
-                                                                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-sky-50 text-sky-700 dark:bg-sky-900/20 dark:text-sky-400 border border-sky-100 dark:border-sky-800/40 truncate max-w-[120px]" title={entry.source}>
-                                                                    {entry.source}
-                                                                </span>
-                                                            )}
-                                                            {entry.purpose && (
-                                                                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-violet-50 text-violet-700 dark:bg-violet-900/20 dark:text-violet-400 border border-violet-100 dark:border-violet-800/40 truncate max-w-[120px]" title={entry.purpose}>
-                                                                    {entry.purpose}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-
-                                            {getLatestRemark(entry.remarks) !== '-' && (
-                                                <div className="mt-2 p-3 bg-gray-50/50 dark:bg-white/5 border border-gray-100 dark:border-gray-800 rounded-xl text-[12px] text-gray-700 dark:text-gray-300 leading-relaxed font-medium">
-                                                    {(() => {
-                                                        const txt = getLatestRemark(entry.remarks);
-                                                        return txt.charAt(0).toUpperCase() + txt.slice(1);
-                                                    })()}
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="flex justify-between items-center pt-3 mt-4 border-t border-gray-50 dark:border-gray-800/50">
-                                            <span className="text-[10px] font-bold text-gray-500 bg-gray-100 dark:bg-white/10 py-1 px-2.5 rounded-lg uppercase tracking-wider">{formatDate(entry.createdAt)}</span>
-                                            <div className="flex items-center gap-1.5">
-                                                {renderActions(entry)}
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <ColdCallMobileCard
+                                        key={entry._id}
+                                        entry={entry}
+                                        index={(page - 1) * itemsPerPage + index}
+                                        openDropdownId={openDropdownId}
+                                        onEdit={handleEdit}
+                                        onDelete={handleDeleteClick}
+                                        onToggleDropdown={toggleDropdown}
+                                        onDropdownClose={() => setOpenDropdownId(null)}
+                                        canDelete={canDelete}
+                                        onTooltipEnter={handleTooltipEnter}
+                                        onTooltipLeave={handleTooltipLeave}
+                                    />
                                 ))}
                             </div>
 
@@ -1156,11 +1092,18 @@ export default function CallList() {
                                                         )}
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="py-4 px-4 border-l border-gray-100 dark:border-gray-800/50">
+                                                <TableCell 
+                                                    className="py-4 px-4 border-l border-gray-100 dark:border-gray-800/50 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                                                    data-tooltip-id={`remark-${entry._id}`}
+                                                    onMouseEnter={(e) => handleTooltipEnter(e, entry)}
+                                                    onMouseLeave={handleTooltipLeave}
+                                                >
                                                     <div className="text-theme-sm text-gray-700 dark:text-gray-300 font-medium leading-relaxed max-w-[280px] break-words">
                                                         {(() => {
-                                                            const txt = getLatestRemark(entry.remarks);
-                                                            return txt === '-' ? '-' : (txt.charAt(0).toUpperCase() + txt.slice(1));
+                                                            const txt = getLatestRemarkWrapper(entry.remarks, entry.callLogs);
+                                                            return txt === '-' ? '-' : (
+                                                                txt.includes('📞') || txt.includes('📵') || txt.includes('📲') ? txt : (txt.charAt(0).toUpperCase() + txt.slice(1))
+                                                            );
                                                         })()}
                                                     </div>
                                                 </TableCell>
@@ -1351,92 +1294,206 @@ export default function CallList() {
                 </div>
             </Modal>
 
-            {/* Edit Modal */}
-            <Modal isOpen={isEditOpen} onClose={closeEditModal} className="max-w-2xl p-6">
-                <h2 className="text-xl font-semibold text-gray-800 dark:text-white/90 mb-4">Edit Call List Entry</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                    <div>
-                        <Label htmlFor="editName">Name</Label>
-                        <Input
-                            id="editName"
-                            type="text"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            placeholder="Enter name (optional)"
-                        />
-                    </div>
-                    <div>
-                        <Label>Phone Number</Label>
-                        <PhoneInput
-                            selectPosition="end"
-                            countries={countries}
-                            placeholder="+91 98765 43210"
-                            value={phoneNumber}
-                            onChange={setPhoneNumber}
-                        />
-                    </div>
-                    <div>
-                        <Label htmlFor="editSocialMediaId">Social Media ID</Label>
-                        <Input
-                            id="editSocialMediaId"
-                            type="text"
-                            value={socialMediaId}
-                            onChange={(e) => setSocialMediaId(e.target.value)}
-                            placeholder="Instagram, etc. (optional)"
-                        />
-                    </div>
-                    <div>
-                        <Label htmlFor="editSource">Source</Label>
-                        <Input
-                            id="editSource"
-                            type="text"
-                            value={source}
-                            onChange={(e) => setSource(e.target.value)}
-                            placeholder="e.g. LinkedIn (optional)"
-                        />
-                    </div>
-                    <div>
-                        <Label htmlFor="editPurpose">Purpose</Label>
-                        <Input
-                            id="editPurpose"
-                            type="text"
-                            value={purpose}
-                            onChange={(e) => setPurpose(e.target.value)}
-                            placeholder="e.g. Sales (optional)"
-                        />
-                    </div>
-                    {(isOwner(user) || isManager(user)) && (
+            {/* Edit Modal (2-column layout like EditLeadModal) */}
+            <Modal isOpen={isEditOpen} onClose={closeEditModal} className="max-w-6xl p-0 h-[90vh] overflow-hidden">
+                <div className="flex flex-col h-full bg-white dark:bg-gray-900">
+                    <div className="flex items-center justify-between py-4 px-6 border-b border-gray-100 dark:border-gray-800 shrink-0">
                         <div>
-                            <Label htmlFor="editAssignedTo">Assign To</Label>
-                            <select
-                                id="editAssignedTo"
-                                value={assignedTo}
-                                onChange={(e) => setAssignedTo(e.target.value)}
-                                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:ring focus:ring-brand-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 shadow-theme-xs outline-none h-[42px]"
-                            >
-                                <option value="">Select User (Optional)</option>
-                                {users.map(u => (
-                                    <option key={u._id} value={u._id}>{u.fullName}</option>
-                                ))}
-                            </select>
+                            <h2 className="text-xl font-bold text-gray-900 dark:text-white lg:text-2xl">Edit Call List Entry</h2>
+                            <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">Manage entry details and activity history.</p>
                         </div>
-                    )}
-                    <div className="md:col-span-2">
-                        <Label htmlFor="editRemarks">Add New Remark</Label>
-                        <p className="text-[10px] text-gray-400 mb-1.5 font-medium italic">* Previous remarks are preserved in the call lifecycle history.</p>
-                        <textarea
-                            id="editRemarks"
-                            value={remarks}
-                            onChange={(e) => setRemarks(e.target.value)}
-                            placeholder="Add any notes (optional)"
-                            rows={3}
-                            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:ring focus:ring-blue-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 shadow-theme-xs"
-                        />
+                        <button onClick={closeEditModal} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                            <CloseIcon className="size-6 text-gray-400" />
+                        </button>
                     </div>
-                </div>
-                <div className="flex gap-3 justify-end mt-4">
-                    <Button variant="outline" onClick={closeEditModal}>Cancel</Button>
-                    <Button variant="primary" onClick={handleUpdate} loading={isSubmitting}>Update Entry</Button>
+
+                    <div className="flex-1 overflow-hidden p-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
+
+                            {/* Column 1: Form Details */}
+                            <div className="space-y-6 overflow-y-auto pr-3 brand-scrollbar">
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                                        <div>
+                                            <Label htmlFor="editName">Name</Label>
+                                            <Input
+                                                id="editName"
+                                                type="text"
+                                                value={name}
+                                                onChange={(e) => setName(e.target.value)}
+                                                placeholder="Enter name (optional)"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label>Phone Number</Label>
+                                            <PhoneInput
+                                                selectPosition="end"
+                                                countries={countries}
+                                                placeholder="+91 98765 43210"
+                                                value={phoneNumber}
+                                                onChange={setPhoneNumber}
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="editSocialMediaId">Social Media ID</Label>
+                                            <Input
+                                                id="editSocialMediaId"
+                                                type="text"
+                                                value={socialMediaId}
+                                                onChange={(e) => setSocialMediaId(e.target.value)}
+                                                placeholder="Instagram, etc. (optional)"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="editSource">Source</Label>
+                                            <Input
+                                                id="editSource"
+                                                type="text"
+                                                value={source}
+                                                onChange={(e) => setSource(e.target.value)}
+                                                placeholder="e.g. LinkedIn (optional)"
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="editPurpose">Purpose</Label>
+                                            <Input
+                                                id="editPurpose"
+                                                type="text"
+                                                value={purpose}
+                                                onChange={(e) => setPurpose(e.target.value)}
+                                                placeholder="e.g. Sales (optional)"
+                                            />
+                                        </div>
+                                        {(isOwner(user) || isManager(user)) && (
+                                            <div>
+                                                <Label htmlFor="editAssignedTo">Assign To</Label>
+                                                <select
+                                                    id="editAssignedTo"
+                                                    value={assignedTo}
+                                                    onChange={(e) => setAssignedTo(e.target.value)}
+                                                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-brand-500 focus:ring focus:ring-brand-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 shadow-theme-xs outline-none h-[42px]"
+                                                >
+                                                    <option value="">Select User (Optional)</option>
+                                                    {users.map(u => (
+                                                        <option key={u._id} value={u._id}>{u.fullName}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        )}
+                                        <div className="md:col-span-2">
+                                            <Label htmlFor="editRemarks">Add New Remark</Label>
+                                            <p className="text-[10px] text-gray-400 mb-1.5 font-medium italic">* Previous remarks are preserved in the call lifecycle history.</p>
+                                            <textarea
+                                                id="editRemarks"
+                                                value={remarks}
+                                                onChange={(e) => setRemarks(e.target.value)}
+                                                placeholder="Add any notes (optional)"
+                                                rows={3}
+                                                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 focus:border-blue-500 focus:ring focus:ring-blue-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 shadow-theme-xs"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Column 2: Activity Timeline */}
+                            <div className="bg-gray-50/50 dark:bg-gray-900/30 rounded-xl p-6 border border-gray-100 dark:border-gray-800 flex flex-col h-full overflow-hidden">
+                                <div className="flex items-center justify-between mb-6 shrink-0">
+                                    <h3 className="text-sm font-bold text-gray-800 dark:text-white uppercase tracking-wider">Activity History</h3>
+                                    <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/40 px-2 py-0.5 rounded-full border border-blue-100 dark:border-blue-800">
+                                        {(selectedEntry?.remarks?.length || 0) + (selectedEntry?.callLogs?.length || 0)} Events
+                                    </span>
+                                </div>
+
+                                <div className="relative space-y-6 flex-1 overflow-y-auto pr-3 brand-scrollbar">
+                                    {/* Vertical Line */}
+                                    <div className="absolute left-2.5 top-2 bottom-2 w-0.5 bg-gray-200 dark:bg-gray-800" />
+
+                                    {(() => {
+                                        const allActivities = [
+                                            ...(selectedEntry?.remarks || []).map(r => ({ ...r, type: 'remark' })),
+                                            ...(selectedEntry?.callLogs || []).map(c => ({ ...c, type: 'call', updatedOn: c.timestamp }))
+                                        ].sort((a, b) => new Date(b.updatedOn) - new Date(a.updatedOn));
+
+                                        if (allActivities.length === 0) {
+                                            return (
+                                                <div className="text-center py-10 opacity-50">
+                                                    <p className="text-[10px] text-gray-500">No activity yet</p>
+                                                </div>
+                                            );
+                                        }
+
+                                        return allActivities.map((activity, index) => {
+                                            if (activity.type === 'remark') {
+                                                return (
+                                                    <div key={`remark-${index}`} className="relative pl-8 group">
+                                                        <div className={`absolute left-1.5 top-1.5 size-2.5 rounded-full border-2 border-white dark:border-gray-900 z-10 bg-gray-400`} />
+                                                        <div className="flex flex-col">
+                                                            <div className="flex items-center justify-between mb-1">
+                                                                <span className="text-xs font-bold text-gray-600 dark:text-gray-400">{activity.updatedBy?.fullName || activity.handledBy || "System"}</span>
+                                                                <span className="text-[10px] text-gray-400">
+                                                                    {activity.updatedOn ? new Date(activity.updatedOn).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : "N/A"}
+                                                                </span>
+                                                            </div>
+                                                            <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-100 dark:border-gray-700 hover:border-blue-100 dark:hover:border-blue-900/30 transition-all shadow-sm">
+                                                                <p className="text-sm text-gray-600 dark:text-gray-400 leading-normal break-words">{activity.remark || activity.status || "Record updated"}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            } else {
+                                                const typeStr = String(activity.type);
+                                                const isMissed = typeStr === 'MISSED' || typeStr === '3' || typeStr === 'REJECTED' || typeStr === '5' || activity.duration === 0;
+
+                                                const bgColor = isMissed ? 'bg-red-500' : 'bg-green-500';
+                                                const badgeBg = isMissed ? 'bg-red-50/50 dark:bg-red-900/10' : 'bg-green-50/50 dark:bg-green-900/10';
+                                                const badgeBorder = isMissed ? 'border-red-100/50 dark:border-red-800/30 hover:border-red-200 dark:hover:border-red-700' : 'border-green-100/50 dark:border-green-800/30 hover:border-green-200 dark:hover:border-green-700';
+                                                const textColor = isMissed ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400';
+                                                const durationColor = isMissed ? 'text-red-500' : 'text-green-500';
+                                                
+                                                let label = '📞 Call Log';
+                                                if (typeStr === 'MISSED' || typeStr === '3') label = '📵 Missed Call';
+                                                else if (typeStr === 'REJECTED' || typeStr === '5') label = '📵 Rejected Call';
+                                                else if (typeStr === 'INCOMING' || typeStr === '1') label = activity.duration > 0 ? '📲 Incoming Answered' : '📵 Incoming Missed';
+                                                else if (typeStr === 'OUTGOING' || typeStr === '2') label = activity.duration > 0 ? '📞 Outgoing Answered' : '📵 Outgoing Unanswered';
+
+                                                return (
+                                                    <div key={`call-${index}`} className="relative pl-8 group">
+                                                        <div className={`absolute left-1.5 top-1.5 size-2.5 rounded-full border-2 border-white dark:border-gray-900 z-10 ${bgColor}`} />
+                                                        <div className="flex flex-col">
+                                                            <div className="flex items-center justify-between mb-1">
+                                                                <span className="text-xs font-bold text-gray-600 dark:text-gray-400">{activity.handledBy || "Mobile User"}</span>
+                                                                <span className="text-[10px] text-gray-400">
+                                                                    {activity.timestamp ? new Date(activity.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : "N/A"}
+                                                                </span>
+                                                            </div>
+                                                            <div className={`${badgeBg} p-3 rounded-lg border ${badgeBorder} transition-all shadow-sm`}>
+                                                                <div className="flex items-center gap-2 mb-2">
+                                                                    <div className={`p-1 ${bgColor} rounded text-white`}>
+                                                                        <svg className="size-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                                                                    </div>
+                                                                    <span className={`text-[10px] font-bold uppercase tracking-tight ${textColor}`}>{label}</span>
+                                                                    <span className={`text-[10px] font-medium ${durationColor}`}>({Math.floor(activity.duration / 60)}m {activity.duration % 60}s)</span>
+                                                                </div>
+                                                                <p className="text-sm text-gray-700 dark:text-gray-300 leading-normal italic">"{activity.remark || "No remarks provided"}"</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+                                        });
+                                    })()}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center justify-between py-4 px-6 border-t border-gray-100 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-900/30 shrink-0">
+                        <div className="flex items-center gap-2">
+                            <Button variant="outline" onClick={closeEditModal} className="h-8 py-0 px-3 text-[11px]">Cancel</Button>
+                            <Button variant="primary" onClick={handleUpdate} loading={isSubmitting} className="h-8 py-0 px-6 text-[11px]">Update Entry</Button>
+                        </div>
+                    </div>
                 </div>
             </Modal>
 
@@ -1735,7 +1792,7 @@ export default function CallList() {
                 showTooltip && hoveredRemarkRow && createPortal(
                     <div
                         ref={tooltipRef}
-                        className="fixed z-[99999] w-96 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800 overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col"
+                        className="fixed z-[99999] w-[420px] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800 overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col"
                         style={{
                             top: tooltipPosition.top,
                             left: tooltipPosition.left,
@@ -1769,86 +1826,142 @@ export default function CallList() {
                                 </div>
                                 <div>
                                     <h4 className="text-sm font-bold text-gray-900 dark:text-white">Call Lifecycle</h4>
-                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Remark History</p>
+                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Activity History</p>
                                 </div>
                             </div>
                             <div className="text-[11px] font-bold text-gray-400 bg-white dark:bg-white/5 px-2 py-1 rounded-md border border-gray-100 dark:border-white/5 shadow-sm">
-                                {(callLists || []).find(c => c._id === hoveredRemarkRow)?.remarks?.length || 0} Events
+                                {(() => {
+                                    const entry = (callLists || []).find(c => c._id === hoveredRemarkRow);
+                                    return (entry?.remarks?.length || 0) + (entry?.callLogs?.length || 0);
+                                })()} Events
                             </div>
                         </div>
 
                         <div className="p-5 overflow-y-auto custom-scrollbar flex-1 min-h-0 overscroll-contain">
                             <div className="space-y-6 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[1.5px] before:bg-gradient-to-b before:from-brand-500/30 before:via-gray-100 dark:before:via-white/10 before:to-transparent">
                                 {(() => {
-                                    const rawRemarks = (callLists || []).find(c => c._id === hoveredRemarkRow)?.remarks || [];
-                                    const normalizedRemarks = Array.isArray(rawRemarks) ? [...rawRemarks].reverse() : [{
-                                        remark: rawRemarks,
-                                        updatedOn: (callLists || []).find(c => c._id === hoveredRemarkRow)?.createdAt
-                                    }];
+                                    const entry = (callLists || []).find(c => c._id === hoveredRemarkRow);
+                                    if (!entry) return null;
 
-                                    return normalizedRemarks.map((rem, idx) => {
-                                        const text = rem.remark || '';
-                                        const isEntryCreated = text.toLowerCase() === 'entry created';
-                                        const isStatusChange = text.toLowerCase().includes('status updated to');
-                                        const isAssignment = text.toLowerCase().startsWith('assigned to');
+                                    const allActivities = [
+                                        ...(entry.remarks || []).map(r => ({ ...r, type: 'remark' })),
+                                        ...(entry.callLogs || []).map(c => ({ ...c, type: 'call', updatedOn: c.timestamp }))
+                                    ].sort((a, b) => new Date(b.updatedOn) - new Date(a.updatedOn));
 
-                                        let eventColor = 'text-gray-400';
-                                        let dotColor = 'bg-gray-400';
-                                        let bgColor = 'bg-white border-gray-100 dark:bg-white/[0.02] dark:border-white/5 text-gray-600 dark:text-gray-400';
-
-                                        if (isEntryCreated) {
-                                            eventColor = 'text-emerald-600 dark:text-emerald-400';
-                                            dotColor = 'bg-emerald-500';
-                                            bgColor = 'bg-emerald-50/30 border-emerald-100 dark:bg-emerald-500/5 dark:border-emerald-500/20 text-gray-700 dark:text-emerald-300';
-                                        } else if (isStatusChange) {
-                                            eventColor = 'text-blue-600 dark:text-blue-400';
-                                            dotColor = 'bg-blue-500';
-                                            bgColor = 'bg-blue-50/30 border-blue-100 dark:bg-blue-500/5 dark:border-blue-500/20 text-gray-700 dark:text-blue-300';
-                                        } else if (isAssignment) {
-                                            eventColor = 'text-violet-600 dark:text-violet-400';
-                                            dotColor = 'bg-violet-500';
-                                            bgColor = 'bg-violet-50/30 border-violet-100 dark:bg-violet-500/5 dark:border-violet-500/20 text-gray-700 dark:text-violet-300';
-                                        } else if (idx === 0) {
-                                            eventColor = 'text-brand-600 dark:text-brand-400';
-                                            dotColor = 'bg-brand-500';
-                                            bgColor = 'bg-brand-50/40 border-brand-100 dark:bg-brand-500/10 dark:border-brand-500/20 text-gray-800 dark:text-gray-200 font-semibold';
-                                        }
-
+                                    if (allActivities.length === 0) {
                                         return (
-                                            <div key={rem._id || idx} className="relative pl-8">
-                                                <div className={`absolute left-0 top-1.5 size-[22px] rounded-full border-2 border-white dark:border-gray-900 flex items-center justify-center z-10 shadow-sm ${idx === 0 ? 'bg-brand-500' : 'bg-gray-100 dark:bg-gray-800'}`}>
-                                                    <div className={`size-1.5 rounded-full ${idx === 0 ? 'bg-white' : dotColor}`} />
-                                                </div>
-                                                <div className="flex flex-col gap-1.5">
-                                                    <div className="flex items-center justify-between">
-                                                        <span className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${eventColor}`}>
-                                                            <span className={`size-1.5 rounded-full ${dotColor}`} />
-                                                            {(() => {
-                                                                if (isEntryCreated) return 'Entry Created';
-                                                                if (isStatusChange) return 'Status Change';
-                                                                if (isAssignment) return 'Assignment';
-                                                                return rem.status?.replace('-', ' ') || 'Remark Added';
-                                                            })()}
-                                                        </span>
-                                                        <span className="text-[10px] font-medium text-gray-400 bg-gray-50 dark:bg-white/5 py-0.5 px-2 rounded-full border border-gray-100 dark:border-white/5">
-                                                            {formatDateTime(rem.updatedOn || ((callLists || []).find(c => c._id === hoveredRemarkRow))?.createdAt)}
-                                                        </span>
-                                                    </div>
-                                                    <div className={`p-3 rounded-xl border leading-relaxed text-[12px] shadow-sm ${bgColor}`}>
-                                                        {typeof rem === 'string' ? rem : (rem.remark ? (rem.remark.charAt(0).toUpperCase() + rem.remark.slice(1)) : `Status updated to ${rem.status?.replace('-', ' ')}`)}
-                                                    </div>
-                                                    {rem.updatedBy && (
-                                                        <div className="flex items-center gap-1.5 ml-1">
-                                                            <div className="size-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-[8px] font-bold text-gray-500">
-                                                                {rem.updatedBy.fullName?.charAt(0)}
-                                                            </div>
-                                                            <span className="text-[10px] text-gray-400 font-medium">Logged by {rem.updatedBy.fullName}</span>
-                                                        </div>
-                                                    )}
-                                                </div>
+                                            <div className="text-center py-6 opacity-50">
+                                                <p className="text-[12px] text-gray-500">No activity yet</p>
                                             </div>
                                         );
-                                    })
+                                    }
+
+                                    return allActivities.map((activity, idx) => {
+                                        if (activity.type === 'remark') {
+                                            const text = activity.remark || activity.status || '';
+                                            const isEntryCreated = text.toLowerCase() === 'entry created';
+                                            const isStatusChange = text.toLowerCase().includes('status updated to');
+                                            const isAssignment = text.toLowerCase().startsWith('assigned to');
+
+                                            let eventColor = 'text-gray-400';
+                                            let dotColor = 'bg-gray-400';
+                                            let bgColor = 'bg-white border-gray-100 dark:bg-white/[0.02] dark:border-white/5 text-gray-600 dark:text-gray-400';
+
+                                            if (isEntryCreated) {
+                                                eventColor = 'text-emerald-600 dark:text-emerald-400';
+                                                dotColor = 'bg-emerald-500';
+                                                bgColor = 'bg-emerald-50/30 border-emerald-100 dark:bg-emerald-500/5 dark:border-emerald-500/20 text-gray-700 dark:text-emerald-300';
+                                            } else if (isStatusChange) {
+                                                eventColor = 'text-blue-600 dark:text-blue-400';
+                                                dotColor = 'bg-blue-500';
+                                                bgColor = 'bg-blue-50/30 border-blue-100 dark:bg-blue-500/5 dark:border-blue-500/20 text-gray-700 dark:text-blue-300';
+                                            } else if (isAssignment) {
+                                                eventColor = 'text-violet-600 dark:text-violet-400';
+                                                dotColor = 'bg-violet-500';
+                                                bgColor = 'bg-violet-50/30 border-violet-100 dark:bg-violet-500/5 dark:border-violet-500/20 text-gray-700 dark:text-violet-300';
+                                            } else if (idx === 0) {
+                                                eventColor = 'text-brand-600 dark:text-brand-400';
+                                                dotColor = 'bg-brand-500';
+                                                bgColor = 'bg-brand-50/40 border-brand-100 dark:bg-brand-500/10 dark:border-brand-500/20 text-gray-800 dark:text-gray-200 font-semibold';
+                                            }
+
+                                            return (
+                                                <div key={activity._id || `remark-${idx}`} className="relative pl-8">
+                                                    <div className={`absolute left-0 top-1.5 size-[22px] rounded-full border-2 border-white dark:border-gray-900 flex items-center justify-center z-10 shadow-sm ${idx === 0 ? 'bg-brand-500' : 'bg-gray-100 dark:bg-gray-800'}`}>
+                                                        <div className={`size-1.5 rounded-full ${idx === 0 ? 'bg-white' : dotColor}`} />
+                                                    </div>
+                                                    <div className="flex flex-col gap-1.5">
+                                                        <div className="flex items-center justify-between">
+                                                            <span className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${eventColor}`}>
+                                                                <span className={`size-1.5 rounded-full ${dotColor}`} />
+                                                                {(() => {
+                                                                    if (isEntryCreated) return 'Entry Created';
+                                                                    if (isStatusChange) return 'Status Change';
+                                                                    if (isAssignment) return 'Assignment';
+                                                                    return activity.status?.replace('-', ' ') || 'Remark Added';
+                                                                })()}
+                                                            </span>
+                                                            <span className="text-[10px] font-medium text-gray-400 bg-gray-50 dark:bg-white/5 py-0.5 px-2 rounded-full border border-gray-100 dark:border-white/5">
+                                                                {formatDateTime(activity.updatedOn)}
+                                                            </span>
+                                                        </div>
+                                                        <div className={`p-3 rounded-xl border leading-relaxed text-[12px] shadow-sm ${bgColor}`}>
+                                                            {text.charAt(0).toUpperCase() + text.slice(1)}
+                                                        </div>
+                                                        {(activity.updatedBy || activity.handledBy) && (
+                                                            <div className="flex items-center gap-1.5 ml-1">
+                                                                <div className="size-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-[8px] font-bold text-gray-500">
+                                                                    {activity.updatedBy?.fullName?.charAt(0) || activity.handledBy?.charAt(0)}
+                                                                </div>
+                                                                <span className="text-[10px] text-gray-400 font-medium">Logged by {activity.updatedBy?.fullName || activity.handledBy}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        } else {
+                                            const typeStr = String(activity.type);
+                                            const isMissed = typeStr === 'MISSED' || typeStr === '3' || typeStr === 'REJECTED' || typeStr === '5' || activity.duration === 0;
+
+                                            const badgeColor = isMissed ? 'bg-red-500' : 'bg-green-500';
+                                            const bgColor = isMissed ? 'bg-red-50/40 border-red-100/50 dark:bg-red-500/5 dark:border-red-500/20' : 'bg-green-50/40 border-green-100/50 dark:bg-green-500/5 dark:border-green-500/20';
+                                            const titleColor = isMissed ? 'text-red-700 dark:text-red-400' : 'text-green-700 dark:text-green-400';
+                                            const textColor = 'text-gray-700 dark:text-gray-300';
+                                            
+                                            let label = 'Call Log';
+                                            if (typeStr === 'MISSED' || typeStr === '3') label = 'Missed Call';
+                                            else if (typeStr === 'REJECTED' || typeStr === '5') label = 'Rejected Call';
+                                            else if (typeStr === 'INCOMING' || typeStr === '1') label = activity.duration > 0 ? 'Incoming Answered' : 'Incoming Missed';
+                                            else if (typeStr === 'OUTGOING' || typeStr === '2') label = activity.duration > 0 ? 'Outgoing Answered' : 'Outgoing Unanswered';
+
+                                            return (
+                                                <div key={activity._id || `call-${idx}`} className="relative pl-8">
+                                                    <div className={`absolute left-0 top-1.5 size-[22px] rounded-full border-2 border-white dark:border-gray-900 flex items-center justify-center z-10 shadow-sm ${badgeColor}`}>
+                                                        <svg className="size-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                                                    </div>
+                                                    <div className="flex flex-col gap-1.5">
+                                                        <div className="flex items-center justify-between">
+                                                            <span className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${titleColor}`}>
+                                                                {label}
+                                                            </span>
+                                                            <span className="text-[10px] font-medium text-gray-400 bg-gray-50 dark:bg-white/5 py-0.5 px-2 rounded-full border border-gray-100 dark:border-white/5">
+                                                                {formatDateTime(activity.timestamp)}
+                                                            </span>
+                                                        </div>
+                                                        <div className={`p-3 rounded-xl border leading-relaxed text-[12px] shadow-sm ${bgColor}`}>
+                                                            <div className="flex items-center justify-between mb-1.5 pb-1.5 border-b border-black/5 dark:border-white/5">
+                                                                <span className="font-semibold text-gray-900 dark:text-gray-100">{activity.handledBy || "Mobile User"}</span>
+                                                                <span className="font-bold font-mono text-[10px] bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded text-gray-700 dark:text-gray-300">
+                                                                    {Math.floor(activity.duration / 60)}m {activity.duration % 60}s
+                                                                </span>
+                                                            </div>
+                                                            <span className={`${textColor} italic`}>"{activity.remark || "No remarks provided"}"</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        }
+                                    });
                                 })()}
                             </div>
                         </div>
