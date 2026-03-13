@@ -154,15 +154,35 @@ const ColdCallMobileCard = ({
             </div>
 
             {/* Remark / Call Log Display */}
-            {latestRemark !== '-' && (
+            {latestRemark && latestRemark !== '-' && latestRemark !== 'No remarks yet' && (
                 <div className="mb-2 ml-1 pl-4 border-l-2 border-gray-100 dark:border-gray-800 bg-gray-50/40 dark:bg-white/[0.02] py-3 pr-3 rounded-r-xl">
                     <div className="flex items-center gap-2 mb-1.5">
                         <ChatIcon className="size-3.5 text-gray-400" />
                         <span className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-widest">Latest Activity</span>
                     </div>
-                    <p className="text-[13px] text-gray-800 dark:text-gray-200 leading-relaxed italic font-medium">
-                        {latestRemark && (latestRemark.includes('📞') || latestRemark.includes('📵') || latestRemark.includes('📲') ? latestRemark : `"${latestRemark}"`)}
-                    </p>
+                    {(() => {
+                        const isOutgoing = latestRemark.startsWith('📞');
+                        const isIncoming = latestRemark.startsWith('📲');
+                        const isMissed = latestRemark.startsWith('📵');
+                        const isCall = isOutgoing || isIncoming || isMissed;
+                        if (isCall) {
+                            const color = isMissed
+                                ? 'bg-red-50 text-red-600 border-red-100 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20'
+                                : isIncoming
+                                    ? 'bg-green-50 text-green-700 border-green-100 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/20'
+                                    : 'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20';
+                            return (
+                                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[12px] font-semibold border ${color}`}>
+                                    {latestRemark}
+                                </span>
+                            );
+                        }
+                        return (
+                            <p className="text-[13px] text-gray-800 dark:text-gray-200 leading-relaxed italic font-medium">
+                                "{latestRemark}"
+                            </p>
+                        );
+                    })()}
                 </div>
             )}
         </div>

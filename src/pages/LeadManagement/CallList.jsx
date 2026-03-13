@@ -988,14 +988,29 @@ export default function CallList() {
                                                             onMouseEnter={(e) => handleTooltipEnter(e, entry)}
                                                             onMouseLeave={handleTooltipLeave}
                                                         >
-                                                            <p className="text-xs text-gray-600 dark:text-gray-400 max-w-[360px] truncate cursor-help leading-relaxed">
-                                                                {(() => {
-                                                                    const txt = getLatestRemarkWrapper(entry.remarks, entry.callLogs);
-                                                                    return txt === '-' ? "No remarks yet" : (
-                                                                        txt.includes('📞') || txt.includes('📵') || txt.includes('📲') ? txt : (txt.charAt(0).toUpperCase() + txt.slice(1))
+                                                            {(() => {
+                                                                const txt = getLatestRemarkWrapper(entry.remarks, entry.callLogs);
+                                                                if (!txt || txt === '-' || txt === 'No remarks yet') {
+                                                                    return <p className="text-xs text-gray-400 italic leading-relaxed">No activity yet</p>;
+                                                                }
+                                                                const isOutgoing = txt.startsWith('📞');
+                                                                const isIncoming = txt.startsWith('📲');
+                                                                const isMissed = txt.startsWith('📵');
+                                                                const isCall = isOutgoing || isIncoming || isMissed;
+                                                                if (isCall) {
+                                                                    const color = isMissed
+                                                                        ? 'bg-red-50 text-red-600 border-red-100 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20'
+                                                                        : isIncoming
+                                                                            ? 'bg-green-50 text-green-700 border-green-100 dark:bg-green-500/10 dark:text-green-400 dark:border-green-500/20'
+                                                                            : 'bg-blue-50 text-blue-700 border-blue-100 dark:bg-blue-500/10 dark:text-blue-400 dark:border-blue-500/20';
+                                                                    return (
+                                                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border max-w-[340px] truncate cursor-help ${color}`}>
+                                                                            {txt}
+                                                                        </span>
                                                                     );
-                                                                })()}
-                                                            </p>
+                                                                }
+                                                                return <p className="text-xs text-gray-600 dark:text-gray-400 max-w-[360px] truncate cursor-help leading-relaxed">{txt.charAt(0).toUpperCase() + txt.slice(1)}</p>;
+                                                            })()}
                                                         </div>
                                                     </div>
                                                 </TableCell>
