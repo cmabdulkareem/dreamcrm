@@ -570,3 +570,71 @@ export const bulkDeleteCallLists = async (req, res) => {
         return res.status(500).json({ message: "Internal server error" });
     }
 };
+
+// Add remark and/or call log to a call list entry
+export const addCallListRemark = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status, remark, _callLog } = req.body;
+
+        const query = { _id: id, ...req.brandFilter };
+        const entry = await CallList.findOne(query);
+
+        if (!entry) {
+            return res.status(404).json({ message: "Call list entry not found." });
+        }
+
+        const updateData = {};
+        if (status) {
+            updateData.status = status;
+        }
+
+        const pushedData = {};
+        
+        // Add remark
+        if (remark || status) {
+            pushedData.remarks = {
+                remark: remark || `Status updated to ${status}`,
+                status: status || entry.status,
+                updatedBy: req.user.id,
+                updatedOn: new Date()
+            };
+        }
+
+        // Add call log
+        if (_callLog) {
+            pushedData.callLogs = {
+                ..._callLog,
+                timestamp: _callLog.timestamp || new Date(),
+                handledBy: req.user.fullName || "Mobile App"
+            };
+        }
+
+        const updateOperation = { $set: updateData };
+        if (Object.keys(pushedData).length > 0) {
+            updateOperation.$push = {};
+            for (const key in pushedData) {
+                updateOperation.$push[key] = pushedData[key];
+            }
+        }
+
+        const updatedEntry = await CallList.findOneAndUpdate(
+            query,
+            updateOperation,
+            { new: true }
+        ).populate([
+            { path: 'createdBy', select: 'fullName' },
+            { path: 'assignedTo', select: 'fullName' },
+            { path: 'remarks.updatedBy', select: 'fullName' }
+        ]);
+
+        return res.status(200).json({
+            message: "Success",
+            callList: updatedEntry
+        });
+    } catch (error) {
+        console.error("Error adding call-list remark:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+};
+

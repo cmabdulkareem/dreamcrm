@@ -20,6 +20,10 @@ const callListSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.Mixed,
         default: []
     },
+    callLogs: {
+        type: [mongoose.Schema.Types.Mixed],
+        default: []
+    },
 
     source: {
         type: String,
