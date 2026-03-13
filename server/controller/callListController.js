@@ -683,7 +683,7 @@ export const bulkDeleteCallLists = async (req, res) => {
 export const addCallListRemark = async (req, res) => {
     try {
         const { id } = req.params;
-        const { status, remark, _callLog } = req.body;
+        const { status, remark, _callLog, callDuration, callType } = req.body;
 
         const query = { _id: id, ...req.brandFilter };
         const entry = await CallList.findOne(query);
@@ -698,9 +698,38 @@ export const addCallListRemark = async (req, res) => {
         }
 
         const pushedData = {};
-        
-        // Add remark
-        if (remark || status) {
+
+        // Detect if this remark is actually an outgoing call result from the mobile app
+        const OUTGOING_CALL_PATTERNS = [
+            /customer didn'?t attend/i,
+            /didn'?t attend call/i,
+            /call not attended/i,
+            /no answer/i,
+            /not reachable/i,
+            /switched off/i,
+            /busy/i,
+            /call attended/i,
+            /call connected/i,
+            /outgoing call/i,
+        ];
+
+        const isOutgoingCallRemark = remark && (
+            callType === 'OUTGOING' ||
+            OUTGOING_CALL_PATTERNS.some(pattern => pattern.test(remark))
+        );
+
+        if (isOutgoingCallRemark) {
+            // Save as a structured call log entry (same as incoming calls from mobile)
+            const isAnswered = /attended|connected/i.test(remark);
+            pushedData.callLogs = {
+                type: 'OUTGOING',
+                duration: callDuration !== undefined ? Number(callDuration) : (isAnswered ? 1 : 0),
+                remark: remark,
+                timestamp: new Date(),
+                handledBy: req.user.fullName || "Mobile App"
+            };
+        } else if (remark || status) {
+            // Save as a normal remark
             pushedData.remarks = {
                 remark: remark || `Status updated to ${status}`,
                 status: status || entry.status,
@@ -710,7 +739,7 @@ export const addCallListRemark = async (req, res) => {
             };
         }
 
-        // Add call log
+        // Add explicit call log if provided (e.g. incoming calls from mobile)
         if (_callLog) {
             pushedData.callLogs = {
                 ..._callLog,
