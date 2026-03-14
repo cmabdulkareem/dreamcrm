@@ -776,3 +776,127 @@ export const addCallListRemark = async (req, res) => {
     }
 };
 
+
+// Get call history report with aggregated metrics
+export const getCallHistoryReport = async (req, res) => {
+    try {
+        const { staffId, startDate, endDate, page = 1, limit = 50, search = '', sortBy = 'timestamp', sortOrder = 'desc' } = req.query;
+
+        const brandFilter = castQueryForAggregation(req.brandFilter);
+        const docMatch = { ...brandFilter };
+        if (staffId) {
+            docMatch.assignedTo = new mongoose.Types.ObjectId(staffId);
+        }
+
+        const logMatch = {};
+        if (startDate || endDate) {
+            logMatch['callLog.timestamp'] = {};
+            if (startDate) logMatch['callLog.timestamp'].$gte = new Date(startDate);
+            if (endDate) {
+                const end = new Date(endDate);
+                end.setHours(23, 59, 59, 999);
+                logMatch['callLog.timestamp'].$lte = end;
+            }
+        }
+
+        const basePipeline = [
+            { $match: docMatch },
+            { $unwind: { path: '$callLogs', preserveNullAndEmptyArrays: false } },
+            { $addFields: { callLog: '$callLogs' } },
+            ...(Object.keys(logMatch).length > 0 ? [{ $match: logMatch }] : []),
+            ...(search ? [{ $match: { $or: [{ name: { $regex: search, $options: 'i' } }, { phoneNumber: { $regex: search, $options: 'i' } }] } }] : []),
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'assignedTo',
+                    foreignField: '_id',
+                    as: 'staffUser',
+                    pipeline: [{ $project: { fullName: 1 } }]
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    callListId: '$_id',
+                    contactName: '$name',
+                    phoneNumber: '$phoneNumber',
+                    callType: '$callLog.type',
+                    duration: { $ifNull: ['$callLog.duration', 0] },
+                    timestamp: '$callLog.timestamp',
+                    remark: '$callLog.remark',
+                    handledBy: '$callLog.handledBy',
+                    staffName: { $ifNull: [{ $arrayElemAt: ['$staffUser.fullName', 0] }, '$callLog.handledBy', 'Unknown'] },
+                    dayKey: { $dateToString: { format: '%Y-%m-%d', date: '$callLog.timestamp' } }
+                }
+            }
+        ];
+
+        // Total count for pagination
+        const countResult = await CallList.aggregate([...basePipeline, { $count: 'total' }]);
+        const totalCount = countResult[0]?.total || 0;
+
+        // Paged call log rows
+        const sortField = sortBy === 'duration' ? 'duration' : 'timestamp';
+        const sortDir = sortOrder === 'asc' ? 1 : -1;
+        const callLogs = await CallList.aggregate([
+            ...basePipeline,
+            { $sort: { [sortField]: sortDir } },
+            { $skip: (Number(page) - 1) * Number(limit) },
+            { $limit: Number(limit) }
+        ]);
+
+        // Summary metrics
+        const metricsResult = await CallList.aggregate([
+            ...basePipeline,
+            {
+                $group: {
+                    _id: null,
+                    totalCalls: { $sum: 1 },
+                    totalDuration: { $sum: '$duration' },
+                    longestCall: { $max: '$duration' },
+                    shortestConnected: { $min: { $cond: [{ $gt: ['$duration', 0] }, '$duration', null] } },
+                    incomingCount: { $sum: { $cond: [{ $in: ['$callType', ['INCOMING', '1']] }, 1, 0] } },
+                    outgoingCount: { $sum: { $cond: [{ $in: ['$callType', ['OUTGOING', '2']] }, 1, 0] } },
+                    missedCount: { $sum: { $cond: [{ $in: ['$callType', ['MISSED', 'REJECTED', '3', '5']] }, 1, 0] } }
+                }
+            }
+        ]);
+        const m = metricsResult[0] || { totalCalls: 0, totalDuration: 0, longestCall: 0, shortestConnected: 0, incomingCount: 0, outgoingCount: 0, missedCount: 0 };
+        const avgDuration = m.totalCalls > 0 ? Math.round(m.totalDuration / m.totalCalls) : 0;
+
+        // Daily breakdown for charts
+        const dailyData = await CallList.aggregate([
+            ...basePipeline,
+            {
+                $group: {
+                    _id: '$dayKey',
+                    totalCalls: { $sum: 1 },
+                    totalDuration: { $sum: '$duration' },
+                    incomingCount: { $sum: { $cond: [{ $in: ['$callType', ['INCOMING', '1']] }, 1, 0] } },
+                    outgoingCount: { $sum: { $cond: [{ $in: ['$callType', ['OUTGOING', '2']] }, 1, 0] } },
+                    missedCount: { $sum: { $cond: [{ $in: ['$callType', ['MISSED', 'REJECTED', '3', '5']] }, 1, 0] } }
+                }
+            },
+            { $sort: { _id: 1 } }
+        ]);
+
+        return res.status(200).json({
+            totalCalls: m.totalCalls,
+            incomingCalls: m.incomingCount,
+            outgoingCalls: m.outgoingCount,
+            missedCalls: m.missedCount,
+            totalTalkTime: m.totalDuration,
+            avgDuration,
+            longestCall: m.longestCall || 0,
+            shortestCall: m.shortestConnected || 0,
+            totalCount,
+            page: Number(page),
+            limit: Number(limit),
+            dailyData,
+            callLogs
+        });
+    } catch (error) {
+        console.error('Error generating call history report:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+};

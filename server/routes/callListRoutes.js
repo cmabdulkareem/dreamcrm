@@ -9,7 +9,8 @@ import {
     updateCallListStatus,
     bulkAssignCallLists,
     bulkDeleteCallLists,
-    addCallListRemark
+    addCallListRemark,
+    getCallHistoryReport
 } from '../controller/callListController.js';
 import verifyToken from '../middleware/verifyToken.js';
 import { applyBrandFilter } from '../middleware/brandMiddleware.js';
@@ -31,5 +32,6 @@ router.patch('/:id/status', updateCallListStatus);
 router.put('/remark/:id', addCallListRemark);
 router.post('/bulk-assign', bulkAssignCallLists);
 router.post('/bulk-delete', bulkDeleteCallLists);
+router.get('/reports/call-history', getCallHistoryReport);
 
 export default router;
