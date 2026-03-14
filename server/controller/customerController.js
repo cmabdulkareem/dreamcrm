@@ -382,7 +382,8 @@ export const updateCustomer = async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
-
+    
+    console.log("INCOMING UPDATE PAYLOAD:", JSON.stringify(updateData, null, 2));
 
     const customer = await customerModel.findById(id);
     if (!customer) {
