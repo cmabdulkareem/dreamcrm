@@ -31,7 +31,7 @@ const userSchema = new mongoose.Schema(
       }
     },
     consent: { type: Boolean, required: true },
-    accountStatus: { type: String, enum: ["Pending", "Active", "Suspended", "Deactivated"], default: "Pending" },
+    accountStatus: { type: String, enum: ["Pending", "Active", "Suspended", "Deactivated", "Inactive"], default: "Pending" },
     statusChangedAt: { type: Date, default: null }, // Tracks when status was last changed (Suspended/Deactivated)
     suspendedAt: { type: Date, default: null },
     deactivatedAt: { type: Date, default: null },
@@ -41,6 +41,22 @@ const userSchema = new mongoose.Schema(
     // Added missing fields
     dob: { type: Date, default: null },
     joiningDate: { type: Date, default: null },
+    lastReviewDate: { type: Date, default: null },
+    nextReviewDate: { type: Date, default: null },
+    reviewCycle: {
+      type: String,
+      enum: ["2-month", "annual"],
+      default: "2-month"
+    },
+    reviewHistory: [
+      {
+        date: { type: Date, default: Date.now },
+        cycle: String,
+        remarks: String,
+        rating: { type: Number, min: 1, max: 5 },
+        completedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+      }
+    ],
     company: { type: String, default: "" },
     location: { type: String, default: "DreamZone, Kasaragod" },
     avatar: { type: String, default: null },

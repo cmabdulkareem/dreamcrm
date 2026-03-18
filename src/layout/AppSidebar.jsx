@@ -120,6 +120,7 @@ const settingsItems = [
       { name: "Course Management", path: "/settings/courses", pro: false },
       { name: "Brand Management", path: "/settings/brands", pro: false },
       { name: "Announcements", path: "/settings/announcements", pro: false },
+      { name: "Privileges", path: "/settings/privileges", pro: false },
       { name: "App Backup", path: "/settings/backup", pro: false }
     ],
   }

@@ -16,7 +16,8 @@ import {
     forgotPassword,
     resetPassword,
     changePassword,
-    getUserUsageStats
+    getUserUsageStats,
+    markReviewCompleted
 } from '../controller/userController.js'
 import verifyToken from "../middleware/verifyToken.js";
 
@@ -31,6 +32,7 @@ router.get('/allusers', verifyToken, getAllUsers)
 router.get('/dropdown', verifyToken, getUsersForDropdown)
 router.put('/update/:id', verifyToken, updateUser)
 router.patch('/assign-roles/:id', verifyToken, assignRoles)
+router.patch('/review-completed/:id', verifyToken, markReviewCompleted)
 router.delete('/delete/:id', verifyToken, deleteUser) // Add delete user route
 router.get('/auth', verifyToken, authCheck)
 router.get('/logout', verifyToken, logoutUser)

@@ -28,7 +28,8 @@ import {
   Building,
   Calendar,
   Layers,
-  Award
+  Award,
+  Star
 } from "lucide-react";
 
 import "react-toastify/dist/ReactToastify.css";
@@ -63,6 +64,8 @@ const UserManagement = () => {
   const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [departmentFilter, setDepartmentFilter] = useState("all");
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewData, setReviewData] = useState({ userId: null, remarks: "", rating: 5 });
 
   const filteredUsers = users.filter((user) => {
     // Search term filter
@@ -107,7 +110,8 @@ const UserManagement = () => {
     { value: "Pending", label: "Pending" },
     { value: "Active", label: "Active" },
     { value: "Suspended", label: "Suspended" },
-    { value: "Deactivated", label: "Deactivated" }
+    { value: "Deactivated", label: "Deactivated" },
+    { value: "Inactive", label: "Inactive" }
   ];
 
   const departmentOptions = [
@@ -172,6 +176,27 @@ const UserManagement = () => {
       console.error("Error fetching users:", error);
       toast.error("Failed to fetch users. Please try again.");
       setLoading(false);
+    }
+  };
+
+  const handleMarkReviewCompleted = (userId) => {
+    setReviewData({ userId, remarks: "", rating: 5 });
+    setShowReviewModal(true);
+  };
+
+  const submitReviewCompletion = async () => {
+    try {
+      const response = await axios.patch(
+        `${API}/users/review-completed/${reviewData.userId}`,
+        { remarks: reviewData.remarks, rating: reviewData.rating },
+        { withCredentials: true }
+      );
+      toast.success(response.data.message);
+      setShowReviewModal(false);
+      fetchUsers();
+    } catch (error) {
+      console.error("Error marking review completed:", error);
+      toast.error(error.response?.data?.message || "Failed to complete review");
     }
   };
 
@@ -534,10 +559,10 @@ const UserManagement = () => {
               <TableHeader className="sticky top-0 z-20 bg-gray-50 dark:bg-gray-900 shadow-[0_1px_0_0_rgba(0,0,0,0.05)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.05)] border-b border-gray-100 dark:border-gray-800">
                 <TableRow>
                   <TableCell isHeader className="py-4 pl-8 pr-5 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit">User</TableCell>
-                  <TableCell isHeader className="py-4 px-5 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit border-l border-gray-100 dark:border-gray-800/50">Assigned Brands & Roles</TableCell>
-                  <TableCell isHeader className="py-4 px-5 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit border-l border-gray-100 dark:border-gray-800/50">Joined Date</TableCell>
+                  <TableCell isHeader className="py-4 px-5 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit border-l border-gray-100 dark:border-gray-800/50">Brands & Roles</TableCell>
+                  <TableCell isHeader className="py-4 px-3 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit border-l border-gray-100 dark:border-gray-800/50 w-fit">Timeline</TableCell>
+                  <TableCell isHeader className="py-4 px-5 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit border-l border-gray-100 dark:border-gray-800/50">Review Cycle</TableCell>
                   <TableCell isHeader className="py-4 px-5 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit border-l border-gray-100 dark:border-gray-800/50">Status</TableCell>
-                  <TableCell isHeader className="py-4 px-5 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit border-l border-gray-100 dark:border-gray-800/50">Suspended / Deactivated</TableCell>
                   <TableCell isHeader className="py-4 px-5 font-bold text-gray-700 text-end text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit border-l border-gray-100 dark:border-gray-800/50">Actions</TableCell>
                 </TableRow>
               </TableHeader>
@@ -564,9 +589,64 @@ const UserManagement = () => {
                       <TableCell className="px-5 py-4 border-l border-gray-100 dark:border-gray-800/50">
                         <div className="text-sm text-gray-700 dark:text-gray-300">{getBrandNames(user.brands)}</div>
                       </TableCell>
-                      <TableCell className="px-5 py-4 whitespace-nowrap border-l border-gray-100 dark:border-gray-800/50">
-                        <div className="text-sm text-gray-700 dark:text-gray-300">{user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}</div>
-                        <div className="text-xs text-gray-400 dark:text-gray-500">{user.createdAt ? new Date(user.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</div>
+                      <TableCell className="px-3 py-4 border-l border-gray-100 dark:border-gray-800/50 w-fit">
+                        <div className="flex flex-col gap-2 py-1 whitespace-nowrap">
+                          <div className="text-[13px] font-bold text-blue-600 dark:text-blue-400 leading-none whitespace-nowrap">
+                            {(user.joiningDate || user.createdAt) ? new Date(user.joiningDate || user.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}
+                          </div>
+                          {(user.accountStatus === 'Suspended' || user.accountStatus === 'Deactivated' || user.accountStatus === 'Inactive') && (user.suspendedAt || user.deactivatedAt || user.statusChangedAt) && (
+                            <div className="text-[11px] font-bold text-red-600 dark:text-red-500 flex items-center gap-1.5 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded-md w-fit mt-0.5 whitespace-nowrap">
+                              <div className="w-1 h-1 rounded-full bg-red-600 animate-pulse flex-shrink-0"></div>
+                              {new Date(user.suspendedAt || user.deactivatedAt || user.statusChangedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-5 py-4 border-l border-gray-100 dark:border-gray-800/50">
+                        {user.nextReviewDate ? (
+                          <div className="flex flex-col gap-1.5 whitespace-nowrap">
+                            {/* Line 1: Age */}
+                            <div className="text-[10px] font-medium text-gray-500 flex items-center gap-1">
+                              <span className="text-blue-500 font-bold">{Math.floor((new Date() - new Date(user.joiningDate || user.createdAt)) / (1000 * 60 * 60 * 24))} days</span> since joined
+                            </div>
+
+                            {/* Line 2: Review Badge + Date */}
+                            <div className="flex items-center gap-2">
+                              <Badge size="sm" color="info" variant="soft" className="px-1.5 py-0 text-[9px] font-black uppercase h-4 ring-1 ring-blue-100 dark:ring-blue-900/30">
+                                {user.reviewCycle === '3-month' ? '3M' : `${Math.max(1, Math.floor((new Date(user.nextReviewDate) - new Date(user.joiningDate || user.createdAt)) / (365 * 24 * 60 * 60 * 1000)))}Y`} Review
+                              </Badge>
+                              <span className="text-[12px] font-bold text-gray-700 dark:text-gray-300">
+                                {new Date(user.nextReviewDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                              </span>
+                            </div>
+
+                            {/* Line 3: Countdown (Only when window starts) */}
+                            {(() => {
+                              const daysLeft = Math.ceil((new Date(user.nextReviewDate) - new Date()) / (1000 * 60 * 60 * 24));
+                              const window = user.reviewCycle === '3-month' ? 11 : 30;
+                              
+                              if (daysLeft <= window) {
+                                let badgeColor = "success";
+                                if (daysLeft <= 3) badgeColor = "error";
+                                else if (daysLeft <= (user.reviewCycle === '3-month' ? 11 : 15)) badgeColor = "warning";
+
+                                return (
+                                  <div className="flex items-center gap-1.5 mt-0.5">
+                                    <div className={`w-1 h-1 rounded-full animate-ping ${badgeColor === 'error' ? 'bg-red-500' : badgeColor === 'warning' ? 'bg-amber-500' : 'bg-emerald-500'
+                                      }`}></div>
+                                    <span className={`text-[10px] font-black uppercase tracking-tight ${badgeColor === 'error' ? 'text-red-600' : badgeColor === 'warning' ? 'text-amber-600' : 'text-emerald-600'
+                                      }`}>
+                                      {daysLeft <= 0 ? "OVERDUE" : `${daysLeft} DAYS LEFT`}
+                                    </span>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            })()}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-300 dark:text-gray-600">—</span>
+                        )}
                       </TableCell>
                       <TableCell className="px-5 py-4 whitespace-nowrap border-l border-gray-100 dark:border-gray-800/50">
                         <Badge
@@ -576,37 +656,27 @@ const UserManagement = () => {
                               ? "success"
                               : user.accountStatus === "Pending"
                                 ? "warning"
-                                : "error"
+                                : (user.accountStatus === "Inactive" || user.accountStatus === "Deactivated") ? "error" : "error"
                           }
                         >
                           {user.accountStatus}
                         </Badge>
                       </TableCell>
-                      <TableCell className="px-5 py-4 whitespace-nowrap border-l border-gray-100 dark:border-gray-800/50">
-                        {user.accountStatus === 'Suspended' && user.suspendedAt ? (
-                          <>
-                            <div className="text-sm font-medium text-orange-600 dark:text-orange-400">
-                              {new Date(user.suspendedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                            </div>
-                            <div className="text-xs text-gray-400 dark:text-gray-500">
-                              {new Date(user.suspendedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </div>
-                          </>
-                        ) : user.accountStatus === 'Deactivated' && user.deactivatedAt ? (
-                          <>
-                            <div className="text-sm font-medium text-red-600 dark:text-red-400">
-                              {new Date(user.deactivatedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                            </div>
-                            <div className="text-xs text-gray-400 dark:text-gray-500">
-                              {new Date(user.deactivatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </div>
-                          </>
-                        ) : (
-                          <span className="text-xs text-gray-300 dark:text-gray-600">—</span>
-                        )}
-                      </TableCell>
                       <TableCell className="px-5 py-4 whitespace-nowrap text-end border-l border-gray-100 dark:border-gray-800/50">
                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {(isAdmin(currentUser) || isOwner(currentUser) || isManager(currentUser)) && (
+                            <button
+                              onClick={() => handleMarkReviewCompleted(user.id)}
+                              className={`p-2 rounded-lg transition-colors ${(user.accountStatus === "Inactive" || (user.nextReviewDate && Math.ceil((new Date(user.nextReviewDate) - new Date()) / (1000 * 60 * 60 * 24)) <= 7))
+                                  ? "text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30"
+                                  : "text-gray-300 cursor-not-allowed"
+                                }`}
+                              title="Review Completed"
+                              disabled={!(user.accountStatus === "Inactive" || (user.nextReviewDate && Math.ceil((new Date(user.nextReviewDate) - new Date()) / (1000 * 60 * 60 * 24)) <= 7))}
+                            >
+                              <CheckCircle size={16} />
+                            </button>
+                          )}
                           <button
                             onClick={() => handleUpdateUser(user)}
                             className="p-2 text-gray-500 hover:text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-900/30 rounded-lg transition-colors"
@@ -731,81 +801,116 @@ const UserManagement = () => {
                       </div>
                     </div>
 
-                    {/* Section: Employment Details */}
-                    {updateMode && (
-                      <div className="space-y-4 pt-2">
-                        <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-gray-700">
-                          <div className="p-1.5 bg-purple-50 dark:bg-purple-900/30 rounded-lg text-purple-600 dark:text-purple-400">
-                            <Briefcase size={18} />
-                          </div>
-                          <h4 className="text-sm font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Employment Details</h4>
+
+                  {/* Section: Employment Details */}
+                  {updateMode && (
+                    <div className="space-y-4 mt-6">
+                      <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-gray-700">
+                        <div className="p-1.5 bg-purple-50 dark:bg-purple-900/30 rounded-lg text-purple-600 dark:text-purple-400">
+                          <Briefcase size={18} />
+                        </div>
+                        <h4 className="text-sm font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Employment Details</h4>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <Label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase">
+                            <Building size={12} /> Department
+                          </Label>
+                          <Select
+                            options={departmentOptions}
+                            value={formData.department}
+                            onChange={(value) => setFormData(prev => ({ ...prev, department: value }))}
+                          />
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div className="space-y-1">
-                            <Label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase">
-                              <Building size={12} /> Department
-                            </Label>
-                            <Select
-                              options={departmentOptions}
-                              value={formData.department}
-                              onChange={(value) => setFormData(prev => ({ ...prev, department: value }))}
-                              className="bg-gray-50/50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700"
-                            />
-                          </div>
+                        <div className="space-y-1">
+                          <Label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase">
+                            <Award size={12} /> Designation
+                          </Label>
+                          <Input
+                            type="text"
+                            value={formData.designation}
+                            onChange={(e) => setFormData(prev => ({ ...prev, designation: e.target.value }))}
+                            placeholder="e.g. Senior Manager"
+                          />
+                        </div>
 
-                          <div className="space-y-1">
-                            <Label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase">
-                              <Award size={12} /> Designation
-                            </Label>
-                            <Input
-                              type="text"
-                              value={formData.designation}
-                              onChange={(e) => setFormData(prev => ({ ...prev, designation: e.target.value }))}
-                              placeholder="e.g. Senior Manager"
-                              className="bg-gray-50/50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700"
-                            />
-                          </div>
+                        <div className="space-y-1">
+                          <Label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase">
+                            <Layers size={12} /> Employment Type
+                          </Label>
+                          <Select
+                            options={employmentTypeOptions}
+                            value={formData.employmentType}
+                            onChange={(value) => setFormData(prev => ({ ...prev, employmentType: value }))}
+                          />
+                        </div>
 
-                          <div className="space-y-1">
-                            <Label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase">
-                              <Layers size={12} /> Employment Type
-                            </Label>
-                            <Select
-                              options={employmentTypeOptions}
-                              value={formData.employmentType}
-                              onChange={(value) => setFormData(prev => ({ ...prev, employmentType: value }))}
-                              className="bg-gray-50/50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700"
-                            />
-                          </div>
+                        <div className="space-y-1">
+                          <Label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase">
+                            <Calendar size={12} /> Joining Date
+                          </Label>
+                          <input
+                            type="date"
+                            value={formData.joiningDate}
+                            onChange={(e) => setFormData(prev => ({ ...prev, joiningDate: e.target.value }))}
+                            className="w-full rounded-lg border border-gray-300 bg-gray-50/50 py-2 px-3 text-sm text-gray-700 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:border-gray-700 dark:bg-gray-900/50 dark:text-white"
+                          />
+                        </div>
 
-                          <div className="space-y-1">
-                            <Label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase">
-                              <Calendar size={12} /> Joining Date
-                            </Label>
-                            <input
-                              type="date"
-                              value={formData.joiningDate}
-                              onChange={(e) => setFormData(prev => ({ ...prev, joiningDate: e.target.value }))}
-                              className="w-full rounded-lg border border-gray-300 bg-gray-50/50 py-2 px-3 text-sm text-gray-700 shadow-sm focus:border-brand-300 focus:ring focus:ring-brand-200 focus:ring-opacity-50 dark:border-gray-700 dark:bg-gray-900/50 dark:text-white"
-                            />
-                          </div>
-
-                          <div className="space-y-1 sm:col-span-2">
-                            <Label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase">
-                              <Globe size={12} /> Company
-                            </Label>
-                            <Input
-                              type="text"
-                              value={formData.company}
-                              onChange={(e) => setFormData(prev => ({ ...prev, company: e.target.value }))}
-                              placeholder="Company name"
-                              className="bg-gray-50/50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700"
-                            />
-                          </div>
+                        <div className="space-y-1 sm:col-span-2">
+                          <Label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase">
+                            <Globe size={12} /> Company
+                          </Label>
+                          <Input
+                            type="text"
+                            value={formData.company}
+                            onChange={(e) => setFormData(prev => ({ ...prev, company: e.target.value }))}
+                            placeholder="Company name"
+                          />
                         </div>
                       </div>
-                    )}
+
+                      {/* Section: Review History (View Only) */}
+                      {selectedUser?.reviewHistory?.length > 0 && (
+                        <div className="space-y-4 pt-4 border-t border-gray-100 dark:border-gray-700 mt-6">
+                          <div className="flex items-center gap-2 pb-2">
+                            <div className="p-1.5 bg-yellow-50 dark:bg-yellow-900/30 rounded-lg text-yellow-600 dark:text-yellow-400">
+                              <Award size={18} />
+                            </div>
+                            <h4 className="text-sm font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Review History</h4>
+                          </div>
+                          <div className="space-y-3">
+                            {selectedUser.reviewHistory.map((history, idx) => (
+                              <div key={idx} className="p-3 bg-gray-50 dark:bg-gray-800/40 rounded-xl border border-gray-100 dark:border-gray-700">
+                                <div className="flex justify-between items-start mb-2">
+                                  <div className="flex flex-col">
+                                    <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest">{history.cycle}</span>
+                                    <span className="text-xs font-bold text-gray-700 dark:text-gray-300">
+                                      {new Date(history.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                    </span>
+                                  </div>
+                                  <div className="flex gap-0.5">
+                                    {[1, 2, 3, 4, 5].map((s) => (
+                                      <Star 
+                                        key={s} 
+                                        size={12} 
+                                        className={s <= history.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300 dark:text-gray-600"} 
+                                      />
+                                    ))}
+                                  </div>
+                                </div>
+                                <p className="text-xs text-gray-600 dark:text-gray-400 italic font-medium leading-relaxed">
+                                  "{history.remarks || "No remarks provided"}"
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                     {/* Section: Roles & Access */}
                     {!updateMode && (
@@ -931,6 +1036,68 @@ const UserManagement = () => {
                   </Button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Review Completion Modal */}
+      {showReviewModal && (
+        <div className="fixed inset-0 z-[100] overflow-y-auto">
+          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" onClick={() => setShowReviewModal(false)}>
+              <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm"></div>
+            </div>
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+            <div className="inline-block align-middle bg-white dark:bg-gray-800 rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-gray-100 dark:border-gray-700">
+              <div className="bg-white dark:bg-gray-800 px-6 pt-6 pb-4">
+                <div className="sm:flex sm:items-start">
+                  <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-xl bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 sm:mx-0 sm:h-10 sm:w-10">
+                    <CheckCircle size={20} />
+                  </div>
+                  <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                    <h3 className="text-lg leading-6 font-bold text-gray-900 dark:text-white">Complete Review</h3>
+                    <div className="mt-4 space-y-4">
+                      <div className="space-y-2">
+                        <Label className="text-xs font-bold text-gray-500 uppercase tracking-tight">Performance Rating</Label>
+                        <div className="flex gap-2">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              type="button"
+                              onClick={() => setReviewData(prev => ({ ...prev, rating: star }))}
+                              className="focus:outline-none transition-transform hover:scale-110 active:scale-95"
+                            >
+                              <Star 
+                                size={24} 
+                                className={`${star <= reviewData.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300 dark:text-gray-600"} transition-colors`} 
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs font-bold text-gray-500 uppercase tracking-tight">Review Remarks</Label>
+                        <textarea
+                          className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 p-3 text-sm text-gray-700 dark:text-gray-300 focus:border-brand-500 focus:ring-brand-500/20 transition-all outline-none resize-none"
+                          rows="4"
+                          placeholder="Enter performance remarks, areas of improvement, etc..."
+                          value={reviewData.remarks}
+                          onChange={(e) => setReviewData(prev => ({ ...prev, remarks: e.target.value }))}
+                        ></textarea>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="px-6 py-4 bg-gray-50 dark:bg-gray-800/80 border-t border-gray-100 dark:border-gray-700 sm:flex sm:flex-row-reverse">
+                <Button variant="primary" onClick={submitReviewCompletion} className="w-full sm:ml-3 sm:w-auto">
+                  Submit Completion
+                </Button>
+                <Button variant="outline" onClick={() => setShowReviewModal(false)} className="mt-3 sm:mt-0 w-full sm:w-auto">
+                  Cancel
+                </Button>
+              </div>
             </div>
           </div>
         </div>

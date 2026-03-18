@@ -49,6 +49,7 @@ import hrRoutes from "./routes/hrRoutes.js";
 import marketingTaskRoutes from './routes/marketingTaskRoutes.js';
 import moduleRoutes from './routes/moduleRoutes.js';
 
+
 import { getBaseUploadDir } from './utils/uploadHelper.js';
 
 
@@ -114,6 +115,7 @@ app.use('/api/promotional', promotionalRoutes)
 app.use('/api/hr', hrRoutes)
 app.use('/api/marketing/tasks', marketingTaskRoutes)
 app.use('/api/modules', moduleRoutes)
+
 
 // ================= SPA & SSR FALLBACK =================
 

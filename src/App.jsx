@@ -21,6 +21,7 @@ import ContactPointSettings from "./pages/Settings/ContactPointSettings";
 import CourseManagement from "./pages/Settings/CourseManagement";
 import UserManagement from "./pages/Settings/UserManagement";
 import AnnouncementManagement from "./pages/Settings/AnnouncementManagement";
+import PrivilegeManagement from "./pages/Settings/PrivilegeManagement";
 import AppBackup from "./pages/Settings/AppBackup";
 import UserProfiles from "./pages/UserProfiles";
 
@@ -130,6 +131,7 @@ function App() {
                   <Route path="/settings/courses" element={<ProtectedRoutes requireManager={true}><CourseManagement /></ProtectedRoutes>} />
                   <Route path="/settings/brands" element={<ProtectedRoutes requireAdmin={true}><BrandManagement /></ProtectedRoutes>} />
                   <Route path="/settings/announcements" element={<ProtectedRoutes requireAdmin={true}><AnnouncementManagement /></ProtectedRoutes>} />
+                  <Route path="/settings/privileges" element={<ProtectedRoutes requireAdmin={true}><PrivilegeManagement /></ProtectedRoutes>} />
                   <Route path="/settings/backup" element={<ProtectedRoutes requireManager={true}><AppBackup /></ProtectedRoutes>} />
 
                   {/* Finance */}

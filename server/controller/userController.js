@@ -123,12 +123,25 @@ export const signUpUser = async (req, res) => {
 
     const hashedPassword = await hashPassword(password);
 
+    const { joiningDate } = req.body;
+    let nextReviewDate = null;
+    if (joiningDate) {
+      const jDate = new Date(joiningDate);
+      if (!isNaN(jDate)) {
+        nextReviewDate = new Date(jDate);
+        nextReviewDate.setMonth(nextReviewDate.getMonth() + 3);
+      }
+    }
+
     const newUser = new userModel({
       fullName,
       email,
       phone,
       password: hashedPassword,
       consent,
+      joiningDate: joiningDate || null,
+      nextReviewDate,
+      reviewCycle: '3-month',
       // Auto-approve first user and make them admin
       accountStatus: isFirstUser ? "Active" : "Pending",
       isAdmin: isFirstUser
@@ -325,6 +338,10 @@ export const signInUser = async (req, res) => {
         accountStatus: user.accountStatus,
         employeeCode: user.employeeCode,
         mustChangePassword: user.mustChangePassword,
+        joiningDate: user.joiningDate,
+        nextReviewDate: user.nextReviewDate,
+        reviewCycle: user.reviewCycle,
+        createdAt: user.createdAt,
         brands: user.brands || []
       }
     });
@@ -480,6 +497,10 @@ export const authCheck = async (req, res) => {
         designation: user.designation,
         accountStatus: user.accountStatus,
         employeeCode: user.employeeCode, // Include employeeCode
+        joiningDate: user.joiningDate,
+        nextReviewDate: user.nextReviewDate,
+        reviewCycle: user.reviewCycle,
+        createdAt: user.createdAt,
         brands: user.brands || []
       },
       isAdmin: user.isAdmin,
@@ -507,6 +528,35 @@ export const getAllUsers = async (req, res) => {
         model: 'Brand'
       })
       .sort({ createdAt: -1 });
+
+    // Auto-initialize and auto-deactivate users
+    const now = new Date();
+    for (const user of users) {
+      // 1. Initialize nextReviewDate if missing
+      if (!user.nextReviewDate) {
+        const baseDate = user.joiningDate || user.createdAt;
+        if (baseDate) {
+          const nextReview = new Date(baseDate);
+          nextReview.setMonth(nextReview.getMonth() + 3);
+          user.nextReviewDate = nextReview;
+          user.reviewCycle = '3-month';
+          console.log(`Initializing user ${user.fullName} with 3-month review cycle: ${nextReview}`);
+          await user.save();
+        }
+      }
+
+
+      // 2. Auto-deactivate users whose review is due
+      if (user.accountStatus === 'Active' && user.nextReviewDate && now >= user.nextReviewDate) {
+        user.accountStatus = 'Inactive';
+        user.deactivatedAt = now;
+        user.statusChangedAt = now;
+        await user.save();
+      }
+    }
+
+    // Replace line 510-something if I need to re-fetch or if I can just use the updated array
+    // Since I updated them in memory and saved, I'll just use the same array.
     if (users.length > 0) {
       const sample = users.slice(0, 5).map(u => ({
         fullName: u.fullName,
@@ -543,8 +593,13 @@ export const getAllUsers = async (req, res) => {
       department: user.department,
       employmentType: user.employmentType,
       joiningDate: user.joiningDate,
+      lastReviewDate: user.lastReviewDate,
+      nextReviewDate: user.nextReviewDate,
+      reviewCycle: user.reviewCycle,
+      reviewHistory: user.reviewHistory,
       company: user.company,
       createdAt: user.createdAt,
+      brands: user.brands.map(brand => ({ id: brand._id, name: brand.name })),
     }));
 
     return res.status(200).json({ users: formattedUsers });
@@ -754,11 +809,11 @@ export const updateUser = async (req, res) => {
       if (joiningDate !== undefined) {
         if (joiningDate === null || joiningDate === "") {
           user.joiningDate = null;
+          user.nextReviewDate = null;
         } else {
           // Validate date format before parsing
           if (!/\d{4}-\d{2}-\d{2}/.test(joiningDate) && !/\d{4}-\d{2}-\d{2}T/.test(joiningDate)) {
             console.warn('Invalid date format for joiningDate:', joiningDate);
-            // Don't fail the request, just don't update the date
           } else {
             try {
               const joiningDateObj = new Date(joiningDate);
@@ -766,6 +821,14 @@ export const updateUser = async (req, res) => {
                 return res.status(400).json({ message: "Invalid joining date." });
               }
               user.joiningDate = joiningDateObj;
+              
+              // Recalculate nextReviewDate if no review has been done yet
+              if (!user.lastReviewDate) {
+                const nextReview = new Date(joiningDateObj);
+                nextReview.setMonth(nextReview.getMonth() + 3);
+                user.nextReviewDate = nextReview;
+                user.reviewCycle = '3-month';
+              }
             } catch (dateError) {
               console.error('Error parsing joining date:', dateError);
               return res.status(400).json({ message: "Invalid joining date format." });
@@ -1405,5 +1468,61 @@ export const getUserUsageStats = async (req, res) => {
   } catch (error) {
     console.error("Error fetching usage stats:", error);
     return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// Mark review as completed
+export const markReviewCompleted = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { remarks, rating } = req.body;
+    const user = await userModel.findById(id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    // Check if requester is authorized (Owner, HR, Admin)
+    const accessBrandId = req.headers['x-brand-id'];
+    const authorized = isAdmin(req.user, accessBrandId) || isOwner(req.user, accessBrandId) || isManager(req.user, accessBrandId);
+    
+    if (!authorized) {
+      return res.status(403).json({ message: "Access denied. Only Owners or Admins can mark reviews as completed." });
+    }
+
+    const previousCycle = user.reviewCycle;
+    const now = new Date();
+
+    // Reset account status to Active
+    user.accountStatus = 'Active';
+    user.deactivatedAt = null;
+    user.statusChangedAt = now;
+    user.lastReviewDate = now;
+
+    // Record in history
+    user.reviewHistory.push({
+      date: now,
+      cycle: previousCycle,
+      remarks: remarks || "",
+      rating: rating || 0,
+      completedBy: req.user.id
+    });
+
+    // Schedule next review (Always annual after the first 2-month review)
+    const nextReview = new Date();
+    nextReview.setFullYear(nextReview.getFullYear() + 1);
+    user.nextReviewDate = nextReview;
+    user.reviewCycle = 'annual';
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: `Review marked as completed. Next annual review scheduled for ${nextReview.toLocaleDateString()}`,
+      nextReviewDate: user.nextReviewDate
+    });
+  } catch (error) {
+    console.error("Error marking review completed:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 };

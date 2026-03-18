@@ -93,6 +93,22 @@ export default function UserDropdown() {
           <span className="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">
             {user?.email}
           </span>
+          {user?.nextReviewDate && (
+            <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-800 space-y-1">
+              <div className="flex items-center justify-between text-[10px] font-medium">
+                <span className="text-gray-400 uppercase tracking-wider">Joined</span>
+                <span className="text-blue-600 dark:text-blue-400 font-bold">
+                  {Math.floor((new Date() - new Date(user.joiningDate || user.createdAt)) / (1000 * 60 * 60 * 24))} days ago
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-[10px] font-medium">
+                <span className="text-gray-400 uppercase tracking-wider">Next Review</span>
+                <span className="text-amber-600 dark:text-amber-500 font-bold">
+                  {new Date(user.nextReviewDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         <ul className="flex flex-col gap-1 pt-4 pb-3 border-b border-gray-200 dark:border-gray-800">
