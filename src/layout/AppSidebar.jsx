@@ -48,8 +48,8 @@ const navItems = [
     name: "Student Management",
     icon: <UserIcon />,
     subItems: [
-      { name: "New Student (beta)", path: "/new-student", pro: false },
-      { name: "Manage Students (beta)", path: "/manage-students", pro: false },
+      { name: "Manage Students", path: "/manage-students", pro: false },
+      { name: "Student Pipeline", path: "/student-progress", pro: false },
       { name: "Batch Management", path: "/batch-management", pro: false },
       { name: "Birthday Calendar", path: "/student-birthdays", pro: false },
 
@@ -80,7 +80,6 @@ const navItems = [
     name: "Finance",
     icon: <TableIcon />,
     subItems: [
-      { name: "Collect Payment", path: "/finance/collect-payment", pro: false },
       { name: "Manage Invoices", path: "/finance/invoices", pro: false },
       { name: "Generate Invoice", path: "/finance/generate-invoice", pro: false },
     ]
@@ -136,7 +135,17 @@ const AppSidebar = () => {
   const subMenuRefs = useRef({});
 
   const isActive = useCallback(
-    (path) => location.pathname === path,
+    (path) => {
+      // Standard match
+      if (location.pathname === path) return true;
+      
+      // Special logic for Manage Students highlighting
+      if (path === "/manage-students") {
+        return location.pathname === "/new-student" || location.pathname.startsWith("/edit-student/");
+      }
+      
+      return false;
+    },
     [location.pathname]
   );
 
@@ -444,7 +453,7 @@ const AppSidebar = () => {
 
                     // RESTRICTION: Academic Coordinator only sees Batch Management, Edit Profile, Cold Call list and personal Leave Management
                     if (hasRole(user, "Academic Coordinator", brandId) && !hasManagerAccess) {
-                      const allowedSubItemsAC = ["Batch Management", "Edit Profile", "Leave Management", "Cold Call list", "Birthday Calendar", "New Lead", "Manage Leads", "Marketing Portal"];
+                      const allowedSubItemsAC = ["Batch Management", "Edit Profile", "Leave Management", "Cold Call list", "Birthday Calendar", "New Lead", "Manage Leads", "Marketing Portal", "Student Pipeline"];
                       if (!allowedSubItemsAC.includes(subItem.name)) {
                         return null;
                       }
@@ -457,7 +466,7 @@ const AppSidebar = () => {
 
                     // RESTRICTION: Instructor should only see "Batch Management" under Student Management
                     if (hasRole(user, "Instructor", brandId) && !hasManagerAccess) {
-                      const restrictedForFaculty = ["New Student (beta)", "Manage Students (beta)"];
+                      const restrictedForFaculty = ["Manage Students"];
                       if (restrictedForFaculty.includes(subItem.name) && subItem.name !== "Marketing Portal") {
                         return null;
                       }
@@ -477,7 +486,8 @@ const AppSidebar = () => {
                         "Create Event",
                         "Manage Events",
                         "Edit Profile",
-                        "Marketing Portal"
+                        "Marketing Portal",
+                        "Student Pipeline"
                       ];
                       if (!allowedForCounsellor.includes(subItem.name)) {
                         return null;

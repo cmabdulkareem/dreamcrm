@@ -8,7 +8,7 @@ import LoadingSpinner from '../common/LoadingSpinner';
 
 import StudentProfileModal from '../StudentManagement/StudentProfileModal';
 
-export default function BatchStudentList({ batchId, batchSubject, batchStartDate, batchEndDate, brandName }) {
+export default function BatchStudentList({ batchId, batchSubject, batchStartDate, batchEndDate, brandName, batchModuleId }) {
     const { user } = useAuth();
     const canEdit = isAdmin(user) || isOwner(user) || isManager(user);
     const [students, setStudents] = useState([]);
@@ -62,8 +62,12 @@ export default function BatchStudentList({ batchId, batchSubject, batchStartDate
     const fetchConvertedStudents = async () => {
         try {
             setIsSearching(true);
-            // Fetch all students from Manage Students list
-            const response = await axios.get(`${API}/students/all`, { withCredentials: true });
+            // Fetch all students from Manage Students list, filtered by module and availability
+            let url = `${API}/students/all?availableForBatch=true`;
+            if (batchModuleId) {
+                url += `&currentModule=${batchModuleId}`;
+            }
+            const response = await axios.get(url, { withCredentials: true });
             setConvertedStudents(response.data.students);
         } catch (error) {
             toast.error("Failed to fetch student list for selection.");
@@ -355,216 +359,337 @@ export default function BatchStudentList({ batchId, batchSubject, batchStartDate
         }
     };
 
+    const [addMethod, setAddMethod] = useState('search'); // 'search' or 'manual'
+
     if (loading) return <LoadingSpinner className="py-10" />;
+
+    const studentsCount = students.length;
 
     return (
         <div className="mt-4">
+            {/* Merge Notification */}
             {mergeSource && (
-                <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg flex justify-between items-center animate-pulse">
-                    <div className="text-sm text-blue-700 dark:text-blue-300">
-                        <span className="font-bold">Merge Mode:</span> Select a target student to move <span className="underline">{mergeSource.studentName}'s</span> attendance into.
+                <div className="mb-6 p-4 bg-indigo-50 dark:bg-indigo-900/20 border border-blue-100 dark:border-indigo-800 rounded-2xl flex justify-between items-center animate-pulse shadow-sm">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-100 dark:bg-indigo-900/40 rounded-lg text-blue-950 dark:text-blue-400">
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                            </svg>
+                        </div>
+                        <div className="text-sm font-medium text-blue-900 dark:text-blue-300">
+                            <span className="font-bold underline">{mergeSource.studentName}</span> is selected. Click on another student to move their attendance.
+                        </div>
                     </div>
                     <button
                         onClick={() => setMergeSource(null)}
-                        className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-200"
+                        className="text-xs font-bold px-3 py-1.5 bg-white dark:bg-gray-800 text-blue-950 dark:text-blue-400 rounded-lg border border-blue-100 dark:border-indigo-800 hover:bg-indigo-50 transition-colors"
                     >
-                        Cancel
+                        Cancel Merge
                     </button>
                 </div>
             )}
-            <div className="flex justify-between items-center mb-4">
-                <h6 className="text-sm font-medium text-gray-700 dark:text-gray-300">Total Students: {students.length}</h6>
+
+            {/* Header & Toggle */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <div>
+                    <h6 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Enrollment Status
+                    </h6>
+                    <div className="flex items-center gap-2 mt-1">
+                        <span className="text-2xl font-black text-gray-900 dark:text-white">{studentsCount}</span>
+                        <span className="text-sm font-medium text-gray-500">Students Enrolled</span>
+                    </div>
+                </div>
                 {canEdit && (
                     <button
                         onClick={() => setIsAdding(!isAdding)}
-                        className="text-xs font-semibold px-3 py-1 bg-brand-50 text-brand-600 rounded-md hover:bg-brand-100 dark:bg-brand-900/30 dark:text-brand-400"
+                        className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm ${
+                            isAdding 
+                            ? 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200' 
+                            : 'bg-blue-950 text-white hover:bg-blue-900 hover:shadow-blue-800/20'
+                        }`}
                     >
-                        {isAdding ? 'Done Adding' : '+ Add Student'}
+                        {isAdding ? (
+                            <>
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                                Close
+                            </>
+                        ) : (
+                            <>
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+                                </svg>
+                                Add Student
+                            </>
+                        )}
                     </button>
                 )}
             </div>
 
+            {/* Add Student Section */}
             {isAdding && (
-                <div className="mb-4 p-4 bg-brand-50/50 dark:bg-brand-900/20 rounded-lg border border-brand-100 dark:border-brand-800">
-                    <h5 className="text-sm font-semibold text-gray-800 dark:text-white mb-3">Add Student to Batch</h5>
-                    <div className="mb-4 relative">
-                        <label className="block text-xs font-medium text-gray-500 mb-1">Search Student (from Manage Students)</label>
-                        <input
-                            type="text"
-                            autoFocus
-                            placeholder="Search by name, phone or ID..."
-                            className="w-full text-sm border-gray-300 rounded-md dark:bg-gray-800 dark:text-white dark:border-gray-600"
-                            value={searchTerm}
-                            onChange={(e) => {
-                                setSearchTerm(e.target.value);
-                                setShowResults(true);
-                            }}
-                            onFocus={() => setShowResults(true)}
-                            onBlur={() => {
-                                setTimeout(() => {
-                                    setShowResults(false);
-                                }, 200);
-                            }}
-                        />
-                        {showResults && searchTerm && (
-                            <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                                {isSearching ? (
-                                    <div className="p-2 text-xs text-gray-500">Loading...</div>
-                                ) : filteredConvertedStudents.length > 0 ? (
-                                    filteredConvertedStudents.map(student => (
-                                        <div
-                                            key={student._id}
-                                            className="px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-50 dark:border-gray-700/50 last:border-0"
-                                            onMouseDown={(e) => e.preventDefault()}
-                                            onClick={() => handleQuickAddStudent(student)}
-                                        >
-                                            <div className="text-sm font-medium text-gray-900 dark:text-white">{student.fullName}</div>
-                                            <div className="text-xs text-gray-500">{student.studentId || 'No ID'} | {student.phone1}</div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className="p-2 text-xs text-gray-500">No matching students found.</div>
-                                )}
-                            </div>
-                        )}
+                <div className="mb-8 p-6 bg-gray-50 dark:bg-gray-900/50 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-inner">
+                    <div className="flex gap-4 mb-6 p-1 bg-white dark:bg-gray-800 rounded-2xl w-fit border border-gray-100 dark:border-gray-700">
+                        <button 
+                            onClick={() => setAddMethod('search')}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${addMethod === 'search' ? 'bg-blue-950 text-white shadow-md' : 'text-gray-500 hover:text-gray-700'}`}
+                        >
+                            Search Database
+                        </button>
+                        <button 
+                            onClick={() => setAddMethod('manual')}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${addMethod === 'manual' ? 'bg-blue-950 text-white shadow-md' : 'text-gray-500 hover:text-gray-700'}`}
+                        >
+                            Quick Manual Entry
+                        </button>
                     </div>
 
-                    <div className="border-t border-gray-100 dark:border-gray-700 pt-3 mt-3">
-                        <div className="text-xs text-gray-400 mb-2 italic">Or enter details manually if not found in search:</div>
-                        <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 items-end">
-                            <div>
-                                <label className="block text-xs text-gray-500 mb-1">ID (Opt)</label>
-                                <input type="text" value={newStudent.studentId} onChange={e => setNewStudent({ ...newStudent, studentId: e.target.value })} className="w-full text-sm border-gray-300 rounded dark:bg-gray-800 dark:text-white" placeholder="Custom ID" />
+                    {addMethod === 'search' ? (
+                        <div className="relative">
+                            <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 px-1">Search Student Name or ID</label>
+                            <div className="relative group">
+                                <input
+                                    type="text"
+                                    autoFocus
+                                    placeholder="Type to search..."
+                                    className="w-full pl-12 pr-4 py-3 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-blue-800/20 transition-all text-sm font-medium dark:text-white"
+                                    value={searchTerm}
+                                    onChange={(e) => {
+                                        setSearchTerm(e.target.value);
+                                        setShowResults(true);
+                                    }}
+                                    onFocus={() => setShowResults(true)}
+                                />
+                                <svg className="absolute left-4 top-3.5 w-5 h-5 text-gray-400 group-focus-within:text-blue-800 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
                             </div>
-                            <div className="sm:col-span-1">
-                                <label className="block text-xs text-gray-500 mb-1">Name *</label>
-                                <input type="text" value={newStudent.studentName} onChange={e => setNewStudent({ ...newStudent, studentName: e.target.value })} className="w-full text-sm border-gray-300 rounded dark:bg-gray-800 dark:text-white" placeholder="Name" />
+                            
+                            {showResults && searchTerm && (
+                                <div className="absolute z-50 w-full mt-2 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl shadow-xl max-h-72 overflow-y-auto animate-fadeInUp">
+                                    {isSearching ? (
+                                        <div className="p-6 text-center text-xs text-gray-500 flex items-center justify-center gap-2">
+                                            <div className="w-4 h-4 border-2 border-blue-800 border-t-transparent rounded-full animate-spin" />
+                                            Searching students...
+                                        </div>
+                                    ) : filteredConvertedStudents.length > 0 ? (
+                                        <div className="p-2">
+                                            {filteredConvertedStudents.map(student => (
+                                                <div
+                                                    key={student._id}
+                                                    className="group flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-750 cursor-pointer rounded-xl transition-all"
+                                                    onMouseDown={(e) => e.preventDefault()}
+                                                    onClick={() => handleQuickAddStudent(student)}
+                                                >
+                                                    <div>
+                                                        <div className="text-sm font-bold text-gray-900 dark:text-white">{student.fullName}</div>
+                                                        <div className="text-xs text-gray-500 flex items-center gap-2 mt-0.5">
+                                                            <span className="font-mono bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded text-[10px]">{student.studentId || 'NO-ID'}</span>
+                                                            <span>•</span>
+                                                            <span>{student.phone1}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="opacity-0 group-hover:opacity-100 transition-all transform translate-x-1 group-hover:translate-x-0">
+                                                        <div className="bg-indigo-50 text-blue-950 px-3 py-1 rounded-lg text-xs font-bold">Add</div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="p-8 text-center">
+                                            <p className="text-sm text-gray-400 font-medium italic">No matching students found in the database.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="animate-fadeIn">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                                <div className="lg:col-span-1">
+                                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Student ID (Optional)</label>
+                                    <input type="text" value={newStudent.studentId} onChange={e => setNewStudent({ ...newStudent, studentId: e.target.value })} className="w-full text-sm border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-800/20 px-4 py-2.5" placeholder="Custom ID" />
+                                </div>
+                                <div className="lg:col-span-1">
+                                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Student Name *</label>
+                                    <input type="text" value={newStudent.studentName} onChange={e => setNewStudent({ ...newStudent, studentName: e.target.value })} className="w-full text-sm border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-800/20 px-4 py-2.5" placeholder="Full Name" />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">DOB</label>
+                                    <input type="date" value={newStudent.dob} onChange={e => setNewStudent({ ...newStudent, dob: e.target.value })} className="w-full text-sm border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-800/20 px-4 py-2" />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Phone Number *</label>
+                                    <input type="text" value={newStudent.phoneNumber} onChange={e => setNewStudent({ ...newStudent, phoneNumber: e.target.value })} className="w-full text-sm border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-800/20 px-4 py-2.5" placeholder="Contact No" />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Parent Phone</label>
+                                    <input type="text" value={newStudent.parentPhoneNumber} onChange={e => setNewStudent({ ...newStudent, parentPhoneNumber: e.target.value })} className="w-full text-sm border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 dark:text-white focus:ring-2 focus:ring-blue-800/20 px-4 py-2.5" placeholder="Guardian No" />
+                                </div>
                             </div>
-                            <div>
-                                <label className="block text-xs text-gray-500 mb-1">DOB</label>
-                                <input type="date" value={newStudent.dob} onChange={e => setNewStudent({ ...newStudent, dob: e.target.value })} className="w-full text-sm border-gray-300 rounded dark:bg-gray-800 dark:text-white" />
-                            </div>
-                            <div>
-                                <label className="block text-xs text-gray-500 mb-1">Phone *</label>
-                                <input type="text" value={newStudent.phoneNumber} onChange={e => setNewStudent({ ...newStudent, phoneNumber: e.target.value })} className="w-full text-sm border-gray-300 rounded dark:bg-gray-800 dark:text-white" placeholder="Phone" />
-                            </div>
-                            <div>
-                                <label className="block text-xs text-gray-500 mb-1">Parent Phone</label>
-                                <input type="text" value={newStudent.parentPhoneNumber} onChange={e => setNewStudent({ ...newStudent, parentPhoneNumber: e.target.value })} className="w-full text-sm border-gray-300 rounded dark:bg-gray-800 dark:text-white" placeholder="Parent (Opt)" />
+                            <div className="mt-6 flex justify-end">
+                                <button onClick={handleManualSubmit} className="flex items-center gap-2 px-8 py-3 bg-gray-900 dark:bg-gray-700 text-white text-sm font-bold rounded-2xl hover:bg-black dark:hover:bg-gray-600 shadow-lg transition-all active:scale-95">
+                                    Confirm Enrollment
+                                </button>
                             </div>
                         </div>
-                        <div className="mt-3 flex justify-end">
-                            <button onClick={handleManualSubmit} className="px-4 py-2 bg-gray-600 text-white text-sm font-medium rounded-md hover:bg-gray-700 shadow-sm">
-                                Add Manually
-                            </button>
-                        </div>
-                    </div>
+                    )}
                 </div>
             )}
 
-            <div className="overflow-x-auto border border-gray-100 dark:border-gray-700 rounded-lg">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead className="bg-gray-50 dark:bg-gray-900">
-                        <tr>
-                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Student ID</th>
-                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">DOB</th>
-                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
-                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Parent Phone</th>
-                            {canEdit && <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>}
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                        {students.map(student => {
-                            const data = getStudentData(student);
-                            return (
-                                <tr key={student._id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                                    {editingId === student._id ? (
-                                        <>
-                                            <td className="px-4 py-2"><input type="text" value={editStudent.studentId} disabled className="w-full text-sm border-gray-300 rounded bg-gray-100 cursor-not-allowed dark:bg-gray-700 dark:text-white" /></td>
-                                            <td className="px-4 py-2"><input type="text" value={editStudent.studentName} onChange={e => setEditStudent({ ...editStudent, studentName: e.target.value })} className="w-full text-sm border-gray-300 rounded dark:bg-gray-800 dark:text-white" /></td>
-                                            <td className="px-4 py-2"><input type="date" value={editStudent.dob ? new Date(editStudent.dob).toISOString().split('T')[0] : ''} onChange={e => setEditStudent({ ...editStudent, dob: e.target.value })} className="w-full text-sm border-gray-300 rounded dark:bg-gray-800 dark:text-white" /></td>
-                                            <td className="px-4 py-2"><input type="text" value={editStudent.phoneNumber} onChange={e => setEditStudent({ ...editStudent, phoneNumber: e.target.value })} className="w-full text-sm border-gray-300 rounded dark:bg-gray-800 dark:text-white" /></td>
-                                            <td className="px-4 py-2"><input type="text" value={editStudent.parentPhoneNumber} onChange={e => setEditStudent({ ...editStudent, parentPhoneNumber: e.target.value })} className="w-full text-sm border-gray-300 rounded dark:bg-gray-800 dark:text-white" /></td>
-                                            <td className="px-4 py-2 text-right">
-                                                <button onClick={handleEditSubmit} className="text-green-600 hover:text-green-800 mr-2"><svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" /></svg></button>
-                                                <button onClick={() => setEditingId(null)} className="text-red-600 hover:text-red-800"><svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
-                                            </td>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">{data.id}</td>
-                                            <td className="px-4 py-2 text-sm text-gray-900 dark:text-white">
-                                                <span
-                                                    className="cursor-pointer hover:text-brand-600 transition-colors font-medium"
-                                                    onClick={() => handleViewStudent(student)}
-                                                >
-                                                    {data.name}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400">{data.dob ? new Date(data.dob).toLocaleDateString() : '-'}</td>
-                                            <td className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400">{data.phone}</td>
-                                            <td className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400">{data.parentPhone || '-'}</td>
-                                            {canEdit && (
-                                                <td className="px-4 py-2 text-right flex items-center justify-end space-x-2">
-                                                    {mergeSource ? (
-                                                        mergeSource._id !== student._id ? (
-                                                            <button
-                                                                onClick={() => handleMergeAttendance(student)}
-                                                                className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-md transition-colors border border-blue-200 bg-blue-50/50"
-                                                                title="Merge Here"
-                                                            >
-                                                                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                                                                </svg>
-                                                            </button>
-                                                        ) : (
-                                                            <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded border border-blue-200">Source</span>
-                                                        )
-                                                    ) : (
-                                                        <button
-                                                            onClick={() => handleMarkForMerge(student)}
-                                                            className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
-                                                            title="Mark for Attendance Merge"
-                                                        >
-                                                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                                                            </svg>
-                                                        </button>
-                                                    )}
-                                                    <button
-                                                        onClick={() => handleGenerateID(student)}
-                                                        disabled={generatingId === student._id}
-                                                        className={`p-1.5 rounded-md transition-colors ${generatingId === student._id ? 'text-gray-300' : 'text-brand-500 hover:bg-brand-50'}`}
-                                                        title="Generate ID Card"
-                                                    >
-                                                        {generatingId === student._id ? (
-                                                            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
-                                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                            </svg>
-                                                        ) : (
-                                                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                                            </svg>
-                                                        )}
-                                                    </button>
-                                                    <button onClick={() => { setEditingId(student._id); setEditStudent(student); }} className="p-1.5 text-gray-400 hover:text-brand-600 hover:bg-gray-100 rounded-md transition-colors"><svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
-                                                    <button onClick={() => handleDelete(student._id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"><svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
-                                                </td>
-                                            )}
-                                        </>
-                                    )}
-                                </tr>
-                            );
-                        })}
-                        {!isAdding && students.length === 0 && (
-                            <tr>
-                                <td colSpan="6" className="px-4 py-10 text-center text-sm text-gray-500">No students enrolled in this batch yet.</td>
+            {/* Students Table */}
+            <div className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-[2rem] overflow-hidden shadow-sm">
+                <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-100 dark:divide-gray-800">
+                        <thead>
+                            <tr className="bg-gray-50/50 dark:bg-gray-900/50">
+                                <th className="px-6 py-4 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Student</th>
+                                <th className="px-6 py-4 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Contact Identity</th>
+                                <th className="px-6 py-4 text-left text-[10px] font-bold text-gray-400 uppercase tracking-widest">Schedule Info</th>
+                                {canEdit && <th className="px-6 py-4 text-right text-[10px] font-bold text-gray-400 uppercase tracking-widest">Actions</th>}
                             </tr>
-                        )}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50 dark:divide-gray-800 transition-all">
+                            {students.map(student => {
+                                const data = getStudentData(student);
+                                const isEditing = editingId === student._id;
+
+                                return (
+                                    <tr key={student._id} className="hover:bg-gray-50/50 dark:hover:bg-gray-750 transition-colors group">
+                                        {isEditing ? (
+                                            <>
+                                                <td className="px-6 py-4 lg:w-1/4">
+                                                    <input type="text" value={editStudent.studentName} onChange={e => setEditStudent({ ...editStudent, studentName: e.target.value })} className="w-full text-sm border-gray-200 rounded-xl dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-800/20 px-3 py-2" />
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="space-y-2">
+                                                        <input type="text" value={editStudent.phoneNumber} onChange={e => setEditStudent({ ...editStudent, phoneNumber: e.target.value })} className="w-full text-xs border-gray-200 rounded-lg dark:bg-gray-700 dark:text-white px-3 py-1.5" placeholder="Phone" />
+                                                        <input type="text" value={editStudent.parentPhoneNumber} onChange={e => setEditStudent({ ...editStudent, parentPhoneNumber: e.target.value })} className="w-full text-xs border-gray-200 rounded-lg dark:bg-gray-700 dark:text-white px-3 py-1.5" placeholder="Parent" />
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <input type="date" value={editStudent.dob ? new Date(editStudent.dob).toISOString().split('T')[0] : ''} onChange={e => setEditStudent({ ...editStudent, dob: e.target.value })} className="w-full text-xs border-gray-200 rounded-lg dark:bg-gray-700 dark:text-white px-3 py-1.5" />
+                                                </td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <div className="flex justify-end gap-2">
+                                                        <button onClick={handleEditSubmit} className="p-2 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-100 transition-colors shadow-sm"><svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" /></svg></button>
+                                                        <button onClick={() => setEditingId(null)} className="p-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors shadow-sm"><svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg></button>
+                                                    </div>
+                                                </td>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 text-blue-950 flex items-center justify-center font-black text-xs border border-blue-100 dark:border-indigo-800">
+                                                            {data.name.charAt(0)}
+                                                        </div>
+                                                        <div>
+                                                            <div 
+                                                                className="text-sm font-bold text-gray-900 dark:text-white cursor-pointer hover:text-blue-950 transition-colors"
+                                                                onClick={() => handleViewStudent(student)}
+                                                            >
+                                                                {data.name}
+                                                            </div>
+                                                            <div className="text-[10px] font-mono font-bold text-gray-400 dark:text-gray-500 tracking-tighter mt-0.5">#{data.id}</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="space-y-1">
+                                                        <div className="flex items-center gap-2 text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                                            <svg className="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                                                            {data.phone}
+                                                        </div>
+                                                        {data.parentPhone && (
+                                                            <div className="flex items-center gap-2 text-[11px] font-medium text-gray-400 dark:text-gray-500">
+                                                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354l1.104 1.104a.5.5 0 010 .708L12 7.27a.5.5 0 01-.708 0L10.188 6.166a.5.5 0 010-.708L11.293 4.354a.5.5 0 01.707 0zM12 19.646L10.896 18.542a.5.5 0 010-.708L12 16.73a.5.5 0 01.708 0l1.104 1.104a.5.5 0 010 .708L12.707 19.646a.5.5 0 01-.707 0zM17.653 12L16.549 10.896a.5.5 0 010-.708L17.653 9.084a.5.5 0 01.708 0l1.104 1.104a.5.5 0 010 .708L18.36 12.707a.5.5 0 01-.707 0zM6.347 12l1.104 1.104a.5.5 0 010 .708L6.347 14.916a.5.5 0 01-.708 0L4.535 13.812a.5.5 0 010-.708l1.105-1.104a.5.5 0 01.707 0zM12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0" /></svg>
+                                                                G: {data.parentPhone}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex flex-col gap-1.5">
+                                                        <span className="text-xs font-bold text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-lg w-fit">
+                                                            DOB: {data.dob ? new Date(data.dob).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}
+                                                        </span>
+                                                        {data.course && (
+                                                            <span className="text-[10px] font-bold text-blue-800 uppercase tracking-wider">{data.course}</span>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                {canEdit && (
+                                                    <td className="px-6 py-4 text-right">
+                                                        <div className="flex justify-end items-center gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                                                            {mergeSource ? (
+                                                                mergeSource._id !== student._id ? (
+                                                                    <button
+                                                                        onClick={() => handleMergeAttendance(student)}
+                                                                        className="p-2 text-blue-950 bg-indigo-50 rounded-xl hover:bg-blue-100 transition-all border border-blue-200 shadow-sm"
+                                                                        title="Merge Attendance Into This Student"
+                                                                    >
+                                                                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                                                                        </svg>
+                                                                    </button>
+                                                                ) : (
+                                                                    <span className="text-[10px] font-black text-blue-950 bg-blue-100 px-3 py-1.5 rounded-xl border border-blue-200">SOURCE</span>
+                                                                )
+                                                            ) : (
+                                                                <button
+                                                                    onClick={() => handleMarkForMerge(student)}
+                                                                    className="p-2 text-gray-400 hover:text-blue-950 hover:bg-indigo-50 rounded-xl transition-all"
+                                                                    title="Transfer Attendance"
+                                                                >
+                                                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                                                                    </svg>
+                                                                </button>
+                                                            )}
+                                                            <button
+                                                                onClick={() => handleGenerateID(student)}
+                                                                disabled={generatingId === student._id}
+                                                                className={`p-2 rounded-xl transition-all ${generatingId === student._id ? 'text-gray-300' : 'text-gray-400 hover:text-blue-950 hover:bg-gray-100'}`}
+                                                                title="Generate Student ID"
+                                                            >
+                                                                {generatingId === student._id ? (
+                                                                    <div className="animate-spin w-4 h-4 border-2 border-blue-800 border-t-transparent rounded-full" />
+                                                                ) : (
+                                                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                                    </svg>
+                                                                )}
+                                                            </button>
+                                                            <button onClick={() => { setEditingId(student._id); setEditStudent(student); }} className="p-2 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"><svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
+                                                            <button onClick={() => handleDelete(student._id)} className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                                                        </div>
+                                                    </td>
+                                                )}
+                                            </>
+                                        )}
+                                    </tr>
+                                );
+                            })}
+                            {!isAdding && students.length === 0 && (
+                                <tr>
+                                    <td colSpan="4" className="px-6 py-20 text-center animate-pulse">
+                                        <div className="flex flex-col items-center gap-3">
+                                            <div className="w-16 h-16 rounded-full bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+                                                <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 4.354l1.104 1.104a.5.5 0 010 .708L12 7.27a.5.5 0 01-.708 0L10.188 6.166a.5.5 0 010-.708L11.293 4.354a.5.5 0 01.707 0z" />
+                                                </svg>
+                                            </div>
+                                            <span className="text-sm font-bold text-gray-400 uppercase tracking-widest">No Active Enrollments</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <StudentProfileModal

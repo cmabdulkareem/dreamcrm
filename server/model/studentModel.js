@@ -59,6 +59,28 @@ const studentSchema = new mongoose.Schema({
     type: [String],
     default: []
   },
+  modules: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Module'
+  }],
+  feeBreakdown: [{
+    courseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Course' },
+    moduleId: { type: mongoose.Schema.Types.ObjectId, ref: 'Module' },
+    name: String, // Course or Module name
+    basePrice: Number,
+    discountPercentage: Number,
+    discountAmount: Number,
+    finalAmount: Number,
+    type: { type: String, enum: ['course', 'module'], default: 'course' }
+  }],
+  complimentaryModules: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Module'
+  }],
+  remarks: {
+    type: String,
+    default: ""
+  },
   totalCourseValue: {
     type: Number,
     default: 0
@@ -100,6 +122,28 @@ const studentSchema = new mongoose.Schema({
     type: String,
     enum: ['singleShot', 'normal'],
     default: 'normal'
+  },
+  currentModule: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Module',
+    default: null
+  },
+  completedModules: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Module'
+  }],
+  history: [{
+    status: { type: String }, // e.g., 'Started', 'Completed', 'Admission Taken'
+    moduleName: { type: String }, // Track which module/batch this entry belongs to
+    metadata: { type: mongoose.Schema.Types.Mixed }, // NEW: Store additional context like batchId, moduleId for linking
+    remark: { type: String },
+    updatedOn: { type: Date, default: Date.now },
+    updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+  }],
+  academicStatus: {
+    type: String,
+    enum: ['Active', 'Inactive'],
+    default: 'Active'
   }
 }, {
   timestamps: true

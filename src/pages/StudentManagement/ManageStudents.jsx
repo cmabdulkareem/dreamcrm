@@ -1,7 +1,6 @@
 import PageBreadcrumb from "../../components/common/PageBreadCrumb.jsx";
 import PageMeta from "../../components/common/PageMeta.jsx";
-import { useState, useEffect, useContext, useRef, useCallback } from "react";
-import ComponentCard from "../../components/common/ComponentCard.jsx";
+import { useState, useEffect, useContext, useCallback } from "react";
 import LoadingSpinner from "../../components/common/LoadingSpinner.jsx";
 import Button from "../../components/ui/button/Button.jsx";
 import { useNavigate } from "react-router-dom";
@@ -11,39 +10,32 @@ import axios from "axios";
 import { AuthContext } from "../../context/AuthContext";
 import { useNotifications } from "../../context/NotificationContext";
 import StudentProfileModal from "../../components/StudentManagement/StudentProfileModal.jsx";
-import { hasRole, isCounsellor } from "../../utils/roleHelpers";
+import { isCounsellor } from "../../utils/roleHelpers";
 
 import API from "../../config/api";
 import { Modal } from "../../components/ui/modal";
-import Label from "../../components/form/Label.jsx";
-import Input from "../../components/form/input/InputField.jsx";
-import PhoneInput from "../../components/form/group-input/PhoneInput.jsx";
-import Select from "../../components/form/Select.jsx";
 import DatePicker from "../../components/form/date-picker.jsx";
-import SearchableCourseSelect from "../../components/form/SearchableCourseSelect.jsx";
-import {
-  countries,
-  enquirerGender,
-  enquirerStatus,
-  enquirerEducation,
-  placeOptions
-} from "../../data/DataSets.jsx";
+import { Table, TableBody, TableCell, TableHeader, TableRow } from "../../components/ui/table";
+import StudentFilters from "../../components/StudentManagement/StudentFilters.jsx";
+import StudentTableRow from "../../components/StudentManagement/StudentTableRow.jsx";
+import StudentMobileCard from "../../components/StudentManagement/StudentMobileCard.jsx";
 
 export default function ManageStudents() {
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
-  const { addNotification, areToastsEnabled } = useNotifications();
+  const { addNotification } = useNotifications();
   const isUserCounsellor = user && isCounsellor(user);
+  
   const [students, setStudents] = useState([]);
+  const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
-  // Modal states
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingStudent, setEditingStudent] = useState(null);
-  const [isViewOnly, setIsViewOnly] = useState(false);
+  // Profile Modal State
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [selectedStudentForProfile, setSelectedStudentForProfile] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
+
+  // Date Modal State
   const [isDateModalOpen, setIsDateModalOpen] = useState(false);
   const [selectedStudentForDate, setSelectedStudentForDate] = useState(null);
   const [newEnrollmentDate, setNewEnrollmentDate] = useState("");
@@ -58,100 +50,36 @@ export default function ManageStudents() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // Controlled form states
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone1, setPhone1] = useState("");
-  const [phone2, setPhone2] = useState("");
-  const [gender, setGender] = useState("");
-  const [dob, setDob] = useState("");
-  const [place, setPlace] = useState("Kasaragod");
-  const [otherPlace, setOtherPlace] = useState("");
-  const [address, setAddress] = useState("");
-  const [aadharCardNumber, setAadharCardNumber] = useState("");
-  const [photo, setPhoto] = useState(null);
-  const [photoPreview, setPhotoPreview] = useState("");
-  const [status, setStatus] = useState("");
-  const [education, setEducation] = useState("");
-  const [coursePreference, setCoursePreference] = useState("");
-  const [additionalCourses, setAdditionalCourses] = useState([]);
-  const [discountPercentage, setDiscountPercentage] = useState("");
-  const [discountAmount, setDiscountAmount] = useState("");
-  const [enrollmentDate, setEnrollmentDate] = useState("");
-  const [studentId, setStudentId] = useState("");
-  const [feeType, setFeeType] = useState("normal"); // 'singleShot' or 'normal'
-  const [selectedBrand, setSelectedBrand] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
+  const [openDropdownId, setOpenDropdownId] = useState(null);
 
-  const [courses, setCourses] = useState([]);
-  const [brands, setBrands] = useState([]);
-  const [validationErrors, setValidationErrors] = useState({});
-  const [emailError, setEmailError] = useState(false);
-
-  const fileInputRef = useRef(null);
+  const toggleDropdown = useCallback((id) => {
+    setOpenDropdownId(prev => (prev === id ? null : id));
+  }, []);
 
   useEffect(() => {
     fetchStudents();
     fetchCourses();
-    fetchBrands();
   }, []);
 
   const fetchCourses = async () => {
     try {
       const response = await axios.get(`${API}/courses/all`, { withCredentials: true });
-      setCourses(response.data.courses);
+      setCourses(response.data.courses || []);
     } catch (error) {
       console.error("Error fetching courses:", error);
-    }
-  };
-
-  const fetchBrands = async () => {
-    try {
-      const response = await axios.get(`${API}/brands`, { withCredentials: true });
-      setBrands(response.data.brands || []);
-    } catch (error) {
-      console.error("Error fetching brands:", error);
     }
   };
 
   const fetchStudents = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(
-        `${API}/students/all`,
-        { withCredentials: true }
-      );
-
-      setStudents(response.data.students);
+      const response = await axios.get(`${API}/students/all`, { withCredentials: true });
+      setStudents(response.data.students || []);
       setLoading(false);
     } catch (error) {
       console.error("Error fetching students:", error);
-      // Use mock data for demonstration if API fails
-      const mockStudents = [
-        {
-          _id: "1",
-          studentId: "STU001",
-          fullName: "John Doe",
-          email: "john@example.com",
-          phone1: "+1 234 567 8900",
-          coursePreference: "Graphic Design",
-          enrollmentDate: "2025-01-15",
-          status: "Active",
-          photo: null
-        },
-        {
-          _id: "2",
-          studentId: "STU002",
-          fullName: "Jane Smith",
-          email: "jane@example.com",
-          phone1: "+1 234 567 8901",
-          coursePreference: "Interior Design",
-          enrollmentDate: "2025-01-20",
-          status: "Active",
-          photo: null
-        }
-      ];
-      setStudents(mockStudents);
-      toast.info("Using demo data for demonstration");
+      toast.error("Failed to fetch students");
       setLoading(false);
     }
   };
@@ -160,89 +88,39 @@ export default function ManageStudents() {
     navigate("/new-student");
   };
 
+  const handleEditClick = (student) => {
+    navigate(`/edit-student/${student._id}`);
+  };
+
+  const handleViewStudent = (student) => {
+    navigate(`/edit-student/${student._id}`);
+  };
+
   const handleViewProfile = (student) => {
     setSelectedStudentForProfile(student);
     setIsProfileModalOpen(true);
   };
 
-  const handleViewStudent = (student) => {
-    // Reuse Edit Logic but in View Mode
-    setEditingStudent(student);
-    setFullName(student.fullName || "");
-    setEmail(student.email || "");
-    setPhone1(student.phone1 || "");
-    setPhone2(student.phone2 || "");
-    setGender(student.gender || "");
-    setDob(student.dob ? new Date(student.dob).toISOString().split('T')[0] : "");
-    const standardPlaces = placeOptions.map(p => p.value);
-    if (student.place && !standardPlaces.includes(student.place) && student.place !== "Other") {
-      setPlace("Other");
-      setOtherPlace(student.place);
-    } else {
-      setPlace(student.place || "Kasaragod");
-      setOtherPlace(student.otherPlace || "");
+  const handleDeleteStudent = async (student) => {
+    if (window.confirm(`Are you sure you want to delete ${student.fullName}? This will also reset the associated lead's status.`)) {
+      try {
+        await axios.delete(`${API}/students/delete/${student._id}`, { withCredentials: true });
+        toast.success("Student deleted successfully");
+        fetchStudents();
+        
+        addNotification({
+          type: 'student_deleted',
+          userName: user?.fullName || 'Someone',
+          avatar: user?.avatar || null,
+          action: 'deleted student',
+          entityName: student.fullName,
+          module: 'Student Management',
+        });
+      } catch (error) {
+        console.error("Error deleting student:", error);
+        toast.error(error.response?.data?.message || "Failed to delete student");
+      }
     }
-    setAddress(student.address || "");
-    setAadharCardNumber(student.aadharCardNumber || "");
-    setPhoto(null);
-    setPhotoPreview(student.photo ? getPhotoUrl(student.photo) : "");
-    setStatus(student.status || "");
-    setEducation(student.education || "");
-    setCoursePreference(student.coursePreference || "");
-    setAdditionalCourses(student.additionalCourses || []);
-    setDiscountPercentage(student.discountPercentage || 0);
-    setDiscountAmount(student.discountAmount || 0);
-    setEnrollmentDate(student.enrollmentDate ? new Date(student.enrollmentDate).toISOString().split('T')[0] : "");
-    setStudentId(student.studentId || "");
-    setFeeType(student.feeType || "normal");
-    setSelectedBrand(student.brand?._id || student.brand || "");
-
-    setIsViewOnly(true);
-    setIsEditModalOpen(true);
-  };
-
-  const handleEditClick = (student) => {
-    setIsViewOnly(false);
-    setEditingStudent(student);
-    setFullName(student.fullName || "");
-    setEmail(student.email || "");
-    setPhone1(student.phone1 || "");
-    setPhone2(student.phone2 || "");
-    setGender(student.gender || "");
-    setDob(student.dob ? new Date(student.dob).toISOString().split('T')[0] : "");
-    // Check if place is in standard options
-    const standardPlaces = placeOptions.map(p => p.value);
-    if (student.place && !standardPlaces.includes(student.place) && student.place !== "Other") {
-      setPlace("Other");
-      setOtherPlace(student.place);
-    } else {
-      setPlace(student.place || "Kasaragod");
-      setOtherPlace(student.otherPlace || "");
-    }
-    setAddress(student.address || "");
-    setAadharCardNumber(student.aadharCardNumber || "");
-    setPhoto(null);
-    setPhotoPreview(student.photo ? getPhotoUrl(student.photo) : "");
-    setStatus(student.status || "");
-    setEducation(student.education || "");
-    setCoursePreference(student.coursePreference || "");
-    setAdditionalCourses(student.additionalCourses || []);
-    setDiscountPercentage(student.discountPercentage || 0);
-    setDiscountAmount(student.discountAmount || 0);
-    setEnrollmentDate(student.enrollmentDate ? new Date(student.enrollmentDate).toISOString().split('T')[0] : "");
-    setStudentId(student.studentId || "");
-    setFeeType(student.feeType || "normal");
-    setSelectedBrand(student.brand?._id || student.brand || "");
-
-    setValidationErrors({});
-    setIsEditModalOpen(true);
-  };
-
-  const handleCancelEdit = () => {
-    setIsEditModalOpen(false);
-    setEditingStudent(null);
-    setIsViewOnly(false);
-    setValidationErrors({});
   };
 
   const handleDateClick = (student) => {
@@ -250,8 +128,6 @@ export default function ManageStudents() {
     setNewEnrollmentDate(student.enrollmentDate ? new Date(student.enrollmentDate).toISOString().split('T')[0] : "");
     setIsDateModalOpen(true);
   };
-
-
 
   const handleSaveDate = async () => {
     if (!newEnrollmentDate) {
@@ -278,195 +154,6 @@ export default function ManageStudents() {
     }
   };
 
-  // Logic from NewStudent.jsx
-  const calculateTotalValue = useCallback(() => {
-    let total = 0;
-    if (coursePreference) {
-      const primaryCourse = courses.find(course => course._id === coursePreference);
-      if (primaryCourse) {
-        total += (feeType === 'singleShot' ? primaryCourse.singleShotFee : primaryCourse.normalFee) || 0;
-      }
-    }
-    additionalCourses.forEach(courseId => {
-      const course = courses.find(course => course._id === courseId);
-      if (course) {
-        total += (feeType === 'singleShot' ? course.singleShotFee : course.normalFee) || 0;
-      }
-    });
-    return total;
-  }, [coursePreference, additionalCourses, courses, feeType]);
-
-  const handleDiscountPercentageChange = useCallback((value) => {
-    setDiscountPercentage(value);
-    const total = calculateTotalValue();
-    if (total > 0 && value !== "") {
-      const amount = (total * parseFloat(value)) / 100;
-      setDiscountAmount(amount.toFixed(2));
-    } else if (value === "") {
-      setDiscountAmount("");
-    }
-  }, [calculateTotalValue]);
-
-  const handleDiscountAmountChange = useCallback((value) => {
-    setDiscountAmount(value);
-    const total = calculateTotalValue();
-    if (total > 0 && value !== "") {
-      const percentage = (parseFloat(value) / total) * 100;
-      setDiscountPercentage(parseFloat(percentage.toFixed(4)).toString());
-    } else if (value === "") {
-      setDiscountPercentage("");
-    }
-  }, [calculateTotalValue]);
-
-  // Sync discounts when total value changes in modal
-  useEffect(() => {
-    if (isEditModalOpen) {
-      const total = calculateTotalValue();
-      if (discountPercentage !== "" && total > 0) {
-        const amount = (total * parseFloat(discountPercentage)) / 100;
-        setDiscountAmount(amount.toFixed(2));
-      }
-    }
-  }, [coursePreference, additionalCourses, courses, isEditModalOpen, feeType]);
-
-  const calculateFinalAmount = useCallback(() => {
-    const total = calculateTotalValue();
-    const discount = parseFloat(discountAmount) || 0;
-    return total - discount;
-  }, [calculateTotalValue, discountAmount]);
-
-  const handlePhotoChange = useCallback((e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    if (!file.type.startsWith('image/')) {
-      toast.error("Please select an image file");
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("File size exceeds 5MB limit");
-      return;
-    }
-    setPhoto(file);
-    const reader = new FileReader();
-    reader.onloadend = () => setPhotoPreview(reader.result);
-    reader.readAsDataURL(file);
-  }, []);
-
-  const validateForm = useCallback(() => {
-    const errors = {};
-    if (!fullName.trim()) errors.fullName = "Full Name is required";
-    if (!email.trim()) {
-      errors.email = "Email is required";
-    } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
-      errors.email = "Please enter a valid email address";
-    }
-    if (!phone1.trim()) errors.phone1 = "Phone is required";
-    if (!place) {
-      errors.place = "Place is required";
-    } else if (place === "Other" && !otherPlace.trim()) {
-      errors.otherPlace = "Please specify the place";
-    }
-    if (!address.trim()) errors.address = "Address is required";
-    if (!aadharCardNumber.trim()) {
-      errors.aadharCardNumber = "Aadhar Card Number is required";
-    } else if (!/^\d{12}$/.test(aadharCardNumber)) {
-      errors.aadharCardNumber = "Aadhar Card Number must be 12 digits";
-    }
-    if (!coursePreference) errors.coursePreference = "Primary course is required";
-    if (!enrollmentDate) errors.enrollmentDate = "Enrollment date is required";
-
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  }, [fullName, email, phone1, place, otherPlace, address, aadharCardNumber, coursePreference, enrollmentDate]);
-
-  const handleSaveEdit = async () => {
-    if (!validateForm()) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-
-    try {
-      setSubmitting(true);
-      const formData = new FormData();
-      formData.append("fullName", fullName);
-      formData.append("email", email);
-      formData.append("phone1", phone1);
-      formData.append("phone2", phone2);
-      formData.append("gender", gender);
-      formData.append("dob", dob);
-      formData.append("place", place);
-      formData.append("otherPlace", otherPlace);
-      formData.append("address", address);
-      formData.append("aadharCardNumber", aadharCardNumber);
-      formData.append("status", status);
-      formData.append("education", education);
-      formData.append("coursePreference", coursePreference);
-      formData.append("additionalCourses", JSON.stringify(additionalCourses.filter(c => c)));
-      formData.append("totalCourseValue", calculateTotalValue());
-      formData.append("feeType", feeType);
-      formData.append("discountPercentage", discountPercentage || 0);
-      formData.append("discountAmount", discountAmount || 0);
-      formData.append("finalAmount", calculateFinalAmount());
-      formData.append("enrollmentDate", enrollmentDate);
-      formData.append("brandId", selectedBrand);
-      if (photo) formData.append("photo", photo);
-
-      const response = await axios.put(
-        `${API}/students/update/${editingStudent._id}`,
-        formData,
-        {
-          withCredentials: true,
-          headers: { "Content-Type": "multipart/form-data" }
-        }
-      );
-
-      // Re-fetch students to get updated data with populated fields
-      fetchStudents();
-
-      setIsEditModalOpen(false);
-      setEditingStudent(null);
-
-      if (areToastsEnabled()) {
-        toast.success("Student updated successfully!");
-      }
-
-      addNotification({
-        type: 'student_updated',
-        userName: user?.fullName || 'Someone',
-        avatar: user?.avatar || null,
-        action: 'updated student',
-        entityName: response.data.student.fullName,
-        module: 'Student Management',
-      });
-    } catch (error) {
-      console.error("Error updating student:", error);
-      toast.error(error.response?.data?.message || "Failed to update student");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  // Additional course helpers
-  const handleAddAdditionalCourse = () => {
-    setAdditionalCourses([...additionalCourses, ""]);
-  };
-
-  const handleRemoveAdditionalCourse = (index) => {
-    const newCourses = [...additionalCourses];
-    newCourses.splice(index, 1);
-    setAdditionalCourses(newCourses);
-  };
-
-  const handleAdditionalCourseChange = (index, courseId) => {
-    const newCourses = [...additionalCourses];
-    newCourses[index] = courseId;
-    setAdditionalCourses(newCourses);
-  };
-
-  const triggerFileSelect = () => {
-    fileInputRef.current?.click();
-  };
-
   const getPhotoUrl = (photoPath) => {
     if (!photoPath) return "/images/user/user-01.jpg";
     if (photoPath.startsWith('http') || photoPath.startsWith('data:')) return photoPath;
@@ -476,11 +163,16 @@ export default function ManageStudents() {
 
   // Filter students
   const filteredStudents = students.filter(student => {
+    const name = student.fullName || "";
+    const sid = student.studentId || "";
+    const email = student.email || "";
+    const phone = student.phone1 || "";
+    
     const matchesSearch =
-      student.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.studentId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.phone1?.toLowerCase().includes(searchTerm.toLowerCase());
+      name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      sid.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      phone.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesCourse = filterCourse === "" || student.coursePreference === filterCourse;
     const matchesStatus = filterStatus === "" || student.status === filterStatus;
@@ -513,563 +205,166 @@ export default function ManageStudents() {
         title="Manage Students | CDC International"
         description="Manage your students here"
       />
-      <PageBreadcrumb pageTitle="Manage Students" />
+      <PageBreadcrumb items={[
+        { name: "Home", path: "/" },
+        { name: "Student Management", path: "/manage-students" },
+        { name: "Manage Students" }
+      ]} />
 
       <div className="space-y-6">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 w-full md:w-auto flex-grow max-w-5xl">
-            <Input
-              type="text"
-              placeholder="Search by name, ID, email..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full"
-            />
-            <Select
-              options={[{ label: "All Courses", value: "" }, ...courses.map(c => ({ label: c.courseName, value: c._id }))]}
-              value={filterCourse}
-              onChange={(value) => setFilterCourse(value)}
-              className="w-full"
-            />
-            <Select
-              options={[
-                { label: "All Status", value: "" },
-                ...enquirerStatus.map(s => ({ label: s.label, value: s.value }))
-              ]}
-              value={filterStatus}
-              onChange={(value) => setFilterStatus(value)}
-              className="w-full"
-            />
-            <Select
-              options={[
-                { label: "All Batch Status", value: "" },
-                { label: "Assigned", value: "assigned" },
-                { label: "Unassigned", value: "unassigned" }
-              ]}
-              value={filterBatchStatus}
-              onChange={(value) => setFilterBatchStatus(value)}
-              className="w-full"
-            />
-          </div>
-          {!isUserCounsellor && (
-            <Button variant="primary" onClick={handleAddStudent} className="whitespace-nowrap">
-              Add New Student
-            </Button>
-          )}
-        </div>
+        <div className="rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6">
+          <StudentFilters
+            filteredCount={filteredStudents.length}
+            showFilters={showFilters}
+            onToggleFilters={() => setShowFilters(!showFilters)}
+            search={searchTerm}
+            filterCourse={filterCourse}
+            filterStatus={filterStatus}
+            filterBatchStatus={filterBatchStatus}
+            onSearchChange={setSearchTerm}
+            onFilterCourseChange={setFilterCourse}
+            onFilterStatusChange={setFilterStatus}
+            onFilterBatchStatusChange={setFilterBatchStatus}
+            courseOptions={courses.map(c => ({ label: c.courseName, value: c._id }))}
+            onAddStudent={handleAddStudent}
+            isUserCounsellor={isUserCounsellor}
+          />
 
-        <ComponentCard title="Student List">
           {loading ? (
-            <LoadingSpinner />
+            <LoadingSpinner className="py-20" />
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-800">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Photo
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Student
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Contact
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Course
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Amount
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Enrollment Date
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-900 dark:divide-gray-700">
-                  {currentItems.length > 0 ? (
-                    currentItems.map((student) => (
-                      <tr key={student._id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex-shrink-0 h-10 w-10">
-                            <img
-                              className="h-10 w-10 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700"
-                              src={getPhotoUrl(student.photo)}
-                              alt={student.fullName}
-                              onError={(e) => {
-                                e.target.src = "/images/user/user-01.jpg";
-                              }}
-                            />
+            <>
+              {/* Desktop Table */}
+              <div className="hidden md:block overflow-auto max-h-[calc(100vh-250px)] rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm custom-scrollbar">
+                <Table className="min-w-full border-collapse">
+                  <TableHeader className="sticky top-0 z-20 bg-gray-50 dark:bg-gray-900 shadow-[0_1px_0_0_rgba(0,0,0,0.05)] dark:shadow-[0_1px_0_0_rgba(255,255,255,0.05)] border-b border-gray-100 dark:border-gray-800">
+                    <TableRow>
+                      <TableCell isHeader className="py-4 px-3 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit">#</TableCell>
+                      <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit border-l border-gray-100 dark:border-gray-800/50">Photo</TableCell>
+                      <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit border-l border-gray-100 dark:border-gray-800/50">Student</TableCell>
+                      <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit border-l border-gray-100 dark:border-gray-800/50">Contact</TableCell>
+                      <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit border-l border-gray-100 dark:border-gray-800/50">Course</TableCell>
+                      <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-center text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit border-l border-gray-100 dark:border-gray-800/50">Amount</TableCell>
+                      <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-start text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit border-l border-gray-100 dark:border-gray-800/50">Enrollment Date</TableCell>
+                      <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-center text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit border-l border-gray-100 dark:border-gray-800/50">Status</TableCell>
+                      <TableCell isHeader className="py-4 px-4 font-bold text-gray-700 text-center text-[10.5px] dark:text-gray-400 uppercase tracking-widest bg-inherit border-l border-gray-100 dark:border-gray-800/50">Actions</TableCell>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
+                    {currentItems.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={9} className="py-20 text-center text-gray-500 bg-white dark:bg-transparent">
+                          <div className="flex flex-col items-center justify-center gap-2">
+                            <p className="text-sm font-medium">No students found.</p>
+                            <p className="text-xs text-gray-400">Try adjusting your search or filters.</p>
                           </div>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                          <div className="flex flex-col">
-                            <span
-                              className="font-semibold text-gray-800 text-theme-sm dark:text-white/90 cursor-pointer hover:text-brand-500 transition-colors"
-                              onClick={() => handleViewProfile(student)}
-                            >
-                              {student.fullName}
-                            </span>
-                            <span className="text-gray-400 text-xs">{student.studentId}</span>
-                            <div className="mt-1">
-                              {student.batchScheduled ? (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-success-50 text-success-600 dark:bg-success-900/20 dark:text-success-400 whitespace-nowrap inline-block">
-                                  Batch Assigned
-                                </span>
-                              ) : (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-error-50 text-error-600 dark:bg-error-900/20 dark:text-error-400 whitespace-nowrap inline-block">
-                                  Unassigned
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                          <div className="flex flex-col">
-                            <span className="text-gray-400 text-xs truncate max-w-[160px]">{student.email}</span>
-                            <a href={`tel:${student.phone1}`} className="text-brand-500 hover:underline text-[12px] font-medium mt-0.5">{student.phone1}</a>
-                          </div>
-                        </td>
-                        <td className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
-                          <div className="max-w-[200px]">
-                            <p className="font-medium text-gray-700 dark:text-gray-300 truncate">
-                              {student.courseDetails ?
-                                `${student.courseDetails.courseCode} - ${student.courseDetails.courseName}` :
-                                student.coursePreference}
-                            </p>
-                            {student.additionalCourseDetails && student.additionalCourseDetails.length > 0 && (
-                              <p className="text-xs text-gray-400 mt-0.5">
-                                +{student.additionalCourseDetails.length} additional course(s)
-                              </p>
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
-                          <div className="flex flex-col gap-0.5">
-                            <span className="font-semibold text-gray-800 dark:text-white/90 text-theme-sm">₹{student.finalAmount || 0}</span>
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full w-fit ${student.feeType === 'singleShot' ? 'bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400' : 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'}`}>
-                              {student.feeType === 'singleShot' ? 'Single Shot' : 'Normal Fee'}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="py-3 text-gray-500 text-theme-sm dark:text-gray-400">
-                          {new Date(student.enrollmentDate).toLocaleDateString()}
-                        </td>
-                        <td className="py-3 text-center">
-                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">
-                            Active
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex space-x-2">
-                            {!isUserCounsellor && (
-                              <button
-                                onClick={() => handleEditClick(student)}
-                                className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
-                              >
-                                Edit
-                              </button>
-                            )}
-                            <button
-                              onClick={() => handleViewStudent(student)}
-                              className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
-                            >
-                              View
-                            </button>
-                            {!isUserCounsellor && (
-                              <button
-                                onClick={() => handleDateClick(student)}
-                                className="text-amber-600 hover:text-amber-900 dark:text-amber-400 dark:hover:text-amber-300"
-                              >
-                                Date
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan="5" className="px-6 py-10 text-center text-gray-500">
-                        {searchTerm || filterCourse || filterStatus || filterBatchStatus
-                          ? "No students match your search/filters"
-                          : "No students registered yet"}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* Pagination */}
-          {!loading && filteredStudents.length > itemsPerPage && (
-            <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-100 dark:border-gray-800 pt-6">
-              <p className="text-sm text-gray-500">
-                Showing <span className="font-medium text-gray-900 dark:text-gray-200">{indexOfFirstItem + 1}</span> to{" "}
-                <span className="font-medium text-gray-900 dark:text-gray-200">
-                  {Math.min(indexOfLastItem, filteredStudents.length)}
-                </span>{" "}
-                of <span className="font-medium text-gray-900 dark:text-gray-200">{filteredStudents.length}</span> students
-              </p>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={currentPage === 1}
-                  onClick={() => handlePageChange(currentPage - 1)}
-                >
-                  Previous
-                </Button>
-                <div className="flex items-center gap-1">
-                  {[...Array(totalPages)].map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => handlePageChange(i + 1)}
-                      className={`min-w-[32px] h-8 rounded-lg text-sm font-medium transition-colors ${currentPage === i + 1
-                        ? "bg-brand-500 text-white"
-                        : "text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
-                        }`}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={currentPage === totalPages}
-                  onClick={() => handlePageChange(currentPage + 1)}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
-        </ComponentCard>
-      </div>
-
-      {/* Edit Student Modal */}
-      <Modal
-        isOpen={isEditModalOpen}
-        onClose={handleCancelEdit}
-        className="max-w-[1400px] p-6 lg:p-10"
-      >
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="mb-2 font-semibold text-gray-800 dark:text-white/90 modal-title text-theme-xl lg:text-2xl">
-            {isViewOnly ? "View Student" : "Edit Student"}: <span className="text-gray-500">{studentId}</span>
-          </h2>
-          <button
-            onClick={handleCancelEdit}
-            className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-          >
-            ✕
-          </button>
-        </div>
-
-        <div className="overflow-y-auto max-h-[80vh] p-2">
-          <div className="grid grid-cols-1 gap-6">
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                  <Label>Full Name *</Label>
-                  <Input
-                    type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value.toUpperCase())}
-                    error={!!validationErrors.fullName}
-                    hint={validationErrors.fullName}
-                    className="uppercase"
-                  />
-                </div>
-                <div>
-                  <Label>Brand *</Label>
-                  <Select
-                    options={brands.map(b => ({ value: b._id, label: `${b.name} (${b.code})` }))}
-                    value={selectedBrand}
-                    onChange={setSelectedBrand}
-                  />
-                </div>
-                <div>
-                  <Label>Full Name *</Label>
-                  <Input
-                    type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value.toUpperCase())}
-                    error={!!validationErrors.fullName}
-                    hint={validationErrors.fullName}
-                    className="uppercase"
-                    disabled={isViewOnly}
-                  />
-                </div>
-                <div>
-                  <Label>Brand *</Label>
-                  <Select
-                    options={brands.map(b => ({ value: b._id, label: `${b.name} (${b.code})` }))}
-                    value={selectedBrand}
-                    onChange={setSelectedBrand}
-                    disabled={isViewOnly}
-                  />
-                </div>
-                <div>
-                  <Label>Email *</Label>
-                  <Input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    error={!!validationErrors.email}
-                    hint={validationErrors.email}
-                    disabled={isViewOnly}
-                  />
-                </div>
-                <div>
-                  <Label>Student Photo</Label>
-                  <div className="flex items-center gap-4">
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handlePhotoChange}
-                      accept="image/*"
-                      className="hidden"
-                    />
-                    <button
-                      type="button"
-                      onClick={triggerFileSelect}
-                      className={`w-16 h-16 overflow-hidden border-2 border-dashed border-gray-300 rounded-full cursor-pointer hover:border-brand-500 transition-colors flex items-center justify-center ${isViewOnly ? 'pointer-events-none opacity-60' : ''}`}
-                    >
-                      {photoPreview ? (
-                        <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="text-xs text-gray-400 text-center">No Photo</div>
-                      )}
-                    </button>
-                    {photoPreview && !isViewOnly && (
-                      <button
-                        type="button"
-                        onClick={() => { setPhoto(null); setPhotoPreview(""); }}
-                        className="text-xs text-red-500 hover:text-red-700"
-                      >
-                        Remove
-                      </button>
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      currentItems.map((student, index) => (
+                        <StudentTableRow
+                          key={student._id}
+                          student={student}
+                          index={indexOfFirstItem + index + 1}
+                          onEdit={handleEditClick}
+                          onView={handleViewStudent}
+                          onDate={handleDateClick}
+                          onDelete={handleDeleteStudent}
+                          onViewProfile={handleViewProfile}
+                          openDropdownId={openDropdownId}
+                          onToggleDropdown={toggleDropdown}
+                          onDropdownClose={() => setOpenDropdownId(null)}
+                          isUserCounsellor={isUserCounsellor}
+                          getPhotoUrl={getPhotoUrl}
+                        />
+                      ))
                     )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile View */}
+              <div className="grid grid-cols-1 gap-4 md:hidden">
+                {currentItems.length === 0 ? (
+                  <div className="py-12 text-center text-gray-500 bg-white dark:bg-white/[0.03] rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm">
+                    No students found.
+                  </div>
+                ) : (
+                  currentItems.map((student) => (
+                    <StudentMobileCard
+                      key={student._id}
+                      student={student}
+                      onEdit={handleEditClick}
+                      onView={handleViewStudent}
+                      onDate={handleDateClick}
+                      onDelete={handleDeleteStudent}
+                      onViewProfile={handleViewProfile}
+                      openDropdownId={openDropdownId}
+                      onToggleDropdown={toggleDropdown}
+                      onDropdownClose={() => setOpenDropdownId(null)}
+                      isUserCounsellor={isUserCounsellor}
+                      getPhotoUrl={getPhotoUrl}
+                    />
+                  ))
+                )}
+              </div>
+
+              {/* Pagination */}
+              {filteredStudents.length > itemsPerPage && (
+                <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-gray-100 dark:border-gray-800 pt-6">
+                  <p className="text-sm text-gray-500">
+                    Showing <span className="font-medium text-gray-900 dark:text-gray-200">{indexOfFirstItem + 1}</span> to{" "}
+                    <span className="font-medium text-gray-900 dark:text-gray-200">
+                      {Math.min(indexOfLastItem, filteredStudents.length)}
+                    </span>{" "}
+                    of <span className="font-medium text-gray-900 dark:text-gray-200">{filteredStudents.length}</span> students
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={currentPage === 1}
+                      onClick={() => handlePageChange(currentPage - 1)}
+                    >
+                      Previous
+                    </Button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNum;
+                        if (totalPages <= 5) pageNum = i + 1;
+                        else if (currentPage <= 3) pageNum = i + 1;
+                        else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i;
+                        else pageNum = currentPage - 2 + i;
+
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => handlePageChange(pageNum)}
+                            className={`min-w-[32px] h-8 rounded-lg text-sm font-medium transition-colors ${currentPage === pageNum
+                              ? "bg-brand-500 text-white"
+                              : "text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800"
+                              }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={currentPage === totalPages}
+                      onClick={() => handlePageChange(currentPage + 1)}
+                    >
+                      Next
+                    </Button>
                   </div>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                  <Label>Phone 1 *</Label>
-                  <PhoneInput
-                    countries={countries}
-                    value={phone1}
-                    onChange={setPhone1}
-                    error={!!validationErrors.phone1}
-                    disabled={isViewOnly}
-                  />
-                </div>
-                <div>
-                  <Label>Phone 2</Label>
-                  <PhoneInput
-                    countries={countries}
-                    value={phone2}
-                    onChange={setPhone2}
-                    disabled={isViewOnly}
-                  />
-                </div>
-                <div>
-                  <Label>Gender</Label>
-                  <Select
-                    options={enquirerGender}
-                    value={gender}
-                    onChange={setGender}
-                    disabled={isViewOnly}
-                  />
-                </div>
-                <div>
-                  <DatePicker
-                    id="edit-student-dob"
-                    label="Date of Birth"
-                    value={dob}
-                    onChange={(date, str) => setDob(str)}
-                    disabled={isViewOnly}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                  <Label>Place *</Label>
-                  <Select
-                    options={placeOptions}
-                    value={place}
-                    onChange={setPlace}
-                    error={!!validationErrors.place}
-                    disabled={isViewOnly}
-                  />
-                </div>
-                <div>
-                  <Label>Specify Other Place *</Label>
-                  <Input
-                    type="text"
-                    value={otherPlace}
-                    onChange={(e) => setOtherPlace(e.target.value.toUpperCase())}
-                    error={!!validationErrors.otherPlace}
-                    placeholder="Enter village/city name"
-                    className="uppercase"
-                    disabled={isViewOnly}
-                  />
-                </div>
-                <div>
-                  <Label>Address *</Label>
-                  <Input
-                    type="text"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value.toUpperCase())}
-                    error={!!validationErrors.address}
-                    className="uppercase"
-                    disabled={isViewOnly}
-                  />
-                </div>
-                <div>
-                  <Label>Aadhar Number *</Label>
-                  <Input
-                    type="text"
-                    value={aadharCardNumber}
-                    onChange={(e) => setAadharCardNumber(e.target.value.replace(/\D/g, ''))}
-                    maxLength="12"
-                    error={!!validationErrors.aadharCardNumber}
-                    disabled={isViewOnly}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                  <Label>Current Status</Label>
-                  <Select
-                    options={enquirerStatus}
-                    value={status}
-                    onChange={setStatus}
-                    disabled={isViewOnly}
-                  />
-                </div>
-                <div>
-                  <Label>Education</Label>
-                  <Select
-                    options={enquirerEducation}
-                    value={education}
-                    onChange={setEducation}
-                    disabled={isViewOnly}
-                  />
-                </div>
-                <div>
-                  <Label>Primary Course *</Label>
-                  <SearchableCourseSelect
-                    value={coursePreference}
-                    onChange={setCoursePreference}
-                    error={!!validationErrors.coursePreference}
-                    disabled={isViewOnly}
-                  />
-                </div>
-                <div>
-                  <Label>Fee Type *</Label>
-                  <Select
-                    options={[
-                      { value: 'normal', label: 'Normal Fee' },
-                      { value: 'singleShot', label: 'Single Shot' }
-                    ]}
-                    value={feeType}
-                    onChange={setFeeType}
-                    disabled={isViewOnly}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-800 p-2 rounded">
-                  <Label className="!mb-0">Additional Courses</Label>
-                  {!isViewOnly && (
-                    <Button type="button" variant="outline" size="sm" onClick={handleAddAdditionalCourse}>
-                      Add Course
-                    </Button>
-                  )}
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {additionalCourses.map((courseId, index) => (
-                    <div key={index} className="flex gap-2 items-end">
-                      <div className="flex-grow">
-                        <SearchableCourseSelect
-                          value={courseId}
-                          onChange={(val) => handleAdditionalCourseChange(index, val)}
-                          disabled={isViewOnly}
-                        />
-                      </div>
-                      {!isViewOnly && (
-                        <Button type="button" variant="outline" size="sm" onClick={() => handleRemoveAdditionalCourse(index)}>
-                          Remove
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-                <div>
-                  <Label>Total Value (₹)</Label>
-                  <Input type="text" value={calculateTotalValue()} readOnly className="bg-white dark:bg-gray-900" />
-                </div>
-                <div>
-                  <Label>Discount (%)</Label>
-                  <Input type="number" value={discountPercentage} onChange={(e) => handleDiscountPercentageChange(e.target.value)} step="any" placeholder="0.00" disabled={isViewOnly} />
-                </div>
-                <div>
-                  <Label>Discount (₹)</Label>
-                  <Input type="number" value={discountAmount} onChange={(e) => handleDiscountAmountChange(e.target.value)} step="any" disabled={isViewOnly} />
-                </div>
-                <div>
-                  <Label>Final Amount (₹)</Label>
-                  <Input type="text" value={calculateFinalAmount().toFixed(2)} readOnly className="bg-white dark:bg-gray-900 font-bold text-brand-600" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <DatePicker
-                    id="edit-student-enrollment-date"
-                    label="Enrollment Date *"
-                    value={enrollmentDate}
-                    onChange={(date, str) => setEnrollmentDate(str)}
-                    error={!!validationErrors.enrollmentDate}
-                    disabled={isViewOnly}
-                  />
-                </div>
-                <div>
-                  <Label>Student ID (Locked)</Label>
-                  <Input type="text" value={studentId} readOnly className="bg-gray-100 dark:bg-gray-700 font-mono" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-gray-100 dark:border-gray-800">
-          <Button variant="outline" onClick={handleCancelEdit} disabled={submitting}>
-            {isViewOnly ? "Close" : "Cancel"}
-          </Button>
-          {!isViewOnly && (
-            <Button variant="primary" onClick={handleSaveEdit} disabled={submitting}>
-              {submitting ? "Saving..." : "Save Changes"}
-            </Button>
+              )}
+            </>
           )}
         </div>
-      </Modal>
+      </div>
 
       <StudentProfileModal
         isOpen={isProfileModalOpen}

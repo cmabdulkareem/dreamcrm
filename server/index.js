@@ -15,8 +15,6 @@ import './config/db.js'
 import eventModel from './model/eventModel.js'
 import jobModel from './model/jobModel.js'
 import Batch from './model/batchModel.js'
-import BatchStudent from './model/batchStudentModel.js'
-import Attendance from './model/attendanceModel.js'
 import Holiday from './model/holidayModel.js'
 import { generateSEOHtml } from './utils/seoHelper.js'
 import routes from './routes/userRoutes.js'
@@ -49,6 +47,7 @@ import labRoutes from "./routes/labRoutes.js";
 import promotionalRoutes from "./routes/promotionalRoutes.js";
 import hrRoutes from "./routes/hrRoutes.js";
 import marketingTaskRoutes from './routes/marketingTaskRoutes.js';
+import moduleRoutes from './routes/moduleRoutes.js';
 
 import { getBaseUploadDir } from './utils/uploadHelper.js';
 
@@ -114,6 +113,7 @@ app.use('/api/compute-lab', labRoutes)
 app.use('/api/promotional', promotionalRoutes)
 app.use('/api/hr', hrRoutes)
 app.use('/api/marketing/tasks', marketingTaskRoutes)
+app.use('/api/modules', moduleRoutes)
 
 // ================= SPA & SSR FALLBACK =================
 
@@ -179,19 +179,15 @@ app.use(async (req, res, next) => {
       const shareToken = attendanceMatch[1];
       const batch = await Batch.findOne({ shareToken });
       if (batch) {
-        const students = await BatchStudent.find({ batchId: batch._id }).sort({ studentName: 1 });
+        const students = batch.students || [];
         const now = new Date();
         const m = now.getMonth();
         const y = now.getFullYear();
         const startDate = new Date(y, m, 1);
-        startDate.setHours(0, 0, 0, 0);
         const endDate = new Date(y, m + 1, 0);
-        endDate.setHours(23, 59, 59, 999);
         
-        const [attendance, holidays] = await Promise.all([
-          Attendance.find({ batchId: batch._id, date: { $gte: startDate, $lte: endDate } }).sort({ date: 1 }),
-          Holiday.find({ brand: batch.brand, date: { $gte: startDate, $lte: endDate } }).sort({ date: 1 })
-        ]);
+        const attendance = (batch.attendance || []).filter(a => a.date >= startDate && a.date <= endDate);
+        const holidays = await Holiday.find({ brand: batch.brand, date: { $gte: startDate, $lte: endDate } }).sort({ date: 1 });
 
         const data = {
           batch: { batchName: batch.batchName, subject: batch.subject, instructorName: batch.instructorName },

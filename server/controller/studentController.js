@@ -12,6 +12,8 @@ import { v4 as uuidv4 } from "uuid";
 import { getUploadDir, getUploadUrl } from "../utils/uploadHelper.js";
 import { emitNotification } from '../realtime/socket.js';
 import { logActivity } from "../utils/activityLogger.js";
+import fs from "fs";
+import { generateInvoiceInternal } from "../helpers/invoiceHelper.js";
 
 /**
  * Look up an embedded course sub-document by its _id across all Brand documents.
@@ -77,7 +79,11 @@ export const createStudent = async (req, res) => {
       enrollmentDate,
       feeType,
       leadId,
-      brandId
+      brandId,
+      modules,
+      feeBreakdown,
+      complimentaryModules,
+      remarks
     } = req.body;
 
     // Validation (Removed leadId from mandatory fields)
@@ -157,10 +163,53 @@ export const createStudent = async (req, res) => {
       feeType: feeType || 'normal',
       leadId: (leadId && leadId !== "no_lead") ? leadId : null,
       createdBy: req.user.fullName || req.user.email,
-      brand: brandId
+      brand: brandId,
+      modules: modules ? (typeof modules === 'string' ? JSON.parse(modules) : modules) : [],
+      complimentaryModules: complimentaryModules ? (typeof complimentaryModules === 'string' ? JSON.parse(complimentaryModules) : complimentaryModules) : [],
+      remarks: remarks || "",
+      history: [{
+        status: 'Admission Taken',
+        moduleName: 'Admission',
+        metadata: { type: 'admission' },
+        remark: 'Student created and admitted.',
+        updatedBy: req.user.id,
+        updatedOn: new Date()
+      }],
+      feeBreakdown: feeBreakdown ? (typeof feeBreakdown === 'string' ? JSON.parse(feeBreakdown) : feeBreakdown) : []
     });
 
     await newStudent.save();
+
+    // Auto-generate invoice
+    try {
+      const invoiceItems = newStudent.feeBreakdown.map(item => ({
+        description: item.name || (item.type === 'course' ? 'Course Fee' : 'Module Fee'),
+        quantity: 1,
+        rate: item.basePrice || 0,
+        amount: item.finalAmount || 0
+      }));
+
+      const invoiceData = {
+        customer: newStudent._id,
+        customerModel: 'Student',
+        invoiceDate: new Date(),
+        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        items: invoiceItems,
+        subTotal: newStudent.totalCourseValue,
+        tax: 0,
+        discount: newStudent.discountAmount,
+        totalAmount: newStudent.finalAmount,
+        status: 'Draft',
+        brand: brandId,
+        createdBy: req.user.id
+      };
+
+      await generateInvoiceInternal(invoiceData);
+    } catch (invoiceError) {
+      console.error("Error auto-generating invoice:", invoiceError);
+      // We don't want to fail student creation if invoice generation fails, 
+      // but we should probably log it or notify.
+    }
 
     // Mark lead as admission taken and add conversion remark (Only if leadId provided)
     if (leadId && leadId !== "no_lead") {
@@ -206,6 +255,8 @@ export const createStudent = async (req, res) => {
       description: `Created student: ${newStudent.fullName}`,
       brandId: newStudent.brand
     });
+
+    await newStudent.populate('history.updatedBy', 'fullName email');
 
     return res.status(201).json({
       message: "Student created successfully.",
@@ -269,8 +320,16 @@ export const getAllStudents = async (req, res) => {
         { studentId: searchRegex }
       ];
     }
+    
+    // Filter by current module if provided
+    if (req.query.currentModule) {
+      query.currentModule = req.query.currentModule;
+    }
 
-    const students = await studentModel.find(query).sort({ createdAt: -1 }).populate('leadId', 'fullName email');
+    const students = await studentModel.find(query)
+      .sort({ createdAt: -1 })
+      .populate('leadId', 'fullName email')
+      .populate('history.updatedBy', 'fullName email');
     // Populate course details for each student
     const studentsWithCourseDetails = await Promise.all(students.map(async (student) => {
       const studentObj = student.toObject();
@@ -323,52 +382,48 @@ export const getStudentById = async (req, res) => {
       studentObj.additionalCourseDetails = studentObj.additionalCourseDetails.filter(c => c !== null);
     }
 
-    // Fetch Batch History and Attendance
-    const BatchStudent = (await import('../model/batchStudentModel.js')).default;
-    const Attendance = (await import('../model/attendanceModel.js')).default;
+    // Fetch Batch History and Attendance from all Batches
+    const Batch = (await import('../model/batchModel.js')).default;
 
-    const batchEnrollments = await BatchStudent.find({ studentId: id }).populate('batchId');
+    // Find all batches where this student is enrolled
+    const allBatches = await Batch.find({ 'students.studentId': id });
 
     let totalAggregatedWorkingDays = 0;
     let totalAggregatedAbsents = 0;
 
-    const batchHistory = await Promise.all(batchEnrollments.map(async (enrollment) => {
-      const batch = enrollment.batchId;
-      if (!batch) return null;
+    const batchHistory = await Promise.all(allBatches.map(async (batch) => {
+      // Find the specific enrollment record for this student in the batch
+      const enrollment = batch.students.find(s => s.studentId && s.studentId.toString() === id);
+      if (!enrollment) return null;
 
-      // Fetch all attendance dates for this batch to identify unmarked days vs days student joined late
-      const allBatchAttendance = await Attendance.find({ batchId: batch._id }).select("date records.studentId");
-      const batchAttendanceMap = {};
-      allBatchAttendance.forEach(doc => {
-        const dStr = new Date(doc.date).toDateString();
-        batchAttendanceMap[dStr] = {
-          wasBatchAttended: true,
-          studentsInRecord: new Set(doc.records.map(r => r.studentId?.toString()))
-        };
-      });
+      const enrollmentInternalId = enrollment._id.toString();
+
+      // Attendance records for this student in this batch
+      const studentAttendanceDocs = (batch.attendance || []).filter(att => 
+        att.records.some(rec => rec.studentId && rec.studentId.toString() === enrollmentInternalId)
+      );
 
       const today = new Date();
       const todayNormalized = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       const batchStart = new Date(batch.startDate);
       const batchStartNormalized = new Date(batchStart.getFullYear(), batchStart.getMonth(), batchStart.getDate());
 
-      const attendanceRecords = await Attendance.find({
-        batchId: batch._id,
-        "records.studentId": enrollment._id,
-      }).select("date records.$");
-
-      // Find earliest mark date
-      let earliestMarkDate = null;
+      // Create a status map for quick lookup
       const studentStatusMap = {};
-      attendanceRecords.forEach((r) => {
-        const d = new Date(r.date);
-        studentStatusMap[d.toDateString()] = r.records[0]?.status;
-        if (!earliestMarkDate || d < earliestMarkDate) {
-          earliestMarkDate = d;
+      let earliestMarkDate = null;
+      
+      studentAttendanceDocs.forEach(att => {
+        const d = new Date(att.date);
+        const record = att.records.find(rec => rec.studentId && rec.studentId.toString() === enrollmentInternalId);
+        if (record) {
+          studentStatusMap[d.toDateString()] = record.status;
+          if (!earliestMarkDate || d < earliestMarkDate) {
+            earliestMarkDate = d;
+          }
         }
       });
 
-      const studentJoinedDate = new Date(enrollment.createdAt);
+      const studentJoinedDate = new Date(enrollment.joinedAt || student.enrollmentDate);
       studentJoinedDate.setHours(0, 0, 0, 0);
 
       // Effective Start is earliest of Join Date or First Mark, but at least Batch Start
@@ -380,7 +435,6 @@ export const getStudentById = async (req, res) => {
       let totalWorkingDays = 0;
       const oneDay = 24 * 60 * 60 * 1000;
 
-      // Loop from the START OF THE BATCH
       const totalDays = Math.max(0, Math.floor((todayNormalized - batchStartNormalized) / oneDay) + 1);
 
       for (let i = 0; i < totalDays; i++) {
@@ -433,11 +487,14 @@ export const getStudentById = async (req, res) => {
         startDate: batch.startDate,
         expectedEndDate: batch.expectedEndDate,
         attendancePercentage,
-        attendanceDetails: attendanceRecords.map(r => ({
-          date: r.date,
-          status: r.records[0]?.status,
-          remarks: r.records[0]?.remarks
-        })).sort((a, b) => new Date(b.date) - new Date(a.date)),
+        attendanceDetails: studentAttendanceDocs.map(att => {
+          const record = att.records.find(rec => rec.studentId && rec.studentId.toString() === enrollmentInternalId);
+          return {
+            date: att.date,
+            status: record?.status,
+            remarks: record?.remarks
+          };
+        }).sort((a, b) => new Date(b.date) - new Date(a.date)),
       };
     }));
 
@@ -490,17 +547,17 @@ export const updateStudent = async (req, res) => {
       updateData.photo = getUploadUrl('student_photos', req.file.filename);
     }
 
-    // Parse additional courses if provided as JSON string
-    if (updateData.additionalCourses) {
-      try {
-        updateData.additionalCourses = typeof updateData.additionalCourses === 'string'
-          ? JSON.parse(updateData.additionalCourses)
-          : updateData.additionalCourses;
-      } catch (e) {
-        // If parsing fails, use as-is or keep existing
-        console.warn("Failed to parse additionalCourses in update:", e);
+    // Parse additional courses, modules, and feeBreakdown if provided as JSON string
+    const jsonFields = ['additionalCourses', 'modules', 'feeBreakdown', 'complimentaryModules'];
+    jsonFields.forEach(field => {
+      if (updateData[field] && typeof updateData[field] === 'string') {
+        try {
+          updateData[field] = JSON.parse(updateData[field]);
+        } catch (e) {
+          console.warn(`Failed to parse ${field} in update:`, e);
+        }
       }
-    }
+    });
 
     // Convert dates and numeric fields
     if (updateData.dob) updateData.dob = new Date(updateData.dob);
@@ -550,6 +607,7 @@ export const updateStudent = async (req, res) => {
       brandId: student.brand
     });
 
+    await student.populate('history.updatedBy', 'fullName email');
     return res.status(200).json({
       message: "Student updated successfully.",
       student
@@ -578,6 +636,7 @@ export const updateEnrollmentDate = async (req, res) => {
     student.enrollmentDate = new Date(enrollmentDate);
     await student.save();
 
+    await student.populate('history.updatedBy', 'fullName email');
     return res.status(200).json({
       message: "Enrollment date updated successfully",
       student
@@ -616,6 +675,8 @@ export const deleteStudent = async (req, res) => {
       return res.status(404).json({ message: "Student not found." });
     }
 
+    const leadId = student.leadId;
+
     // Delete photo from disk if it exists
     if (student.photo) {
       const fileName = student.photo.split('/').pop();
@@ -630,6 +691,27 @@ export const deleteStudent = async (req, res) => {
     }
 
     await studentModel.findByIdAndDelete(id);
+
+    // Reset lead isAdmissionTaken flag if leadId exists
+    if (leadId) {
+      try {
+        await customerModel.findByIdAndUpdate(leadId, {
+          isAdmissionTaken: false,
+          $push: {
+            remarks: {
+              updatedOn: new Date(),
+              handledBy: req.user.fullName || "System",
+              remark: `Student record (${student.studentId}) deleted. Lead reset to unconverted status.`,
+              leadStatus: 'converted', // Keep status for consistent logs but flag is now false
+              isUnread: false
+            }
+          }
+        });
+      } catch (leadUpdateError) {
+        console.error('Error updating lead status during student deletion:', leadUpdateError);
+        // We don't fail the whole request if the lead update fails, but we log it
+      }
+    }
 
     // Notification Logic
     try {
@@ -653,9 +735,184 @@ export const deleteStudent = async (req, res) => {
       console.error('Error sending student delete notification:', notifError);
     }
 
+    // Log activity
+    await logActivity(req.user.id, 'DELETE', 'Students', {
+      entityId: id,
+      description: `Deleted student: ${student.fullName}`,
+      brandId: student.brand
+    });
+
     return res.status(200).json({ message: "Student deleted successfully." });
   } catch (error) {
     console.error("Delete student error:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Update student current module (Kanban stage)
+export const updateStudentModule = async (req, res) => {
+  try {
+    const { id } = req.params;
+    let { moduleId, previousModuleStatus, remark: userRemark } = req.body;
+
+    const student = await studentModel.findById(id);
+    if (!student) {
+      return res.status(404).json({ message: "Student not found." });
+    }
+
+    let resolvedModule = null;
+
+    // Handle placeholder stages from Kanban (e.g. "stage_project_stage")
+    if (moduleId && typeof moduleId === 'string' && moduleId.startsWith('stage_')) {
+      const stageIdToName = {
+        'stage_project_stage': "Project Stage",
+        'stage_project_review': "Project Review",
+        'stage_certificate_process': "Certificate Process",
+        'stage_graduation': "Graduation"
+      };
+      
+      const stageName = stageIdToName[moduleId];
+      if (stageName) {
+        const brandId = student.brand;
+        const brand = await Brand.findById(brandId);
+        
+        if (brand) {
+          let module = brand.modules.find(m => m.name.toLowerCase() === stageName.toLowerCase());
+          if (!module) {
+            brand.modules.push({
+              name: stageName,
+              duration: "0",
+              mode: "offline",
+              syllabus: "",
+              isActive: true,
+              order: (brand.modules.length > 0 ? Math.max(...brand.modules.map(m => m.order || 0)) + 1 : 0)
+            });
+            await brand.save();
+            module = brand.modules[brand.modules.length - 1];
+          }
+          moduleId = module._id;
+          resolvedModule = module;
+        } else {
+          console.error(`Brand not found for student ${id}: ${brandId}`);
+        }
+      } else {
+        console.error(`Unknown stage placeholder in mapping: ${moduleId}`);
+      }
+    }
+
+    // FINAL GUARD: Ensure moduleId is a valid ObjectId string (24 hex chars) or null
+    if (moduleId && (typeof moduleId === 'string' && !/^[0-9a-fA-F]{24}$/.test(moduleId))) {
+        moduleId = null; // Revert to pending if we can't resolve the stage
+    }
+
+    // Track module completion history and detailed timeline
+    if (student.currentModule?.toString() !== moduleId?.toString()) {
+        const prevModuleId = student.currentModule;
+        
+        // Fetch brand to resolve module names for history logs
+        const brandDoc = await Brand.findById(student.brand);
+        let prevModuleName = 'Pending/No Module';
+        let newModuleName = 'Pending/No Module';
+        
+        if (brandDoc && brandDoc.modules) {
+            if (prevModuleId) {
+                const pMod = brandDoc.modules.find(m => m._id.toString() === prevModuleId.toString());
+                if (pMod) prevModuleName = pMod.name;
+            }
+            if (moduleId) {
+                const nMod = brandDoc.modules.find(m => m._id.toString() === moduleId.toString());
+                if (nMod) newModuleName = nMod.name;
+            }
+        }
+
+        if (!student.completedModules) {
+            student.completedModules = [];
+        }
+        if (!student.history) {
+            student.history = [];
+        }
+
+        if (prevModuleId) {
+            const isActuallyCompleted = previousModuleStatus === 'Completed';
+            
+            if (isActuallyCompleted) {
+                if (!student.completedModules.some(id => id.toString() === prevModuleId.toString())) {
+                    student.completedModules.push(prevModuleId);
+                }
+            }
+
+            // Use user-provided remark or fallback
+            // Determine the final status for the history stack
+            let finalStatus = 'Started';
+            if (isActuallyCompleted) {
+                finalStatus = 'Completed';
+            } else if (previousModuleStatus === 'Partially Completed') {
+                finalStatus = 'Partially Completed';
+            } else if (previousModuleStatus === 'Pending') {
+                finalStatus = 'Pending';
+            }
+
+            const finalRemark = userRemark || `${prevModuleName} marked as ${finalStatus.toLowerCase()}`;
+
+            student.history.push({
+                status: finalStatus,
+                moduleName: prevModuleName,
+                metadata: { moduleId: prevModuleId },
+                remark: finalRemark,
+                updatedBy: req.user.id,
+                updatedOn: new Date()
+            });
+        }
+
+        if (moduleId) {
+            // RESCHEDULING LOGIC: If moving back to a completed module, remove it from completed list
+            const completedIndex = student.completedModules.findIndex(id => id.toString() === moduleId.toString());
+            if (completedIndex > -1) {
+                student.completedModules.splice(completedIndex, 1);
+                
+                // Log the rescheduling event explicitly
+                student.history.push({
+                    status: 'Rescheduled',
+                    moduleName: newModuleName,
+                    metadata: { moduleId: moduleId },
+                    remark: userRemark || `${newModuleName} rescheduled`,
+                    updatedBy: req.user.id,
+                    updatedOn: new Date()
+                });
+            } else {
+                // Standard start log if not already completed
+                student.history.push({
+                    status: 'Started',
+                    moduleName: newModuleName,
+                    metadata: { moduleId: moduleId },
+                    remark: `${newModuleName} started`,
+                    updatedBy: req.user.id,
+                    updatedOn: new Date()
+                });
+            }
+        }
+    }
+
+    student.currentModule = moduleId || null;
+    await student.save();
+
+    // Log activity
+    await logActivity(req.user.id, 'UPDATE', 'Students', {
+      entityId: student._id,
+      description: `Moved student ${student.fullName} to module stage: ${moduleId || 'Pending'}`,
+      brandId: student.brand
+    });
+
+    // Populate history before returning
+    await student.populate('history.updatedBy', 'fullName email');
+
+    return res.status(200).json({
+      message: "Student progress updated successfully.",
+      student,
+      newModule: resolvedModule
+    });
+  } catch (error) {
+    console.error("Update student module error:", error);
     return res.status(500).json({ message: "Server error" });
   }
 };

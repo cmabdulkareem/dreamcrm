@@ -1,69 +1,17 @@
 import Invoice from '../model/invoiceModel.js';
-import Customer from '../model/customerModel.js';
 import Student from '../model/studentModel.js';
 import Brand from '../model/brandModel.js';
+import Customer from '../model/customerModel.js';
+import { generateInvoiceInternal } from '../helpers/invoiceHelper.js';
 
 export const createInvoice = async (req, res) => {
     try {
-        const {
-            customer,
-            customerModel, // Now accepting the model type
-            invoiceDate,
-            dueDate,
-            items,
-            subTotal,
-            tax,
-            discount,
-            totalAmount,
-            status,
-            notes,
-            terms,
-            brand
-        } = req.body;
-
-        // Auto-generate invoice number (BrandCode-YEAR-SEQUENCE)
-        const brandObj = await Brand.findById(brand);
-        if (!brandObj) {
-            return res.status(404).json({ message: 'Brand not found' });
-        }
-
-        const brandCode = brandObj.code || 'INV';
-        const currentYear = new Date().getFullYear();
-
-        // Find latest invoice for this brand and year to increment sequence
-        const latestInvoice = await Invoice.findOne({
-            brand,
-            invoiceNumber: new RegExp(`^${brandCode}-${currentYear}-`)
-        }).sort({ createdAt: -1 });
-
-        let sequence = 1;
-        if (latestInvoice) {
-            const parts = latestInvoice.invoiceNumber.split('-');
-            const lastSeq = parseInt(parts[parts.length - 1]);
-            sequence = lastSeq + 1;
-        }
-
-        const invoiceNumber = `${brandCode}-${currentYear}-${sequence.toString().padStart(4, '0')}`;
-
-        const newInvoice = new Invoice({
-            invoiceNumber,
-            customer,
-            customerModel: customerModel || 'Customer',
-            invoiceDate,
-            dueDate,
-            items,
-            subTotal,
-            tax,
-            discount,
-            totalAmount,
-            status,
-            notes,
-            terms,
-            brand,
+        const invoiceData = {
+            ...req.body,
             createdBy: req.user.id
-        });
+        };
 
-        await newInvoice.save();
+        const newInvoice = await generateInvoiceInternal(invoiceData);
         res.status(201).json(newInvoice);
     } catch (error) {
         console.error('Error creating invoice:', error);

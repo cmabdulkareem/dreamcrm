@@ -3,8 +3,17 @@ import mongoose from 'mongoose';
 const batchSchema = new mongoose.Schema({
     batchName: {
         type: String,
-        required: true,
+        required: false, // Optional for placeholders
         trim: true
+    },
+    slot: {
+        type: Number,
+        required: true,
+        default: 0
+    },
+    isSlot: {
+        type: Boolean,
+        default: false
     },
     instructorName: {
         type: String,
@@ -18,30 +27,36 @@ const batchSchema = new mongoose.Schema({
     },
     mode: {
         type: String,
-        enum: ['online', 'offline'],
-        required: true
+        enum: ['online', 'offline', 'hybrid'],
+        required: false,
+        default: 'online'
     },
     subject: {
         type: String,
-        required: true,
+        required: false,
         trim: true
+    },
+    moduleId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Module',
+        required: false
     },
     startDate: {
         type: Date,
-        required: true
+        required: false
     },
     expectedEndDate: {
         type: Date,
-        required: true
+        required: false
     },
     batchTime: {
         from: {
             type: String,
-            required: true
+            required: false
         },
         to: {
             type: String,
-            required: true
+            required: false
         }
     },
     brand: {
@@ -57,7 +72,64 @@ const batchSchema = new mongoose.Schema({
     shareToken: {
         type: String,
         unique: true
-    }
+    },
+    students: [{
+        studentId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Student',
+            required: false // Can be null for legacy/manual entries
+        },
+        studentName: {
+            type: String,
+            required: true
+        },
+        dob: {
+            type: Date
+        },
+        phoneNumber: {
+            type: String
+        },
+        parentPhoneNumber: {
+            type: String
+        },
+        status: {
+            type: String,
+            enum: ['Active', 'Dropped', 'Completed'],
+            default: 'Active'
+        },
+        joinedAt: {
+            type: Date,
+            default: Date.now
+        }
+    }],
+    attendance: [{
+        date: {
+            type: Date,
+            required: true
+        },
+        markedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            required: true
+        },
+        records: [{
+            studentId: {
+                type: mongoose.Schema.Types.ObjectId,
+                required: true // This should match the _id of the object in the students array
+            },
+            studentName: {
+                type: String
+            },
+            status: {
+                type: String,
+                enum: ['Present', 'Absent', 'Late', 'Excused', 'Holiday', 'Week Off'],
+                required: true
+            },
+            remarks: {
+                type: String
+            }
+        }]
+    }]
 }, {
     timestamps: true
 });

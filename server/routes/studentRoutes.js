@@ -7,7 +7,8 @@ import {
   updateStudent,
   deleteStudent,
   getNextStudentId,
-  updateEnrollmentDate
+  updateEnrollmentDate,
+  updateStudentModule
 } from '../controller/studentController.js';
 import verifyToken from "../middleware/verifyToken.js";
 import { applyBrandFilter } from "../middleware/brandMiddleware.js";
@@ -25,6 +26,7 @@ router.get('/get-next-id', verifyToken, getNextStudentId);
 router.get('/:id', verifyToken, getStudentById);
 router.put('/update/:id', verifyToken, uploadStudentPhoto, updateStudent);
 router.patch('/update-enrollment-date/:id', verifyToken, updateEnrollmentDate);
+router.post('/:id/update-module', verifyToken, updateStudentModule);
 router.delete('/delete/:id', verifyToken, deleteStudent);
 
 export default router;

@@ -2,9 +2,7 @@ import express from "express";
 import { studentSignup } from "../controller/userController.js";
 import verifyToken from "../middleware/verifyToken.js";
 import Student from "../model/studentModel.js";
-import BatchStudent from "../model/batchStudentModel.js";
 import Batch from "../model/batchModel.js";
-import Attendance from "../model/attendanceModel.js";
 import Holiday from "../model/holidayModel.js";
 
 const router = express.Router();
@@ -31,9 +29,8 @@ router.get("/dashboard", verifyToken, async (req, res) => {
             return res.status(404).json({ message: "Student record not linked." });
         }
 
-        // 2. Find Batches
-        const batchRelations = await BatchStudent.find({ studentId: student._id }).populate('batchId');
-        const batches = batchRelations.map(br => br.batchId).filter(b => b); // filter nulls
+        // 2. Find Batches where student is enrolled
+        const batches = await Batch.find({ "students.studentId": student._id });
 
         // 3. Get Recent Attendance (Last 7 days relevant to active batch)
         const today = new Date();
@@ -61,18 +58,20 @@ router.get("/attendance/:batchId", verifyToken, async (req, res) => {
         const student = await Student.findOne({ email: new RegExp(`^${email}$`, 'i') });
         if (!student) return res.status(404).json({ message: "Student not found" });
 
-        // Verify student is in batch
-        const inBatch = await BatchStudent.findOne({ batchId, studentId: student._id });
-        if (!inBatch) return res.status(403).json({ message: "You are not in this batch." });
+        // Verify student is in batch and get the batch document
+        const batch = await Batch.findOne({ 
+            _id: batchId, 
+            "students.studentId": student._id 
+        });
+        
+        if (!batch) return res.status(403).json({ message: "You are not in this batch." });
 
-        const batch = await Batch.findById(batchId);
+        const studentEnrollment = batch.students.find(s => s.studentId && s.studentId.toString() === student._id.toString());
+        const enrollmentInternalId = studentEnrollment._id.toString();
 
-        // Fetch Attendance Records
-        const attendanceRecords = await Attendance.find({ batchId });
-
-        // Process student's attendance
-        const myAttendance = attendanceRecords.map(record => {
-            const myRecord = record.records.find(r => r.studentId.toString() === student._id.toString());
+        // 2. Fetch Attendance Records from the batch array
+        const myAttendance = (batch.attendance || []).map(record => {
+            const myRecord = record.records.find(r => r.studentId.toString() === enrollmentInternalId);
             return {
                 date: record.date,
                 status: myRecord ? myRecord.status : null,

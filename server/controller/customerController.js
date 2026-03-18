@@ -1,5 +1,6 @@
 import ActivityLog from "../model/activityLogModel.js";
 import customerModel from "../model/customerModel.js";
+import studentModel from "../model/studentModel.js";
 import userModel from "../model/userModel.js";
 import mongoose from "mongoose";
 import { isAdmin, isManager, isCounsellor } from "../utils/roleHelpers.js";
@@ -339,7 +340,9 @@ export const getConvertedCustomers = async (req, res) => {
     let query = { ...req.brandFilter, leadStatus: 'converted' };
 
     if (includeStudents !== 'true') {
-      query.isAdmissionTaken = { $ne: true };
+      const students = await studentModel.find({ ...req.brandFilter }).select('leadId');
+      const admittedLeadIds = students.map(s => s.leadId?.toString()).filter(id => id);
+      query._id = { $nin: admittedLeadIds };
     }
 
     const hasCounsellorAccess = isCounsellor(req.user, brandId);

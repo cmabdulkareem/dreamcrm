@@ -25,11 +25,20 @@ const campaignSchema = new mongoose.Schema({
 const courseSchema = new mongoose.Schema({
   courseCode: { type: String, required: true, trim: true },
   courseName: { type: String, required: true, trim: true },
-  modules: { type: String, trim: true },
+  modules: [{ type: mongoose.Schema.Types.ObjectId, ref: "Module" }],
   duration: { type: Number, required: true, min: 1 },
-  mode: { type: String, enum: ["online", "offline"], default: "online" },
+  mode: { type: String, enum: ["online", "offline", "hybrid"], default: "online" },
   singleShotFee: { type: Number, required: true, min: 0 },
   normalFee: { type: Number, required: true, min: 0 },
+  isActive: { type: Boolean, default: true }
+}, { timestamps: true });
+
+const moduleSchema = new mongoose.Schema({
+  name: { type: String, required: true, trim: true },
+  duration: { type: String, trim: true },
+  mode: { type: String, enum: ["online", "offline", "hybrid"], default: "offline" },
+  syllabus: { type: String, trim: true },
+  order: { type: Number, default: 0 },
   isActive: { type: Boolean, default: true }
 }, { timestamps: true });
 
@@ -45,6 +54,7 @@ const brandSchema = new mongoose.Schema({
   isActive: { type: Boolean, default: true },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   courses: [courseSchema],
+  modules: [moduleSchema],
   campaigns: [campaignSchema],
   contactPoints: [contactPointSchema],
   courseCategories: [courseCategorySchema]

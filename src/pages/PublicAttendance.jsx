@@ -72,13 +72,32 @@ export default function PublicAttendance() {
         const batchStart = batch?.startDate ? new Date(batch.startDate) : new Date(0);
         const batchStartNormalized = new Date(batchStart.getFullYear(), batchStart.getMonth(), batchStart.getDate());
 
+        const earliestMarkMap = {};
+
+        // Merge historical students (those in attendance records but not in the current batch list)
+        const activeIds = new Set(students.map(s => s._id));
+        const historicalMap = new Map();
+
+        attendance.forEach(record => {
+            record.records.forEach(studentRec => {
+                if (!activeIds.has(studentRec.studentId)) {
+                    historicalMap.set(studentRec.studentId, {
+                        _id: studentRec.studentId,
+                        studentName: studentRec.studentName,
+                        createdAt: record.date, // Fallback
+                        isHistorical: true
+                    });
+                }
+            });
+        });
+
+        const allStudents = [...students, ...Array.from(historicalMap.values())];
+
         // Initialize maps
-        students.forEach(s => {
+        allStudents.forEach(s => {
             studentMap[s._id] = {};
             statsMap[s._id] = { present: 0, absent: 0, late: 0, excused: 0, holiday: 0, weekOff: 0, totalSessions: 0 };
         });
-
-        const earliestMarkMap = {};
 
         // 1. Map existing attendance data
         attendance.forEach(record => {
@@ -129,8 +148,11 @@ export default function PublicAttendance() {
                 dailyStats[day] = { present: 0, absent: 0, late: 0, excused: 0, holiday: 0, weekOff: 0 };
             }
 
-            students.forEach(student => {
-                const studentJoinDate = new Date(student.createdAt);
+            allStudents.forEach(student => {
+                const studentJoinDate = new Date(student.createdAt || batchStartNormalized);
+                if (isNaN(studentJoinDate.getTime())) {
+                    studentJoinDate.setTime(batchStartNormalized.getTime());
+                }
                 studentJoinDate.setHours(0, 0, 0, 0);
 
                 let studentEffectiveStart = studentJoinDate;
@@ -196,10 +218,10 @@ export default function PublicAttendance() {
             });
         }
 
-        return { studentMap, statsMap, monthlySummary, dailyStats };
+        return { studentMap, statsMap, monthlySummary, dailyStats, allStudents };
     };
 
-    const { studentMap, statsMap, monthlySummary, dailyStats } = processAttendance();
+    const { studentMap, statsMap, monthlySummary, dailyStats, allStudents } = processAttendance();
 
     const renderStatusCell = (status) => {
         if (!status) return <span className="text-gray-200 text-[10px]">-</span>;
@@ -319,13 +341,16 @@ export default function PublicAttendance() {
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-100">
-                                {data.students.map((student, idx) => {
+                                {allStudents.map((student, idx) => {
                                     const stats = statsMap[student._id] || { present: 0, totalSessions: 0 };
                                     const percentage = stats.totalSessions > 0 ? Math.round((stats.present / stats.totalSessions) * 100) : 0;
                                     return (
                                         <tr key={student._id} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50/30"}>
-                                            <td className="px-4 py-3 whitespace-nowrap text-sm font-bold text-gray-900 sticky left-0 z-10 bg-inherit border-r">
-                                                {student.studentName}
+                                            <td className="px-4 py-3 whitespace-nowrap text-sm font-bold text-gray-900 sticky left-0 z-10 bg-inherit border-r flex items-center justify-between">
+                                                <span>{student.studentName}</span>
+                                                {student.isHistorical && (
+                                                    <span className="ml-2 text-[8px] px-1 py-0.5 bg-red-50 text-red-600 border border-red-100 font-black uppercase tracking-tighter">Rem.</span>
+                                                )}
                                             </td>
                                             {daysArray.map(day => {
                                                 const dateObj = new Date(selectedYear, selectedMonth - 1, day);

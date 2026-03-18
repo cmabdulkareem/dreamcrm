@@ -165,10 +165,17 @@ export const getUsersForDropdown = async (req, res) => {
     // Only include active users in assignment dropdowns
     query.accountStatus = 'Active';
 
-    // Filter by roles if provided
-    if (roles) {
+    // Filter by roles and/or brandId if provided
+    if (brandId && roles) {
       const roleArray = roles.split(',').map(r => r.trim());
-      // Query nested roles within brands array
+      query.brands = {
+        $elemMatch: {
+          brand: new mongoose.Types.ObjectId(brandId),
+          roles: { $in: roleArray }
+        }
+      };
+    } else if (roles) {
+      const roleArray = roles.split(',').map(r => r.trim());
       query["brands.roles"] = { $in: roleArray };
     }
 

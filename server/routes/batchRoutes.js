@@ -11,7 +11,9 @@ import {
     markAttendance,
     getAttendance,
     getPublicBatchAttendance,
-    mergeStudentAttendance
+    mergeStudentAttendance,
+    getNextBatchId,
+    mergeLegacyBatches
 } from '../controller/batchController.js';
 import verifyToken from '../middleware/verifyToken.js';
 import { applyBrandFilter } from '../middleware/brandMiddleware.js';
@@ -27,7 +29,9 @@ router.use(applyBrandFilter);
 
 // Batch operations
 router.get('/', getAllBatches);
+router.get('/next-id', getNextBatchId);
 router.post('/', createBatch);
+router.post('/merge-legacy', mergeLegacyBatches);
 router.put('/:id', updateBatch);
 router.delete('/:id', deleteBatch);
 

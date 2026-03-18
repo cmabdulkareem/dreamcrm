@@ -55,6 +55,29 @@ const StudentProfileModal = ({ isOpen, onClose, student }) => {
         }
     };
 
+    const handleReactivate = async () => {
+        try {
+            const idToUpdate = (detailedStudent && detailedStudent._id) || (student.studentId && typeof student.studentId === 'object' && student.studentId._id) || student._id;
+
+            const response = await axios.put(`${API}/students/${idToUpdate}`, {
+                academicStatus: 'Active',
+                historyAction: {
+                    status: 'Active',
+                    remark: 'Manually reactivated from Student Profile Viewer.',
+                }
+            }, { withCredentials: true });
+
+            if (response.data.success) {
+                // Update local state
+                setDetailedStudent(prev => ({ ...prev, academicStatus: 'Active' }));
+                alert("Student reactivated successfully!");
+            }
+        } catch (error) {
+            console.error("Failed to reactivate student:", error);
+            alert("Error reactivating student.");
+        }
+    };
+
     if (!student) return null;
 
     // Use detailed data if available, otherwise fall back to prop data
@@ -96,7 +119,7 @@ const StudentProfileModal = ({ isOpen, onClose, student }) => {
             doingNothing: 'N/A'
         };
         return (
-            <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${colors[status] || colors.doingNothing}`}>
+            <span className={`px-2.5 py-0.5 text-xs font-medium ${colors[status] || colors.doingNothing}`}>
                 {labels[status] || status || 'N/A'}
             </span>
         );
@@ -119,7 +142,7 @@ const StudentProfileModal = ({ isOpen, onClose, student }) => {
                 <div className="flex items-center gap-3">
                     <button
                         onClick={handlePrint}
-                        className="flex items-center gap-2 px-4 py-1.5 bg-brand-500 hover:bg-brand-600 text-white rounded-lg text-xs font-bold transition-colors shadow-sm"
+                        className="flex items-center gap-2 px-4 py-1.5 bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold transition-colors shadow-sm"
                     >
                         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
@@ -136,7 +159,7 @@ const StudentProfileModal = ({ isOpen, onClose, student }) => {
 
             {/* Main scrollable container */}
             <div className="max-h-[85vh] overflow-y-auto custom-scrollbar bg-gray-100/50 dark:bg-gray-900/50 p-4 sm:p-8" id="report-print-area">
-                <div className="w-full max-w-[210mm] mx-auto bg-white dark:bg-gray-900 shadow-xl border border-gray-200 dark:border-gray-800 rounded-sm overflow-hidden flex flex-col">
+                <div className="w-full max-w-[210mm] mx-auto bg-white dark:bg-gray-900 shadow-xl border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col">
 
                     {/* Official Letterhead Header */}
                     <div className="p-6 sm:p-8 border-b-4 border-brand-500 relative overflow-hidden">
@@ -150,7 +173,7 @@ const StudentProfileModal = ({ isOpen, onClose, student }) => {
                                         className="h-20 w-auto object-contain"
                                     />
                                 ) : (
-                                    <div className="h-20 w-20 bg-brand-500 rounded-2xl flex items-center justify-center text-white text-4xl font-black shadow-lg shadow-brand-200">
+                                    <div className="h-20 w-20 bg-brand-500 flex items-center justify-center text-white text-4xl font-black shadow-lg shadow-brand-200">
                                         {displayStudent.brand?.name?.charAt(0) || 'D'}
                                     </div>
                                 )}
@@ -166,7 +189,7 @@ const StudentProfileModal = ({ isOpen, onClose, student }) => {
                             </div>
                             <div className="text-right">
                                 <h2 className="text-3xl font-light text-gray-300 dark:text-gray-700 uppercase tracking-[0.2em] mb-1">REPORT</h2>
-                                <div className="inline-block px-3 py-1 bg-gray-900 text-white dark:bg-white dark:text-gray-900 text-[10px] font-black uppercase tracking-[0.3em] rounded-sm">
+                                <div className="inline-block px-3 py-1 bg-gray-900 text-white dark:bg-white dark:text-gray-900 text-[10px] font-black uppercase tracking-[0.3em]">
                                     Official Document
                                 </div>
                             </div>
@@ -178,7 +201,7 @@ const StudentProfileModal = ({ isOpen, onClose, student }) => {
                         {/* Title & Student Core Info */}
                         <div className="text-center">
                             <h3 className="text-xl font-bold text-gray-900 dark:text-white uppercase tracking-[0.5em] mb-8 border-b border-gray-100 dark:border-gray-800 pb-4">
-                                Student Progress Report
+                                Student Pipeline Report
                             </h3>
 
                             <div className="grid grid-cols-1 md:grid-cols-4 print:grid-cols-4 gap-8 items-center text-left">
@@ -186,7 +209,7 @@ const StudentProfileModal = ({ isOpen, onClose, student }) => {
                                     <img
                                         src={getPhotoUrl(displayStudent.photo)}
                                         alt={displayStudent.fullName}
-                                        className="h-32 w-32 rounded-sm object-cover border-4 border-gray-50 dark:border-gray-800 shadow-md gray-scale"
+                                        className="h-32 w-32 object-cover border-4 border-gray-50 dark:border-gray-800 shadow-md gray-scale"
                                         onError={(e) => { e.target.src = "/images/user/user-01.jpg"; }}
                                     />
                                 </div>
@@ -204,8 +227,20 @@ const StudentProfileModal = ({ isOpen, onClose, student }) => {
                                         <p className="text-sm font-bold text-gray-700 dark:text-gray-300">{formatDate(displayStudent.enrollmentDate)}</p>
                                     </div>
                                     <div className="space-y-0.5 border-b border-gray-50 dark:border-gray-800 pb-2">
-                                        <span className="text-[10px] font-bold text-gray-400 uppercase">Current Status</span>
-                                        <p className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase">{displayStudent.status || 'Active'}</p>
+                                        <span className="text-[10px] font-bold text-gray-400 uppercase">Academic Status</span>
+                                        <div className="flex items-center gap-2">
+                                            <p className={`text-sm font-bold uppercase ${displayStudent.academicStatus === 'Inactive' ? 'text-red-600' : 'text-green-600'}`}>
+                                                {displayStudent.academicStatus || 'Active'}
+                                            </p>
+                                            {displayStudent.academicStatus === 'Inactive' && (
+                                                <button
+                                                    onClick={handleReactivate}
+                                                    className="px-2 py-0.5 bg-brand-500 hover:bg-brand-600 text-white text-[9px] font-black uppercase transition-colors"
+                                                >
+                                                    Reactivate
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                     <div className="space-y-0.5 border-b border-gray-50 dark:border-gray-800 pb-2 text-right">
                                         <div className="flex flex-col items-end">
@@ -213,7 +248,7 @@ const StudentProfileModal = ({ isOpen, onClose, student }) => {
                                             <span className={`text-md font-black ${parseFloat(displayStudent.averageAttendance) >= 75 ? 'text-green-600' : 'text-red-600'}`}>
                                                 {displayStudent.averageAttendance || '0.00'}%
                                             </span>
-                                            <div className="w-24 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full mt-1 overflow-hidden">
+                                            <div className="w-24 h-1.5 bg-gray-100 dark:bg-gray-800 mt-1 overflow-hidden">
                                                 <div
                                                     className={`h-full ${parseFloat(displayStudent.averageAttendance) >= 75 ? 'bg-green-500' : 'bg-red-500'}`}
                                                     style={{ width: `${displayStudent.averageAttendance || 0}%` }}
@@ -270,7 +305,7 @@ const StudentProfileModal = ({ isOpen, onClose, student }) => {
                                 Academic Curriculum
                             </h4>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                <div className="p-4 border border-gray-100 dark:border-gray-800 rounded-sm">
+                                <div className="p-4 border border-gray-100 dark:border-gray-800">
                                     <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Primary Specialization</span>
                                     <p className="text-md font-black text-gray-800 dark:text-gray-200 mt-1 uppercase">
                                         {displayStudent.courseDetails ? `${displayStudent.courseDetails.courseCode} - ${displayStudent.courseDetails.courseName}` : displayStudent.coursePreference}
@@ -281,7 +316,7 @@ const StudentProfileModal = ({ isOpen, onClose, student }) => {
                                     </div>
                                 </div>
                                 {displayStudent.additionalCourseDetails && displayStudent.additionalCourseDetails.length > 0 && (
-                                    <div className="p-4 border border-gray-100 dark:border-gray-800 rounded-sm">
+                                    <div className="p-4 border border-gray-100 dark:border-gray-800">
                                         <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Additional Modules</span>
                                         <div className="flex flex-wrap gap-2 mt-2">
                                             {displayStudent.additionalCourseDetails.map((course, idx) => (
@@ -301,7 +336,7 @@ const StudentProfileModal = ({ isOpen, onClose, student }) => {
                                 Attendance & Performance Summary
                             </h4>
                             {displayStudent.batchHistory && displayStudent.batchHistory.length > 0 ? (
-                                <div className="overflow-hidden border border-gray-100 dark:border-gray-800 rounded-sm">
+                                <div className="overflow-hidden border border-gray-100 dark:border-gray-800">
                                     <table className="w-full text-left text-[11px]">
                                         <thead className="bg-gray-50 dark:bg-gray-800 uppercase text-gray-500">
                                             <tr>
@@ -319,7 +354,7 @@ const StudentProfileModal = ({ isOpen, onClose, student }) => {
                                                     <td className="px-4 py-3">{batch.subject}</td>
                                                     <td className="px-4 py-3">{batch.instructorName || 'N/A'}</td>
                                                     <td className="px-4 py-3 text-center">
-                                                        <span className={`px-2 py-0.5 rounded-full font-bold ${parseFloat(batch.attendancePercentage) >= 75 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                                        <span className={`px-2 py-0.5 font-bold ${parseFloat(batch.attendancePercentage) >= 75 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                                             {batch.attendancePercentage}%
                                                         </span>
                                                     </td>
@@ -330,7 +365,7 @@ const StudentProfileModal = ({ isOpen, onClose, student }) => {
                                     </table>
                                 </div>
                             ) : (
-                                <div className="p-8 text-center border border-dashed border-gray-200 dark:border-gray-800 rounded-sm italic text-gray-400 text-xs">
+                                <div className="p-8 text-center border border-dashed border-gray-200 dark:border-gray-800 italic text-gray-400 text-xs">
                                     No batch history records available for this period.
                                 </div>
                             )}
@@ -372,9 +407,9 @@ const StudentProfileModal = ({ isOpen, onClose, student }) => {
                                     </div>
                                 </div>
 
-                                <div className="flex flex-col justify-center items-center p-6 border-2 border-brand-500/20 bg-brand-500/5 rounded-sm text-center">
+                                <div className="flex flex-col justify-center items-center p-6 border-2 border-brand-500/20 bg-brand-500/5 text-center">
                                     <span className="text-[10px] font-bold text-brand-600 uppercase tracking-widest mb-2 font-mono">Current Status</span>
-                                    <div className="w-16 h-16 rounded-full border-4 border-brand-500 flex items-center justify-center mb-2">
+                                    <div className="w-16 h-16 border-4 border-brand-500 flex items-center justify-center mb-2">
                                         <svg className="h-8 w-8 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
                                         </svg>
@@ -391,7 +426,7 @@ const StudentProfileModal = ({ isOpen, onClose, student }) => {
                                 Recent Payment History / Invoices
                             </h4>
                             {invoices.length > 0 ? (
-                                <div className="overflow-hidden border border-gray-100 dark:border-gray-800 rounded-sm">
+                                <div className="overflow-hidden border border-gray-100 dark:border-gray-800">
                                     <table className="w-full text-left text-[11px]">
                                         <thead className="bg-gray-50 dark:bg-gray-800 uppercase text-gray-500">
                                             <tr>
@@ -409,7 +444,7 @@ const StudentProfileModal = ({ isOpen, onClose, student }) => {
                                                     <td className="px-4 py-3 font-bold">#{inv.invoiceNumber}</td>
                                                     <td className="px-4 py-3 uppercase text-[10px]">{inv.items?.[0]?.description || 'Course Fees'}</td>
                                                     <td className="px-4 py-3 text-center">
-                                                        <span className={`px-2 py-0.5 rounded-full font-bold uppercase text-[9px] ${inv.status === 'Paid' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>
+                                                        <span className={`px-2 py-0.5 font-bold uppercase text-[9px] ${inv.status === 'Paid' ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}>
                                                             {inv.status}
                                                         </span>
                                                     </td>
@@ -437,7 +472,7 @@ const StudentProfileModal = ({ isOpen, onClose, student }) => {
                             <div className="text-center">
                                 <div className="border-b border-gray-300 h-16 mb-2 relative">
                                     {/* Optional Stamp placeholder */}
-                                    <div className="absolute top-0 right-0 w-20 h-20 border-2 border-brand-500/20 rounded-full flex items-center justify-center opacity-10 -rotate-12 translate-x-4 -translate-y-4">
+                                    <div className="absolute top-0 right-0 w-20 h-20 border-2 border-brand-500/20 flex items-center justify-center opacity-10 -rotate-12 translate-x-4 -translate-y-4">
                                         <span className="text-[8px] font-black text-brand-500 text-center uppercase tracking-tighter">Dream CRM<br />Official Seal</span>
                                     </div>
                                 </div>

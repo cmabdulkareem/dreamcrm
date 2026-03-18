@@ -52,6 +52,8 @@ const Reports = lazy(() => import("./pages/Reports/Reports"));
 const LeadBlank = lazy(() => import("./pages/LeadManagement/LeadBlank"));
 const NewStudent = lazy(() => import("./pages/StudentManagement/NewStudent"));
 const ManageStudents = lazy(() => import("./pages/StudentManagement/ManageStudents"));
+const EditStudent = lazy(() => import("./pages/StudentManagement/EditStudent"));
+const StudentProgress = lazy(() => import("./pages/StudentManagement/StudentProgress"));
 const BatchManagement = lazy(() => import("./pages/StudentManagement/BatchManagement"));
 const StudentBirthdays = lazy(() => import("./pages/StudentManagement/StudentBirthdays"));
 const BasicTables = lazy(() => import("./pages/Tables/BasicTables"));
@@ -66,7 +68,6 @@ const BarChart = lazy(() => import("./pages/Charts/BarChart"));
 const EventRegistration = lazy(() => import("./pages/EventRegistration"));
 const LeaveRequestPortal = lazy(() => import("./pages/LeaveRequestPortal"));
 const LeaveStatusCheck = lazy(() => import("./pages/LeaveStatusCheck"));
-const CollectPayment = lazy(() => import("./pages/Finance/CollectPayment"));
 const InvoiceList = lazy(() => import("./pages/Finance/InvoiceList"));
 const InvoiceGenerator = lazy(() => import("./pages/Finance/InvoiceGenerator"));
 const InvoiceDetails = lazy(() => import("./pages/Finance/InvoiceDetails"));
@@ -132,7 +133,6 @@ function App() {
                   <Route path="/settings/backup" element={<ProtectedRoutes requireManager={true}><AppBackup /></ProtectedRoutes>} />
 
                   {/* Finance */}
-                  <Route path="/finance/collect-payment" element={<ProtectedRoutes requireAccountant={true}><CollectPayment /></ProtectedRoutes>} />
                   <Route path="/finance/invoices" element={<ProtectedRoutes requireAccountant={true}><InvoiceList /></ProtectedRoutes>} />
                   <Route path="/finance/generate-invoice" element={<ProtectedRoutes requireAccountant={true}><InvoiceGenerator /></ProtectedRoutes>} />
                   <Route path="/finance/invoices/:id" element={<ProtectedRoutes requireAccountant={true}><InvoiceDetails /></ProtectedRoutes>} />
@@ -150,6 +150,8 @@ function App() {
                   <Route path="/lead-blank" element={<ProtectedRoutes><LeadBlank /></ProtectedRoutes>} />
                   <Route path="/new-student" element={<ProtectedRoutes>{isAC ? <Navigate to="/manage-students" replace /> : isCounsellor ? <Navigate to="/batch-management" replace /> : <NewStudent />}</ProtectedRoutes>} />
                   <Route path="/manage-students" element={<ProtectedRoutes>{isCounsellor ? <Navigate to="/batch-management" replace /> : <ManageStudents />}</ProtectedRoutes>} />
+                  <Route path="/edit-student/:id" element={<ProtectedRoutes><Suspense fallback={<LoadingSpinner />}><EditStudent /></Suspense></ProtectedRoutes>} />
+                  <Route path="/student-progress" element={<ProtectedRoutes><Suspense fallback={<LoadingSpinner />}><StudentProgress /></Suspense></ProtectedRoutes>} />
                   <Route path="/batch-management" element={<ProtectedRoutes><BatchManagement /></ProtectedRoutes>} />
                   <Route path="/student-birthdays" element={<ProtectedRoutes><StudentBirthdays /></ProtectedRoutes>} />
                   {/* Tables */}
