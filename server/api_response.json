@@ -1,0 +1,183 @@
+{
+  "batch": {
+    "batchName": "BAT-CDCDZMNG-250117-001",
+    "subject": "Interior Design - Part B",
+    "instructorName": "Prizyee Rodrigues"
+  },
+  "students": [
+    {
+      "studentName": "APOORVA H V",
+      "dob": null,
+      "phoneNumber": "+919880775931",
+      "parentPhoneNumber": "+919632013989",
+      "status": "Active",
+      "joinedAt": "2026-03-19T06:02:27.492Z",
+      "_id": "69bb91738a4744142e8716e6"
+    },
+    {
+      "studentName": "FATHIMA AFRA",
+      "dob": null,
+      "phoneNumber": "+919611939708",
+      "parentPhoneNumber": "",
+      "status": "Active",
+      "joinedAt": "2026-03-19T06:02:39.083Z",
+      "_id": "69bb917f8a4744142e8716f1"
+    },
+    {
+      "studentName": "MOHAMMAD ISHAK",
+      "dob": null,
+      "phoneNumber": "+916363966973",
+      "parentPhoneNumber": "",
+      "status": "Active",
+      "joinedAt": "2026-03-19T06:02:53.112Z",
+      "_id": "69bb918d8a4744142e8716fd"
+    },
+    {
+      "studentName": "MUHAMMAD IRFAN",
+      "dob": null,
+      "phoneNumber": "+919972337923",
+      "parentPhoneNumber": "",
+      "status": "Active",
+      "joinedAt": "2026-03-19T06:03:08.619Z",
+      "_id": "69bb919c8a4744142e87170a"
+    },
+    {
+      "studentName": "MUHIYUDDEN RAJIK",
+      "dob": null,
+      "phoneNumber": "+919535938175",
+      "parentPhoneNumber": "",
+      "status": "Active",
+      "joinedAt": "2026-03-19T06:03:34.238Z",
+      "_id": "69bb91b68a4744142e871718"
+    }
+  ],
+  "attendance": [
+    {
+      "date": "2026-02-16T18:30:00.000Z",
+      "markedBy": "6952647f858f1c12c20f6779",
+      "records": [
+        {
+          "studentId": "69bb91738a4744142e8716e6",
+          "studentName": "APOORVA H V",
+          "status": "Absent",
+          "remarks": "",
+          "_id": "69bb95db2f7d4897cb992814"
+        },
+        {
+          "studentId": "69bb917f8a4744142e8716f1",
+          "studentName": "FATHIMA AFRA",
+          "status": "Absent",
+          "remarks": "",
+          "_id": "69bb95db2f7d4897cb992815"
+        },
+        {
+          "studentId": "69bb918d8a4744142e8716fd",
+          "studentName": "MOHAMMAD ISHAK",
+          "status": "Absent",
+          "remarks": "",
+          "_id": "69bb95db2f7d4897cb992816"
+        },
+        {
+          "studentId": "69bb919c8a4744142e87170a",
+          "studentName": "MUHAMMAD IRFAN",
+          "status": "Absent",
+          "remarks": "",
+          "_id": "69bb95db2f7d4897cb992817"
+        },
+        {
+          "studentId": "69bb91b68a4744142e871718",
+          "studentName": "MUHIYUDDEN RAJIK",
+          "status": "Present",
+          "remarks": "",
+          "_id": "69bb95db2f7d4897cb992818"
+        }
+      ],
+      "_id": "69bb924f8a4744142e8719bb"
+    },
+    {
+      "date": "2026-02-17T00:00:00.000Z",
+      "markedBy": "6952647f858f1c12c20f6779",
+      "records": [
+        {
+          "studentId": "69bb91738a4744142e8716e6",
+          "studentName": "APOORVA H V",
+          "status": "Absent",
+          "remarks": "",
+          "_id": "69bba3518b460c0a753b0841"
+        },
+        {
+          "studentId": "69bb917f8a4744142e8716f1",
+          "studentName": "FATHIMA AFRA",
+          "status": "Absent",
+          "remarks": "",
+          "_id": "69bba3518b460c0a753b0842"
+        },
+        {
+          "studentId": "69bb918d8a4744142e8716fd",
+          "studentName": "MOHAMMAD ISHAK",
+          "status": "Absent",
+          "remarks": "",
+          "_id": "69bba3518b460c0a753b0843"
+        },
+        {
+          "studentId": "69bb919c8a4744142e87170a",
+          "studentName": "MUHAMMAD IRFAN",
+          "status": "Absent",
+          "remarks": "",
+          "_id": "69bba3518b460c0a753b0844"
+        },
+        {
+          "studentId": "69bb91b68a4744142e871718",
+          "studentName": "MUHIYUDDEN RAJIK",
+          "status": "Present",
+          "remarks": "",
+          "_id": "69bba3518b460c0a753b0845"
+        }
+      ],
+      "_id": "69bba3518b460c0a753b0840"
+    },
+    {
+      "date": "2026-02-18T18:30:00.000Z",
+      "markedBy": "6952647f858f1c12c20f6779",
+      "records": [
+        {
+          "studentId": "69bb91738a4744142e8716e6",
+          "studentName": "APOORVA H V",
+          "status": "Absent",
+          "remarks": "",
+          "_id": "69bba5d3d63e855b6dd23cf0"
+        },
+        {
+          "studentId": "69bb917f8a4744142e8716f1",
+          "studentName": "FATHIMA AFRA",
+          "status": "Absent",
+          "remarks": "",
+          "_id": "69bba5d3d63e855b6dd23cf1"
+        },
+        {
+          "studentId": "69bb918d8a4744142e8716fd",
+          "studentName": "MOHAMMAD ISHAK",
+          "status": "Absent",
+          "remarks": "",
+          "_id": "69bba5d3d63e855b6dd23cf2"
+        },
+        {
+          "studentId": "69bb919c8a4744142e87170a",
+          "studentName": "MUHAMMAD IRFAN",
+          "status": "Absent",
+          "remarks": "",
+          "_id": "69bba5d3d63e855b6dd23cf3"
+        },
+        {
+          "studentId": "69bb91b68a4744142e871718",
+          "studentName": "MUHIYUDDEN RAJIK",
+          "status": "Absent",
+          "remarks": "",
+          "_id": "69bba5d3d63e855b6dd23cf4"
+        }
+      ],
+      "_id": "69bba5d3d63e855b6dd23cef"
+    }
+  ],
+  "holidays": []
+}

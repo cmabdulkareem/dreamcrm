@@ -164,7 +164,7 @@ export default function BatchAccordion({ batch, onUpdate, onDelete }) {
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    const shareLink = `${window.location.origin}/public/attendance/${batch.shareToken}`;
+                                    const shareLink = `${window.location.origin}/attendance/${batch.shareToken}`;
                                     navigator.clipboard.writeText(shareLink).then(() => {
                                         toast.info("Link copied!");
                                     });

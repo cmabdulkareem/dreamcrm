@@ -1,0 +1,14 @@
+Batch: BAT-CDCDZMNG-250117-001
+Found record for 2026-02-16T18:30:00.000Z
+Records count: 5
+  Attendance Record -> Student: APOORVA H V, ID: 69bb91738a4744142e8716e6, Status: Absent
+  Attendance Record -> Student: FATHIMA AFRA, ID: 69bb917f8a4744142e8716f1, Status: Absent
+  Attendance Record -> Student: MOHAMMAD ISHAK, ID: 69bb918d8a4744142e8716fd, Status: Absent
+  Attendance Record -> Student: MUHAMMAD IRFAN, ID: 69bb919c8a4744142e87170a, Status: Absent
+  Attendance Record -> Student: MUHIYUDDEN RAJIK, ID: 69bb91b68a4744142e871718, Status: Present
+Current Batch Students List:
+  Batch Student -> Student: APOORVA H V, ID: 69bb91738a4744142e8716e6
+  Batch Student -> Student: FATHIMA AFRA, ID: 69bb917f8a4744142e8716f1
+  Batch Student -> Student: MOHAMMAD ISHAK, ID: 69bb918d8a4744142e8716fd
+  Batch Student -> Student: MUHAMMAD IRFAN, ID: 69bb919c8a4744142e87170a
+  Batch Student -> Student: MUHIYUDDEN RAJIK, ID: 69bb91b68a4744142e871718

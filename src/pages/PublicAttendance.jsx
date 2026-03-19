@@ -8,12 +8,7 @@ import PageMeta from '../components/common/PageMeta';
 
 export default function PublicAttendance() {
     const { shareToken } = useParams();
-    const [data, setData] = useState(() => {
-        if (typeof window !== 'undefined' && window.__INITIAL_ATTENDANCE_DATA__ && window.__INITIAL_ATTENDANCE_DATA__.batch) {
-            return window.__INITIAL_ATTENDANCE_DATA__;
-        }
-        return null;
-    });
+    const [data, setData] = useState(null);
     const [loading, setLoading] = useState(!data);
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
     const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -32,8 +27,9 @@ export default function PublicAttendance() {
     }, [shareToken, selectedMonth, selectedYear]);
 
     const fetchData = async () => {
-        if (data && !error && loading === false) return; // Already have data from SSR or previous fetch
+        // Clear previous errors
         
+        setData(null); // Clear stale data
         setLoading(true);
         setError(null);
         try {
@@ -47,14 +43,6 @@ export default function PublicAttendance() {
         }
     };
 
-    useEffect(() => {
-        // Clean up initial data to prevent stale hydration
-        return () => {
-            if (typeof window !== 'undefined' && window.__INITIAL_ATTENDANCE_DATA__) {
-                delete window.__INITIAL_ATTENDANCE_DATA__;
-            }
-        };
-    }, []);
 
     const getDaysInMonth = (month, year) => new Date(year, month, 0).getDate();
     const daysInMonth = getDaysInMonth(selectedMonth, selectedYear);
@@ -75,16 +63,17 @@ export default function PublicAttendance() {
         const earliestMarkMap = {};
 
         // Merge historical students (those in attendance records but not in the current batch list)
-        const activeIds = new Set(students.map(s => s._id));
+        const activeIds = new Set(students.map(s => s._id?.toString()));
         const historicalMap = new Map();
 
         attendance.forEach(record => {
             record.records.forEach(studentRec => {
-                if (!activeIds.has(studentRec.studentId)) {
-                    historicalMap.set(studentRec.studentId, {
-                        _id: studentRec.studentId,
+                const sId = studentRec.studentId?.toString();
+                if (sId && !activeIds.has(sId)) {
+                    historicalMap.set(sId, {
+                        _id: sId,
                         studentName: studentRec.studentName,
-                        createdAt: record.date, // Fallback
+                        enrollmentDate: record.date, // Fallback
                         isHistorical: true
                     });
                 }
@@ -102,14 +91,23 @@ export default function PublicAttendance() {
         // 1. Map existing attendance data
         attendance.forEach(record => {
             const recordDate = new Date(record.date);
+            const rMonth = recordDate.getMonth() + 1;
+            const rYear = recordDate.getFullYear();
+
+            // Guard: Only process records belonging to the current view
+            if (rMonth !== parseInt(selectedMonth) || rYear !== parseInt(selectedYear)) {
+                return;
+            }
+
             const day = recordDate.getDate();
 
             record.records.forEach(studentRec => {
-                if (studentMap[studentRec.studentId]) {
-                    studentMap[studentRec.studentId][day] = studentRec.status;
+                const sId = studentRec.studentId?.toString();
+                if (studentMap[sId]) {
+                    studentMap[sId][day] = studentRec.status;
 
-                    if (!earliestMarkMap[studentRec.studentId] || recordDate < earliestMarkMap[studentRec.studentId]) {
-                        earliestMarkMap[studentRec.studentId] = recordDate;
+                    if (!earliestMarkMap[sId] || recordDate < earliestMarkMap[sId]) {
+                        earliestMarkMap[sId] = recordDate;
                     }
                 }
             });
@@ -149,10 +147,7 @@ export default function PublicAttendance() {
             }
 
             allStudents.forEach(student => {
-                const studentJoinDate = new Date(student.createdAt || batchStartNormalized);
-                if (isNaN(studentJoinDate.getTime())) {
-                    studentJoinDate.setTime(batchStartNormalized.getTime());
-                }
+                const studentJoinDate = new Date(student.enrollmentDate || batchStartNormalized);
                 studentJoinDate.setHours(0, 0, 0, 0);
 
                 let studentEffectiveStart = studentJoinDate;
@@ -165,8 +160,9 @@ export default function PublicAttendance() {
                     studentEffectiveStart = batchStartNormalized;
                 }
 
-                const sStats = statsMap[student._id];
-                let status = studentMap[student._id][day];
+                const sId = student._id?.toString();
+                const sStats = statsMap[sId];
+                let status = studentMap[sId]?.[day];
                 let isConsideredSession = false;
                 let finalStatus = status;
 
@@ -267,8 +263,8 @@ export default function PublicAttendance() {
                 <div className="max-w-7xl mx-auto">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div>
-                            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{data.batch.batchName}</h1>
-                            <p className="text-sm text-gray-500 font-medium">{data.batch.subject} • {data.batch.instructorName}</p>
+                            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">{String(data.batch?.batchName || "N/A")}</h1>
+                            <p className="text-sm text-gray-500 font-medium">{String(data.batch?.subject || "")} • {String(data.batch?.instructorName || "")}</p>
                         </div>
                         <div className="flex gap-2">
                             <select
@@ -342,25 +338,26 @@ export default function PublicAttendance() {
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-100">
                                 {allStudents.map((student, idx) => {
-                                    const stats = statsMap[student._id] || { present: 0, totalSessions: 0 };
-                                    const percentage = stats.totalSessions > 0 ? Math.round((stats.present / stats.totalSessions) * 100) : 0;
-                                    return (
-                                        <tr key={student._id} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50/30"}>
-                                            <td className="px-4 py-3 whitespace-nowrap text-sm font-bold text-gray-900 sticky left-0 z-10 bg-inherit border-r flex items-center justify-between">
-                                                <span>{student.studentName}</span>
-                                                {student.isHistorical && (
-                                                    <span className="ml-2 text-[8px] px-1 py-0.5 bg-red-50 text-red-600 border border-red-100 font-black uppercase tracking-tighter">Rem.</span>
-                                                )}
-                                            </td>
-                                            {daysArray.map(day => {
-                                                const dateObj = new Date(selectedYear, selectedMonth - 1, day);
-                                                const isSunday = dateObj.getDay() === 0;
-                                                return (
-                                                    <td key={day} className={`px-1 py-2 text-center border-l border-gray-50 ${isSunday ? 'bg-red-50/30' : ''}`}>
-                                                        {renderStatusCell(studentMap[student._id]?.[day])}
-                                                    </td>
-                                                );
-                                            })}
+                                                 const sId = student._id?.toString();
+                                                 const stats = statsMap[sId] || { present: 0, totalSessions: 0 };
+                                                 const percentage = stats.totalSessions > 0 ? Math.round((stats.present / stats.totalSessions) * 100) : 0;
+                                                 return (
+                                                     <tr key={sId} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50/30"}>
+                                                         <td className="px-4 py-3 whitespace-nowrap text-sm font-bold text-gray-900 sticky left-0 z-10 bg-inherit border-r flex items-center justify-between">
+                                                             <span>{String(student.studentName || "Unknown")}</span>
+                                                             {student.isHistorical && (
+                                                                 <span className="ml-2 text-[8px] px-1 py-0.5 bg-red-50 text-red-600 border border-red-100 font-black uppercase tracking-tighter">Rem.</span>
+                                                             )}
+                                                         </td>
+                                                         {daysArray.map(day => {
+                                                             const dateObj = new Date(selectedYear, selectedMonth - 1, day);
+                                                             const isSunday = dateObj.getDay() === 0;
+                                                             return (
+                                                                 <td key={day} className={`px-1 py-2 text-center border-l border-gray-50 ${isSunday ? 'bg-red-50/30' : ''}`}>
+                                                                     {renderStatusCell(studentMap[sId]?.[day])}
+                                                                 </td>
+                                                             );
+                                                         })}
                                             <td className="px-4 py-3 text-center text-xs sticky right-0 z-10 bg-inherit border-l font-black">
                                                 <span className={percentage >= 75 ? 'text-green-600' : percentage >= 50 ? 'text-yellow-600' : 'text-red-600'}>
                                                     {percentage}%

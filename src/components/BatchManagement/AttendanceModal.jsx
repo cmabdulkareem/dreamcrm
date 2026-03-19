@@ -26,11 +26,17 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
 
     useEffect(() => {
         if (isOpen && batch) {
-            // Always force date to today local
+            // Initial call: set to today and fetch
             setDate(new Date().toLocaleDateString('en-CA'));
-            fetchStudentsAndAttendance();
         }
     }, [isOpen, batch]);
+
+    useEffect(() => {
+        if (isOpen && batch && date) {
+            setAttendanceRecords({});
+            fetchStudentsAndAttendance();
+        }
+    }, [isOpen, batch, date]);
 
     const fetchStudentsAndAttendance = async () => {
         setLoading(true);
@@ -116,7 +122,8 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
 
     const handleStatusChange = (studentId, status) => {
         if (!canEdit) return;
-        if (!isDateWithinBatchRange(date)) {
+        const canBypass = isAdmin(user) || isOwner(user) || isManager(user);
+        if (!canBypass && !isDateWithinBatchRange(date)) {
             toast.error("Attendance date must be within batch duration.");
             return;
         }
@@ -136,7 +143,8 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
 
     const handleSubmit = async () => {
         if (!canEdit) return;
-        if (!isDateWithinBatchRange(date)) {
+        const canBypass = isAdmin(user) || isOwner(user) || isManager(user);
+        if (!canBypass && !isDateWithinBatchRange(date)) {
             toast.error("Cannot mark attendance outside of batch dates.");
             return;
         }
@@ -201,7 +209,7 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            const shareLink = `${window.location.origin}/public/attendance/${batch.shareToken}`;
+                                            const shareLink = `${window.location.origin}/attendance/${batch.shareToken}`;
                                             navigator.clipboard.writeText(shareLink).then(() => {
                                                 toast.info("Attendance link copied!");
                                             });
@@ -222,7 +230,7 @@ export default function AttendanceModal({ isOpen, onClose, batch }) {
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            const shareLink = `${window.location.origin}/public/attendance/${batch.shareToken}`;
+                                            const shareLink = `${window.location.origin}/attendance/${batch.shareToken}`;
                                             navigator.clipboard.writeText(shareLink).then(() => {
                                                 toast.info("Attendance link copied!");
                                             });

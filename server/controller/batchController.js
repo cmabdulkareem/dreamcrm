@@ -124,19 +124,11 @@ export const getAllBatches = async (req, res) => {
         // If user is an instructor (and NOT an admin/owner/manager), ONLY show assigned batches
         // This overrides the brand filter for pure instructors
         const brandId = req.headers['x-brand-id'] || req.brandFilter?.brand;
+        finalQuery = { ...req.brandFilter }; // Use the middleware-injected filter (e.g., { brand: brandId })
+
+        // If user is a pure instructor (and NOT an admin/owner/manager), ONLY show their assigned batches IN THIS BRAND
         if (isInstructor(req.user, brandId) && !isAdmin(req.user, brandId) && !isOwner(req.user, brandId) && !isManager(req.user, brandId)) {
-            finalQuery = {
-                instructor: req.user.id || req.user._id
-            };
-        } else {
-            // For Admins, Owners, and Managers, use brand filter but also allow seeing assigned batches from other brands
-            const brandFilter = req.brandFilter || {};
-            finalQuery = {
-                $or: [
-                    brandFilter,
-                    { instructor: req.user.id || req.user._id }
-                ]
-            };
+            finalQuery.instructor = req.user.id || req.user._id;
         }
 
         const batches = await Batch.find(finalQuery)
@@ -628,12 +620,13 @@ export const markAttendance = async (req, res) => {
         // Attendance Date: Use provided date from client (local) or fallback to server today
         let attendanceDate;
         if (providedDate) {
-            attendanceDate = new Date(providedDate);
+            const [y, m, d] = providedDate.split('-').map(Number);
+            attendanceDate = new Date(y, m - 1, d);
         } else {
             attendanceDate = new Date();
         }
 
-        // Normalize to midnight UTC for storage consistency while representing the intended "Day"
+        // Normalize to local midnight (IST) for consistency with server/user calendar
         attendanceDate.setHours(0, 0, 0, 0);
 
         if (isNaN(attendanceDate.getTime())) {
@@ -646,11 +639,12 @@ export const markAttendance = async (req, res) => {
         const batchEnd = new Date(batch.expectedEndDate);
         batchEnd.setHours(0, 0, 0, 0);
 
-        if (attendanceDate < batchStart || attendanceDate > batchEnd) {
+        const brandId = req.headers['x-brand-id'] || batch.brand?.toString();
+        const isAdminUser = isAdmin(req.user, brandId) || isOwner(req.user, brandId) || isManager(req.user, brandId);
+
+        if (!isAdminUser && (attendanceDate < batchStart || attendanceDate > batchEnd)) {
             return res.status(400).json({ message: "Cannot mark attendance: Today is outside the batch duration." });
         }
-
-        const brandId = req.headers['x-brand-id'] || batch.brand?.toString();
         // Permission check
         if (isAcademicCoordinator(req.user, brandId)) {
             return res.status(403).json({ message: "Academic coordinators are not authorized to mark attendance." });
@@ -779,7 +773,8 @@ export const getAttendance = async (req, res) => {
         let attendance = batch.attendance || [];
 
         if (date) {
-            const searchDate = new Date(date);
+            const [y, m, d] = date.split('-').map(Number);
+            const searchDate = new Date(y, m - 1, d);
             searchDate.setHours(0, 0, 0, 0);
             attendance = attendance.filter(a => a.date.getTime() === searchDate.getTime());
         } else if (month && year) {
@@ -817,8 +812,9 @@ export const getPublicBatchAttendance = async (req, res) => {
             const m = parseInt(month) - 1;
             const y = parseInt(year);
 
-            const startDate = new Date(y, m, 1);
-            const endDate = new Date(y, m + 1, 0);
+            // Use local server time (IST) for consistent filtering
+            const startDate = new Date(y, m, 1, 0, 0, 0, 0);
+            const endDate = new Date(y, m + 1, 0, 23, 59, 59, 999);
 
             attendance = attendance.filter(a => a.date >= startDate && a.date <= endDate);
         } else {
@@ -827,22 +823,21 @@ export const getPublicBatchAttendance = async (req, res) => {
             const m = now.getMonth();
             const y = now.getFullYear();
 
-            const startDate = new Date(y, m, 1);
-            const endDate = new Date(y, m + 1, 0);
+            const startDate = new Date(y, m, 1, 0, 0, 0, 0);
+            const endDate = new Date(y, m + 1, 0, 23, 59, 59, 999);
 
             attendance = attendance.filter(a => a.date >= startDate && a.date <= endDate);
         }
 
         // No query needed as we already filtered the array
 
-        // Fetch holidays for the batch's brand and current month
         const holidayQuery = { brand: batch.brand };
         const now = new Date();
         const m = month ? parseInt(month) - 1 : now.getMonth();
         const y = year ? parseInt(year) : now.getFullYear();
         holidayQuery.date = {
             $gte: new Date(y, m, 1),
-            $lte: new Date(y, m + 1, 0)
+            $lte: new Date(y, m + 1, 0, 23, 59, 59, 999)
         };
         const holidays = await Holiday.find(holidayQuery).sort({ date: 1 });
 

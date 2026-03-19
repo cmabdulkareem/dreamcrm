@@ -209,7 +209,7 @@ function App() {
 
                 {/* Public Routes */}
                 <Route path="/event-registration/:link" element={<Suspense fallback={<LoadingSpinner />}><EventRegistration /></Suspense>} />
-                <Route path="/public/attendance/:shareToken" element={<PublicAttendance />} />
+                <Route path="/attendance/:shareToken" element={<PublicAttendance />} />
                 <Route path="/jobs/apply/:id" element={<Suspense fallback={<LoadingSpinner />}><PublicJobApply /></Suspense>} />
                 <Route path="/onboarding/:token" element={<Suspense fallback={<LoadingSpinner />}><OnboardingAcceptance /></Suspense>} />
                 <Route path="/agreement/verify/:id" element={<Suspense fallback={<LoadingSpinner />}><AgreementVerification /></Suspense>} />

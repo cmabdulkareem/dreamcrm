@@ -1,0 +1,22 @@
+{
+  "_id": "6969f847b9ef220196550476",
+  "batchName": "IAD 2025 DEC",
+  "instructorName": "Jeremiah Babu",
+  "instructor": "6969fa35b9ef220196550626",
+  "mode": "offline",
+  "subject": "Design Fundamentals",
+  "startDate": "2025-12-15T00:00:00.000Z",
+  "expectedEndDate": "2026-12-31T00:00:00.000Z",
+  "batchTime": {
+    "from": "11:00",
+    "to": "01:00"
+  },
+  "brand": "69526536858f1c12c20f67c7",
+  "createdBy": "695262d7858f1c12c20f6738",
+  "createdAt": "2026-01-16T08:35:19.050Z",
+  "updatedAt": "2026-03-05T09:22:21.037Z",
+  "shareToken": "eljtow2tiz6sjhvx4xql",
+  "__v": 0,
+  "students": [],
+  "attendance": []
+}

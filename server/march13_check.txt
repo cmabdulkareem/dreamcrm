@@ -1,0 +1,7 @@
+Batch: BAT-CDCDZMNG-250117-001
+Found record for 2026-03-12T18:30:00.000Z
+  Student: APOORVA H V, Status: Present
+  Student: FATHIMA AFRA, Status: Present
+  Student: MOHAMMAD ISHAK, Status: Absent
+  Student: MUHAMMAD IRFAN, Status: Present
+  Student: MUHIYUDDEN RAJIK, Status: Present

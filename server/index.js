@@ -174,39 +174,6 @@ app.use(async (req, res, next) => {
     }
   }
 
-  // Check if it's a public attendance route for SEO
-  const attendanceMatch = reqPath.match(/^\/public\/attendance\/([a-z0-9]+)(\/|$)/i);
-  if (attendanceMatch) {
-    try {
-      const shareToken = attendanceMatch[1];
-      const batch = await Batch.findOne({ shareToken });
-      if (batch) {
-        const students = batch.students || [];
-        const now = new Date();
-        const m = now.getMonth();
-        const y = now.getFullYear();
-        const startDate = new Date(y, m, 1);
-        const endDate = new Date(y, m + 1, 0);
-        
-        const attendance = (batch.attendance || []).filter(a => a.date >= startDate && a.date <= endDate);
-        const holidays = await Holiday.find({ brand: batch.brand, date: { $gte: startDate, $lte: endDate } }).sort({ date: 1 });
-
-        const data = {
-          batch: { batchName: batch.batchName, subject: batch.subject, instructorName: batch.instructorName },
-          students,
-          attendance,
-          holidays
-        };
-
-        let html = fs.readFileSync(indexPath, 'utf8');
-        html = generateSEOHtml(html, data, 'attendance', isDev);
-        return res.send(html);
-      }
-    } catch (error) {
-      console.error('SEO Injection Error (Attendance):', error);
-    }
-  }
-
   // Check if it's an onboarding route for SEO
   const onboardingMatch = reqPath.match(/^\/onboarding\/([a-f0-9]{64})(\/|$)/i);
   if (onboardingMatch) {
