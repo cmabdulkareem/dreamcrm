@@ -599,7 +599,6 @@ export const getAllUsers = async (req, res) => {
       reviewHistory: user.reviewHistory,
       company: user.company,
       createdAt: user.createdAt,
-      brands: user.brands.map(brand => ({ id: brand._id, name: brand.name })),
     }));
 
     return res.status(200).json({ users: formattedUsers });

@@ -45,8 +45,8 @@ const userSchema = new mongoose.Schema(
     nextReviewDate: { type: Date, default: null },
     reviewCycle: {
       type: String,
-      enum: ["2-month", "annual"],
-      default: "2-month"
+      enum: ["2-month", "3-month", "annual"],
+      default: "3-month"
     },
     reviewHistory: [
       {
